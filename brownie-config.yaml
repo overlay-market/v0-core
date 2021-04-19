@@ -1,0 +1,17 @@
+networks:
+  default: mainnet-fork
+
+autofetch_sources: True
+
+dependencies:
+  - OpenZeppelin/openzeppelin-contracts@4.0.0
+
+compiler:
+  solc:
+    version: 0.8.0
+    remappings:
+      - "@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.0.0"
+
+reports:
+  exclude_contracts:
+    - SafeMath
