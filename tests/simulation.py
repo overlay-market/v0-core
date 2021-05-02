@@ -20,7 +20,6 @@ class Market:
 
     Required invariants:
         nl + ns = const
-        dl + ds = const
 
     FP evolution:
         oil(t) = oil(t-1) - fp(t-1)
