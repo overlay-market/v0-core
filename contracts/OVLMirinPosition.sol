@@ -12,12 +12,23 @@ contract OVLMirinPosition is ERC1155("https://metadata.overlay.exchange/mirin/{i
     address public immutable mirinFactory;
     address public immutable mirinPool;
 
+    // open interest cap
+    uint256 public cap;
+    // open interest funding constant
+    uint256 public k;
+
+    // TODO: OI long, OI short, ...
+
     constructor(
         address _mirinFactory,
-        address _mirinPool
+        address _mirinPool,
+        uint256 _cap,
+        uint256 _k
     ) {
         factory = msg.sender;
         mirinFactory = _mirinFactory;
         mirinPool = _mirinPool;
+        cap = _cap;
+        k = _k;
     }
 }
