@@ -24,14 +24,22 @@ contract OVLMirinFactory is Ownable {
 
     // deploys new market contract for given mirin pool address
     function deploy(
-        address pool,
+        address mirinPool,
+        bool isPrice0,
+        uint32 periodSize,
+        uint32 windowSize,
+        uint8 leverageMax,
         uint256 cap,
         uint256 k
     ) external onlyOwner returns (OVLMirinMarket marketContract) {
-        require(IMirinFactory(mirinFactory).isPool(pool), "!MirinPool");
+        require(IMirinFactory(mirinFactory).isPool(mirinPool), "!MirinPool");
         marketContract = new OVLMirinMarket(
             mirinFactory,
-            pool,
+            mirinPool,
+            isPrice0,
+            periodSize,
+            windowSize,
+            leverageMax,
             cap,
             k
         );
@@ -65,7 +73,20 @@ contract OVLMirinFactory is Ownable {
     }
 
     // TODO: adjust(k, cap, leverages) to allow gov to adjust per market params
-    function adjust(address market, uint256 cap, uint256 k) external onlyOwner {
-        OVLMirinMarket(market).adjust(cap, k);
+    function adjust(
+        address market,
+        uint32 periodSize,
+        uint32 windowSize,
+        uint8 leverageMax,
+        uint256 cap,
+        uint256 k
+    ) external onlyOwner {
+        OVLMirinMarket(market).adjust(
+            periodSize,
+            windowSize,
+            leverageMax,
+            cap,
+            k
+        );
     }
 }

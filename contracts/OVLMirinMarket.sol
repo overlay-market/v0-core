@@ -11,13 +11,43 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     // mirin pool and factory addresses
     address public immutable mirinFactory;
     address public immutable mirinPool;
+    bool public immutable isPrice0;
 
+    struct Position {
+        uint8 leverage; // discrete leverage amount
+        bool isLong; // whether long or short
+        uint256 oi; // shares of total open interest on long/short side
+        uint256 debt; // shares of total debt on long/short side
+        uint256 collateral; // shares of total collateral owned on long/short side; NOTE: technically redudant with debt, leverage given oi
+        uint256 pricePointStartIndex; // index in pricePoints to use as start of TWAP calculation for position entry (lock) price
+        uint256 pricePointEndIndex; // index in pricePoints to use as end of TWAP calculation for position entry (lock) price
+    }
+
+    // leverage max: discrete increments of 1
+    // TODO: think about allowing for finer granularity e.g., 1.25, 1.5
+    uint8 public leverageMax;
+    // period size for sliding window TWAP calc
+    uint32 public periodSize;
+    // window size for sliding window TWAP calc
+    uint32 public windowSize;
     // open interest cap
     uint256 public cap;
     // open interest funding constant
     uint256 public k;
 
-    // TODO: OI long, OI short, ...
+    // total open interest long
+    uint256 public oiLong;
+    // total open interest short
+    uint256 public oiShort;
+    // total debt on long side
+    uint256 public debtLong;
+    // total debt on short side
+    uint256 public debtShort;
+
+    // counter for erc1155 pos IDs
+    uint256 currentPositionId;
+    // map from pos id to attributes
+    mapping(uint256 => Position) positions;
 
     modifier onlyFactory {
         require(msg.sender == factory, "!factory");
@@ -27,18 +57,38 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     constructor(
         address _mirinFactory,
         address _mirinPool,
+        bool _isPrice0,
+        uint32 _periodSize,
+        uint32 _windowSize,
+        uint8 _leverageMax,
         uint256 _cap,
         uint256 _k
     ) {
+        // immutables
         factory = msg.sender;
         mirinFactory = _mirinFactory;
         mirinPool = _mirinPool;
+        isPrice0 = _isPrice0;
+
+        // per-market adjustable params
+        periodSize = _periodSize;
+        windowSize = _windowSize;
+        leverageMax = _leverageMax;
         cap = _cap;
         k = _k;
     }
 
     // adjusts params associated with this market
-    function adjust(uint256 _cap, uint256 _k) external onlyFactory {
+    function adjust(
+        uint32 _periodSize,
+        uint32 _windowSize,
+        uint8 _leverageMax,
+        uint256 _cap,
+        uint256 _k
+    ) external onlyFactory {
+        periodSize = _periodSize;
+        windowSize = _windowSize;
+        leverageMax = _leverageMax;
         cap = _cap;
         k = _k;
     }
