@@ -126,9 +126,19 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         Position storage position = positions[positionId];
 
         // effects
-        position.oi = position.oi + collateralAmount * leverage;
-        position.debt = position.debt + (leverage - 1) * collateralAmount;
-        position.collateral = position.collateral + collateralAmount;
+        // position
+        position.oi += collateralAmount * leverage;
+        position.debt += (leverage - 1) * collateralAmount;
+        position.collateral += collateralAmount;
+
+        // totals
+        if (isLong) {
+            oiLong += collateralAmount * leverage;
+            debtLong += (leverage - 1) * collateralAmount;
+        } else {
+            oiShort += collateralAmount * leverage;
+            debtShort += (leverage - 1) * collateralAmount;
+        }
 
         // interactions
         // transfer collateral into pool then mint shares of queued position
