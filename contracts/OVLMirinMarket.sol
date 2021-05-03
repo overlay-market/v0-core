@@ -1,11 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+
+import "./interfaces/IMirinOracle.sol";
 import "./interfaces/IOVLFactory.sol";
 
 contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}.json") {
+    // TODO: using FixedPoint for *;
+    using SafeERC20 for IERC20;
 
+    // ovl erc20 token
+    address public immutable ovl;
     // OVLMirinFactory address
     address public immutable factory;
     // mirin pool and factory addresses
@@ -24,7 +32,6 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     }
 
     // leverage max allowed for a position: leverages are assumed to be discrete increments of 1
-    // TODO: think about allowing for finer granularity e.g., 1.25, 1.5
     uint256 public leverageMax;
     // period size for sliding window TWAP calc
     uint256 public periodSize;
@@ -44,10 +51,11 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     // total debt on short side
     uint256 public debtShort;
 
-    // counter for erc1155 pos IDs
-    uint256 nextPositionId;
-    // map from pos id to attributes
-    mapping(uint256 => Position) positions;
+    // array of pos attributes; id is index in array
+    Position[] public positions;
+    // mapping from leverage to index in positions array of queued position; queued can still be built on while periodSize elapses
+    mapping(uint256 => uint256) private queuedPositionLongIds;
+    mapping(uint256 => uint256) private queuedPositionShortIds;
 
     uint256 private unlocked = 1;
     modifier lock() {
@@ -68,6 +76,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     }
 
     constructor(
+        address _ovl,
         address _mirinFactory,
         address _mirinPool,
         bool _isPrice0,
@@ -79,6 +88,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     ) {
         // immutables
         factory = msg.sender;
+        ovl = _ovl;
         mirinFactory = _mirinFactory;
         mirinPool = _mirinPool;
         isPrice0 = _isPrice0;
@@ -91,15 +101,43 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         k = _k;
     }
 
+    function updateQueuedPosition(bool isLong, uint256 leverage) private returns (uint256 queuedPositionId) {
+        // TODO: implement this PROPERLY so users pool collateral within periodSize windows
+        positions.push(Position({
+            isLong: isLong,
+            leverage: leverage,
+            oi: 0,
+            debt: 0,
+            collateral: 0,
+            pricePointStartIndex: 0,
+            pricePointEndIndex: 0
+        }));
+        queuedPositionId = positions.length - 1;
+    }
+
     function build(
         uint256 collateralAmount,
         bool isLong,
         uint256 leverage
     ) external lock enabled {
-        require(leverage > 0 && leverage <= leverageMax, "invalid leverage");
+        require(leverage >= 1 && leverage <= leverageMax, "invalid leverage");
+        // TODO: updateFunding();
+        uint256 positionId = updateQueuedPosition(isLong, leverage);
+        Position storage position = positions[positionId];
+
+        // effects
+        position.oi = position.oi + collateralAmount * leverage;
+        position.debt = position.debt + (leverage - 1) * collateralAmount;
+        position.collateral = position.collateral + collateralAmount;
+
+        // interactions
+        // transfer collateral into pool then mint shares of queued position
+        IERC20(ovl).safeTransferFrom(msg.sender, address(this), collateralAmount);
+        _mint(msg.sender, positionId, collateralAmount, "");
     }
 
     function unwind(uint256 positionId, uint256 collateralAmount) external lock enabled {
+        // TODO: updateFunding();
     }
 
     // adjusts params associated with this market

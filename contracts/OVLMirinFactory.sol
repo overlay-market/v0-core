@@ -33,7 +33,9 @@ contract OVLMirinFactory is Ownable {
         uint256 k
     ) external onlyOwner returns (OVLMirinMarket marketContract) {
         require(IMirinFactory(mirinFactory).isPool(mirinPool), "!MirinPool");
+        require(IMirinOracle(mirinPool).pricePointsLength() > 1, "!mirin initialized");
         marketContract = new OVLMirinMarket(
+            ovl,
             mirinFactory,
             mirinPool,
             isPrice0,
