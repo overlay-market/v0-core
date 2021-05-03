@@ -26,8 +26,8 @@ contract OVLMirinFactory is Ownable {
     function deploy(
         address mirinPool,
         bool isPrice0,
-        uint32 periodSize,
-        uint32 windowSize,
+        uint256 periodSize,
+        uint256 windowSize,
         uint8 leverageMax,
         uint256 cap,
         uint256 k
@@ -72,11 +72,11 @@ contract OVLMirinFactory is Ownable {
         OVLToken(ovl).grantRole(OVLToken(ovl).BURNER_ROLE(), market);
     }
 
-    // TODO: adjust(k, cap, leverages) to allow gov to adjust per market params
+    // adjust allows gov to adjust per market params
     function adjust(
         address market,
-        uint32 periodSize,
-        uint32 windowSize,
+        uint256 periodSize,
+        uint256 windowSize,
         uint8 leverageMax,
         uint256 cap,
         uint256 k

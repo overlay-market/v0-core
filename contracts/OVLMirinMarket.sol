@@ -16,21 +16,21 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     struct Position {
         uint8 leverage; // discrete leverage amount
         bool isLong; // whether long or short
-        uint256 oi; // shares of total open interest on long/short side
-        uint256 debt; // shares of total debt on long/short side
-        uint256 collateral; // shares of total collateral owned on long/short side; NOTE: technically redudant with debt, leverage given oi
-        uint256 pricePointStartIndex; // index in pricePoints to use as start of TWAP calculation for position entry (lock) price
-        uint256 pricePointEndIndex; // index in pricePoints to use as end of TWAP calculation for position entry (lock) price
+        uint256 oi; // shares of total open interest on long/short side, depending on isLong value
+        uint256 debt; // shares of total debt on long/short side, depending on isLong value
+        uint256 collateral; // shares of total collateral owned on long/short side, depending on isLong value; NOTE: technically redudant with debt, leverage given oi
+        uint256 pricePointStartIndex; // index in mirin oracle's pricePoints to use as start of TWAP calculation for position entry (lock) price
+        uint256 pricePointEndIndex; // index in mirin oracle's pricePoints to use as end of TWAP calculation for position entry (lock) price
     }
 
-    // leverage max: discrete increments of 1
+    // leverage max allowed for a position: leverages are assumed to be discrete increments of 1
     // TODO: think about allowing for finer granularity e.g., 1.25, 1.5
     uint8 public leverageMax;
     // period size for sliding window TWAP calc
-    uint32 public periodSize;
+    uint256 public periodSize;
     // window size for sliding window TWAP calc
-    uint32 public windowSize;
-    // open interest cap
+    uint256 public windowSize;
+    // open interest cap on each side long/short
     uint256 public cap;
     // open interest funding constant
     uint256 public k;
@@ -58,8 +58,8 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         address _mirinFactory,
         address _mirinPool,
         bool _isPrice0,
-        uint32 _periodSize,
-        uint32 _windowSize,
+        uint256 _periodSize,
+        uint256 _windowSize,
         uint8 _leverageMax,
         uint256 _cap,
         uint256 _k
@@ -80,8 +80,8 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
 
     // adjusts params associated with this market
     function adjust(
-        uint32 _periodSize,
-        uint32 _windowSize,
+        uint256 _periodSize,
+        uint256 _windowSize,
         uint8 _leverageMax,
         uint256 _cap,
         uint256 _k
