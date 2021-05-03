@@ -28,7 +28,7 @@ contract OVLMirinFactory is Ownable {
         bool isPrice0,
         uint256 periodSize,
         uint256 windowSize,
-        uint8 leverageMax,
+        uint256 leverageMax,
         uint256 cap,
         uint256 k
     ) external onlyOwner returns (OVLMirinMarket marketContract) {
@@ -47,9 +47,18 @@ contract OVLMirinFactory is Ownable {
         isMarket[address(marketContract)] = true;
         allMarkets.push(address(marketContract));
 
-        // Give position contract mint/burn priveleges for OVL token
+        // Give market contract mint/burn priveleges for OVL token
         OVLToken(ovl).grantRole(OVLToken(ovl).MINTER_ROLE(), address(marketContract));
         OVLToken(ovl).grantRole(OVLToken(ovl).BURNER_ROLE(), address(marketContract));
+    }
+
+    function exists(address market) private view returns (bool) {
+        for (uint256 i=0; i < allMarkets.length; ++i) {
+            if (market == allMarkets[i]) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // disables an existing market contract for a mirin market
@@ -57,7 +66,7 @@ contract OVLMirinFactory is Ownable {
         require(isMarket[market], "!enabled");
         isMarket[market] = false;
 
-        // Revoke mint/burn roles for the position
+        // Revoke mint/burn roles for the market
         OVLToken(ovl).revokeRole(OVLToken(ovl).MINTER_ROLE(), market);
         OVLToken(ovl).revokeRole(OVLToken(ovl).BURNER_ROLE(), market);
     }
@@ -65,9 +74,10 @@ contract OVLMirinFactory is Ownable {
     // enables an existing market contract for a mirin market
     function enable(address market) external onlyOwner {
         require(!isMarket[market], "!disabled");
+        require(exists(market), "!exist");
         isMarket[market] = true;
 
-        // Give position contract mint/burn priveleges for OVL token
+        // Give market contract mint/burn priveleges for OVL token
         OVLToken(ovl).grantRole(OVLToken(ovl).MINTER_ROLE(), market);
         OVLToken(ovl).grantRole(OVLToken(ovl).BURNER_ROLE(), market);
     }
@@ -77,7 +87,7 @@ contract OVLMirinFactory is Ownable {
         address market,
         uint256 periodSize,
         uint256 windowSize,
-        uint8 leverageMax,
+        uint256 leverageMax,
         uint256 cap,
         uint256 k
     ) external onlyOwner {
