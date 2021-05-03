@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "./interfaces/IOVLFactory.sol";
@@ -45,7 +45,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     uint256 public debtShort;
 
     // counter for erc1155 pos IDs
-    uint256 currentPositionId;
+    uint256 nextPositionId;
     // map from pos id to attributes
     mapping(uint256 => Position) positions;
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -74,7 +74,7 @@ contract OVLMirinFactory is Ownable {
     // enables an existing market contract for a mirin market
     function enable(address market) external onlyOwner {
         require(!isMarket[market], "!disabled");
-        require(exists(market), "!exist");
+        require(exists(market), "!exists");
         isMarket[market] = true;
 
         // Give market contract mint/burn priveleges for OVL token
