@@ -26,7 +26,6 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         uint256 leverage; // discrete leverage amount
         uint256 oi; // shares of total open interest on long/short side, depending on isLong value
         uint256 debt; // shares of total debt on long/short side, depending on isLong value
-        uint256 collateral; // shares of total collateral owned on long/short side, depending on isLong value; NOTE: technically redudant with (debt, leverage) given oi
         uint256 pricePointStartIndex; // index in mirin oracle's pricePoints to use as start of TWAP calculation for position entry (lock) price
         uint256 pricePointEndIndex; // index in mirin oracle's pricePoints to use as end of TWAP calculation for position entry (lock) price
     }
@@ -108,7 +107,6 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
             leverage: leverage,
             oi: 0,
             debt: 0,
-            collateral: 0,
             pricePointStartIndex: 0,
             pricePointEndIndex: 0
         }));
@@ -129,7 +127,6 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         // position
         position.oi += collateralAmount * leverage;
         position.debt += (leverage - 1) * collateralAmount;
-        position.collateral += collateralAmount;
 
         // totals
         if (isLong) {
