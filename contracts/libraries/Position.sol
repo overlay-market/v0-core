@@ -21,9 +21,7 @@ library Position {
         uint256 priceEntry,
         uint256 priceExit
     ) internal pure returns (uint256 val) {
-        uint256 debt = self.debt;
         uint256 oi = self.oiShares * totalOi / totalOiShares;
-
         if (self.isLong) {
             // oi * priceExit / priceEntry - debt
             val = oi * priceExit / priceEntry;
@@ -31,7 +29,7 @@ library Position {
         } else {
             // oi * (2 - priceExit / priceEntry) - debt
             val = oi * 2;
-            val -= Math.min(oi * priceExit / priceEntry + self.debt, val);
+            val -= Math.min(oi * priceExit / priceEntry + self.debt, val); // floor to 0
         }
     }
 }
