@@ -181,12 +181,16 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         });
     }
 
-    function adjustForFees(uint256 value, uint256 valueWithoutDebt) private returns (
-        uint256 valueAdjusted,
-        uint256 feeAmountToForward,
-        uint256 feeAmountToBurn,
-        address feeTo
-    ) {
+    function adjustForFees(uint256 value, uint256 valueWithoutDebt)
+        private
+        view
+        returns (
+            uint256 valueAdjusted,
+            uint256 feeAmountToForward,
+            uint256 feeAmountToBurn,
+            address feeTo
+        )
+    {
         (uint16 fee, uint16 feeBurnRate, uint16 FEE_RESOLUTION, address _feeTo,,,,) = IOVLFactory(factory).getGlobal();
         // collateral less fees
         valueAdjusted = (value * FEE_RESOLUTION - valueWithoutDebt * fee) / FEE_RESOLUTION;

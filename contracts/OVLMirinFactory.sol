@@ -160,16 +160,20 @@ contract OVLMirinFactory is Ownable {
         marginTo = _marginTo;
     }
 
-    function getGlobal() external view returns (
-        uint16,
-        uint16,
-        uint16,
-        address,
-        uint16,
-        uint16,
-        uint16,
-        address
-    ) {
+    function getGlobal()
+        external
+        view
+        returns (
+            uint16,
+            uint16,
+            uint16,
+            address,
+            uint16,
+            uint16,
+            uint16,
+            address
+        )
+    {
         return (
             fee,
             feeBurnRate,
