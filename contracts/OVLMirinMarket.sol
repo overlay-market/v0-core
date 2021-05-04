@@ -1,16 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
+
+import "./libraries/FixedPoint.sol";
+import "./libraries/Position.sol";
 
 import "./interfaces/IMirinOracle.sol";
 import "./interfaces/IOVLFactory.sol";
 
+import "./OVLToken.sol";
+
 contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}.json") {
-    // TODO: using FixedPoint for *;
-    using SafeERC20 for IERC20;
+    using FixedPoint for FixedPoint.uq112x112;
+    using FixedPoint for FixedPoint.uq144x112;
+    using Position for Position.Info;
+    using SafeERC20 for OVLToken;
 
     // ovl erc20 token
     address public immutable ovl;
@@ -21,11 +28,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     address public immutable mirinPool;
     bool public immutable isPrice0;
 
-    struct Position {
-        bool isLong; // whether long or short
-        uint256 leverage; // discrete leverage amount
-        uint256 oi; // shares of total open interest on long/short side, depending on isLong value
-        uint256 debt; // shares of total debt on long/short side, depending on isLong value
+    struct PricePointWindow {
         uint256 pricePointStartIndex; // index in mirin oracle's pricePoints to use as start of TWAP calculation for position entry (lock) price
         uint256 pricePointEndIndex; // index in mirin oracle's pricePoints to use as end of TWAP calculation for position entry (lock) price
     }
@@ -45,13 +48,17 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     uint256 public oiLong;
     // total open interest short
     uint256 public oiShort;
-    // total debt on long side
-    uint256 public debtLong;
-    // total debt on short side
-    uint256 public debtShort;
+    // total open interest long shares outstanding
+    uint256 public totalOiLongShares;
+    // total open interest short shares outstanding
+    uint256 public totalOiShortShares;
 
     // array of pos attributes; id is index in array
-    Position[] public positions;
+    Position.Info[] public positions;
+    // mapping from position id to total shares
+    mapping(uint256 => uint256) public totalPositionShares;
+    // mapping from position id to price point window
+    mapping(uint256 => PricePointWindow) private pricePointWindows;
     // mapping from leverage to index in positions array of queued position; queued can still be built on while periodSize elapses
     mapping(uint256 => uint256) private queuedPositionLongIds;
     mapping(uint256 => uint256) private queuedPositionShortIds;
@@ -100,17 +107,78 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         k = _k;
     }
 
+    // mint overrides erc1155 _mint to track total shares issued for given position id
+    function mint(address account, uint256 id, uint256 shares, bytes memory data) private {
+        totalPositionShares[id] += shares;
+        _mint(account, id, shares, data);
+    }
+
+    // burn overrides erc1155 _burn to track total shares issued for given position id
+    function burn(address account, uint256 id, uint256 shares) private {
+        uint256 totalShares = totalPositionShares[id];
+        require(totalShares >= shares, "burn shares exceeds total");
+        totalPositionShares[id] = totalShares - shares;
+        _burn(account, id, shares);
+    }
+
+    // SEE: https://github.com/sushiswap/mirin/blob/master/contracts/pool/MirinOracle.sol#L112
+    function computeAmountOut(
+        uint256 priceCumulativeStart,
+        uint256 priceCumulativeEnd,
+        uint256 timeElapsed,
+        uint256 amountIn
+    ) private pure returns (uint256 amountOut) {
+        // overflow is desired.
+        FixedPoint.uq112x112 memory priceAverage =
+            FixedPoint.uq112x112(uint224((priceCumulativeEnd - priceCumulativeStart) / timeElapsed));
+        amountOut = priceAverage.mul(amountIn).decode144();
+    }
+
+    function lastPrice() public view returns (uint256) {
+        uint256 len = IMirinOracle(mirinPool).pricePointsLength();
+        require(len > windowSize, "!mirin initialized");
+        (
+            uint256 timestampEnd,
+            uint256 price0CumulativeEnd,
+            uint256 price1CumulativeEnd
+        ) = IMirinOracle(mirinPool).pricePoints(len-1);
+        (
+            uint256 timestampStart,
+            uint256 price0CumulativeStart,
+            uint256 price1CumulativeStart
+        ) = IMirinOracle(mirinPool).pricePoints(len-1-windowSize);
+
+        if (isPrice0) {
+            return computeAmountOut(
+                price0CumulativeStart,
+                price0CumulativeEnd,
+                timestampEnd - timestampStart,
+                0 // TODO: Fix w decimals
+            );
+        } else {
+            return computeAmountOut(
+                price1CumulativeStart,
+                price1CumulativeEnd,
+                timestampEnd - timestampStart,
+                0 // TODO: Fix w decimals
+            );
+        }
+    }
+
     function updateQueuedPosition(bool isLong, uint256 leverage) private returns (uint256 queuedPositionId) {
         // TODO: implement this PROPERLY so users pool collateral within periodSize windows
-        positions.push(Position({
+        positions.push(Position.Info({
             isLong: isLong,
             leverage: leverage,
-            oi: 0,
+            oiShares: 0,
             debt: 0,
-            pricePointStartIndex: 0,
-            pricePointEndIndex: 0
+            cost: 0
         }));
         queuedPositionId = positions.length - 1;
+        pricePointWindows[queuedPositionId] = PricePointWindow({
+            pricePointStartIndex: 0,
+            pricePointEndIndex: 0
+        });
     }
 
     function build(
@@ -121,30 +189,86 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         require(leverage >= 1 && leverage <= leverageMax, "invalid leverage");
         // TODO: updateFunding();
         uint256 positionId = updateQueuedPosition(isLong, leverage);
-        Position storage position = positions[positionId];
+        Position.Info storage position = positions[positionId];
 
         // effects
         // position
-        position.oi += collateralAmount * leverage;
+        position.oiShares += collateralAmount * leverage;
         position.debt += (leverage - 1) * collateralAmount;
+        position.cost += collateralAmount;
 
         // totals
         if (isLong) {
             oiLong += collateralAmount * leverage;
-            debtLong += (leverage - 1) * collateralAmount;
+            require(oiLong <= cap, "invalid oi = collateral*leverage: breached cap");
+            totalOiLongShares += collateralAmount * leverage;
         } else {
             oiShort += collateralAmount * leverage;
-            debtShort += (leverage - 1) * collateralAmount;
+            require(oiShort <= cap, "invalid oi = collateral*leverage: breached cap");
+            totalOiShortShares += collateralAmount * leverage;
         }
 
         // interactions
         // transfer collateral into pool then mint shares of queued position
-        IERC20(ovl).safeTransferFrom(msg.sender, address(this), collateralAmount);
-        _mint(msg.sender, positionId, collateralAmount, "");
+        OVLToken(ovl).safeTransferFrom(msg.sender, address(this), collateralAmount);
+        // WARNING: _mint erc1155 shares last given callback
+        // amount of shares to mint based on oi contribution
+        mint(msg.sender, positionId, collateralAmount * leverage, "");
     }
 
-    function unwind(uint256 positionId, uint256 collateralAmount) external lock enabled {
+    function unwind(uint256 positionId, uint256 shares) external lock enabled {
+        require(positionId < positions.length, "invalid position id");
+        require(shares <= balanceOf(msg.sender, positionId), "invalid shares");
         // TODO: updateFunding();
+        Position.Info storage position = positions[positionId];
+        uint256 priceEntry = 0; // TODO: compute entry price
+        uint256 priceExit = lastPrice(); // potential sacrifice of profit for UX purposes; SEE: "Queueing Position Builds" https://oips.overlay.market/notes/note-2
+
+        // calculate value, cost
+        uint256 value = shares * position.value(
+            (position.isLong ? oiLong : oiShort),
+            (position.isLong ? totalOiLongShares : totalOiShortShares),
+            priceEntry,
+            priceExit
+        ) / totalPositionShares[positionId];
+        uint256 cost = shares * position.cost / totalPositionShares[positionId];
+
+        // effects
+        // position
+        uint256 oiDiff = (
+            position.isLong ?
+            (shares * position.oiShares * oiLong / totalOiLongShares) / totalPositionShares[positionId] :
+            (shares * position.oiShares * oiShort / totalOiShortShares) / totalPositionShares[positionId]
+        );
+        position.oiShares -= oiDiff;
+        position.debt -= shares * position.debt / totalPositionShares[positionId];
+        position.cost -= shares * position.cost / totalPositionShares[positionId];
+
+        // totals
+        if (position.isLong) {
+            oiLong -= oiDiff;
+            totalOiLongShares -= oiDiff;
+        } else {
+            oiShort -= oiDiff;
+            totalOiShortShares -= oiDiff;
+        }
+
+        // interactions
+        if (value >= cost) {
+            // profit: mint the diff
+            uint256 diff = value - cost;
+            OVLToken(ovl).mint(address(this), diff);
+        } else {
+            // loss: burn the diff
+            // NOTE: can at most burn cost given value min is restricted to zero
+            // TODO: Floor in case rounding errors with cost for total collateral in contract?
+            uint256 diff = cost - value;
+            OVLToken(ovl).burn(address(this), diff);
+        }
+
+        // burn shares of position then transfer collateral + PnL
+        burn(msg.sender, positionId, shares);
+        OVLToken(ovl).safeTransfer(msg.sender, value);
     }
 
     // adjusts params associated with this market

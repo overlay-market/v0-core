@@ -14,6 +14,14 @@ contract MirinOracleMock is IMirinOracle, Ownable {
 
     PricePoint[] public override pricePoints;
 
+    function token0() external override view returns (address) {
+        return address(0);
+    }
+
+    function token1() external override view returns (address) {
+        return address(0);
+    }
+
     function addPricePoint(
         uint256 price0Cumulative,
         uint256 price1Cumulative
