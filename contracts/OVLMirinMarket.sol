@@ -181,6 +181,24 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         });
     }
 
+    function adjustForFees(uint256 value, uint256 valueWithoutDebt) private returns (
+        uint256 valueAdjusted,
+        uint256 feeAmountToForward,
+        uint256 feeAmountToBurn,
+        address feeTo
+    ) {
+        (uint16 fee, uint16 feeBurnRate, uint16 FEE_RESOLUTION, address _feeTo,,,,) = IOVLFactory(factory).getGlobal();
+        // collateral less fees
+        valueAdjusted = (value * FEE_RESOLUTION - valueWithoutDebt * fee) / FEE_RESOLUTION;
+
+        // fee amounts
+        uint256 feeAmount = value - valueAdjusted;
+        feeAmountToForward = (feeAmount * FEE_RESOLUTION - feeAmount * feeBurnRate) / FEE_RESOLUTION;
+        feeAmountToBurn = feeAmount - feeAmountToForward;
+
+        feeTo = _feeTo;
+    }
+
     function build(
         uint256 collateralAmount,
         bool isLong,
@@ -192,15 +210,12 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         Position.Info storage position = positions[positionId];
 
         // compute fees
-        (uint16 fee, uint16 feeBurnRate, uint16 FEE_RESOLUTION, address feeTo,,,,) = IOVLFactory(factory).getGlobal();
-        // collateral less fees
-        uint256 collateralAmountAdjusted = (
-            collateralAmount * FEE_RESOLUTION - collateralAmount * leverage * fee
-        ) / FEE_RESOLUTION;
-        // fee amounts
-        uint256 feeAmount = collateralAmount - collateralAmountAdjusted;
-        uint256 feeAmountToForward = (feeAmount * FEE_RESOLUTION - feeAmount * feeBurnRate) / FEE_RESOLUTION;
-        uint256 feeAmountToBurn = feeAmount - feeAmountToForward;
+        (
+            uint256 collateralAmountAdjusted,
+            uint256 feeAmountToForward,
+            uint256 feeAmountToBurn,
+            address feeTo
+        ) = adjustForFees(collateralAmount, collateralAmount * leverage);
 
         // effects
         // position
@@ -222,7 +237,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         // interactions
         // transfer collateral + fees into pool then mint shares of queued position
         OVLToken(ovl).safeTransferFrom(msg.sender, address(this), collateralAmount);
-        // Forward fees and burn rest
+        // Forward and burn fees
         OVLToken(ovl).safeTransfer(feeTo, feeAmountToForward);
         OVLToken(ovl).burn(address(this), feeAmountToBurn);
         // WARNING: _mint erc1155 shares last given callback
@@ -245,6 +260,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
             priceEntry,
             priceExit
         ) / totalPositionShares[positionId];
+        uint256 valueWithoutDebt = value + shares * position.debt / totalPositionShares[positionId];
         uint256 cost = shares * position.cost / totalPositionShares[positionId];
 
         // effects
@@ -267,24 +283,36 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
             totalOiShortShares -= oiDiff;
         }
 
-        // TODO: compute fees
+        // compute fees
+        // NOTE: Not using valueAdjusted in effects given withdrawing funds from contract
+        // so only need to adjust PnL calcs and amount sent back to msg.sender
+        (
+            uint256 valueAdjusted,
+            uint256 feeAmountToForward,
+            uint256 feeAmountToBurn,
+            address feeTo
+        ) = adjustForFees(value, valueWithoutDebt);
 
         // interactions
-        if (value >= cost) {
+        if (valueAdjusted >= cost) {
             // profit: mint the diff
-            uint256 diff = value - cost;
+            uint256 diff = valueAdjusted - cost;
             OVLToken(ovl).mint(address(this), diff);
         } else {
             // loss: burn the diff
             // NOTE: can at most burn cost given value min is restricted to zero
             // TODO: Floor in case rounding errors with cost for total collateral in contract?
-            uint256 diff = cost - value;
+            uint256 diff = cost - valueAdjusted;
             OVLToken(ovl).burn(address(this), diff);
         }
 
         // burn shares of position then transfer collateral + PnL
         burn(msg.sender, positionId, shares);
-        OVLToken(ovl).safeTransfer(msg.sender, value);
+        // Forward and burn fees
+        OVLToken(ovl).safeTransfer(feeTo, feeAmountToForward);
+        OVLToken(ovl).burn(address(this), feeAmountToBurn);
+        // transfer collateral + PnL
+        OVLToken(ovl).safeTransfer(msg.sender, valueAdjusted);
     }
 
     // adjusts params associated with this market
