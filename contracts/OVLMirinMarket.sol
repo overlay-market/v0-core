@@ -191,29 +191,43 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         uint256 positionId = updateQueuedPosition(isLong, leverage);
         Position.Info storage position = positions[positionId];
 
+        // compute fees
+        (uint16 fee, uint16 feeBurnRate, uint16 FEE_RESOLUTION, address feeTo,,,,) = IOVLFactory(factory).getGlobal();
+        // collateral less fees
+        uint256 collateralAmountAdjusted = (
+            collateralAmount * FEE_RESOLUTION - collateralAmount * leverage * fee
+        ) / FEE_RESOLUTION;
+        // fee amounts
+        uint256 feeAmount = collateralAmount - collateralAmountAdjusted;
+        uint256 feeAmountToForward = (feeAmount * FEE_RESOLUTION - feeAmount * feeBurnRate) / FEE_RESOLUTION;
+        uint256 feeAmountToBurn = feeAmount - feeAmountToForward;
+
         // effects
         // position
-        position.oiShares += collateralAmount * leverage;
-        position.debt += (leverage - 1) * collateralAmount;
-        position.cost += collateralAmount;
+        position.oiShares += collateralAmountAdjusted * leverage;
+        position.debt += (leverage - 1) * collateralAmountAdjusted;
+        position.cost += collateralAmountAdjusted;
 
         // totals
         if (isLong) {
-            oiLong += collateralAmount * leverage;
-            require(oiLong <= cap, "invalid oi = collateral*leverage: breached cap");
-            totalOiLongShares += collateralAmount * leverage;
+            oiLong += collateralAmountAdjusted * leverage;
+            require(oiLong <= cap, "invalid oi = collateral*leverage; breached cap");
+            totalOiLongShares += collateralAmountAdjusted * leverage;
         } else {
-            oiShort += collateralAmount * leverage;
-            require(oiShort <= cap, "invalid oi = collateral*leverage: breached cap");
-            totalOiShortShares += collateralAmount * leverage;
+            oiShort += collateralAmountAdjusted * leverage;
+            require(oiShort <= cap, "invalid oi = collateral*leverage; breached cap");
+            totalOiShortShares += collateralAmountAdjusted * leverage;
         }
 
         // interactions
-        // transfer collateral into pool then mint shares of queued position
+        // transfer collateral + fees into pool then mint shares of queued position
         OVLToken(ovl).safeTransferFrom(msg.sender, address(this), collateralAmount);
+        // Forward fees and burn rest
+        OVLToken(ovl).safeTransfer(feeTo, feeAmountToForward);
+        OVLToken(ovl).burn(address(this), feeAmountToBurn);
         // WARNING: _mint erc1155 shares last given callback
-        // amount of shares to mint based on oi contribution
-        mint(msg.sender, positionId, collateralAmount * leverage, "");
+        // mint shares based on oi contribution
+        mint(msg.sender, positionId, collateralAmountAdjusted * leverage, "");
     }
 
     function unwind(uint256 positionId, uint256 shares) external lock enabled {
@@ -253,6 +267,8 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
             totalOiShortShares -= oiDiff;
         }
 
+        // TODO: compute fees
+
         // interactions
         if (value >= cost) {
             // profit: mint the diff
@@ -279,6 +295,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         uint256 _cap,
         uint256 _k
     ) external onlyFactory {
+        // TODO: requires on params; particularly leverageMax wrt MAX_FEE
         periodSize = _periodSize;
         windowSize = _windowSize;
         leverageMax = _leverageMax;

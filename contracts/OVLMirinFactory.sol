@@ -10,17 +10,57 @@ import "./OVLToken.sol";
 
 contract OVLMirinFactory is Ownable {
 
+    uint16 public constant MIN_FEE = 1; // 0.01%
+    uint16 public constant MAX_FEE = 100; // 1.00%
+    uint16 public constant FEE_RESOLUTION = 10**4; // bps
+
+    uint16 public constant MIN_MARGIN = 1; // 1% maintenance
+    uint16 public constant MAX_MARGIN = 60; // 60% maintenance
+    uint16 public constant MARGIN_RESOLUTION = 10**2; // percentage points
+
     // ovl erc20 token
     address public immutable ovl;
     // mirin pool factory
     address public immutable mirinFactory;
 
+    // global params adjustable by gov
+    // build/unwind trading fee
+    uint16 public fee;
+    // portion of build/unwind fee burnt
+    uint16 public feeBurnRate;
+    // address to send fees to
+    address public feeTo;
+    // maintenance margin requirement
+    uint16 public margin;
+    // maintenance margin burn rate on liquidations
+    uint16 public marginBurnRate;
+    // address to send margin to
+    address public marginTo;
+
     mapping(address => bool) public isMarket;
     address[] public allMarkets;
 
-    constructor(address _ovl, address _mirinFactory) {
+    constructor(
+        address _ovl,
+        address _mirinFactory,
+        uint16 _fee,
+        uint16 _feeBurnRate,
+        address _feeTo,
+        uint16 _margin,
+        uint16 _marginBurnRate,
+        address _marginTo
+    ) {
+        // immutables
         ovl = _ovl;
         mirinFactory = _mirinFactory;
+
+        // global params
+        fee = _fee;
+        feeBurnRate = _feeBurnRate;
+        feeTo = _feeTo;
+        margin = _margin;
+        marginBurnRate = _marginBurnRate;
+        marginTo = _marginTo;
     }
 
     // deploys new market contract for given mirin pool address
@@ -85,8 +125,8 @@ contract OVLMirinFactory is Ownable {
         OVLToken(ovl).grantRole(OVLToken(ovl).BURNER_ROLE(), market);
     }
 
-    // adjust allows gov to adjust per market params
-    function adjust(
+    // adjustPerMarket allows gov to adjust per market params
+    function adjustPerMarket(
         address market,
         uint256 periodSize,
         uint256 windowSize,
@@ -100,6 +140,45 @@ contract OVLMirinFactory is Ownable {
             leverageMax,
             cap,
             k
+        );
+    }
+
+    // adjustGlobalP allows gov to adjust global params
+    function adjustGlobal(
+        uint16 _fee,
+        uint16 _feeBurnRate,
+        address _feeTo,
+        uint16 _margin,
+        uint16 _marginBurnRate,
+        address _marginTo
+    ) external onlyOwner {
+        fee = _fee;
+        feeBurnRate = _feeBurnRate;
+        feeTo = _feeTo;
+        margin = _margin;
+        marginBurnRate = _marginBurnRate;
+        marginTo = _marginTo;
+    }
+
+    function getGlobal() external view returns (
+        uint16,
+        uint16,
+        uint16,
+        address,
+        uint16,
+        uint16,
+        uint16,
+        address
+    ) {
+        return (
+            fee,
+            feeBurnRate,
+            FEE_RESOLUTION,
+            feeTo,
+            margin,
+            marginBurnRate,
+            MARGIN_RESOLUTION,
+            marginTo
         );
     }
 }

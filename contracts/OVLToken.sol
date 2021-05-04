@@ -35,5 +35,4 @@ contract OVLToken is AccessControl, ERC20("Overlay", "OVL") {
   function burn(address _account, uint256 _amount) external onlyBurner {
       _burn(_account, _amount);
   }
-
 }
