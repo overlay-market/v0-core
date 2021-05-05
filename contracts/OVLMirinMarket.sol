@@ -173,13 +173,8 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     function getFundingFactor(uint112 _d, uint256 _m) private pure returns (FixedPoint.uq112x112 memory factor) {
         // d = 1 / (1 - 2k); k = (d - 1) / (2 * d); factor = 1 - 2k = 1/d
         uint112 numerator = 1;
-        uint112 denominator = _d;
-        factor = FixedPoint.fraction(numerator, denominator);
-
-        // TODO: get rid of this loop ...
-        for (uint256 i=1; i < _m; i++) {
-            factor = factor.div(_d);
-        }
+        uint112 denominator = _d ** _m; // TODO: at what point do we need to worry about overflow (need bounds on this val and min/max on val of d?)
+        return FixedPoint.fraction(numerator, denominator);
     }
 
     function updateFunding() public {
