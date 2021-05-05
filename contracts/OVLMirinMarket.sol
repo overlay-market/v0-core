@@ -43,9 +43,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     uint256 public cap;
 
     // open interest funding constant factor, charged per block
-    // factor = 1 - 2k = 1/d; 0 < k < 1/2, 1 < d < infty
-    FixedPoint.uq112x112 public fundingFactor;
-    // open interest funding constant, redundant with factor above
+    // 1/d = 1 - 2k; 0 < k < 1/2, 1 < d < infty
     uint112 public fundingD;
     // block at which funding was last paid
     uint256 public fundingBlockLast;
@@ -111,7 +109,6 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         leverageMax = _leverageMax;
         cap = _cap;
         fundingD = _fundingD;
-        fundingFactor = getFundingFactor(_fundingD);
     }
 
     // mint overrides erc1155 _mint to track total shares issued for given position id
@@ -172,18 +169,33 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         }
     }
 
-    function getFundingFactor(uint112 _d) private pure returns (FixedPoint.uq112x112 memory) {
+    // computes (1 - 2k)**m = d**(-m)
+    function getFundingFactor(uint112 _d, uint256 _m) private pure returns (FixedPoint.uq112x112 memory factor) {
         // d = 1 / (1 - 2k); k = (d - 1) / (2 * d); factor = 1 - 2k = 1/d
         uint112 numerator = 1;
         uint112 denominator = _d;
-        return FixedPoint.fraction(numerator, denominator);
+        factor = FixedPoint.fraction(numerator, denominator);
+
+        // TODO: get rid of this loop ...
+        for (uint256 i=1; i < _m; i++) {
+            factor = factor.div(_d);
+        }
     }
 
     function updateFunding() public {
         uint256 blockNumber = block.number;
         uint256 elapsed = blockNumber - fundingBlockLast;
         if (elapsed > 0 && !(oiLong == 0 && oiShort == 0)) {
-
+            FixedPoint.uq112x112 memory fundingFactor = getFundingFactor(fundingD, elapsed);
+            if (oiLong > oiShort) {
+                uint256 oiImbNow = fundingFactor.mul(oiLong - oiShort).decode144();
+                oiLong = (oiLong + oiShort + oiImbNow) / 2;
+                oiShort = (oiLong + oiShort - oiImbNow) / 2;
+            } else {
+                uint256 oiImbNow = fundingFactor.mul(oiShort - oiLong).decode144();
+                oiShort = (oiLong + oiShort + oiImbNow) / 2;
+                oiLong = (oiLong + oiShort - oiImbNow) / 2;
+            }
         }
         fundingBlockLast = blockNumber;
     }
@@ -356,6 +368,5 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         leverageMax = _leverageMax;
         cap = _cap;
         fundingD = _fundingD;
-        fundingFactor = getFundingFactor(_fundingD);
     }
 }
