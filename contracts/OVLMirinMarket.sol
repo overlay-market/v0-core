@@ -20,7 +20,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     using SafeERC20 for OVLToken;
 
     // max number of periodSize periods before treat funding as completely rebalanced: done for gas savings on compute funding factor
-    uint256 public constant MAX_FUNDING_COMPOUND = 7200; // 30d at 10m periodSize periods
+    uint256 public constant MAX_FUNDING_COMPOUND = 4320; // 30d at 10m periodSize periods
 
     // ovl erc20 token
     address public immutable ovl;
@@ -196,7 +196,8 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
 
     // update funding payments and price point index pointer
     function update() public {
-        // TODO: add in updates to price point index pointer; give incentive for updating as well
+        // TODO: add in updates to price point index pointer
+        // TODO: give incentive for updating as well -> portion of fees .. state var for feesToForward, feesToBurn, feesPot (for updater)
         uint256 blockNumber = block.number;
         // # of periodSize periods that have elapsed
         uint256 elapsed = (blockNumber - fundingBlockLast) / periodSize;
