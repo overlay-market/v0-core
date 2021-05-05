@@ -32,4 +32,6 @@ library Position {
             val -= Math.min(oi * priceExit / priceEntry + self.debt, val); // floor to 0
         }
     }
+
+    // TODO: function liquidationPrice(self, totalOi, totalOiShares, priceExit, marginRequirement) internal pure returns (uint256 val)
 }

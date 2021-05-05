@@ -41,8 +41,14 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     uint256 public windowSize;
     // open interest cap on each side long/short
     uint256 public cap;
-    // open interest funding constant, charged per block
-    uint256 public k;
+
+    // open interest funding constant factor, charged per block
+    // factor = 1 - 2k = 1/d; 0 < k < 1/2, 1 < d < infty
+    FixedPoint.uq112x112 public fundingFactor;
+    // open interest funding constant, redundant with factor above
+    uint112 public fundingD;
+    // block at which funding was last paid
+    uint256 public fundingBlockLast;
 
     // total open interest long
     uint256 public oiLong;
@@ -90,7 +96,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         uint256 _windowSize,
         uint256 _leverageMax,
         uint256 _cap,
-        uint256 _k
+        uint112 _fundingD
     ) {
         // immutables
         factory = msg.sender;
@@ -104,7 +110,8 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         windowSize = _windowSize;
         leverageMax = _leverageMax;
         cap = _cap;
-        k = _k;
+        fundingD = _fundingD;
+        fundingFactor = getFundingFactor(_fundingD);
     }
 
     // mint overrides erc1155 _mint to track total shares issued for given position id
@@ -165,6 +172,22 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         }
     }
 
+    function getFundingFactor(uint112 _d) private pure returns (FixedPoint.uq112x112 memory) {
+        // d = 1 / (1 - 2k); k = (d - 1) / (2 * d); factor = 1 - 2k = 1/d
+        uint112 numerator = 1;
+        uint112 denominator = _d;
+        return FixedPoint.fraction(numerator, denominator);
+    }
+
+    function updateFunding() public {
+        uint256 blockNumber = block.number;
+        uint256 elapsed = blockNumber - fundingBlockLast;
+        if (elapsed > 0 && !(oiLong == 0 && oiShort == 0)) {
+
+        }
+        fundingBlockLast = blockNumber;
+    }
+
     function updateQueuedPosition(bool isLong, uint256 leverage) private returns (uint256 queuedPositionId) {
         // TODO: implement this PROPERLY so users pool collateral within periodSize windows
         positions.push(Position.Info({
@@ -209,7 +232,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         uint256 leverage
     ) external lock enabled {
         require(leverage >= 1 && leverage <= leverageMax, "invalid leverage");
-        // TODO: updateFunding();
+        updateFunding();
         uint256 positionId = updateQueuedPosition(isLong, leverage);
         Position.Info storage position = positions[positionId];
 
@@ -252,7 +275,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     function unwind(uint256 positionId, uint256 shares) external lock enabled {
         require(positionId < positions.length, "invalid position id");
         require(shares <= balanceOf(msg.sender, positionId), "invalid shares");
-        // TODO: updateFunding();
+        updateFunding();
         Position.Info storage position = positions[positionId];
         uint256 priceEntry = 0; // TODO: compute entry price
         uint256 priceExit = lastPrice(); // potential sacrifice of profit for UX purposes; SEE: "Queueing Position Builds" https://oips.overlay.market/notes/note-2
@@ -266,6 +289,16 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         ) / totalPositionShares[positionId];
         uint256 valueWithoutDebt = value + shares * position.debt / totalPositionShares[positionId];
         uint256 cost = shares * position.cost / totalPositionShares[positionId];
+
+        // compute fees
+        // NOTE: Not using valueAdjusted in effects given withdrawing funds from contract
+        // so only need to adjust PnL calcs and amount sent back to msg.sender
+        (
+            uint256 valueAdjusted,
+            uint256 feeAmountToForward,
+            uint256 feeAmountToBurn,
+            address feeTo
+        ) = adjustForFees(value, valueWithoutDebt);
 
         // effects
         // position
@@ -286,16 +319,6 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
             oiShort -= oiDiff;
             totalOiShortShares -= oiDiff;
         }
-
-        // compute fees
-        // NOTE: Not using valueAdjusted in effects given withdrawing funds from contract
-        // so only need to adjust PnL calcs and amount sent back to msg.sender
-        (
-            uint256 valueAdjusted,
-            uint256 feeAmountToForward,
-            uint256 feeAmountToBurn,
-            address feeTo
-        ) = adjustForFees(value, valueWithoutDebt);
 
         // interactions
         if (valueAdjusted >= cost) {
@@ -325,13 +348,14 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         uint256 _windowSize,
         uint256 _leverageMax,
         uint256 _cap,
-        uint256 _k
+        uint112 _fundingD
     ) external onlyFactory {
         // TODO: requires on params; particularly leverageMax wrt MAX_FEE
         periodSize = _periodSize;
         windowSize = _windowSize;
         leverageMax = _leverageMax;
         cap = _cap;
-        k = _k;
+        fundingD = _fundingD;
+        fundingFactor = getFundingFactor(_fundingD);
     }
 }
