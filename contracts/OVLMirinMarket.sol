@@ -42,7 +42,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     // open interest cap on each side long/short
     uint256 public cap;
 
-    // open interest funding constant factor, charged per block
+    // open interest funding constant factor, charged per periodSize
     // 1/d = 1 - 2k; 0 < k < 1/2, 1 < d < infty
     uint112 public fundingD;
     // block at which funding was last paid
@@ -170,18 +170,29 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     }
 
     // computes (1 - 2k)**m = d**(-m)
-    function getFundingFactor(uint112 _d, uint256 _m) private pure returns (FixedPoint.uq112x112 memory factor) {
-        // d = 1 / (1 - 2k); k = (d - 1) / (2 * d); factor = 1 - 2k = 1/d
+    function computeFundingFactor(uint112 _d, uint256 _m) private pure returns (FixedPoint.uq112x112 memory factor) {
+        // d = 1 / (1 - 2k); k = (d - 1) / (2 * d); factor = 1 - 2k = 1/d;
+        // 1/d = factor is between 0 < factor < 1 (constrained!)
         uint112 numerator = 1;
-        uint112 denominator = _d ** _m; // TODO: at what point do we need to worry about overflow (need bounds on this val and min/max on val of d?)
-        return FixedPoint.fraction(numerator, denominator);
+        // TODO: at what point do we need to worry about overflow (need bounds on this val and min/max on val of d?): see https://github.com/makerdao/dss/blob/master/src/pot.sol#L85
+        // TODO: Have it be unchecked like: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.0.0/contracts/utils/math/SafeMath.sol#L46
+        // and if it overflows, then return funding factor as zero
+        uint112 denominator = _d;
+        factor = FixedPoint.fraction(numerator, denominator);
+        // TODO: fix this so not doing an insane loop
+        for (uint256 i=1; i < _m; i++) {
+            factor = factor.div(_d);
+        }
     }
 
-    function updateFunding() public {
+    // update funding payments and price point index pointer
+    function update() public {
+        // TODO: add in updates to price point index pointer
         uint256 blockNumber = block.number;
-        uint256 elapsed = blockNumber - fundingBlockLast;
+        // # of periodSize periods that have elapsed
+        uint256 elapsed = (blockNumber - fundingBlockLast) / periodSize;
         if (elapsed > 0 && !(oiLong == 0 && oiShort == 0)) {
-            FixedPoint.uq112x112 memory fundingFactor = getFundingFactor(fundingD, elapsed);
+            FixedPoint.uq112x112 memory fundingFactor = computeFundingFactor(fundingD, elapsed);
             if (oiLong > oiShort) {
                 uint256 oiImbNow = fundingFactor.mul(oiLong - oiShort).decode144();
                 oiLong = (oiLong + oiShort + oiImbNow) / 2;
@@ -221,7 +232,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
             address feeTo
         )
     {
-        (uint16 fee, uint16 feeBurnRate, uint16 FEE_RESOLUTION, address _feeTo,,,,) = IOVLFactory(factory).getGlobal();
+        (uint16 fee, uint16 feeBurnRate, uint16 FEE_RESOLUTION, address _feeTo,,,,) = IOVLFactory(factory).getGlobalParams();
         // collateral less fees
         valueAdjusted = (value * FEE_RESOLUTION - valueWithoutDebt * fee) / FEE_RESOLUTION;
 
@@ -239,7 +250,8 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         uint256 leverage
     ) external lock enabled {
         require(leverage >= 1 && leverage <= leverageMax, "invalid leverage");
-        updateFunding();
+        // update market first: funding payments + price pointer
+        update();
         uint256 positionId = updateQueuedPosition(isLong, leverage);
         Position.Info storage position = positions[positionId];
 
@@ -282,7 +294,8 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     function unwind(uint256 positionId, uint256 shares) external lock enabled {
         require(positionId < positions.length, "invalid position id");
         require(shares <= balanceOf(msg.sender, positionId), "invalid shares");
-        updateFunding();
+        // update market first: funding payments + price pointer
+        update();
         Position.Info storage position = positions[positionId];
         uint256 priceEntry = 0; // TODO: compute entry price
         uint256 priceExit = lastPrice(); // potential sacrifice of profit for UX purposes; SEE: "Queueing Position Builds" https://oips.overlay.market/notes/note-2
@@ -350,7 +363,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     }
 
     // adjusts params associated with this market
-    function adjust(
+    function adjustParams(
         uint256 _periodSize,
         uint256 _windowSize,
         uint256 _leverageMax,

@@ -63,8 +63,8 @@ contract OVLMirinFactory is Ownable {
         marginTo = _marginTo;
     }
 
-    // deploys new market contract for given mirin pool address
-    function deploy(
+    // creates a new market contract for given mirin pool address
+    function createMarket(
         address mirinPool,
         bool isPrice0,
         uint256 periodSize,
@@ -95,7 +95,7 @@ contract OVLMirinFactory is Ownable {
         OVLToken(ovl).grantRole(OVLToken(ovl).BURNER_ROLE(), address(marketContract));
     }
 
-    function exists(address market) private view returns (bool) {
+    function marketExists(address market) private view returns (bool) {
         for (uint256 i=0; i < allMarkets.length; ++i) {
             if (market == allMarkets[i]) {
                 return true;
@@ -105,7 +105,7 @@ contract OVLMirinFactory is Ownable {
     }
 
     // disables an existing market contract for a mirin market
-    function disable(address market) external onlyOwner {
+    function disableMarket(address market) external onlyOwner {
         require(isMarket[market], "!enabled");
         isMarket[market] = false;
 
@@ -115,9 +115,9 @@ contract OVLMirinFactory is Ownable {
     }
 
     // enables an existing market contract for a mirin market
-    function enable(address market) external onlyOwner {
-        require(!isMarket[market], "!disabled");
-        require(exists(market), "!exists");
+    function enableMarket(address market) external onlyOwner {
+        require(!isMarket[market], "OverlayV1: !disabled");
+        require(marketExists(market), "OverlayV1: !exists");
         isMarket[market] = true;
 
         // Give market contract mint/burn priveleges for OVL token
@@ -125,8 +125,8 @@ contract OVLMirinFactory is Ownable {
         OVLToken(ovl).grantRole(OVLToken(ovl).BURNER_ROLE(), market);
     }
 
-    // adjustPerMarket allows gov to adjust per market params
-    function adjustPerMarket(
+    // adjustPerMarketParams allows gov to adjust per market params
+    function adjustPerMarketParams(
         address market,
         uint256 periodSize,
         uint256 windowSize,
@@ -134,7 +134,7 @@ contract OVLMirinFactory is Ownable {
         uint256 cap,
         uint112 fundingD
     ) external onlyOwner {
-        OVLMirinMarket(market).adjust(
+        OVLMirinMarket(market).adjustParams(
             periodSize,
             windowSize,
             leverageMax,
@@ -143,8 +143,8 @@ contract OVLMirinFactory is Ownable {
         );
     }
 
-    // adjustGlobalP allows gov to adjust global params
-    function adjustGlobal(
+    // adjustGlobalParams allows gov to adjust global params
+    function adjustGlobalParams(
         uint16 _fee,
         uint16 _feeBurnRate,
         address _feeTo,
@@ -160,7 +160,7 @@ contract OVLMirinFactory is Ownable {
         marginTo = _marginTo;
     }
 
-    function getGlobal()
+    function getGlobalParams()
         external
         view
         returns (
