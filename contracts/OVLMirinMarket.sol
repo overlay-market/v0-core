@@ -171,17 +171,21 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
 
     // computes (1 - 2k)**m = d**(-m)
     function computeFundingFactor(uint112 _d, uint256 _m) private pure returns (FixedPoint.uq112x112 memory factor) {
-        // d = 1 / (1 - 2k); k = (d - 1) / (2 * d); factor = 1 - 2k = 1/d;
-        // 1/d = factor is between 0 < factor < 1 (constrained!)
-        uint112 numerator = 1;
-        // TODO: at what point do we need to worry about overflow (need bounds on this val and min/max on val of d?): see https://github.com/makerdao/dss/blob/master/src/pot.sol#L85
-        // TODO: Have it be unchecked like: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.0.0/contracts/utils/math/SafeMath.sol#L46
-        // and if it overflows, then return funding factor as zero
-        uint112 denominator = _d;
-        factor = FixedPoint.fraction(numerator, denominator);
-        // TODO: fix this so not doing an insane loop
-        for (uint256 i=1; i < _m; i++) {
-            factor = factor.div(_d);
+        if (_m == 0) {
+            factor = FixedPoint.uq112x112(1);
+        } else {
+            // d = 1 / (1 - 2k); k = (d - 1) / (2 * d); factor = 1 - 2k = 1/d;
+            // 1/d = factor is between 0 < factor < 1 (constrained!)
+            uint112 numerator = 1;
+            // TODO: at what point do we need to worry about overflow (need bounds on this val and min/max on val of d?): see https://github.com/makerdao/dss/blob/master/src/pot.sol#L85
+            // TODO: Have it be unchecked like: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.0.0/contracts/utils/math/SafeMath.sol#L46
+            // and if it overflows, then return funding factor as zero
+            uint112 denominator = _d;
+            factor = FixedPoint.fraction(numerator, denominator);
+            // TODO: fix this so not doing an insane loop
+            for (uint256 i=1; i < _m; i++) {
+                factor = factor.div(_d);
+            }
         }
     }
 
