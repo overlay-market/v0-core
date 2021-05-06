@@ -28,6 +28,8 @@ contract OVLMirinFactory is Ownable {
     uint16 public fee;
     // portion of build/unwind fee burnt
     uint16 public feeBurnRate;
+    // portion of non-burned fees to reward market updaters with (funding + price)
+    uint16 public feeUpdateRewardsRate;
     // address to send fees to
     address public feeTo;
     // maintenance margin requirement
@@ -45,6 +47,7 @@ contract OVLMirinFactory is Ownable {
         address _mirinFactory,
         uint16 _fee,
         uint16 _feeBurnRate,
+        uint16 _feeUpdateRewardsRate,
         address _feeTo,
         uint16 _margin,
         uint16 _marginBurnRate,
@@ -57,6 +60,7 @@ contract OVLMirinFactory is Ownable {
         // global params
         fee = _fee;
         feeBurnRate = _feeBurnRate;
+        feeUpdateRewardsRate = _feeUpdateRewardsRate;
         feeTo = _feeTo;
         margin = _margin;
         marginBurnRate = _marginBurnRate;
@@ -73,8 +77,8 @@ contract OVLMirinFactory is Ownable {
         uint256 cap,
         uint112 fundingD
     ) external onlyOwner returns (OVLMirinMarket marketContract) {
-        require(IMirinFactory(mirinFactory).isPool(mirinPool), "!MirinPool");
-        require(IMirinOracle(mirinPool).pricePointsLength() > 1, "!mirin initialized");
+        require(IMirinFactory(mirinFactory).isPool(mirinPool), "OverlayV1: !MirinPool");
+        require(IMirinOracle(mirinPool).pricePointsLength() > 1, "OverlayV1: !MirinInitialized");
         marketContract = new OVLMirinMarket(
             ovl,
             mirinFactory,
@@ -106,7 +110,7 @@ contract OVLMirinFactory is Ownable {
 
     // disables an existing market contract for a mirin market
     function disableMarket(address market) external onlyOwner {
-        require(isMarket[market], "!enabled");
+        require(isMarket[market], "OverlayV1: !enabled");
         isMarket[market] = false;
 
         // Revoke mint/burn roles for the market
@@ -147,6 +151,7 @@ contract OVLMirinFactory is Ownable {
     function adjustGlobalParams(
         uint16 _fee,
         uint16 _feeBurnRate,
+        uint16 _feeUpdateRewardsRate,
         address _feeTo,
         uint16 _margin,
         uint16 _marginBurnRate,
@@ -154,6 +159,7 @@ contract OVLMirinFactory is Ownable {
     ) external onlyOwner {
         fee = _fee;
         feeBurnRate = _feeBurnRate;
+        feeUpdateRewardsRate = _feeUpdateRewardsRate;
         feeTo = _feeTo;
         margin = _margin;
         marginBurnRate = _marginBurnRate;
@@ -167,6 +173,7 @@ contract OVLMirinFactory is Ownable {
             uint16,
             uint16,
             uint16,
+            uint16,
             address,
             uint16,
             uint16,
@@ -177,6 +184,7 @@ contract OVLMirinFactory is Ownable {
         return (
             fee,
             feeBurnRate,
+            feeUpdateRewardsRate,
             FEE_RESOLUTION,
             feeTo,
             margin,
