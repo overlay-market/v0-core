@@ -39,7 +39,10 @@ contract OVLMirinFactory is Ownable {
     // address to send margin to
     address public marginTo;
 
+    // whether is a market AND is enabled
     mapping(address => bool) public isMarket;
+    // whether is an already created market: for easy access instead of looping through allMarkets
+    mapping(address => bool) public marketExists;
     address[] public allMarkets;
 
     constructor(
@@ -91,21 +94,13 @@ contract OVLMirinFactory is Ownable {
             fundingD
         );
 
+        marketExists[address(marketContract)] = true;
         isMarket[address(marketContract)] = true;
         allMarkets.push(address(marketContract));
 
         // Give market contract mint/burn priveleges for OVL token
         OVLToken(ovl).grantRole(OVLToken(ovl).MINTER_ROLE(), address(marketContract));
         OVLToken(ovl).grantRole(OVLToken(ovl).BURNER_ROLE(), address(marketContract));
-    }
-
-    function marketExists(address market) private view returns (bool) {
-        for (uint256 i=0; i < allMarkets.length; ++i) {
-            if (market == allMarkets[i]) {
-                return true;
-            }
-        }
-        return false;
     }
 
     // disables an existing market contract for a mirin market
@@ -121,12 +116,25 @@ contract OVLMirinFactory is Ownable {
     // enables an existing market contract for a mirin market
     function enableMarket(address market) external onlyOwner {
         require(!isMarket[market], "OverlayV1: !disabled");
-        require(marketExists(market), "OverlayV1: !exists");
+        require(marketExists[market], "OverlayV1: !exists");
         isMarket[market] = true;
 
         // Give market contract mint/burn priveleges for OVL token
         OVLToken(ovl).grantRole(OVLToken(ovl).MINTER_ROLE(), market);
         OVLToken(ovl).grantRole(OVLToken(ovl).BURNER_ROLE(), market);
+    }
+
+    // calls the update function on a market
+    function updateMarket(address market, address rewardsTo) external {
+        OVLMirinMarket(market).update(rewardsTo);
+    }
+
+    // mass calls update functions on all markets
+    function massUpdateMarkets(address rewardsTo) external {
+        for (uint256 i=0; i < allMarkets.length; ++i) {
+            address market = allMarkets[i];
+            OVLMirinMarket(market).update(rewardsTo);
+        }
     }
 
     // adjustPerMarketParams allows gov to adjust per market params

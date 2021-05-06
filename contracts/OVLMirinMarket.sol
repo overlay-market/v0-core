@@ -205,9 +205,10 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         }
     }
 
-    // update funding payments and price point index pointer
-    function update() public {
+    // update funding payments, price point index pointer, and cumulative fees
+    function update(address rewardsTo) public {
         // TODO: add in updates to price point index pointer
+        // TODO: add in a rewardTo input param to send rewards to if not 0 address?
         uint256 blockNumber = block.number;
         uint256 elapsed = (blockNumber - updateBlockLast) / periodSize;
         if (elapsed > 0) {
@@ -235,7 +236,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
 
             OVLToken(ovl).burn(address(this), _feeAmountToBurn);
             OVLToken(ovl).safeTransfer(feeTo, _feeAmountToForward);
-            OVLToken(ovl).safeTransfer(msg.sender, _feeAmountToRewardUpdates);
+            OVLToken(ovl).safeTransfer(rewardsTo, _feeAmountToRewardUpdates);
 
             updateBlockLast = blockNumber;
         }
@@ -286,11 +287,12 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     function build(
         uint256 collateralAmount,
         bool isLong,
-        uint256 leverage
+        uint256 leverage,
+        address rewardsTo
     ) external lock enabled {
         require(leverage >= 1 && leverage <= leverageMax, "OverlayV1: invalid leverage");
         // update market before everything else: funding payments + price pointer + cumulative fees per periodSize
-        update();
+        update(rewardsTo);
         uint256 positionId = updateQueuedPosition(isLong, leverage);
         Position.Info storage position = positions[positionId];
 
@@ -322,11 +324,15 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         mint(msg.sender, positionId, collateralAmountAdjusted * leverage, "");
     }
 
-    function unwind(uint256 positionId, uint256 shares) external lock enabled {
+    function unwind(
+        uint256 positionId,
+        uint256 shares,
+        address rewardsTo
+    ) external lock enabled {
         require(positionId < positions.length, "OverlayV1: invalid position id");
         require(shares <= balanceOf(msg.sender, positionId), "OverlayV1: invalid shares");
         // update market before everything else: funding payments + price pointer + cumulative fees per periodSize
-        update();
+        update(rewardsTo);
         Position.Info storage position = positions[positionId];
         uint256 priceEntry = 0; // TODO: compute entry price
         uint256 priceExit = lastPrice(); // potential sacrifice of profit for UX purposes; SEE: "Queueing Position Builds" https://oips.overlay.market/notes/note-2
