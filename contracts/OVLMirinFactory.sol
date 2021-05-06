@@ -132,8 +132,7 @@ contract OVLMirinFactory is Ownable {
     // mass calls update functions on all markets
     function massUpdateMarkets(address rewardsTo) external {
         for (uint256 i=0; i < allMarkets.length; ++i) {
-            address market = allMarkets[i];
-            OVLMirinMarket(market).update(rewardsTo);
+            OVLMirinMarket(allMarkets[i]).update(rewardsTo);
         }
     }
 
