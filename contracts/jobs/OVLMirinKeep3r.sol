@@ -20,13 +20,20 @@ contract OVLMirinKeep3r {
         rewardsTo = _rewardsTo;
     }
 
-    function workUpdate() external upkeep {
+    function work() external upkeep {
+        workUpdate();
+        workLiquidate();
+    }
+
+    function workUpdate() public upkeep {
         OVLMF.massUpdateMarkets(rewardsTo);
     }
 
-    function workUpdate(address market) external upkeep {
+    function workUpdate(address market) public upkeep {
         OVLMF.updateMarket(market, rewardsTo);
     }
 
-    // TODO: workLiquidate ...
+    // TODO: workLiquidate ..
+    function workLiquidate() public upkeep {}
+    function workLiquidate(address market) public upkeep {}
 }
