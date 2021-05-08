@@ -36,4 +36,5 @@ contract OVLMirinKeep3r {
     // TODO: workLiquidate ..
     function workLiquidate() public upkeep {}
     function workLiquidate(address market) public upkeep {}
+    function workLiquidate(address market, uint256 positionId) public upkeep {}
 }

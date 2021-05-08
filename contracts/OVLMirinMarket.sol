@@ -139,6 +139,10 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         _burn(account, id, shares);
     }
 
+    function setURI(string memory newuri) external onlyFactory {
+        _setURI(newuri);
+    }
+
     // SEE: https://github.com/sushiswap/mirin/blob/master/contracts/pool/MirinOracle.sol#L112
     function computeAmountOut(
         uint256 priceCumulativeStart,
@@ -203,6 +207,12 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
                 factor = factor.div(_d);
             }
         }
+    }
+
+    // whether the market can be successfully updated
+    function updatable() external returns (bool) {
+        uint256 elapsed = (block.number - updateBlockLast) / periodSize;
+        return (elapsed > 0);
     }
 
     // update funding payments, price point index pointer, and cumulative fees
