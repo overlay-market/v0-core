@@ -210,7 +210,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     }
 
     // whether the market can be successfully updated
-    function updatable() external returns (bool) {
+    function updatable() external view returns (bool) {
         uint256 elapsed = (block.number - updateBlockLast) / periodSize;
         return (elapsed > 0);
     }
@@ -269,7 +269,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     }
 
     // Adjusts state variable fee pots, which are transferred on call to update()
-    function adjustForFees(uint256 value, uint256 valueWithoutDebt)
+    function adjustForFees(uint256 value, uint256 notional)
         private
         returns (uint256 valueAdjusted)
     {
@@ -282,7 +282,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         ) = IOVLFactory(factory).getGlobalParams();
         // collateral less fees. fees charged on value without debt
         // TODO: check valueAdjusted doesn't go negative ... floor at zero
-        valueAdjusted = (value * FEE_RESOLUTION - valueWithoutDebt * fee) / FEE_RESOLUTION;
+        valueAdjusted = (value * FEE_RESOLUTION - notional * fee) / FEE_RESOLUTION;
 
         // fee amounts with some accounting
         uint256 feeAmount = value - valueAdjusted;
@@ -360,7 +360,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         // NOTE: Not using valueAdjusted in effects, given withdrawing funds from contract so need full value prior to fees
         uint256 valueAdjusted = adjustForFees(
             value,
-            value + shares * position.debt / totalPositionShares[positionId] // valueWithoutDebt
+            value + shares * position.debt / totalPositionShares[positionId] // notional
         );
 
         // effects
