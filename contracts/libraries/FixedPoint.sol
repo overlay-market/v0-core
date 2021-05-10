@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-// COPIED from SushiSwap
+// COPIED AND MODIFIED from SushiSwap
 // https://github.com/sushiswap/mirin/blob/master/contracts/libraries/FixedPoint.sol
 // commit hash 82ad73f6ac7e38f0ff8fcdf0e526118f537011e6
 
@@ -64,6 +64,26 @@ library FixedPoint {
     function fraction(uint112 numerator, uint112 denominator) internal pure returns (uq112x112 memory) {
         require(denominator > 0, "FixedPoint: DIV_BY_ZERO");
         return uq112x112((uint224(numerator) << RESOLUTION) / denominator);
+    }
+
+    // XXX: compares whether UQ112x112 is greater than another UQ112x112
+    function gt(uq112x112 memory self, uq112x112 memory other) internal pure returns (bool) {
+        return self._x > other._x;
+    }
+
+    // XXX: compares whether UQ112x112 is less than another UQ112x112
+    function lt(uq112x112 memory self, uq112x112 memory other) internal pure returns (bool) {
+        return self._x < other._x;
+    }
+
+    // XXX: compares whether UQ144x112 is greater than another UQ144x112
+    function gt(uq144x112 memory self, uq144x112 memory other) internal pure returns (bool) {
+        return self._x > other._x;
+    }
+
+    // XXX: compares whether UQ144x112 is less than another UQ144x112
+    function lt(uq144x112 memory self, uq144x112 memory other) internal pure returns (bool) {
+        return self._x < other._x;
     }
 
     // decode a UQ112x112 into a uint112 by truncating after the radix point

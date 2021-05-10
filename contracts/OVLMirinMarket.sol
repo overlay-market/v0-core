@@ -187,7 +187,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         }
     }
 
-    // computes (1 - 2k)**m = d**(-m)
+    /// @notice Computes (1 - 2k)**m = d**(-m)
     function computeFundingFactor(uint112 _d, uint256 _m) private pure returns (FixedPoint.uq112x112 memory factor) {
         if (_m == 0) {
             factor = FixedPoint.uq112x112(1);
@@ -209,13 +209,13 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         }
     }
 
-    // whether the market can be successfully updated
+    /// @notice Whether the market can be successfully updated
     function updatable() external view returns (bool) {
         uint256 elapsed = (block.number - updateBlockLast) / periodSize;
         return (elapsed > 0);
     }
 
-    // update funding payments, price point index pointer, and cumulative fees
+    /// @notice Updates funding payments, price point index pointer, and cumulative fees
     function update(address rewardsTo) public {
         // TODO: add in updates to price point index pointer
         // TODO: add in a rewardTo input param to send rewards to if not 0 address?
@@ -268,16 +268,16 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         });
     }
 
-    // Adjusts state variable fee pots, which are transferred on call to update()
+    /// @notice Adjusts state variable fee pots, which are transferred on call to update()
     function adjustForFees(uint256 value, uint256 notional)
         private
         returns (uint256 valueAdjusted)
     {
         (
-            uint16 fee,
-            uint16 feeBurnRate,
-            uint16 feeUpdateRewardsRate,
-            uint16 FEE_RESOLUTION,
+            uint256 fee,
+            uint256 feeBurnRate,
+            uint256 feeUpdateRewardsRate,
+            uint256 FEE_RESOLUTION,
             ,,,,
         ) = IOVLFactory(factory).getGlobalParams();
         // collateral less fees. fees charged on value without debt
@@ -402,7 +402,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         OVLToken(ovl).safeTransfer(msg.sender, valueAdjusted);
     }
 
-    // adjusts params associated with this market
+    /// @notice Adjusts params associated with this market
     function adjustParams(
         uint256 _periodSize,
         uint256 _windowSize,

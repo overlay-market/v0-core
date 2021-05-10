@@ -70,7 +70,7 @@ contract OVLMirinFactory is Ownable {
         marginTo = _marginTo;
     }
 
-    // creates a new market contract for given mirin pool address
+    /// @notice Creates a new market contract for given mirin pool address
     function createMarket(
         address mirinPool,
         bool isPrice0,
@@ -103,7 +103,7 @@ contract OVLMirinFactory is Ownable {
         OVLToken(ovl).grantRole(OVLToken(ovl).BURNER_ROLE(), address(marketContract));
     }
 
-    // disables an existing market contract for a mirin market
+    /// @notice Disables an existing market contract for a mirin market
     function disableMarket(address market) external onlyOwner {
         require(isMarket[market], "OverlayV1: !enabled");
         isMarket[market] = false;
@@ -113,7 +113,7 @@ contract OVLMirinFactory is Ownable {
         OVLToken(ovl).revokeRole(OVLToken(ovl).BURNER_ROLE(), market);
     }
 
-    // enables an existing market contract for a mirin market
+    /// @notice Enables an existing market contract for a mirin market
     function enableMarket(address market) external onlyOwner {
         require(!isMarket[market], "OverlayV1: !disabled");
         require(marketExists[market], "OverlayV1: !exists");
@@ -124,26 +124,26 @@ contract OVLMirinFactory is Ownable {
         OVLToken(ovl).grantRole(OVLToken(ovl).BURNER_ROLE(), market);
     }
 
-    // calls the update function on a market
+    /// @notice Calls the update function on a market
     function updateMarket(address market, address rewardsTo) external {
         OVLMirinMarket(market).update(rewardsTo);
     }
 
-    // mass calls update functions on all markets
+    /// @notice Mass calls update functions on all markets
     function massUpdateMarkets(address rewardsTo) external {
         for (uint256 i=0; i < allMarkets.length; ++i) {
             OVLMirinMarket(allMarkets[i]).update(rewardsTo);
         }
     }
 
-    // setURI allows gov to adjust uri for erc 1155 of all mirin markets
+    /// @notice Allows gov to adjust uri for erc 1155 of all mirin markets
     function setURI(string memory uri) external onlyOwner {
         for (uint256 i=0; i < allMarkets.length; ++i) {
             OVLMirinMarket(allMarkets[i]).setURI(uri);
         }
     }
 
-    // adjustPerMarketParams allows gov to adjust per market params
+    /// @notice Allows gov to adjust per market params
     function adjustPerMarketParams(
         address market,
         uint256 periodSize,
@@ -161,7 +161,7 @@ contract OVLMirinFactory is Ownable {
         );
     }
 
-    // adjustGlobalParams allows gov to adjust global params
+    /// @notice Allows gov to adjust global params
     function adjustGlobalParams(
         uint16 _fee,
         uint16 _feeBurnRate,
