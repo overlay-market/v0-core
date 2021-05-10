@@ -36,7 +36,7 @@ library Position {
         }
     }
 
-    /// @dev is true when position value <= 0
+    /// @dev is true when position value < 0
     function _isUnderwater(
         Info memory _self,
         uint256 totalOi,
@@ -47,10 +47,10 @@ library Position {
         uint256 oi = _self.oiShares * totalOi / totalOiShares;
         if (_self.isLong) {
             // val = oi * priceExit / priceEntry - debt
-            isUnder = (oi * priceExit / priceEntry <= _self.debt);
+            isUnder = (oi * priceExit / priceEntry < _self.debt);
         } else {
             // val = oi * (2 - priceExit / priceEntry) - debt
-            isUnder = (oi * 2 <= _self.debt + oi * priceExit / priceEntry);
+            isUnder = (oi * 2 < _self.debt + oi * priceExit / priceEntry);
         }
     }
 
@@ -150,7 +150,6 @@ library Position {
             priceEntry,
             priceExit
         );
-
         // TODO: Fix for safecasting: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/math/SafeCast.sol#L9
         FixedPoint.uq144x112 memory maintenanceMargin = FixedPoint
             .uq144x112(uint256(maintenanceFactor))
