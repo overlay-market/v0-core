@@ -4,6 +4,7 @@ pragma solidity ^0.8.2;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./interfaces/IMirinFactory.sol";
+import "./interfaces/IMirinOracle.sol";
 
 import "./OVLMirinMarket.sol";
 import "./OVLToken.sol";
