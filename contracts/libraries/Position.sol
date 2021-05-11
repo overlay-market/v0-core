@@ -143,7 +143,7 @@ library Position {
         uint16 maintenanceFactor,
         uint16 marginResolution
     ) private pure returns (bool can) {
-        FixedPoint.uq144x112 memory openMargin = _openMargin(
+        FixedPoint.uq144x112 memory margin = _openMargin(
             _self,
             totalOi,
             totalOiShares,
@@ -151,11 +151,11 @@ library Position {
             priceExit
         );
         // TODO: Fix for safecasting: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/math/SafeCast.sol#L9
-        FixedPoint.uq144x112 memory maintenanceMargin = FixedPoint
+        FixedPoint.uq144x112 memory maintenance = FixedPoint
             .uq144x112(uint256(maintenanceFactor))
             .div(uint112(marginResolution))
             .div(uint112(_self.leverage));
-        can = openMargin.lt(maintenanceMargin);
+        can = margin.lt(maintenance);
     }
 
     /// @notice Computes the value of a position

@@ -1,5 +1,6 @@
 import pytest
 import brownie
+from brownie import ETH_ADDRESS, OVLToken, chain, interface
 
 
 @pytest.fixture(scope="module")
@@ -9,7 +10,7 @@ def gov(accounts):
 
 @pytest.fixture(scope="module")
 def rewards(accounts):
-    yield brownie.ETH_ADDRESS
+    yield ETH_ADDRESS
 
 
 @pytest.fixture(scope="module")
@@ -26,7 +27,7 @@ def bob(accounts):
 def create_token(gov, alice, bob, request):
     sup = request.param
     def create_token(supply=sup):
-        tok = gov.deploy(brownie.OVLToken)
+        tok = gov.deploy(OVLToken)
         tok.mint(gov, supply * 10 ** tok.decimals(), {"from": gov})
         tok.transfer(bob, supply * 10 ** tok.decimals(), {"from": gov})
         return tok
@@ -45,39 +46,55 @@ def feed_owner(accounts):
 
 
 @pytest.fixture(scope="module")
-def price_points():
+def price_points(token):
     # TODO: json import of real data ...
-    return [
-        (i, 1 / i)
-        for i in range(0, 10, 0.01)
-    ]
+    decimals = token.decimals()
+    last_timestamp = chain.time()
+    return (
+        [ last_timestamp - 100 + i for i in range(1, 100) ],
+        [ i * 10 ** decimals for i in range(1, 100) ],
+        [ (1 / i) * 10 ** decimals for i in range(1, 100) ]
+    )
 
 
 @pytest.fixture(
     scope="module",
     params=[
-        ("OVLMirinFactory", [15, 5000, 100, brownie.ETH_ADDRESS, 60, 50, brownie.ETH_ADDRESS],
-         "MirinFactoryMock", []),
+        ("OVLMirinFactory", [15, 5000, 100, ETH_ADDRESS, 60, 50, ETH_ADDRESS],
+         "OVLMirinMarket", [True, 4, 24, 5, 800000, 2],
+         "MirinFactoryMock", [],
+         "IMirinOracle"),
     ])
 def create_factory(token, gov, feed_owner, price_points, request):
-    ovlf_name, ovlf_args, fdf_name, fdf_args = request.param
+    ovlf_name, ovlf_args, _, ovlm_args, fdf_name, fdf_args, ifdp_name = request.param
     ovlf = getattr(brownie, ovlf_name)
     fdf = getattr(brownie, fdf_name)
+
+    ifdp = getattr(interface, ifdp_name)
 
     def create_factory(
         tok = token,
         ovlf_type = ovlf,
         ovlf_args = ovlf_args,
+        ovlm_args = ovlm_args,
         fdf_type = fdf,
         fdf_args = fdf_args,
+        ifdp_type = ifdp,
     ):
         feed = feed_owner.deploy(fdf_type, *fdf_args)
-        pool = feed.createPool({"from": feed_owner})
-        for p0c, p1c in price_points:
-            pool.addPricePoint(p0c, p1c, {"from": feed_owner})
+        timestamps, p0cs, p1cs = price_points
+        feed.createPool(
+            timestamps,
+            p0cs,
+            p1cs,
+            {"from": feed_owner}
+        )
+        pool_addr = feed.allPools(0)
+        pool = ifdp_type(pool_addr)
 
         factory = gov.deploy(ovlf_type, tok, feed, *ovlf_args)
         tok.grantRole(tok.ADMIN_ROLE(), factory, {"from": gov})
+        factory.createMarket(pool, *ovlm_args, {"from": gov})
         return factory
 
     yield create_factory
@@ -86,3 +103,12 @@ def create_factory(token, gov, feed_owner, price_points, request):
 @pytest.fixture(scope="module")
 def factory(create_factory):
     yield create_factory()
+
+
+@pytest.fixture(
+    scope="module",
+    params=["IOVLMarket"])
+def market(factory, request):
+    addr = factory.allMarkets(0)
+    market = getattr(interface, request.param)(addr)
+    yield market
