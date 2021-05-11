@@ -44,25 +44,38 @@ def feed_owner(accounts):
     yield accounts[6]
 
 
+@pytest.fixture(scope="module")
+def price_points():
+    # TODO: json import of real data ...
+    return [
+        (i, 1 / i)
+        for i in range(0, 10, 0.01)
+    ]
+
+
 @pytest.fixture(
     scope="module",
     params=[
         ("OVLMirinFactory", [15, 5000, 100, brownie.ETH_ADDRESS, 60, 50, brownie.ETH_ADDRESS],
          "MirinFactoryMock", []),
     ])
-def create_factory(token, gov, feed_owner, request):
+def create_factory(token, gov, feed_owner, price_points, request):
     ovlf_name, ovlf_args, fdf_name, fdf_args = request.param
     ovlf = getattr(brownie, ovlf_name)
     fdf = getattr(brownie, fdf_name)
 
     def create_factory(
         tok = token,
-        ovlf_type=ovlf,
+        ovlf_type = ovlf,
         ovlf_args = ovlf_args,
-        fdf_type=fdf,
+        fdf_type = fdf,
         fdf_args = fdf_args,
     ):
         feed = feed_owner.deploy(fdf_type, *fdf_args)
+        pool = feed.createPool({"from": feed_owner})
+        for p0c, p1c in price_points:
+            pool.addPricePoint(p0c, p1c, {"from": feed_owner})
+
         factory = gov.deploy(ovlf_type, tok, feed, *ovlf_args)
         tok.grantRole(tok.ADMIN_ROLE(), factory, {"from": gov})
         return factory
