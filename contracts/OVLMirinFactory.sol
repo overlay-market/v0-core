@@ -79,7 +79,8 @@ contract OVLMirinFactory is Ownable {
         uint256 windowSize,
         uint256 leverageMax,
         uint256 cap,
-        uint112 fundingD
+        uint112 fundingKNumerator,
+        uint112 fundingKDenominator
     ) external onlyOwner returns (OVLMirinMarket marketContract) {
         require(IMirinFactory(mirinFactory).isPool(mirinPool), "OverlayV1: !MirinPool");
         require(IMirinOracle(mirinPool).pricePointsLength() > 1, "OverlayV1: !MirinInitialized");
@@ -92,7 +93,8 @@ contract OVLMirinFactory is Ownable {
             windowSize,
             leverageMax,
             cap,
-            fundingD
+            fundingKNumerator,
+            fundingKDenominator
         );
 
         marketExists[address(marketContract)] = true;
@@ -151,14 +153,16 @@ contract OVLMirinFactory is Ownable {
         uint256 windowSize,
         uint256 leverageMax,
         uint256 cap,
-        uint112 fundingD
+        uint112 fundingKNumerator,
+        uint112 fundingKDenominator
     ) external onlyOwner {
         OVLMirinMarket(market).adjustParams(
             periodSize,
             windowSize,
             leverageMax,
             cap,
-            fundingD
+            fundingKNumerator,
+            fundingKDenominator
         );
     }
 
