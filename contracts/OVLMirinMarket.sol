@@ -228,30 +228,18 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         uint256 elapsed = (blockNumber - updateBlockLast) / periodSize;
         if (elapsed > 0) {
             // Transfer funding payments
+            // oiImbNow = oiImb * (1 - 2k)**m
             FixedPoint.uq144x112 memory fundingFactor = computeFundingFactor(
                 fundingKDenominator - 2 * fundingKNumerator,
                 fundingKDenominator,
                 elapsed
             );
-            if (oiShort == 0 && oiLong != 0) {
-                // edge case of all OI on long side burns funding
-                // oiLongNow = oiLong * (1 - 2k)**m
-                uint256 oiLongBefore = oiLong;
-                oiLong = fundingFactor.mul(oiLong).decode144();
-                feeAmountToBurn += oiLongBefore - oiLong;
-            } else if (oiLong == 0 && oiShort != 0) {
-                // edge case of all OI on short side burns funding
-                // oiShortNow = oiShort * (1 - 2k)**m
-                uint256 oiShortBefore = oiShort;
-                oiShort = fundingFactor.mul(oiShort).decode144();
-                feeAmountToBurn += oiShortBefore - oiShort;
-            } else if (oiLong > oiShort) {
-                // oiImbNow = oiImb * (1 - 2k)**m
+            // TODO: decide how to handle edge cases of oiLong == 0 || oiShort == 0
+            if (oiLong > oiShort) {
                 uint256 oiImbNow = fundingFactor.mul(oiLong - oiShort).decode144();
                 oiLong = (oiLong + oiShort + oiImbNow) / 2;
                 oiShort = (oiLong + oiShort - oiImbNow) / 2;
             } else {
-                // oiImbNow = oiImb * (1 - 2k)**m
                 uint256 oiImbNow = fundingFactor.mul(oiShort - oiLong).decode144();
                 oiShort = (oiLong + oiShort + oiImbNow) / 2;
                 oiLong = (oiLong + oiShort - oiImbNow) / 2;
