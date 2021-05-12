@@ -19,6 +19,10 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     using Position for Position.Info;
     using SafeERC20 for OVLToken;
 
+    event Build(address indexed sender, uint256 positionId, bool isLong, uint256 oi, uint256 debt);
+    event Unwind(address indexed sender, uint256 positionId, uint256 oi, uint256 debt);
+    event Update(address indexed sender, address indexed rewarded, uint256 reward);
+
     // max number of periodSize periods before treat funding as completely rebalanced: done for gas savings on compute funding factor
     uint256 public constant MAX_FUNDING_COMPOUND = 4320; // 30d at 10m periodSize periods
 
@@ -43,7 +47,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     // window size for sliding window TWAP calc
     uint256 public windowSize;
     // open interest cap on each side long/short
-    uint256 public cap;
+    uint256 public oiCap;
 
     // open interest funding constant factor, charged per periodSize
     // 1/d = 1 - 2k; 0 < k < 1/2, 1 < d < infty
@@ -57,9 +61,9 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     // total open interest short
     uint256 public oiShort;
     // total open interest long shares outstanding
-    uint256 public totalOiLongShares;
+    uint256 private totalOiLongShares;
     // total open interest short shares outstanding
-    uint256 public totalOiShortShares;
+    uint256 private totalOiShortShares;
 
     // outstanding cumulative fees to be forwarded
     uint256 public feeAmountToForward;
@@ -105,7 +109,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         uint256 _periodSize,
         uint256 _windowSize,
         uint256 _leverageMax,
-        uint256 _cap,
+        uint256 _oiCap,
         uint112 _fundingKNumerator,
         uint112 _fundingKDenominator
     ) {
@@ -120,7 +124,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         periodSize = _periodSize;
         windowSize = _windowSize;
         leverageMax = _leverageMax;
-        cap = _cap;
+        oiCap = _oiCap;
 
         require(_fundingKDenominator > 2 * _fundingKNumerator, "OverlayV1: invalid k");
         fundingKNumerator = _fundingKNumerator;
@@ -235,6 +239,8 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
                 elapsed
             );
             // TODO: decide how to handle edge cases of oiLong == 0 || oiShort == 0
+            // TODO: likely switch to minting debt to cover all of OI locked in contract on build
+            // and burning debt on unwind
             if (oiLong > oiShort) {
                 uint256 oiImbNow = fundingFactor.mul(oiLong - oiShort).decode144();
                 oiLong = (oiLong + oiShort + oiImbNow) / 2;
@@ -254,12 +260,13 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
             feeAmountToForward = 0;
             feeAmountToBurn = 0;
             feeAmountToRewardUpdates = 0;
+            updateBlockLast = blockNumber;
+
+            emit Update(msg.sender, rewardsTo, _feeAmountToRewardUpdates);
 
             OVLToken(ovl).burn(address(this), _feeAmountToBurn);
             OVLToken(ovl).safeTransfer(feeTo, _feeAmountToForward);
             OVLToken(ovl).safeTransfer(rewardsTo, _feeAmountToRewardUpdates);
-
-            updateBlockLast = blockNumber;
         }
     }
 
@@ -319,23 +326,28 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
 
         // adjust for fees
         uint256 collateralAmountAdjusted = adjustForFees(collateralAmount, collateralAmount * leverage);
+        uint256 oiAdjusted = collateralAmountAdjusted * leverage;
+        uint256 debtAdjusted = (leverage - 1) * collateralAmountAdjusted;
 
         // effects
         // position
-        position.oiShares += collateralAmountAdjusted * leverage;
-        position.debt += (leverage - 1) * collateralAmountAdjusted;
+        position.oiShares += oiAdjusted;
+        position.debt += debtAdjusted;
         position.cost += collateralAmountAdjusted;
 
         // totals
         if (isLong) {
-            oiLong += collateralAmountAdjusted * leverage;
-            require(oiLong <= cap, "OverlayV1: breached cap");
-            totalOiLongShares += collateralAmountAdjusted * leverage;
+            oiLong += oiAdjusted;
+            require(oiLong <= oiCap, "OverlayV1: breached oi cap");
+            totalOiLongShares += oiAdjusted;
         } else {
-            oiShort += collateralAmountAdjusted * leverage;
-            require(oiShort <= cap, "OverlayV1: breached cap");
-            totalOiShortShares += collateralAmountAdjusted * leverage;
+            oiShort += oiAdjusted;
+            require(oiShort <= oiCap, "OverlayV1: breached oi cap");
+            totalOiShortShares += oiAdjusted;
         }
+
+        // events
+        emit Build(msg.sender, positionId, isLong, oiAdjusted, debtAdjusted);
 
         // interactions
         // transfer collateral + fees into pool then mint shares of queued position
@@ -357,6 +369,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         Position.Info storage position = positions[positionId];
         uint256 priceEntry = 0; // TODO: compute entry price
         uint256 priceExit = lastPrice(); // potential sacrifice of profit for UX purposes; SEE: "Queueing Position Builds" https://oips.overlay.market/notes/note-2
+        uint256 totalShares = totalPositionShares[positionId];
 
         // calculate value, cost
         uint256 value = shares * position.value(
@@ -364,34 +377,35 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
             (position.isLong ? totalOiLongShares : totalOiShortShares),
             priceEntry,
             priceExit
-        ) / totalPositionShares[positionId];
-        uint256 cost = shares * position.cost / totalPositionShares[positionId];
+        ) / totalShares;
+        uint256 debt = shares * position.debt / totalShares;
+        uint256 cost = shares * position.cost / totalShares;
 
         // adjust for fees
         // NOTE: Not using valueAdjusted in effects, given withdrawing funds from contract so need full value prior to fees
         uint256 valueAdjusted = adjustForFees(
             value,
-            value + shares * position.debt / totalPositionShares[positionId] // notional
+            value + shares * position.debt / totalShares // notional
         );
 
         // effects
         // position
-        uint256 oiDiff = (
+        uint256 oi = (
             position.isLong ?
-            (shares * position.oiShares * oiLong / totalOiLongShares) / totalPositionShares[positionId] :
-            (shares * position.oiShares * oiShort / totalOiShortShares) / totalPositionShares[positionId]
+            (shares * position.oiShares * oiLong / totalOiLongShares) / totalShares :
+            (shares * position.oiShares * oiShort / totalOiShortShares) / totalShares
         );
-        position.oiShares -= oiDiff;
-        position.debt -= shares * position.debt / totalPositionShares[positionId];
-        position.cost -= shares * position.cost / totalPositionShares[positionId];
+        position.oiShares -= oi;
+        position.debt -= debt;
+        position.cost -= cost;
 
         // totals
         if (position.isLong) {
-            oiLong -= oiDiff;
-            totalOiLongShares -= oiDiff;
+            oiLong -= oi;
+            totalOiLongShares -= oi;
         } else {
-            oiShort -= oiDiff;
-            totalOiShortShares -= oiDiff;
+            oiShort -= oi;
+            totalOiShortShares -= oi;
         }
 
         // interactions
@@ -407,6 +421,9 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
             OVLToken(ovl).burn(address(this), diff);
         }
 
+        // events
+        emit Unwind(msg.sender, positionId, oi, debt);
+
         // burn shares of position then transfer collateral + PnL
         burn(msg.sender, positionId, shares);
         // transfer collateral + PnL
@@ -418,7 +435,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         uint256 _periodSize,
         uint256 _windowSize,
         uint256 _leverageMax,
-        uint256 _cap,
+        uint256 _oiCap,
         uint112 _fundingKNumerator,
         uint112 _fundingKDenominator
     ) external onlyFactory {
@@ -426,7 +443,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         periodSize = _periodSize;
         windowSize = _windowSize;
         leverageMax = _leverageMax;
-        cap = _cap;
+        oiCap = _oiCap;
 
         require(_fundingKDenominator > 2 * _fundingKNumerator, "OverlayV1: invalid k");
         fundingKNumerator = _fundingKNumerator;
