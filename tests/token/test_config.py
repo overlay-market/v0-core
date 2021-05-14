@@ -1,5 +1,4 @@
 import pytest
-import brownie
 
 
 def test_balances(token, gov, alice, bob, minter, burner, admin):

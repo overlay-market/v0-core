@@ -18,6 +18,7 @@ interface IOVLMarket is IERC1155 {
     function oiLong() external view returns (uint256);
     function oiShort() external view returns (uint256);
     function positions(uint256) external view returns (Position.Info memory);
+    function positionsLength() external view returns (uint256);
     function uri(uint256) external view returns (string memory);
     function updatable() external view returns (bool);
     function update(address) external;

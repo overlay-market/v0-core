@@ -51,9 +51,9 @@ def price_points(token):
     decimals = token.decimals()
     last_timestamp = chain.time()
     return (
-        [ last_timestamp - 100 + i for i in range(1, 100) ],
-        [ i * 10 ** decimals for i in range(1, 100) ],
-        [ (1 / i) * 10 ** decimals for i in range(1, 100) ]
+        [ last_timestamp - 100 + i for i in range(1, 50) ],
+        [ i * 10 ** decimals for i in range(1, 50) ],
+        [ (1 / i) * 10 ** decimals for i in range(1, 50) ]
     )
 
 

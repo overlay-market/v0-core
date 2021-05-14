@@ -1,5 +1,4 @@
 import pytest
-import brownie
 
 
 def test_params(factory, market):

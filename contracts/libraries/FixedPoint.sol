@@ -59,6 +59,18 @@ library FixedPoint {
         return uq144x112(self._x * y);
     }
 
+    // divide a UQ144x112 by another UQ144x112, returning a UQ144x112
+    function div(uq144x112 memory self, uq144x112 memory x) internal pure returns (uq144x112 memory) {
+        require(x._x != 0, "FixedPoint: DIV_BY_ZERO");
+        return uq144x112((self._x / x._x) << RESOLUTION);
+    }
+
+    // multiply a UQ144x112 by another UQ144x112, returning a UQ144x112
+    // reverts on overflow
+    function mul(uq144x112 memory self, uq144x112 memory y) internal pure returns (uq144x112 memory) {
+        return uq144x112((self._x * y._x) >> RESOLUTION);
+    }
+
     // returns a UQ112x112 which represents the ratio of the numerator to the denominator
     // equivalent to encode(numerator).div(denominator)
     function fraction(uint112 numerator, uint112 denominator) internal pure returns (uq112x112 memory) {
@@ -66,24 +78,39 @@ library FixedPoint {
         return uq112x112((uint224(numerator) << RESOLUTION) / denominator);
     }
 
-    // XXX: compares whether UQ112x112 is greater than another UQ112x112
-    function gt(uq112x112 memory self, uq112x112 memory other) internal pure returns (bool) {
-        return self._x > other._x;
+    // XXX: returns a UQ144x112 which represents the ratio of the numerator to the denominator
+    // equivalent to encode144(numerator).div(denominator)
+    function fraction144(uint144 numerator, uint112 denominator) internal pure returns (uq144x112 memory) {
+        require(denominator > 0, "FixedPoint: DIV_BY_ZERO");
+        return uq144x112((uint256(numerator) << RESOLUTION) / denominator);
     }
 
-    // XXX: compares whether UQ112x112 is less than another UQ112x112
-    function lt(uq112x112 memory self, uq112x112 memory other) internal pure returns (bool) {
-        return self._x < other._x;
+    // returns a UQ144x112 which represents the ratio of numerator to denominator taken to the power of n (https://en.wikipedia.org/wiki/Exponentiation_by_squaring)
+    // reverts on overflow
+    function pow(FixedPoint.uq144x112 memory self, uint256 n) internal pure returns (uq144x112 memory) {
+        if (n == 0) {
+            return FixedPoint.encode144(1);
+        } else if (n == 1) {
+            return self;
+        } else {
+            // square then split into numerator and denominator
+            uq144x112 memory sqrd = mul(self, self);
+            if (n % 2 == 0) {
+                return pow(sqrd, n/2);
+            } else {
+                return mul(pow(sqrd, (n-1)/2), self);
+            }
+        }
     }
 
     // XXX: compares whether UQ144x112 is greater than another UQ144x112
-    function gt(uq144x112 memory self, uq144x112 memory other) internal pure returns (bool) {
-        return self._x > other._x;
+    function gt(uq144x112 memory self, uq144x112 memory y) internal pure returns (bool) {
+        return self._x > y._x;
     }
 
     // XXX: compares whether UQ144x112 is less than another UQ144x112
-    function lt(uq144x112 memory self, uq144x112 memory other) internal pure returns (bool) {
-        return self._x < other._x;
+    function lt(uq144x112 memory self, uq144x112 memory y) internal pure returns (bool) {
+        return self._x < y._x;
     }
 
     // decode a UQ112x112 into a uint112 by truncating after the radix point

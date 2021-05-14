@@ -24,7 +24,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     event Update(address indexed sender, address indexed rewarded, uint256 reward);
 
     // max number of periodSize periods before treat funding as completely rebalanced: done for gas savings on compute funding factor
-    uint256 public constant MAX_FUNDING_COMPOUND = 4320; // 30d at 10m periodSize periods
+    uint16 public constant MAX_FUNDING_COMPOUND = 4320; // 30d at 10m periodSize periods
 
     // ovl erc20 token
     address public immutable ovl;
@@ -203,19 +203,13 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         uint112 _fDenominator,
         uint256 _m
     ) private pure returns (FixedPoint.uq144x112 memory factor) {
-        if (_m == 0) {
-            factor = FixedPoint.uq144x112(1);
-        } else if (_m > MAX_FUNDING_COMPOUND) {
-            factor = FixedPoint.uq144x112(0);
+        // TODO: do we want to store values up to power MAX_FUNDING_COMPOUND as an array on adjustParam() call? so trader isn't paying gas to compute
+        if (_m > MAX_FUNDING_COMPOUND) {
+            // cut off the recursion if power too large
+            factor = FixedPoint.encode144(0);
         } else {
-            // TODO: at what point do we need to worry about overflow (need bounds on this val and min/max on val of d?): see https://github.com/makerdao/dss/blob/master/src/pot.sol#L85
-            // TODO: Have it be unchecked like: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.0.0/contracts/utils/math/SafeMath.sol#L46
-            // and if it overflows, then return funding factor as zero
-            factor = FixedPoint.encode144(_fNumerator).div(_fDenominator);
-            // TODO: fix this so not doing an insane loop
-            for (uint256 i=1; i < _m; i++) {
-                factor = factor.mul(_fNumerator).div(_fDenominator);
-            }
+            FixedPoint.uq144x112 memory f = FixedPoint.fraction144(_fNumerator, _fDenominator);
+            factor = FixedPoint.pow(f, _m);
         }
     }
 
@@ -284,6 +278,10 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
             pricePointStartIndex: 0,
             pricePointEndIndex: 0
         });
+    }
+
+    function positionsLength() external view returns (uint256) {
+        return positions.length;
     }
 
     /// @notice Adjusts state variable fee pots, which are transferred on call to update()
