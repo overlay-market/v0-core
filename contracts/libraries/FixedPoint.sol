@@ -3,6 +3,7 @@
 // COPIED AND MODIFIED from SushiSwap
 // https://github.com/sushiswap/mirin/blob/master/contracts/libraries/FixedPoint.sol
 // commit hash 82ad73f6ac7e38f0ff8fcdf0e526118f537011e6
+// XXX for changes
 
 pragma solidity =0.8.2;
 
@@ -59,13 +60,13 @@ library FixedPoint {
         return uq144x112(self._x * y);
     }
 
-    // divide a UQ144x112 by another UQ144x112, returning a UQ144x112
+    // XXX: divide a UQ144x112 by another UQ144x112, returning a UQ144x112
     function div(uq144x112 memory self, uq144x112 memory x) internal pure returns (uq144x112 memory) {
         require(x._x != 0, "FixedPoint: DIV_BY_ZERO");
         return uq144x112((self._x / x._x) << RESOLUTION);
     }
 
-    // multiply a UQ144x112 by another UQ144x112, returning a UQ144x112
+    // XXX: multiply a UQ144x112 by another UQ144x112, returning a UQ144x112
     // reverts on overflow
     function mul(uq144x112 memory self, uq144x112 memory y) internal pure returns (uq144x112 memory) {
         return uq144x112((self._x * y._x) >> RESOLUTION);
@@ -85,7 +86,7 @@ library FixedPoint {
         return uq144x112((uint256(numerator) << RESOLUTION) / denominator);
     }
 
-    // returns a UQ144x112 which represents the ratio of numerator to denominator taken to the power of n (https://en.wikipedia.org/wiki/Exponentiation_by_squaring)
+    // XXX: returns a UQ144x112 which represents the ratio of numerator to denominator taken to the power of n (https://en.wikipedia.org/wiki/Exponentiation_by_squaring)
     // reverts on overflow
     function pow(FixedPoint.uq144x112 memory self, uint256 n) internal pure returns (uq144x112 memory) {
         if (n == 0) {
@@ -93,7 +94,6 @@ library FixedPoint {
         } else if (n == 1) {
             return self;
         } else {
-            // square then split into numerator and denominator
             uq144x112 memory sqrd = mul(self, self);
             if (n % 2 == 0) {
                 return pow(sqrd, n/2);
