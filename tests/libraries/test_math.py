@@ -81,7 +81,7 @@ def test_pow(math, numerator, denominator, n):
 
 
 @given(
-    p=strategy('uint', max_value=10**36),
+    p=strategy('uint144'),
     f=strategy('decimal', min_value='0', max_value='1'),
     n=strategy('uint16'))
 def test_compound(math, p, f, n):

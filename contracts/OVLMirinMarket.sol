@@ -46,7 +46,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     // window size for sliding window TWAP calc
     uint256 public windowSize;
     // open interest cap on each side long/short
-    uint256 public oiCap;
+    uint144 public oiCap;
 
     // open interest funding constant factor, charged per periodSize
     // 1/d = 1 - 2k; 0 < k < 1/2, 1 < d < infty
@@ -103,7 +103,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         uint256 _periodSize,
         uint256 _windowSize,
         uint256 _leverageMax,
-        uint256 _oiCap,
+        uint144 _oiCap,
         uint112 _fundingKNumerator,
         uint112 _fundingKDenominator
     ) {
@@ -406,7 +406,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         uint256 _periodSize,
         uint256 _windowSize,
         uint256 _leverageMax,
-        uint256 _oiCap,
+        uint144 _oiCap,
         uint112 _fundingKNumerator,
         uint112 _fundingKDenominator
     ) external onlyFactory {

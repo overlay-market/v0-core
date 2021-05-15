@@ -78,7 +78,7 @@ contract OVLMirinFactory is Ownable {
         uint256 periodSize,
         uint256 windowSize,
         uint256 leverageMax,
-        uint256 oiCap,
+        uint144 oiCap,
         uint112 fundingKNumerator,
         uint112 fundingKDenominator
     ) external onlyOwner returns (OVLMirinMarket marketContract) {
@@ -151,7 +151,7 @@ contract OVLMirinFactory is Ownable {
         uint256 periodSize,
         uint256 windowSize,
         uint256 leverageMax,
-        uint256 oiCap,
+        uint144 oiCap,
         uint112 fundingKNumerator,
         uint112 fundingKDenominator
     ) external onlyOwner {
