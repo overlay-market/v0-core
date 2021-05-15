@@ -4,7 +4,7 @@ import brownie
 from brownie.test import given, strategy
 
 
-ACCURACY = 1e-9 # 0.00001 bps acceptable error
+ACCURACY = 1e-7 # 0.001 bps acceptable error
 
 
 @given(
@@ -85,7 +85,6 @@ def test_pow(math, numerator, denominator, n):
     f=strategy('decimal', min_value='0', max_value='1'),
     n=strategy('uint16'))
 def test_compound(math, p, f, n):
-    accuracy = 1e-9 # 0.00001 bps acceptable error
     numerator, denominator = f.as_integer_ratio()
 
     comp = int(p * ((numerator / denominator) ** n))

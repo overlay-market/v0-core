@@ -10,11 +10,13 @@ interface IOVLMarket is IERC1155 {
     event Update(address indexed sender, address indexed rewarded, uint256 reward);
     function ovl() external view returns (address);
     function factory() external view returns (address);
+    function updatePeriodSize() external view returns (uint256);
     function leverageMax() external view returns (uint256);
     function oiCap() external view returns (uint256);
     function fundingKNumerator() external view returns (uint256);
     function fundingKDenominator() external view returns (uint256);
     function updateBlockLast() external view returns (uint256);
+    function MAX_FUNDING_COMPOUND() external view returns (uint16);
     function oiLong() external view returns (uint256);
     function oiShort() external view returns (uint256);
     function positions(uint256) external view returns (Position.Info memory);

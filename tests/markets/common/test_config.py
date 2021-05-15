@@ -32,6 +32,11 @@ def test_roles(token, gov, feed_owner, factory, market, alice, bob):
     assert token.hasRole(token.ADMIN_ROLE(), market) is False
 
 
+def test_params(factory, market):
+    # TODO: test all factory and market params set properly
+    pass
+
+
 def test_markets(factory, market):
     assert factory.allMarkets(0) == market.address
 

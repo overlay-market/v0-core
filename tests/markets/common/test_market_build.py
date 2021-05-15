@@ -4,11 +4,6 @@ from brownie.test import given, strategy
 from collections import OrderedDict
 
 
-def test_params(factory, market):
-    # TODO: test all market params set properly
-    pass
-
-
 @given(
     leverage=strategy('uint', min_value=1, max_value=5),
     is_long=strategy('bool'))

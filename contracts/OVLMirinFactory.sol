@@ -75,7 +75,7 @@ contract OVLMirinFactory is Ownable {
     function createMarket(
         address mirinPool,
         bool isPrice0,
-        uint256 periodSize,
+        uint256 updatePeriodSize,
         uint256 windowSize,
         uint256 leverageMax,
         uint144 oiCap,
@@ -88,7 +88,7 @@ contract OVLMirinFactory is Ownable {
             ovl,
             mirinPool,
             isPrice0,
-            periodSize,
+            updatePeriodSize,
             windowSize,
             leverageMax,
             oiCap,
@@ -148,7 +148,7 @@ contract OVLMirinFactory is Ownable {
     /// @notice Allows gov to adjust per market params
     function adjustPerMarketParams(
         address market,
-        uint256 periodSize,
+        uint256 updatePeriodSize,
         uint256 windowSize,
         uint256 leverageMax,
         uint144 oiCap,
@@ -156,7 +156,7 @@ contract OVLMirinFactory is Ownable {
         uint112 fundingKDenominator
     ) external onlyOwner {
         OVLMirinMarket(market).adjustParams(
-            periodSize,
+            updatePeriodSize,
             windowSize,
             leverageMax,
             oiCap,

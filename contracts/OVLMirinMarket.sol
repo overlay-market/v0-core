@@ -24,7 +24,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     event Update(address indexed sender, address indexed rewarded, uint256 reward);
 
     // max number of periodSize periods before treat funding as completely rebalanced: done for gas savings on compute funding factor
-    uint16 public constant MAX_FUNDING_COMPOUND = 4320; // 30d at 10m periodSize periods
+    uint16 public constant MAX_FUNDING_COMPOUND = 4320; // 30d at 10m updatePeriodSize periods
 
     // ovl erc20 token
     address public immutable ovl;
@@ -41,14 +41,14 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
 
     // leverage max allowed for a position: leverages are assumed to be discrete increments of 1
     uint256 public leverageMax;
-    // period size for sliding window TWAP calc
-    uint256 public periodSize;
+    // period size for sliding window TWAP calc && calls to update
+    uint256 public updatePeriodSize;
     // window size for sliding window TWAP calc
     uint256 public windowSize;
     // open interest cap on each side long/short
     uint144 public oiCap;
 
-    // open interest funding constant factor, charged per periodSize
+    // open interest funding constant factor, charged per updatePeriodSize
     // 1/d = 1 - 2k; 0 < k < 1/2, 1 < d < infty
     uint112 public fundingKNumerator;
     uint112 public fundingKDenominator;
@@ -73,7 +73,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     mapping(uint256 => uint256) public totalPositionShares;
     // mapping from position id to price point window
     mapping(uint256 => PricePointWindow) private pricePointWindows;
-    // mapping from leverage to index in positions array of queued position; queued can still be built on while periodSize elapses
+    // mapping from leverage to index in positions array of queued position; queued can still be built on while updatePeriodSize elapses
     mapping(uint256 => uint256) private queuedPositionLongIds;
     mapping(uint256 => uint256) private queuedPositionShortIds;
 
@@ -100,7 +100,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         address _ovl,
         address _mirinPool,
         bool _isPrice0,
-        uint256 _periodSize,
+        uint256 _updatePeriodSize,
         uint256 _windowSize,
         uint256 _leverageMax,
         uint144 _oiCap,
@@ -114,7 +114,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         isPrice0 = _isPrice0;
 
         // per-market adjustable params
-        periodSize = _periodSize;
+        updatePeriodSize = _updatePeriodSize;
         windowSize = _windowSize;
         leverageMax = _leverageMax;
         oiCap = _oiCap;
@@ -196,7 +196,6 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         uint112 _fDenominator,
         uint256 _m
     ) private pure returns (FixedPoint.uq144x112 memory factor) {
-        // TODO: do we want to store values up to power MAX_FUNDING_COMPOUND as an array on adjustParam() call? so trader isn't paying gas to compute
         if (_m > MAX_FUNDING_COMPOUND) {
             // cut off the recursion if power too large
             factor = FixedPoint.encode144(0);
@@ -208,7 +207,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
 
     /// @notice Whether the market can be successfully updated
     function updatable() external view returns (bool) {
-        uint256 elapsed = (block.number - updateBlockLast) / periodSize;
+        uint256 elapsed = (block.number - updateBlockLast) / updatePeriodSize;
         return (elapsed > 0);
     }
 
@@ -216,7 +215,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     function update(address rewardsTo) public {
         // TODO: add in updates to price point index pointer
         uint256 blockNumber = block.number;
-        uint256 elapsed = (blockNumber - updateBlockLast) / periodSize;
+        uint256 elapsed = (blockNumber - updateBlockLast) / updatePeriodSize;
         if (elapsed > 0) {
             // Transfer funding payments
             // oiImbNow = oiImb * (1 - 2k)**m
@@ -269,7 +268,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     }
 
     function updateQueuedPosition(bool isLong, uint256 leverage) private returns (uint256 queuedPositionId) {
-        // TODO: implement this PROPERLY so users pool collateral within periodSize windows
+        // TODO: implement this PROPERLY so users pool collateral within updatePeriodSize windows
         positions.push(Position.Info({
             isLong: isLong,
             leverage: leverage,
@@ -403,7 +402,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
 
     /// @notice Adjusts params associated with this market
     function adjustParams(
-        uint256 _periodSize,
+        uint256 _updatePeriodSize,
         uint256 _windowSize,
         uint256 _leverageMax,
         uint144 _oiCap,
@@ -411,7 +410,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         uint112 _fundingKDenominator
     ) external onlyFactory {
         // TODO: requires on params; particularly leverageMax wrt MAX_FEE and cap
-        periodSize = _periodSize;
+        updatePeriodSize = _updatePeriodSize;
         windowSize = _windowSize;
         leverageMax = _leverageMax;
         oiCap = _oiCap;

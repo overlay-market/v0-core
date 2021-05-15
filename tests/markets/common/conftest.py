@@ -10,7 +10,7 @@ def gov(accounts):
 
 @pytest.fixture(scope="module")
 def rewards(accounts):
-    yield ETH_ADDRESS
+    yield accounts[1]
 
 
 @pytest.fixture(scope="module")
@@ -50,10 +50,11 @@ def price_points(token):
     # TODO: json import of real data ...
     decimals = token.decimals()
     last_timestamp = chain.time()
+    r = 50
     return (
-        [ last_timestamp - 100 + i for i in range(1, 50) ],
-        [ i * 10 ** decimals for i in range(1, 50) ],
-        [ (1 / i) * 10 ** decimals for i in range(1, 50) ]
+        [ last_timestamp - r + i for i in range(1, r) ],
+        [ i * 10 ** decimals for i in range(1, r) ],
+        [ (1 / i) * 10 ** decimals for i in range(1, r) ]
     )
 
 

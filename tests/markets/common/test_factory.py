@@ -1,11 +1,6 @@
 import pytest
 
 
-def test_params(factory, market):
-    # TODO: test all factory global params set properly
-    pass
-
-
 def test_create_market():
     # TODO: test market created and roles assigned properly
     pass
