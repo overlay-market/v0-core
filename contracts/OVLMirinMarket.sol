@@ -19,7 +19,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     using Position for Position.Info;
     using SafeERC20 for OVLToken;
 
-    event Build(address indexed sender, uint256 positionId, bool isLong, uint256 oi, uint256 debt);
+    event Build(address indexed sender, uint256 positionId, uint256 oi, uint256 debt);
     event Unwind(address indexed sender, uint256 positionId, uint256 oi, uint256 debt);
     event Update(address indexed sender, address indexed rewarded, uint256 reward);
 
@@ -328,7 +328,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         }
 
         // events
-        emit Build(msg.sender, positionId, isLong, oiAdjusted, debtAdjusted);
+        emit Build(msg.sender, positionId, oiAdjusted, debtAdjusted);
 
         // interactions
         OVLToken(ovl).safeTransferFrom(msg.sender, address(this), collateralAmount);

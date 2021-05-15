@@ -5,7 +5,7 @@
 // commit hash 82ad73f6ac7e38f0ff8fcdf0e526118f537011e6
 // XXX for changes
 
-pragma solidity =0.8.2;
+pragma solidity ^0.8.2;
 
 /**
  * @dev a library for handling binary fixed point numbers (https://en.wikipedia.org/wiki/Q_(number_format))

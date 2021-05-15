@@ -30,7 +30,6 @@ def test_build(token, factory, market, bob, leverage, is_long):
     assert tx.events['Build'] == OrderedDict({
         'sender': bob.address,
         'positionId': pid,
-        'isLong': is_long,
         'oi': oi_adjusted,
         'debt': debt_adjusted,
     })
