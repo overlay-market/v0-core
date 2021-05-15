@@ -11,7 +11,7 @@ interface IOVLMarket is IERC1155 {
     function ovl() external view returns (address);
     function factory() external view returns (address);
     function updatePeriodSize() external view returns (uint256);
-    function leverageMax() external view returns (uint256);
+    function leverageMax() external view returns (uint8);
     function oiCap() external view returns (uint256);
     function fundingKNumerator() external view returns (uint256);
     function fundingKDenominator() external view returns (uint256);

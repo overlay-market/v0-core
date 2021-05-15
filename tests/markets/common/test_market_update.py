@@ -5,7 +5,7 @@ from brownie.test import given, strategy
 from collections import OrderedDict
 
 
-@given(num_periods=strategy('uint16', min_value=1, max_value=4320))
+@given(num_periods=strategy('uint16', min_value=1, max_value=144))
 def test_update(token, factory, market, alice, rewards, num_periods):
     update_period = market.updatePeriodSize()
     update_blocks = num_periods * update_period

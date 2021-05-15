@@ -40,7 +40,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     }
 
     // leverage max allowed for a position: leverages are assumed to be discrete increments of 1
-    uint256 public leverageMax;
+    uint8 public leverageMax;
     // period size for sliding window TWAP calc && calls to update
     uint256 public updatePeriodSize;
     // window size for sliding window TWAP calc
@@ -74,8 +74,8 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     // mapping from position id to price point window
     mapping(uint256 => PricePointWindow) private pricePointWindows;
     // mapping from leverage to index in positions array of queued position; queued can still be built on while updatePeriodSize elapses
-    mapping(uint256 => uint256) private queuedPositionLongIds;
-    mapping(uint256 => uint256) private queuedPositionShortIds;
+    mapping(uint8 => uint256) private queuedPositionLongIds;
+    mapping(uint8 => uint256) private queuedPositionShortIds;
 
 
     uint256 private unlocked = 1;
@@ -102,7 +102,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         bool _isPrice0,
         uint256 _updatePeriodSize,
         uint256 _windowSize,
-        uint256 _leverageMax,
+        uint8 _leverageMax,
         uint144 _oiCap,
         uint112 _fundingKNumerator,
         uint112 _fundingKDenominator
@@ -404,7 +404,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     function adjustParams(
         uint256 _updatePeriodSize,
         uint256 _windowSize,
-        uint256 _leverageMax,
+        uint8 _leverageMax,
         uint144 _oiCap,
         uint112 _fundingKNumerator,
         uint112 _fundingKDenominator

@@ -5,7 +5,7 @@ from collections import OrderedDict
 
 
 @given(
-    leverage=strategy('uint', min_value=1, max_value=5),
+    leverage=strategy('uint8', min_value=1, max_value=100),
     is_long=strategy('bool'))
 def test_build(token, factory, market, bob, leverage, is_long):
     collateral = 0.01 * market.oiCap()

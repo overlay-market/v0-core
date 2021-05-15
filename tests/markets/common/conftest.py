@@ -62,7 +62,7 @@ def price_points(token):
     scope="module",
     params=[
         ("OVLMirinFactory", [15, 5000, 100, ETH_ADDRESS, 60, 50, ETH_ADDRESS],
-         "OVLMirinMarket", [True, 4, 24, 5, 800000, 1, 4],
+         "OVLMirinMarket", [True, 4, 24, 100, 800000, 1, 4],
          "MirinFactoryMock", [],
          "IMirinOracle"),
     ])

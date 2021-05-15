@@ -77,7 +77,7 @@ contract OVLMirinFactory is Ownable {
         bool isPrice0,
         uint256 updatePeriodSize,
         uint256 windowSize,
-        uint256 leverageMax,
+        uint8 leverageMax,
         uint144 oiCap,
         uint112 fundingKNumerator,
         uint112 fundingKDenominator
@@ -150,7 +150,7 @@ contract OVLMirinFactory is Ownable {
         address market,
         uint256 updatePeriodSize,
         uint256 windowSize,
-        uint256 leverageMax,
+        uint8 leverageMax,
         uint144 oiCap,
         uint112 fundingKNumerator,
         uint112 fundingKDenominator
