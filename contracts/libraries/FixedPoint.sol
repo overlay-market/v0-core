@@ -63,6 +63,7 @@ library FixedPoint {
     // XXX: divide a UQ144x112 by another UQ144x112, returning a UQ144x112
     function div(uq144x112 memory self, uq144x112 memory x) internal pure returns (uq144x112 memory) {
         require(x._x != 0, "FixedPoint: DIV_BY_ZERO");
+        // TODO: Fix! ... looks off
         return uq144x112((self._x / x._x) << RESOLUTION);
     }
 

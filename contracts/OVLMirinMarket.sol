@@ -30,8 +30,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     address public immutable ovl;
     // OVLMirinFactory address
     address public immutable factory;
-    // mirin pool and factory addresses
-    address public immutable mirinFactory;
+    // mirin pool address
     address public immutable mirinPool;
     bool public immutable isPrice0;
 
@@ -66,11 +65,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     uint256 private totalOiShortShares;
 
     // outstanding cumulative fees to be forwarded
-    uint256 public feeAmountToForward;
-    // outstanding cumulative fees to be burned
-    uint256 public feeAmountToBurn;
-    // outstanding cumulative fees for rewards to market updaters
-    uint256 public feeAmountToRewardUpdates;
+    uint256 public fees;
 
     // array of pos attributes; id is index in array
     Position.Info[] public positions;
@@ -103,7 +98,6 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
 
     constructor(
         address _ovl,
-        address _mirinFactory,
         address _mirinPool,
         bool _isPrice0,
         uint256 _periodSize,
@@ -116,7 +110,6 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         // immutables
         factory = msg.sender;
         ovl = _ovl;
-        mirinFactory = _mirinFactory;
         mirinPool = _mirinPool;
         isPrice0 = _isPrice0;
 
@@ -246,21 +239,32 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
             }
 
             // Forward and burn fees
-            (,,,, address feeTo,,,,) = IOVLFactory(factory).getGlobalParams();
-            uint256 _feeAmountToForward = feeAmountToForward;
-            uint256 _feeAmountToBurn = feeAmountToBurn;
-            uint256 _feeAmountToRewardUpdates = feeAmountToRewardUpdates;
+            (
+                ,
+                uint16 feeBurnRate,
+                uint16 feeUpdateRewardsRate,
+                uint16 FEE_RESOLUTION,
+                address feeTo,
+                ,,,
+            ) = IOVLFactory(factory).getGlobalParams();
 
-            feeAmountToForward = 0;
-            feeAmountToBurn = 0;
-            feeAmountToRewardUpdates = 0;
+            // fee amounts with some accounting
+            uint256 feeAmount = fees;
+            uint256 feeAmountLessBurn = (feeAmount * FEE_RESOLUTION - feeAmount * feeBurnRate) / FEE_RESOLUTION;
+            uint256 feeAmountLessBurnAndUpdate = (feeAmountLessBurn * FEE_RESOLUTION - feeAmountLessBurn * feeUpdateRewardsRate) / FEE_RESOLUTION;
+
+            uint256 feeAmountToForward = feeAmountLessBurnAndUpdate;
+            uint256 feeAmountToBurn = feeAmount - feeAmountLessBurn;
+            uint256 feeAmountToRewardUpdates = feeAmountLessBurn - feeAmountLessBurnAndUpdate;
+
+            fees = 0;
             updateBlockLast = blockNumber;
 
-            emit Update(msg.sender, rewardsTo, _feeAmountToRewardUpdates);
+            emit Update(msg.sender, rewardsTo, feeAmountToRewardUpdates);
 
-            OVLToken(ovl).burn(address(this), _feeAmountToBurn);
-            OVLToken(ovl).safeTransfer(feeTo, _feeAmountToForward);
-            OVLToken(ovl).safeTransfer(rewardsTo, _feeAmountToRewardUpdates);
+            OVLToken(ovl).burn(address(this), feeAmountToBurn);
+            OVLToken(ovl).safeTransfer(feeTo, feeAmountToForward);
+            OVLToken(ovl).safeTransfer(rewardsTo, feeAmountToRewardUpdates);
         }
     }
 
@@ -285,29 +289,11 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     }
 
     /// @notice Adjusts state variable fee pots, which are transferred on call to update()
-    function adjustForFees(uint256 value, uint256 notional)
-        private
-        returns (uint256 valueAdjusted)
-    {
-        (
-            uint256 fee,
-            uint256 feeBurnRate,
-            uint256 feeUpdateRewardsRate,
-            uint256 FEE_RESOLUTION,
-            ,,,,
-        ) = IOVLFactory(factory).getGlobalParams();
-        // collateral less fees. fees charged on value without debt
+    function adjustForFees(uint256 value, uint256 notional) private returns (uint256 valueAdjusted) {
+        (uint256 fee,,, uint256 FEE_RESOLUTION,,,,,) = IOVLFactory(factory).getGlobalParams();
         // TODO: check valueAdjusted doesn't go negative ... floor at zero
         valueAdjusted = (value * FEE_RESOLUTION - notional * fee) / FEE_RESOLUTION;
-
-        // fee amounts with some accounting
-        uint256 feeAmount = value - valueAdjusted;
-        uint256 feeAmountLessBurn = (feeAmount * FEE_RESOLUTION - feeAmount * feeBurnRate) / FEE_RESOLUTION;
-        uint256 feeAmountLessBurnAndUpdate = (feeAmountLessBurn * FEE_RESOLUTION - feeAmountLessBurn * feeUpdateRewardsRate) / FEE_RESOLUTION;
-
-        feeAmountToForward += feeAmountLessBurnAndUpdate;
-        feeAmountToBurn += feeAmount - feeAmountLessBurn;
-        feeAmountToRewardUpdates += feeAmountLessBurn - feeAmountLessBurnAndUpdate;
+        fees += value - valueAdjusted;
     }
 
     function build(
@@ -316,8 +302,9 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         uint256 leverage,
         address rewardsTo
     ) external lock enabled {
+        require(collateralAmount > 0, "OverlayV1: invalid amount");
         require(leverage >= 1 && leverage <= leverageMax, "OverlayV1: invalid leverage");
-        // update market before everything else: funding payments + price pointer + cumulative fees per periodSize
+
         update(rewardsTo);
         uint256 positionId = updateQueuedPosition(isLong, leverage);
         Position.Info storage position = positions[positionId];
@@ -328,12 +315,9 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         uint256 debtAdjusted = (leverage - 1) * collateralAmountAdjusted;
 
         // effects
-        // position
         position.oiShares += oiAdjusted;
         position.debt += debtAdjusted;
         position.cost += collateralAmountAdjusted;
-
-        // totals
         if (isLong) {
             oiLong += oiAdjusted;
             require(oiLong <= oiCap, "OverlayV1: breached oi cap");
@@ -348,10 +332,8 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         emit Build(msg.sender, positionId, isLong, oiAdjusted, debtAdjusted);
 
         // interactions
-        // transfer collateral + fees into pool then mint shares of queued position
         OVLToken(ovl).safeTransferFrom(msg.sender, address(this), collateralAmount);
-        // WARNING: _mint erc1155 shares last given callback
-        // mint shares based on oi contribution
+        // WARNING: _mint erc1155 shares last given callback; mint shares based on OI contribution
         mint(msg.sender, positionId, collateralAmountAdjusted * leverage, "");
     }
 
@@ -361,15 +343,14 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         address rewardsTo
     ) external lock enabled {
         require(positionId < positions.length, "OverlayV1: invalid position id");
-        require(shares <= balanceOf(msg.sender, positionId), "OverlayV1: invalid shares");
-        // update market before everything else: funding payments + price pointer + cumulative fees per periodSize
+        require(shares > 0 && shares <= balanceOf(msg.sender, positionId), "OverlayV1: invalid shares");
+
         update(rewardsTo);
         Position.Info storage position = positions[positionId];
         uint256 priceEntry = 0; // TODO: compute entry price
-        uint256 priceExit = lastPrice(); // potential sacrifice of profit for UX purposes; SEE: "Queueing Position Builds" https://oips.overlay.market/notes/note-2
+        uint256 priceExit = lastPrice(); // potential sacrifice of profit for UX purposes
         uint256 totalShares = totalPositionShares[positionId];
 
-        // calculate value, cost
         uint256 value = shares * position.value(
             (position.isLong ? oiLong : oiShort),
             (position.isLong ? totalOiLongShares : totalOiShortShares),
@@ -379,15 +360,13 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         uint256 debt = shares * position.debt / totalShares;
         uint256 cost = shares * position.cost / totalShares;
 
-        // adjust for fees
-        // NOTE: Not using valueAdjusted in effects, given withdrawing funds from contract so need full value prior to fees
+        // adjust for fees ... NOTE: Not using valueAdjusted in effects, given withdrawing funds from contract
         uint256 valueAdjusted = adjustForFees(
             value,
             value + shares * position.debt / totalShares // notional
         );
 
         // effects
-        // position
         uint256 oi = (
             position.isLong ?
             (shares * position.oiShares * oiLong / totalOiLongShares) / totalShares :
@@ -396,8 +375,6 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         position.oiShares -= oi;
         position.debt -= debt;
         position.cost -= cost;
-
-        // totals
         if (position.isLong) {
             oiLong -= oi;
             totalOiLongShares -= oi;
@@ -406,25 +383,21 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
             totalOiShortShares -= oi;
         }
 
+        // events
+        emit Unwind(msg.sender, positionId, oi, debt);
+
         // interactions
         if (valueAdjusted >= cost) {
             // profit: mint the diff
             uint256 diff = valueAdjusted - cost;
             OVLToken(ovl).mint(address(this), diff);
         } else {
-            // loss: burn the diff
-            // NOTE: can at most burn cost given value min is restricted to zero
-            // TODO: Floor in case rounding errors with cost for total collateral in contract?
+            // loss: burn the diff ... NOTE: can at most burn cost given value min is restricted to zero; TODO: Floor in case rounding errors with cost for total collateral in contract?
             uint256 diff = cost - valueAdjusted;
             OVLToken(ovl).burn(address(this), diff);
         }
 
-        // events
-        emit Unwind(msg.sender, positionId, oi, debt);
-
-        // burn shares of position then transfer collateral + PnL
         burn(msg.sender, positionId, shares);
-        // transfer collateral + PnL
         OVLToken(ovl).safeTransfer(msg.sender, valueAdjusted);
     }
 

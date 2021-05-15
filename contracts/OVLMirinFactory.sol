@@ -86,7 +86,6 @@ contract OVLMirinFactory is Ownable {
         require(IMirinOracle(mirinPool).pricePointsLength() > 1, "OverlayV1: !MirinInitialized");
         marketContract = new OVLMirinMarket(
             ovl,
-            mirinFactory,
             mirinPool,
             isPrice0,
             periodSize,
@@ -118,8 +117,8 @@ contract OVLMirinFactory is Ownable {
 
     /// @notice Enables an existing market contract for a mirin market
     function enableMarket(address market) external onlyOwner {
-        require(!isMarket[market], "OverlayV1: !disabled");
         require(marketExists[market], "OverlayV1: !exists");
+        require(!isMarket[market], "OverlayV1: !disabled");
         isMarket[market] = true;
 
         // Give market contract mint/burn priveleges for OVL token
