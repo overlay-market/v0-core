@@ -133,7 +133,7 @@ library Position {
         }
     }
 
-    /// @dev checks open margin exceeds maintenance margin
+    /// @dev is true when open margin < maintenance margin
     function _isLiquidatable(
         Info memory _self,
         uint256 totalOi,
@@ -254,7 +254,7 @@ library Position {
     }
 
     /// @notice Whether a position can be liquidated
-    /// @dev checks open margin exceeds maintenance margin
+    /// @dev is true when open margin < maintenance margin
     function isLiquidatable(
         Info storage self,
         uint256 totalOi,
