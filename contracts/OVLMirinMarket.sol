@@ -254,15 +254,15 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
                 ,
                 uint16 feeBurnRate,
                 uint16 feeUpdateRewardsRate,
-                uint16 FEE_RESOLUTION,
+                uint16 feeResolution,
                 address feeTo,
                 ,,,
             ) = IOVLFactory(factory).getGlobalParams();
 
             // fee amounts with some accounting
             uint256 feeAmount = fees;
-            uint256 feeAmountLessBurn = (feeAmount * FEE_RESOLUTION - feeAmount * feeBurnRate) / FEE_RESOLUTION;
-            uint256 feeAmountLessBurnAndUpdate = (feeAmountLessBurn * FEE_RESOLUTION - feeAmountLessBurn * feeUpdateRewardsRate) / FEE_RESOLUTION;
+            uint256 feeAmountLessBurn = (feeAmount * feeResolution - feeAmount * feeBurnRate) / feeResolution;
+            uint256 feeAmountLessBurnAndUpdate = (feeAmountLessBurn * feeResolution - feeAmountLessBurn * feeUpdateRewardsRate) / feeResolution;
 
             amountToForward = feeAmountLessBurnAndUpdate;
             amountToRewardUpdates = feeAmountLessBurn - feeAmountLessBurnAndUpdate;
@@ -301,8 +301,8 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
 
     /// @notice Adjusts state variable fee pots, which are transferred on call to update()
     function adjustForFees(uint256 notional) private returns (uint256 notionalAdjusted, uint256 feeAmount) {
-        (uint256 fee,,, uint256 FEE_RESOLUTION,,,,,) = IOVLFactory(factory).getGlobalParams();
-        notionalAdjusted = (notional * FEE_RESOLUTION - notional * fee) / FEE_RESOLUTION;
+        (uint256 fee,,, uint256 feeResolution,,,,,) = IOVLFactory(factory).getGlobalParams();
+        notionalAdjusted = (notional * feeResolution - notional * fee) / feeResolution;
         feeAmount = notional - notionalAdjusted;
     }
 
