@@ -22,6 +22,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
     event Build(address indexed sender, uint256 positionId, uint256 oi, uint256 debt);
     event Unwind(address indexed sender, uint256 positionId, uint256 oi, uint256 debt);
     event Update(address indexed sender, address indexed rewarded, uint256 reward);
+    event Liquidate(address indexed sender, address indexed rewarded, uint256 reward);
 
     // max number of periodSize periods before treat funding as completely rebalanced: done for gas savings on compute funding factor
     uint16 public constant MAX_FUNDING_COMPOUND = 4320; // 30d at 10m updatePeriodSize periods
@@ -305,6 +306,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         feeAmount = notional - notionalAdjusted;
     }
 
+    /// @notice Builds a new position
     function build(
         uint256 collateralAmount,
         bool isLong,
@@ -352,6 +354,7 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         mint(msg.sender, positionId, oiAdjusted, "");
     }
 
+    /// @notice Unwinds shares of an existing position
     function unwind(
         uint256 positionId,
         uint256 shares,
@@ -364,19 +367,19 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         update(rewardsTo);
 
         Position.Info storage position = positions[positionId];
-        uint256 priceEntry = 0; // TODO: compute entry price
-        uint256 priceExit = lastPrice(); // potential sacrifice of profit from protocol for UX purposes
+        bool isLong = position.isLong;
         uint256 totalShares = totalPositionShares[positionId];
+        uint256 posOiShares = shares * position.oiShares / totalShares;
 
         uint256 oi = shares * position.openInterest(
-            position.isLong ? oiLong : oiShort, // totalOi
-            position.isLong ? totalOiLongShares : totalOiShortShares // totalOiShares
+            isLong ? oiLong : oiShort, // totalOi
+            isLong ? totalOiLongShares : totalOiShortShares // totalOiShares
         ) / totalShares;
         uint256 notional = shares * position.notional(
-            position.isLong ? oiLong : oiShort, // totalOi
-            position.isLong ? totalOiLongShares : totalOiShortShares, // totalOiShares
-            priceEntry,
-            priceExit
+            isLong ? oiLong : oiShort, // totalOi
+            isLong ? totalOiLongShares : totalOiShortShares, // totalOiShares
+            0, // priceEntry: TODO: compute entry price
+            lastPrice() // priceExit: potential sacrifice of profit from protocol for UX purposes
         ) / totalShares;
         uint256 debt = shares * position.debt / totalShares;
         uint256 cost = shares * position.cost / totalShares;
@@ -388,15 +391,15 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
 
         // effects
         fees += feeAmount; // adds to fee pot, which is transferred on update
-        position.oiShares -= oi;
+        position.oiShares -= posOiShares;
         position.debt -= debt;
         position.cost -= cost;
-        if (position.isLong) {
+        if (isLong) {
             oiLong -= oi;
-            totalOiLongShares -= oi;
+            totalOiLongShares -= posOiShares;
         } else {
             oiShort -= oi;
-            totalOiShortShares -= oi;
+            totalOiShortShares -= posOiShares;
         }
 
         // events
@@ -405,11 +408,9 @@ contract OVLMirinMarket is ERC1155("https://metadata.overlay.exchange/mirin/{id}
         // interactions
         // mint/burn excess PnL = valueAdjusted - cost, accounting for need to also burn debt
         if (debt + cost < valueAdjusted) {
-            uint256 diff = valueAdjusted - cost - debt;
-            OVLToken(ovl).mint(address(this), diff);
+            OVLToken(ovl).mint(address(this), valueAdjusted - cost - debt);
         } else {
-            uint256 diff = debt + cost - valueAdjusted;
-            OVLToken(ovl).burn(address(this), diff);
+            OVLToken(ovl).burn(address(this), debt + cost - valueAdjusted);
         }
 
         burn(msg.sender, positionId, shares);

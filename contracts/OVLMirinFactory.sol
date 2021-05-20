@@ -15,8 +15,8 @@ contract OVLMirinFactory is Ownable {
     uint16 public constant MAX_FEE = 100; // 1.00%
     uint16 public constant FEE_RESOLUTION = 10**4; // bps
 
-    uint16 public constant MIN_MARGIN = 1; // 1% maintenance
-    uint16 public constant MAX_MARGIN = 60; // 60% maintenance
+    uint16 public constant MIN_MARGIN_MAINTENANCE = 1; // 1% maintenance
+    uint16 public constant MAX_MARGIN_MAINTENANCE = 60; // 60% maintenance
     uint16 public constant MARGIN_RESOLUTION = 10**2; // percentage points
 
     // ovl erc20 token
@@ -34,7 +34,7 @@ contract OVLMirinFactory is Ownable {
     // address to send fees to
     address public feeTo;
     // maintenance margin requirement
-    uint16 public margin;
+    uint16 public marginMaintenance;
     // maintenance margin burn rate on liquidations
     uint16 public marginBurnRate;
     // address to send margin to
@@ -53,7 +53,7 @@ contract OVLMirinFactory is Ownable {
         uint16 _feeBurnRate,
         uint16 _feeUpdateRewardsRate,
         address _feeTo,
-        uint16 _margin,
+        uint16 _marginMaintenance,
         uint16 _marginBurnRate,
         address _marginTo
     ) {
@@ -66,7 +66,7 @@ contract OVLMirinFactory is Ownable {
         feeBurnRate = _feeBurnRate;
         feeUpdateRewardsRate = _feeUpdateRewardsRate;
         feeTo = _feeTo;
-        margin = _margin;
+        marginMaintenance = _marginMaintenance;
         marginBurnRate = _marginBurnRate;
         marginTo = _marginTo;
     }
@@ -171,7 +171,7 @@ contract OVLMirinFactory is Ownable {
         uint16 _feeBurnRate,
         uint16 _feeUpdateRewardsRate,
         address _feeTo,
-        uint16 _margin,
+        uint16 _marginMaintenance,
         uint16 _marginBurnRate,
         address _marginTo
     ) external onlyOwner {
@@ -179,7 +179,7 @@ contract OVLMirinFactory is Ownable {
         feeBurnRate = _feeBurnRate;
         feeUpdateRewardsRate = _feeUpdateRewardsRate;
         feeTo = _feeTo;
-        margin = _margin;
+        marginMaintenance = _marginMaintenance;
         marginBurnRate = _marginBurnRate;
         marginTo = _marginTo;
     }
@@ -205,7 +205,7 @@ contract OVLMirinFactory is Ownable {
             feeUpdateRewardsRate,
             FEE_RESOLUTION,
             feeTo,
-            margin,
+            marginMaintenance,
             marginBurnRate,
             MARGIN_RESOLUTION,
             marginTo

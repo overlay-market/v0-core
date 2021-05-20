@@ -158,12 +158,23 @@ library Position {
             priceEntry,
             priceExit
         );
-        // TODO: Fix for safecasting: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/math/SafeCast.sol#L9
         FixedPoint.uq144x112 memory maintenance = FixedPoint
-            .uq144x112(uint256(maintenanceFactor))
+            .encode144(uint144(maintenanceFactor))
             .div(uint112(marginResolution))
             .div(uint112(_self.leverage));
         can = margin.lt(maintenance);
+    }
+
+    function _liquidationPrice(
+        Info memory _self,
+        uint256 totalOi,
+        uint256 totalOiShares,
+        uint256 priceEntry,
+        uint16 maintenanceFactor,
+        uint16 marginResolution
+    ) private pure returns (uint256 liqPrice) {
+        // TODO: compute estimate for liquidation price ...
+        return 0;
     }
 
     /// @notice Computes the open interest of a position
@@ -294,5 +305,24 @@ library Position {
         );
     }
 
-    // TODO: function liquidationPrice(self, totalOi, totalOiShares, priceExit, marginRequirement) internal pure returns (uint256 val)
+    /// @notice Computes the liquidation price of a position
+    /// @dev TODO: ...
+    function liquidationPrice(
+        Info storage self,
+        uint256 totalOi,
+        uint256 totalOiShares,
+        uint256 priceEntry,
+        uint16 maintenanceFactor,
+        uint16 marginResolution
+    ) internal view returns (uint256) {
+        Info memory _self = self;
+        return _liquidationPrice(
+            _self,
+            totalOi,
+            totalOiShares,
+            priceEntry,
+            maintenanceFactor,
+            marginResolution
+        );
+    }
 }

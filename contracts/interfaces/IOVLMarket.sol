@@ -8,6 +8,7 @@ interface IOVLMarket is IERC1155 {
     event Build(address indexed sender, uint256 positionId, uint256 oi, uint256 debt);
     event Unwind(address indexed sender, uint256 positionId, uint256 oi, uint256 debt);
     event Update(address indexed sender, address indexed rewarded, uint256 reward);
+    event Liquidate(address indexed sender, address indexed rewarded, uint256 reward);
     function ovl() external view returns (address);
     function factory() external view returns (address);
     function updatePeriodSize() external view returns (uint256);
@@ -26,4 +27,6 @@ interface IOVLMarket is IERC1155 {
     function update(address) external;
     function build(uint256, bool, uint256, address) external;
     function unwind(uint256, uint256, address) external;
+    function liquidatable(uint256) external;
+    function liquidate(uint256, address) external;
 }
