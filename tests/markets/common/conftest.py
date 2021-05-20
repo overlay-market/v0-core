@@ -3,6 +3,11 @@ import brownie
 from brownie import ETH_ADDRESS, OVLToken, chain, interface
 
 
+TOKEN_DECIMALS = 18
+TOKEN_TOTAL_SUPPLY = 8000000
+OI_CAP = 800000
+
+
 @pytest.fixture(scope="module")
 def gov(accounts):
     yield accounts[0]
@@ -23,9 +28,9 @@ def bob(accounts):
     yield accounts[3]
 
 
-@pytest.fixture(scope="module", params=[8000000])
-def create_token(gov, alice, bob, request):
-    sup = request.param
+@pytest.fixture(scope="module")
+def create_token(gov, alice, bob):
+    sup = TOKEN_TOTAL_SUPPLY
     def create_token(supply=sup):
         tok = gov.deploy(OVLToken)
         tok.mint(gov, supply * 10 ** tok.decimals(), {"from": gov})
@@ -62,7 +67,7 @@ def price_points(token):
     scope="module",
     params=[
         ("OVLMirinFactory", [15, 5000, 100, ETH_ADDRESS, 60, 50, ETH_ADDRESS],
-         "OVLMirinMarket", [True, 4, 24, 100, 800000, 1, 4],
+         "OVLMirinMarket", [True, 4, 24, 100, OI_CAP*10**TOKEN_DECIMALS, 1, 8],
          "MirinFactoryMock", [],
          "IMirinOracle"),
     ])

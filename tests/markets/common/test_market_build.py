@@ -4,21 +4,28 @@ from brownie.test import given, strategy
 from collections import OrderedDict
 
 
+MIN_COLLATERAL_AMOUNT = 10**4 # min amount to build
+TOKEN_DECIMALS = 18
+TOKEN_TOTAL_SUPPLY = 8000000
+OI_CAP = 800000
+
+
 @given(
+    collateral=strategy('uint256', min_value=MIN_COLLATERAL_AMOUNT, max_value=0.00999*OI_CAP*10**TOKEN_DECIMALS),
     leverage=strategy('uint8', min_value=1, max_value=100),
     is_long=strategy('bool'))
-def test_build(token, factory, market, bob, leverage, is_long):
-    collateral = 0.01 * market.oiCap()
+def test_build(token, factory, market, bob, collateral, leverage, is_long):
     oi = collateral * leverage
     oi_aggregate = market.oiLong() if is_long else market.oiShort()
 
     fee, _, _, fee_resolution, _, _, _, _, _ = factory.getGlobalParams()
     fee_perc = fee / fee_resolution
 
-    # TODO: switch to mint on debt creation model that takes a fee of oi total (so oi adjusted by oi - oi * fee)
+    # adjust for build fees
     collateral_adjusted = collateral - fee_perc * oi
-    oi_adjusted = collateral_adjusted * leverage
-    debt_adjusted = collateral_adjusted * (leverage - 1)
+    oi_adjusted = int(oi * (1 - fee_perc))
+    collateral_adjusted = int(oi_adjusted / leverage)
+    debt_adjusted = oi_adjusted - collateral_adjusted
 
     # approve market to spend bob's ovl to build position
     token.approve(market, collateral, {"from": bob})
@@ -38,7 +45,10 @@ def test_build(token, factory, market, bob, leverage, is_long):
     assert market.balanceOf(bob, pid) == oi_adjusted
     # check market state updated
     oi_aggregate_new = market.oiLong() if is_long else market.oiShort()
-    assert oi_aggregate_new == oi_adjusted + oi_aggregate
+    oi_aggregate_plus_adjusted = oi_adjusted + oi_aggregate
+    assert oi_aggregate_new == oi_aggregate_plus_adjusted
+
+    # TODO: check fees, position attributes, etc. ..
 
 
 def test_build_breach_max_leverage(token, market, bob):

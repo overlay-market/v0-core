@@ -16,6 +16,14 @@ library Position {
         uint256 cost; // total amount of collateral initially locked; effectively, cost to enter position
     }
 
+    function _openInterest(
+        Info memory _self,
+        uint256 totalOi,
+        uint256 totalOiShares
+    ) private pure returns (uint256 oi) {
+        return _self.oiShares * totalOi / totalOiShares;
+    }
+
     /// @dev Floors to zero, so won't properly compute if self is underwater
     function _value(
         Info memory _self,
@@ -24,7 +32,7 @@ library Position {
         uint256 priceEntry,
         uint256 priceExit
     ) private pure returns (uint256 val) {
-        uint256 oi = _self.oiShares * totalOi / totalOiShares;
+        uint256 oi = _openInterest(_self, totalOi, totalOiShares);
         if (_self.isLong) {
             // oi * priceExit / priceEntry - debt
             val = oi * priceExit / priceEntry;
@@ -44,7 +52,7 @@ library Position {
         uint256 priceEntry,
         uint256 priceExit
     ) private pure returns (bool isUnder) {
-        uint256 oi = _self.oiShares * totalOi / totalOiShares;
+        uint256 oi = _openInterest(_self, totalOi, totalOiShares);
         if (_self.isLong) {
             // val = oi * priceExit / priceEntry - debt
             isUnder = (oi * priceExit / priceEntry < _self.debt);
@@ -156,6 +164,16 @@ library Position {
             .div(uint112(marginResolution))
             .div(uint112(_self.leverage));
         can = margin.lt(maintenance);
+    }
+
+    /// @notice Computes the open interest of a position
+    function openInterest(
+        Info storage self,
+        uint256 totalOi,
+        uint256 totalOiShares
+    ) internal view returns (uint256) {
+        Info memory _self = self;
+        return _openInterest(_self, totalOi, totalOiShares);
     }
 
     /// @notice Computes the value of a position
