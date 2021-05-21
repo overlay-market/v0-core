@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import "./libraries/FixedPoint.sol";
-
 import "./interfaces/IMirinOracle.sol";
 
 import "./OverlayMarket.sol";

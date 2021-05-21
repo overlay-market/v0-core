@@ -5,9 +5,8 @@ import "../interfaces/IKeep3rV1.sol";
 import "../interfaces/IOverlayFactory.sol";
 
 contract OverlayMarketKeep3r {
-    IKeep3rV1 public constant KP3R = IKeep3rV1(0x1cEB5cB57C4D4E2b2433641b95Dd330A33185A44);
-    IOverlayFactory public constant OVLF = IOverlayFactory(address(0)); // TODO: Fill in address once OverlayFactory launched
-
+    IKeep3rV1 public constant KP3R = IKeep3rV1(0x1cEB5cB57C4D4E2b2433641b95Dd330A33185A44);    
+    IOverlayFactory public OVLF;
     address public rewardsTo;
 
     modifier upkeep() {
@@ -16,7 +15,8 @@ contract OverlayMarketKeep3r {
         KP3R.worked(msg.sender);
     }
 
-    constructor(address _rewardsTo) {
+    constructor(address _factory, address _rewardsTo) {
+        OVLF = IOverlayFactory(_factory);
         rewardsTo = _rewardsTo;
     }
 
