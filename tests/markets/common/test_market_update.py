@@ -7,7 +7,7 @@ from collections import OrderedDict
 
 @given(num_periods=strategy('uint16', min_value=1, max_value=144))
 def test_update(token, factory, market, alice, rewards, num_periods):
-    update_period = market.updatePeriodSize()
+    update_period = market.updatePeriod()
     update_blocks = num_periods * update_period
     prior_update_block = market.updateBlockLast()
 
@@ -29,7 +29,7 @@ def test_update(token, factory, market, alice, rewards, num_periods):
 
 
 def test_update_between_periods(token, factory, market, alice, rewards):
-    update_period = market.updatePeriodSize()
+    update_period = market.updatePeriod()
     update_blocks = update_period - 2
     prior_update_block = market.updateBlockLast()
 
@@ -43,7 +43,7 @@ def test_update_between_periods(token, factory, market, alice, rewards):
 
 
 def test_update_max_compound(token, factory, market, alice, rewards):
-    update_period = market.updatePeriodSize()
+    update_period = market.updatePeriod()
     update_blocks = market.MAX_FUNDING_COMPOUND() + 10
     prior_update_block = market.updateBlockLast()
 

@@ -6,10 +6,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IMirinFactory.sol";
 import "./interfaces/IMirinOracle.sol";
 
-import "./OVLMirinMarket.sol";
-import "./OVLToken.sol";
+import "./OverlayMirinMarket.sol";
+import "./OverlayToken.sol";
 
-contract OVLMirinFactory is Ownable {
+contract OverlayMirinFactory is Ownable {
 
     uint16 public constant MIN_FEE = 1; // 0.01%
     uint16 public constant MAX_FEE = 100; // 1.00%
@@ -75,20 +75,20 @@ contract OVLMirinFactory is Ownable {
     function createMarket(
         address mirinPool,
         bool isPrice0,
-        uint256 updatePeriodSize,
+        uint256 updatePeriod,
         uint256 windowSize,
         uint8 leverageMax,
         uint144 oiCap,
         uint112 fundingKNumerator,
         uint112 fundingKDenominator
-    ) external onlyOwner returns (OVLMirinMarket marketContract) {
+    ) external onlyOwner returns (OverlayMirinMarket marketContract) {
         require(IMirinFactory(mirinFactory).isPool(mirinPool), "OverlayV1: !MirinPool");
         require(IMirinOracle(mirinPool).pricePointsLength() > 1, "OverlayV1: !MirinInitialized");
-        marketContract = new OVLMirinMarket(
+        marketContract = new OverlayMirinMarket(
             ovl,
             mirinPool,
             isPrice0,
-            updatePeriodSize,
+            updatePeriod,
             windowSize,
             leverageMax,
             oiCap,
@@ -100,9 +100,9 @@ contract OVLMirinFactory is Ownable {
         isMarket[address(marketContract)] = true;
         allMarkets.push(address(marketContract));
 
-        // Give market contract mint/burn priveleges for OVL token
-        OVLToken(ovl).grantRole(OVLToken(ovl).MINTER_ROLE(), address(marketContract));
-        OVLToken(ovl).grantRole(OVLToken(ovl).BURNER_ROLE(), address(marketContract));
+        // Give market contract mint/burn priveleges for OVL
+        OverlayToken(ovl).grantRole(OverlayToken(ovl).MINTER_ROLE(), address(marketContract));
+        OverlayToken(ovl).grantRole(OverlayToken(ovl).BURNER_ROLE(), address(marketContract));
     }
 
     /// @notice Disables an existing market contract for a mirin market
@@ -111,8 +111,8 @@ contract OVLMirinFactory is Ownable {
         isMarket[market] = false;
 
         // Revoke mint/burn roles for the market
-        OVLToken(ovl).revokeRole(OVLToken(ovl).MINTER_ROLE(), market);
-        OVLToken(ovl).revokeRole(OVLToken(ovl).BURNER_ROLE(), market);
+        OverlayToken(ovl).revokeRole(OverlayToken(ovl).MINTER_ROLE(), market);
+        OverlayToken(ovl).revokeRole(OverlayToken(ovl).BURNER_ROLE(), market);
     }
 
     /// @notice Enables an existing market contract for a mirin market
@@ -122,42 +122,40 @@ contract OVLMirinFactory is Ownable {
         isMarket[market] = true;
 
         // Give market contract mint/burn priveleges for OVL token
-        OVLToken(ovl).grantRole(OVLToken(ovl).MINTER_ROLE(), market);
-        OVLToken(ovl).grantRole(OVLToken(ovl).BURNER_ROLE(), market);
+        OverlayToken(ovl).grantRole(OverlayToken(ovl).MINTER_ROLE(), market);
+        OverlayToken(ovl).grantRole(OverlayToken(ovl).BURNER_ROLE(), market);
     }
 
     /// @notice Calls the update function on a market
     function updateMarket(address market, address rewardsTo) external {
-        OVLMirinMarket(market).update(rewardsTo);
+        OverlayMirinMarket(market).update(rewardsTo);
     }
 
     /// @notice Mass calls update functions on all markets
     function massUpdateMarkets(address rewardsTo) external {
         for (uint256 i=0; i < allMarkets.length; ++i) {
-            OVLMirinMarket(allMarkets[i]).update(rewardsTo);
+            OverlayMirinMarket(allMarkets[i]).update(rewardsTo);
         }
     }
 
     /// @notice Allows gov to adjust uri for erc 1155 of all mirin markets
     function setURI(string memory uri) external onlyOwner {
         for (uint256 i=0; i < allMarkets.length; ++i) {
-            OVLMirinMarket(allMarkets[i]).setURI(uri);
+            OverlayMirinMarket(allMarkets[i]).setURI(uri);
         }
     }
 
     /// @notice Allows gov to adjust per market params
     function adjustPerMarketParams(
         address market,
-        uint256 updatePeriodSize,
-        uint256 windowSize,
+        uint256 updatePeriod,
         uint8 leverageMax,
         uint144 oiCap,
         uint112 fundingKNumerator,
         uint112 fundingKDenominator
     ) external onlyOwner {
-        OVLMirinMarket(market).adjustParams(
-            updatePeriodSize,
-            windowSize,
+        OverlayMirinMarket(market).adjustParams(
+            updatePeriod,
             leverageMax,
             oiCap,
             fundingKNumerator,

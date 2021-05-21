@@ -1,6 +1,6 @@
 import pytest
 import brownie
-from brownie import ETH_ADDRESS, OVLToken, chain, interface
+from brownie import ETH_ADDRESS, OverlayToken, chain, interface
 
 
 TOKEN_DECIMALS = 18
@@ -32,7 +32,7 @@ def bob(accounts):
 def create_token(gov, alice, bob):
     sup = TOKEN_TOTAL_SUPPLY
     def create_token(supply=sup):
-        tok = gov.deploy(OVLToken)
+        tok = gov.deploy(OverlayToken)
         tok.mint(gov, supply * 10 ** tok.decimals(), {"from": gov})
         tok.transfer(bob, supply * 10 ** tok.decimals(), {"from": gov})
         return tok
@@ -66,8 +66,8 @@ def price_points(token):
 @pytest.fixture(
     scope="module",
     params=[
-        ("OVLMirinFactory", [15, 5000, 100, ETH_ADDRESS, 60, 50, ETH_ADDRESS],
-         "OVLMirinMarket", [True, 4, 24, 100, OI_CAP*10**TOKEN_DECIMALS, 1, 8],
+        ("OverlayMirinFactory", [15, 5000, 100, ETH_ADDRESS, 60, 50, ETH_ADDRESS],
+         "OverlayMirinMarket", [True, 4, 24, 100, OI_CAP*10**TOKEN_DECIMALS, 1, 8],
          "MirinFactoryMock", [],
          "IMirinOracle"),
     ])
@@ -113,7 +113,7 @@ def factory(create_factory):
 
 @pytest.fixture(
     scope="module",
-    params=["IOVLMarket"])
+    params=["IOverlayMarket"])
 def market(factory, request):
     addr = factory.allMarkets(0)
     market = getattr(interface, request.param)(addr)

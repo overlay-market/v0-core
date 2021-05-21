@@ -1,5 +1,5 @@
 import pytest
-from brownie import OVLToken
+from brownie import OverlayToken
 
 
 @pytest.fixture(scope="module")
@@ -21,7 +21,7 @@ def bob(accounts):
 def create_token(gov, alice, bob, request):
     sup = request.param
     def create_token(supply=sup):
-        tok = gov.deploy(OVLToken)
+        tok = gov.deploy(OverlayToken)
         tok.mint(gov, supply * 10 ** tok.decimals(), {"from": gov})
         tok.transfer(bob, supply * 10 ** tok.decimals(), {"from": gov})
         return tok

@@ -4,7 +4,7 @@ pragma solidity ^0.8.2;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
-contract OVLToken is AccessControl, ERC20("Overlay", "OVL") {
+contract OverlayToken is AccessControl, ERC20("Overlay", "OVL") {
 
   bytes32 public constant ADMIN_ROLE = keccak256("ADMIN");
   bytes32 public constant MINTER_ROLE = keccak256("MINTER");
