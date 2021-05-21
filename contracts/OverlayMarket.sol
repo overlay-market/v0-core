@@ -223,11 +223,10 @@ contract OverlayMarket is ERC1155 {
     }
 
     function updateQueuedPosition(bool isLong, uint256 leverage) private returns (uint256 queuedPositionId) {
-        queuedPositionId = (
-            isLong ?
-            queuedPositionLongIds[leverage] :
-            queuedPositionShortIds[leverage]
+        mapping(uint256 => uint256) storage queuedPositionIds = (
+            isLong ? queuedPositionLongIds : queuedPositionShortIds
         );
+        queuedPositionId = queuedPositionIds[leverage];
         if (pricePointIndexes[queuedPositionId] <= pricePointLastIndex) {
             // prior update window for this queued position has passed
             positions.push(Position.Info({
@@ -239,6 +238,7 @@ contract OverlayMarket is ERC1155 {
             }));
             queuedPositionId = positions.length - 1;
             pricePointIndexes[queuedPositionId] = pricePointLastIndex + 1;
+            queuedPositionIds[leverage] = queuedPositionId;
         }
     }
 
