@@ -2,15 +2,16 @@
 pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 
 import "./libraries/FixedPoint.sol";
 import "./libraries/Position.sol";
 import "./interfaces/IOverlayFactory.sol";
 
+import "./OverlayERC1155.sol";
+import "./OverlayPricePoint.sol";
 import "./OverlayToken.sol";
 
-contract OverlayMarket is ERC1155 {
+contract OverlayMarket is OverlayERC1155, OverlayPricePoint {
     using FixedPoint for FixedPoint.uq112x112;
     using FixedPoint for FixedPoint.uq144x112;
     using Position for Position.Info;
@@ -43,8 +44,6 @@ contract OverlayMarket is ERC1155 {
     uint112 public fundingKDenominator;
     // block at which market update was last called: includes funding payment, fees, price fetching
     uint256 public updateBlockLast;
-    // last pointer set for price fetches
-    uint256 public pricePointLastIndex;
     // outstanding cumulative fees to be forwarded
     uint256 public fees;
 
@@ -59,8 +58,6 @@ contract OverlayMarket is ERC1155 {
 
     // array of pos attributes; id is index in array
     Position.Info[] public positions;
-    // mapping from position id to total shares
-    mapping(uint256 => uint256) public totalPositionShares;
 
     // mapping from leverage to index in positions array of queued position; queued can still be built on while updatePeriod elapses
     mapping(uint256 => uint256) private queuedPositionLongIds;
@@ -69,8 +66,6 @@ contract OverlayMarket is ERC1155 {
     // mapping from position id to price point index pointer
     // @dev used to calculate priceEntry for each position
     mapping(uint256 => uint256) private pricePointIndexes;
-    // mapping from price point index to realized historical prices
-    mapping(uint256 => uint256) private pricePoints;
 
     uint256 private unlocked = 1;
     modifier lock() {
@@ -98,7 +93,7 @@ contract OverlayMarket is ERC1155 {
         uint144 _oiCap,
         uint112 _fundingKNumerator,
         uint112 _fundingKDenominator
-    ) ERC1155(_uri) {
+    ) OverlayERC1155(_uri) {
         // immutables
         factory = msg.sender;
         ovl = _ovl;
@@ -116,38 +111,8 @@ contract OverlayMarket is ERC1155 {
         updateBlockLast = block.number;
     }
 
-    // mint overrides erc1155 _mint to track total shares issued for given position id
-    function mint(address account, uint256 id, uint256 shares, bytes memory data) private {
-        totalPositionShares[id] += shares;
-        _mint(account, id, shares, data);
-    }
-
-    // burn overrides erc1155 _burn to track total shares issued for given position id
-    function burn(address account, uint256 id, uint256 shares) private {
-        uint256 totalShares = totalPositionShares[id];
-        require(totalShares >= shares, "OverlayV1: burn shares exceeds total");
-        totalPositionShares[id] = totalShares - shares;
-        _burn(account, id, shares);
-    }
-
     function setURI(string memory newuri) external onlyFactory {
         _setURI(newuri);
-    }
-
-    /// @notice Allows inheriting contracts to add the latest realized price
-    function setPricePointLast(uint256 price) internal {
-        pricePoints[pricePointLastIndex] = price;
-    }
-
-    /// @notice Getter for historical prices
-    function getPricePoint(uint256 pricePointIndex) external returns (uint256) {
-        return pricePoints[pricePointIndex];
-    }
-
-    /// @notice Fetches last price from oracle and sets in pricePoints
-    /// @dev Override for each specific market feed to also fetch from oracle value at T
-    function fetchPricePoint() internal virtual returns (bool success) {
-        return true;
     }
 
     /// @notice Computes f**m
@@ -229,13 +194,6 @@ contract OverlayMarket is ERC1155 {
 
         // zero cumulative fees since last update
         fees = 0;
-    }
-
-    /// @notice Forwards price point index for next update period
-    /// @dev Override fetchPricePoint for each specific market feed
-    function updatePricePoints() private {
-        fetchPricePoint();
-        pricePointLastIndex++;
     }
 
     /// @notice Updates funding payments, cumulative fees, and price points
