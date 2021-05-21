@@ -80,7 +80,8 @@ contract OverlayMirinFactory is Ownable {
         uint8 leverageMax,
         uint144 oiCap,
         uint112 fundingKNumerator,
-        uint112 fundingKDenominator
+        uint112 fundingKDenominator,
+        uint256 amountIn
     ) external onlyOwner returns (OverlayMirinMarket marketContract) {
         require(IMirinFactory(mirinFactory).isPool(mirinPool), "OverlayV1: !MirinPool");
         require(IMirinOracle(mirinPool).pricePointsLength() > 1, "OverlayV1: !MirinInitialized");
@@ -93,7 +94,8 @@ contract OverlayMirinFactory is Ownable {
             leverageMax,
             oiCap,
             fundingKNumerator,
-            fundingKDenominator
+            fundingKDenominator,
+            amountIn
         );
 
         marketExists[address(marketContract)] = true;

@@ -134,6 +134,22 @@ contract OverlayMarket is ERC1155 {
         _setURI(newuri);
     }
 
+    /// @notice Allows inheriting contracts to add the latest realized price
+    function setPricePointLast(uint256 price) internal {
+        pricePoints[pricePointLastIndex] = price;
+    }
+
+    /// @notice Getter for historical prices
+    function getPricePoint(uint256 pricePointIndex) external returns (uint256) {
+        return pricePoints[pricePointIndex];
+    }
+
+    /// @notice Fetches last price from oracle and sets in pricePoints
+    /// @dev Override for each specific market feed to also fetch from oracle value at T
+    function fetchPricePoint() internal virtual returns (bool success) {
+        return true;
+    }
+
     /// @notice Computes f**m
     /// @dev Works properly only when _fNumerator < _fDenominator
     function computeFundingFactor(
@@ -156,63 +172,87 @@ contract OverlayMarket is ERC1155 {
         return (elapsed > 0);
     }
 
-    /// @notice Updates funding payments and cumulative fees
-    /// @dev Override for each specific market feed to also update pricePoints at T+1 updatePeriod
-    function update(address rewardsTo) public virtual {
+    /// @notice Transfers funding payments
+    /// @dev oiImbalance(m) = oiImbalance(0) * (1 - 2k)**m
+    function updateFunding() private returns (uint256 amountToBurn) {
+        uint256 elapsed = (block.number - updateBlockLast) / updatePeriod;
+        FixedPoint.uq144x112 memory fundingFactor = computeFundingFactor(
+            fundingKDenominator - 2 * fundingKNumerator,
+            fundingKDenominator,
+            elapsed
+        );
+        if (oiShort == 0) {
+            uint256 oiLongNow = fundingFactor.mul(oiLong).decode144();
+            amountToBurn = oiLong - oiLongNow;
+            oiLong = oiLongNow;
+        } else if (oiLong == 0) {
+            uint256 oiShortNow = fundingFactor.mul(oiShort).decode144();
+            amountToBurn = oiShort - oiShortNow;
+            oiShort = oiShortNow;
+        } else if (oiLong > oiShort) {
+            uint256 oiImbNow = fundingFactor.mul(oiLong - oiShort).decode144();
+            oiLong = (oiLong + oiShort + oiImbNow) / 2;
+            oiShort = (oiLong + oiShort - oiImbNow) / 2;
+        } else {
+            uint256 oiImbNow = fundingFactor.mul(oiShort - oiLong).decode144();
+            oiShort = (oiLong + oiShort + oiImbNow) / 2;
+            oiLong = (oiLong + oiShort - oiImbNow) / 2;
+        }
+    }
+
+    /// @notice Computes fee pot distributions and zeroes pot
+    function updateFees()
+        private
+        returns (
+            uint256 amountToBurn,
+            uint256 amountToForward,
+            uint256 amountToRewardUpdates,
+            address feeTo
+        )
+    {
+        (
+            ,
+            uint16 _feeBurnRate,
+            uint16 _feeUpdateRewardsRate,
+            uint16 _feeResolution,
+            address _feeTo,
+            ,,,
+        ) = IOverlayFactory(factory).getGlobalParams();
+        uint256 feeAmount = fees;
+        uint256 feeAmountLessBurn = (feeAmount * _feeResolution - feeAmount * _feeBurnRate) / _feeResolution;
+        uint256 feeAmountLessBurnAndUpdate = (feeAmountLessBurn * _feeResolution - feeAmountLessBurn * _feeUpdateRewardsRate) / _feeResolution;
+
+        amountToBurn = feeAmount - feeAmountLessBurn;
+        amountToForward = feeAmountLessBurnAndUpdate;
+        amountToRewardUpdates = feeAmountLessBurn - feeAmountLessBurnAndUpdate;
+        feeTo = _feeTo;
+
+        // zero cumulative fees since last update
+        fees = 0;
+    }
+
+    /// @notice Forwards price point index for next update period
+    /// @dev Override fetchPricePoint for each specific market feed
+    function updatePricePoints() private {
+        fetchPricePoint();
+        pricePointLastIndex++;
+    }
+
+    /// @notice Updates funding payments, cumulative fees, and price points
+    function update(address rewardsTo) public {
         uint256 blockNumber = block.number;
         uint256 elapsed = (blockNumber - updateBlockLast) / updatePeriod;
         if (elapsed > 0) {
-            // For OVL transfers after calc funding and fees
-            uint256 amountToBurn;
-            uint256 amountToForward;
-            uint256 amountToRewardUpdates;
-
-            // Transfer funding payments
-            // oiImbNow = oiImb * (1 - 2k)**m
-            FixedPoint.uq144x112 memory fundingFactor = computeFundingFactor(
-                fundingKDenominator - 2 * fundingKNumerator,
-                fundingKDenominator,
-                elapsed
-            );
-            if (oiShort == 0) {
-                uint256 oiLongNow = fundingFactor.mul(oiLong).decode144();
-                amountToBurn = oiLong - oiLongNow;
-                oiLong = oiLongNow;
-            } else if (oiLong == 0) {
-                uint256 oiShortNow = fundingFactor.mul(oiShort).decode144();
-                amountToBurn = oiShort - oiShortNow;
-                oiShort = oiShortNow;
-            } else if (oiLong > oiShort) {
-                uint256 oiImbNow = fundingFactor.mul(oiLong - oiShort).decode144();
-                oiLong = (oiLong + oiShort + oiImbNow) / 2;
-                oiShort = (oiLong + oiShort - oiImbNow) / 2;
-            } else {
-                uint256 oiImbNow = fundingFactor.mul(oiShort - oiLong).decode144();
-                oiShort = (oiLong + oiShort + oiImbNow) / 2;
-                oiLong = (oiLong + oiShort - oiImbNow) / 2;
-            }
-
-            // Forward and burn fees
             (
-                ,
-                uint16 feeBurnRate,
-                uint16 feeUpdateRewardsRate,
-                uint16 feeResolution,
-                address feeTo,
-                ,,,
-            ) = IOverlayFactory(factory).getGlobalParams();
-            uint256 feeAmount = fees;
-            uint256 feeAmountLessBurn = (feeAmount * feeResolution - feeAmount * feeBurnRate) / feeResolution;
-            uint256 feeAmountLessBurnAndUpdate = (feeAmountLessBurn * feeResolution - feeAmountLessBurn * feeUpdateRewardsRate) / feeResolution;
+                uint256 amountToBurn,
+                uint256 amountToForward,
+                uint256 amountToRewardUpdates,
+                address feeTo
+            ) = updateFees();
+            amountToBurn += updateFunding();
+            updatePricePoints();
 
-            amountToForward = feeAmountLessBurnAndUpdate;
-            amountToRewardUpdates = feeAmountLessBurn - feeAmountLessBurnAndUpdate;
-            amountToBurn += feeAmount - feeAmountLessBurn;
-
-            // update state
-            fees = 0;
             updateBlockLast = blockNumber;
-            pricePointLastIndex++;
 
             emit Update(msg.sender, rewardsTo, amountToRewardUpdates);
 

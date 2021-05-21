@@ -6,6 +6,7 @@ from brownie import ETH_ADDRESS, OverlayToken, chain, interface
 TOKEN_DECIMALS = 18
 TOKEN_TOTAL_SUPPLY = 8000000
 OI_CAP = 800000
+AMOUNT_IN = 1
 
 
 @pytest.fixture(scope="module")
@@ -67,7 +68,7 @@ def price_points(token):
     scope="module",
     params=[
         ("OverlayMirinFactory", [15, 5000, 100, ETH_ADDRESS, 60, 50, ETH_ADDRESS],
-         "OverlayMirinMarket", [True, 4, 24, 100, OI_CAP*10**TOKEN_DECIMALS, 1, 8],
+         "OverlayMirinMarket", [True, 4, 24, 100, OI_CAP*10**TOKEN_DECIMALS, 1, 8, AMOUNT_IN*10**TOKEN_DECIMALS],
          "MirinFactoryMock", [],
          "IMirinOracle"),
     ])
