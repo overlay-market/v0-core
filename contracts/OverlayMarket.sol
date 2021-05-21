@@ -30,17 +30,12 @@ contract OverlayMarket is ERC1155 {
     // OverlayFactory address
     address public immutable factory;
 
-    struct PricePointWindow {
-        uint256 pricePointStartIndex; // index in oracle's pricePoints to use as start of price calculation for position entry (lock) price
-        uint256 pricePointEndIndex; // index in oracle's pricePoints to use as end of price calculation for position entry (lock) price
-    }
-
     // leverage max allowed for a position: leverages are assumed to be discrete increments of 1
     uint8 public leverageMax;
-    // period size for calls to update
-    uint256 public updatePeriod;
     // open interest cap on each side long/short
     uint144 public oiCap;
+    // period size for calls to update
+    uint256 public updatePeriod;
 
     // open interest funding constant factor, charged per updatePeriod
     // 1/d = 1 - 2k; 0 < k < 1/2, 1 < d < infty
@@ -48,8 +43,10 @@ contract OverlayMarket is ERC1155 {
     uint112 public fundingKDenominator;
     // block at which market update was last called: includes funding payment, fees, price fetching
     uint256 public updateBlockLast;
-    // last fetched price
-    uint256 public priceLast;
+    // last pointer set for price fetches
+    uint256 public pricePointLastIndex;
+    // outstanding cumulative fees to be forwarded
+    uint256 public fees;
 
     // total open interest long
     uint256 public oiLong;
@@ -60,19 +57,20 @@ contract OverlayMarket is ERC1155 {
     // total open interest short shares outstanding
     uint256 private totalOiShortShares;
 
-    // outstanding cumulative fees to be forwarded
-    uint256 public fees;
-
     // array of pos attributes; id is index in array
     Position.Info[] public positions;
     // mapping from position id to total shares
     mapping(uint256 => uint256) public totalPositionShares;
-    // mapping from position id to price point window
-    mapping(uint256 => PricePointWindow) private pricePointWindows;
-    // mapping from leverage to index in positions array of queued position; queued can still be built on while updatePeriod elapses
-    mapping(uint8 => uint256) private queuedPositionLongIds;
-    mapping(uint8 => uint256) private queuedPositionShortIds;
 
+    // mapping from leverage to index in positions array of queued position; queued can still be built on while updatePeriod elapses
+    mapping(uint256 => uint256) private queuedPositionLongIds;
+    mapping(uint256 => uint256) private queuedPositionShortIds;
+
+    // mapping from position id to price point index pointer
+    // @dev used to calculate priceEntry for each position
+    mapping(uint256 => uint256) private pricePointIndexes;
+    // mapping from price point index to realized historical prices
+    mapping(uint256 => uint256) private pricePoints;
 
     uint256 private unlocked = 1;
     modifier lock() {
@@ -159,7 +157,7 @@ contract OverlayMarket is ERC1155 {
     }
 
     /// @notice Updates funding payments and cumulative fees
-    /// @dev Override for each specific market feed to also update oracle prices
+    /// @dev Override for each specific market feed to also update pricePoints at T+1 updatePeriod
     function update(address rewardsTo) public virtual {
         uint256 blockNumber = block.number;
         uint256 elapsed = (blockNumber - updateBlockLast) / updatePeriod;
@@ -203,8 +201,6 @@ contract OverlayMarket is ERC1155 {
                 address feeTo,
                 ,,,
             ) = IOverlayFactory(factory).getGlobalParams();
-
-            // fee amounts with some accounting
             uint256 feeAmount = fees;
             uint256 feeAmountLessBurn = (feeAmount * feeResolution - feeAmount * feeBurnRate) / feeResolution;
             uint256 feeAmountLessBurnAndUpdate = (feeAmountLessBurn * feeResolution - feeAmountLessBurn * feeUpdateRewardsRate) / feeResolution;
@@ -213,8 +209,10 @@ contract OverlayMarket is ERC1155 {
             amountToRewardUpdates = feeAmountLessBurn - feeAmountLessBurnAndUpdate;
             amountToBurn += feeAmount - feeAmountLessBurn;
 
+            // update state
             fees = 0;
             updateBlockLast = blockNumber;
+            pricePointLastIndex++;
 
             emit Update(msg.sender, rewardsTo, amountToRewardUpdates);
 
@@ -225,19 +223,23 @@ contract OverlayMarket is ERC1155 {
     }
 
     function updateQueuedPosition(bool isLong, uint256 leverage) private returns (uint256 queuedPositionId) {
-        // TODO: implement this PROPERLY so users pool collateral within updatePeriod windows
-        positions.push(Position.Info({
-            isLong: isLong,
-            leverage: leverage,
-            oiShares: 0,
-            debt: 0,
-            cost: 0
-        }));
-        queuedPositionId = positions.length - 1;
-        pricePointWindows[queuedPositionId] = PricePointWindow({
-            pricePointStartIndex: 0,
-            pricePointEndIndex: 0
-        });
+        queuedPositionId = (
+            isLong ?
+            queuedPositionLongIds[leverage] :
+            queuedPositionShortIds[leverage]
+        );
+        if (pricePointIndexes[queuedPositionId] <= pricePointLastIndex) {
+            // prior update window for this queued position has passed
+            positions.push(Position.Info({
+                isLong: isLong,
+                leverage: leverage,
+                oiShares: 0,
+                debt: 0,
+                cost: 0
+            }));
+            queuedPositionId = positions.length - 1;
+            pricePointIndexes[queuedPositionId] = pricePointLastIndex + 1;
+        }
     }
 
     function positionsLength() external view returns (uint256) {
@@ -261,7 +263,7 @@ contract OverlayMarket is ERC1155 {
         require(collateralAmount >= MIN_COLLATERAL_AMOUNT, "OverlayV1: invalid collateral amount");
         require(leverage >= 1 && leverage <= leverageMax, "OverlayV1: invalid leverage");
 
-        // update market for funding, price point, fees before all else
+        // update market for funding, price points, fees before all else
         update(rewardsTo);
 
         uint256 positionId = updateQueuedPosition(isLong, leverage);
@@ -307,6 +309,7 @@ contract OverlayMarket is ERC1155 {
     ) external lock enabled {
         require(positionId < positions.length, "OverlayV1: invalid position id");
         require(shares > 0 && shares <= balanceOf(msg.sender, positionId), "OverlayV1: invalid position shares");
+        // TODO: require(position has settled, i.e. price filled);
 
         // update market for funding, price point, fees before all else
         update(rewardsTo);
@@ -320,19 +323,38 @@ contract OverlayMarket is ERC1155 {
             isLong ? oiLong : oiShort, // totalOi
             isLong ? totalOiLongShares : totalOiShortShares // totalOiShares
         ) / totalShares;
-        uint256 notional = shares * position.notional(
-            isLong ? oiLong : oiShort, // totalOi
-            isLong ? totalOiLongShares : totalOiShortShares, // totalOiShares
-            0, // priceEntry: TODO: compute entry price
-            priceLast // priceExit: potential sacrifice of profit from protocol for UX purposes
-        ) / totalShares;
         uint256 debt = shares * position.debt / totalShares;
         uint256 cost = shares * position.cost / totalShares;
 
+        uint256 valueAdjusted;
+        uint256 feeAmount;
+        { // avoid stack too deep errors in computing valueAdjusted of position
+        uint256 _positionId = positionId;
+        uint256 _pricePointLastIndex = pricePointLastIndex;
+        bool _isLong = isLong;
+        Position.Info storage _position = position;
+
+        uint256 _shares = shares;
+        uint256 _totalShares = totalShares;
+        uint256 _totalOi = _isLong ? oiLong : oiShort;
+        uint256 _totalOiShares = _isLong ? totalOiLongShares : totalOiShortShares;
+
+        uint256 _debt = debt;
+        uint256 _priceEntry = pricePoints[pricePointIndexes[_positionId]];
+        uint256 _priceExit = pricePoints[_pricePointLastIndex]; // potential sacrifice of profit for UX purposes - implicit option to user here since using T vs T+1 settlement on unwind
+        uint256 _notional = _shares * _position.notional(
+            _totalOi,
+            _totalOiShares,
+            _priceEntry,
+            _priceExit
+        ) / _totalShares;
+
         // adjust for fees
         // TODO: think through edge case of underwater position ... and fee adjustments ...
-        (uint256 notionalAdjusted, uint256 feeAmount) = adjustForFees(notional);
-        uint256 valueAdjusted = notionalAdjusted > debt ? notionalAdjusted - debt : 0; // floor in case underwater, and protocol loses out on any maintenance margin
+        (uint256 _notionalAdjusted, uint256 _feeAmount) = adjustForFees(_notional);
+        valueAdjusted = _notionalAdjusted > _debt ? _notionalAdjusted - _debt : 0; // floor in case underwater, and protocol loses out on any maintenance margin
+        feeAmount = _feeAmount;
+        }
 
         // effects
         fees += feeAmount; // adds to fee pot, which is transferred on update
