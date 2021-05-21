@@ -140,13 +140,6 @@ contract OverlayMirinFactory is Ownable {
         }
     }
 
-    /// @notice Allows gov to adjust uri for erc 1155 of all mirin markets
-    function setURI(string memory uri) external onlyOwner {
-        for (uint256 i=0; i < allMarkets.length; ++i) {
-            OverlayMirinMarket(allMarkets[i]).setURI(uri);
-        }
-    }
-
     /// @notice Allows gov to adjust per market params
     function adjustPerMarketParams(
         address market,

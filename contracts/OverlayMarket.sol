@@ -111,10 +111,6 @@ contract OverlayMarket is OverlayERC1155, OverlayPricePoint {
         updateBlockLast = block.number;
     }
 
-    function setURI(string memory newuri) external onlyFactory {
-        _setURI(newuri);
-    }
-
     /// @notice Computes f**m
     /// @dev Works properly only when _fNumerator < _fDenominator
     function computeFundingFactor(
