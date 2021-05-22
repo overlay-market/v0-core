@@ -16,6 +16,11 @@ contract OverlayPricePoint {
     // mapping from price point index to realized historical prices
     mapping(uint256 => uint256) public pricePoints;
 
+    constructor() {
+        // set to 1 given update window T+1 settlement logic on build
+        pricePointCurrentIndex = 1;
+    }
+
     /// @notice Allows inheriting contracts to add the latest realized price
     function setPricePointLast(uint256 price) internal {
         pricePoints[pricePointCurrentIndex] = price;

@@ -64,8 +64,6 @@ contract OverlayMirinMarket is OverlayMarket {
     }
 
     function lastPrice() public view returns (uint256) {
-        uint256 len = IMirinOracle(mirinPool).pricePointsLength();
-        require(len > windowSize, "OverlayV1: !MirinInitialized");
         (
             uint256 timestampEnd,
             uint256 price0CumulativeEnd,
