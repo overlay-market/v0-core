@@ -221,7 +221,7 @@ contract OverlayMarket is OverlayERC1155, OverlayPricePoint {
             isLong ? queuedPositionLongIds : queuedPositionShortIds
         );
         queuedPositionId = queuedPositionIds[leverage];
-        if (pricePointIndexes[queuedPositionId] <= pricePointLastIndex) {
+        if (pricePointIndexes[queuedPositionId] < pricePointCurrentIndex) {
             // prior update window for this queued position has passed
             positions.push(Position.Info({
                 isLong: isLong,
@@ -231,7 +231,7 @@ contract OverlayMarket is OverlayERC1155, OverlayPricePoint {
                 cost: 0
             }));
             queuedPositionId = positions.length - 1;
-            pricePointIndexes[queuedPositionId] = pricePointLastIndex + 1;
+            pricePointIndexes[queuedPositionId] = pricePointCurrentIndex;
             queuedPositionIds[leverage] = queuedPositionId;
         }
     }
@@ -303,7 +303,7 @@ contract OverlayMarket is OverlayERC1155, OverlayPricePoint {
     ) external lock enabled {
         require(positionId < positions.length, "OverlayV1: invalid position id");
         require(shares > 0 && shares <= balanceOf(msg.sender, positionId), "OverlayV1: invalid position shares");
-        // TODO: require(position has settled, i.e. price filled);
+        require(hasPricePoint(pricePointIndexes[positionId]), "OverlayV1: !settled");
 
         // update market for funding, price point, fees before all else
         update(rewardsTo);
@@ -324,7 +324,7 @@ contract OverlayMarket is OverlayERC1155, OverlayPricePoint {
         uint256 feeAmount;
         { // avoid stack too deep errors in computing valueAdjusted of position
         uint256 _positionId = positionId;
-        uint256 _pricePointLastIndex = pricePointLastIndex;
+        uint256 _pricePointCurrentIndex = pricePointCurrentIndex;
         bool _isLong = isLong;
         Position.Info storage _position = position;
 
@@ -335,7 +335,7 @@ contract OverlayMarket is OverlayERC1155, OverlayPricePoint {
 
         uint256 _debt = debt;
         uint256 _priceEntry = pricePoints[pricePointIndexes[_positionId]];
-        uint256 _priceExit = pricePoints[_pricePointLastIndex]; // potential sacrifice of profit for UX purposes - implicit option to user here since using T vs T+1 settlement on unwind
+        uint256 _priceExit = pricePoints[_pricePointCurrentIndex-1]; // potential sacrifice of profit for UX purposes - implicit option to user here since using T instead of T+1 settlement on unwind (T < t < T+1; t=block.number)
         uint256 _notional = _shares * _position.notional(
             _totalOi,
             _totalOiShares,

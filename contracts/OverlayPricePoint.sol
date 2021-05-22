@@ -11,14 +11,19 @@ import "./interfaces/IOverlayFactory.sol";
 import "./OverlayToken.sol";
 
 contract OverlayPricePoint {
-    // last pointer set for price fetches
-    uint256 public pricePointLastIndex;
+    // current index pointer for the upcoming price fetch on update
+    uint256 public pricePointCurrentIndex;
     // mapping from price point index to realized historical prices
     mapping(uint256 => uint256) public pricePoints;
 
     /// @notice Allows inheriting contracts to add the latest realized price
     function setPricePointLast(uint256 price) internal {
-        pricePoints[pricePointLastIndex] = price;
+        pricePoints[pricePointCurrentIndex] = price;
+    }
+
+    /// @notice Whether price has been realized for given index
+    function hasPricePoint(uint256 pricePointIndex) internal returns (bool) {
+        return pricePoints[pricePointIndex] > 0;
     }
 
     /// @notice Fetches last price from oracle and sets in pricePoints
@@ -31,6 +36,6 @@ contract OverlayPricePoint {
     /// @dev Override fetchPricePoint for each specific market feed
     function updatePricePoints() internal {
         fetchPricePoint();
-        pricePointLastIndex++;
+        pricePointCurrentIndex++;
     }
 }

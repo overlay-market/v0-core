@@ -12,6 +12,7 @@ contract OverlayMirinMarket is OverlayMarket {
 
     address public immutable mirinPool;
     bool public immutable isPrice0;
+    uint256 public immutable mirinPoolStartIndex;
     // window size for sliding window TWAP calc
     uint256 public immutable windowSize;
     // ideally value of ONE for tokenIn
@@ -37,10 +38,16 @@ contract OverlayMirinMarket is OverlayMarket {
         _fundingKNumerator,
         _fundingKDenominator
     ) {
+        // immutables
         mirinPool = _mirinPool;
         isPrice0 = _isPrice0;
         windowSize = _windowSize;
         amountIn = _amountIn;
+
+        // price points init
+        uint256 len = IMirinOracle(_mirinPool).pricePointsLength();
+        require(len > _windowSize, "OverlayV1: !MirinInitialized");
+        mirinPoolStartIndex = len - 1;
     }
 
     // SEE: https://github.com/Uniswap/uniswap-v2-periphery/blob/master/contracts/examples/ExampleSlidingWindowOracle.sol#L93
@@ -63,12 +70,16 @@ contract OverlayMirinMarket is OverlayMarket {
             uint256 timestampEnd,
             uint256 price0CumulativeEnd,
             uint256 price1CumulativeEnd
-        ) = IMirinOracle(mirinPool).pricePoints(len-1);
+        ) = IMirinOracle(mirinPool).pricePoints(
+            mirinPoolStartIndex + pricePointCurrentIndex * updatePeriod
+        );
         (
             uint256 timestampStart,
             uint256 price0CumulativeStart,
             uint256 price1CumulativeStart
-        ) = IMirinOracle(mirinPool).pricePoints(len-1-windowSize);
+        ) = IMirinOracle(mirinPool).pricePoints(
+            mirinPoolStartIndex + pricePointCurrentIndex * updatePeriod - windowSize
+        );
 
         if (isPrice0) {
             return computeAmountOut(
