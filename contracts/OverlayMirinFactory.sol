@@ -147,6 +147,7 @@ contract OverlayMirinFactory is Ownable {
         address market,
         uint256 updatePeriod,
         uint8 leverageMax,
+        uint16 marginAdjustment,
         uint144 oiCap,
         uint112 fundingKNumerator,
         uint112 fundingKDenominator
@@ -154,6 +155,7 @@ contract OverlayMirinFactory is Ownable {
         OverlayMirinMarket(market).adjustParams(
             updatePeriod,
             leverageMax,
+            marginAdjustment,
             oiCap,
             fundingKNumerator,
             fundingKDenominator

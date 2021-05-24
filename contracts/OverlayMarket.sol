@@ -387,6 +387,7 @@ contract OverlayMarket is OverlayERC1155, OverlayPricePoint {
     function adjustParams(
         uint256 _updatePeriod,
         uint8 _leverageMax,
+        uint16 _marginAdjustment,
         uint144 _oiCap,
         uint112 _fundingKNumerator,
         uint112 _fundingKDenominator
@@ -394,6 +395,7 @@ contract OverlayMarket is OverlayERC1155, OverlayPricePoint {
         // TODO: requires on params; particularly leverageMax wrt MAX_FEE and cap
         updatePeriod = _updatePeriod;
         leverageMax = _leverageMax;
+        marginAdjustment = _marginAdjustment;
         oiCap = _oiCap;
 
         require(_fundingKDenominator > 2 * _fundingKNumerator, "OverlayV1: invalid k");
