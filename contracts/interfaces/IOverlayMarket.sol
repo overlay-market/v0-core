@@ -13,6 +13,7 @@ interface IOverlayMarket is IERC1155 {
     function factory() external view returns (address);
     function updatePeriod() external view returns (uint256);
     function leverageMax() external view returns (uint8);
+    function marginAdjustment() external view returns (uint16);
     function oiCap() external view returns (uint256);
     function fundingKNumerator() external view returns (uint256);
     function fundingKDenominator() external view returns (uint256);

@@ -22,7 +22,7 @@ contract OverlayPricePoint {
     }
 
     /// @notice Allows inheriting contracts to add the latest realized price
-    function setPricePointLast(uint256 price) internal {
+    function setPricePointCurrent(uint256 price) internal {
         pricePoints[pricePointCurrentIndex] = price;
     }
 

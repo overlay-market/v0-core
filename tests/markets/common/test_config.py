@@ -2,6 +2,12 @@ import pytest
 import re
 
 
+TOKEN_DECIMALS = 18
+TOKEN_TOTAL_SUPPLY = 8000000
+OI_CAP = 800000
+AMOUNT_IN = 1
+
+
 def test_balances(token, gov, rewards, alice, bob, feed_owner):
     assert token.totalSupply() == token.balanceOf(bob)
     assert token.balanceOf(gov) == 0
@@ -39,6 +45,8 @@ def test_params(factory, market):
 
 def test_markets(factory, market):
     assert factory.allMarkets(0) == market.address
+    assert market.marginAdjustment() == 100
+    assert market.oiCap() == OI_CAP*10**TOKEN_DECIMALS
 
 
 def test_market_is_enabled(factory, market):

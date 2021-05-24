@@ -30,10 +30,16 @@ def test_update(token, factory, market, alice, rewards, num_periods):
 
 def test_update_between_periods(token, factory, market, alice, rewards):
     update_period = market.updatePeriod()
-    update_blocks = update_period - 2
+    update_blocks = update_period
     prior_update_block = market.updateBlockLast()
+    latest_block = chain[-1]['number']
+    if int((latest_block - prior_update_block) / update_period) > 0:
+        market.update(rewards, {"from": alice})
+        latest_block = chain[-1]['number']
 
-    chain.mine(update_blocks-1)
+    blocks_to_mine = update_period - (latest_block - prior_update_block) - 1
+
+    chain.mine(blocks_to_mine)
     updatable = market.updatable()
     assert updatable is False
 

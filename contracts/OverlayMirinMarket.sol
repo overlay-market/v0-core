@@ -25,6 +25,7 @@ contract OverlayMirinMarket is OverlayMarket {
         uint256 _updatePeriod,
         uint256 _windowSize,
         uint8 _leverageMax,
+        uint16 _marginAdjustment,
         uint144 _oiCap,
         uint112 _fundingKNumerator,
         uint112 _fundingKDenominator,
@@ -34,6 +35,7 @@ contract OverlayMirinMarket is OverlayMarket {
         _ovl,
         _updatePeriod,
         _leverageMax,
+        _marginAdjustment,
         _oiCap,
         _fundingKNumerator,
         _fundingKDenominator
@@ -99,7 +101,7 @@ contract OverlayMirinMarket is OverlayMarket {
     /// @dev Override for Mirin market feed to compute and set TWAP for latest price point index
     function fetchPricePoint() internal virtual override returns (bool success) {
         uint256 price = lastPrice();
-        setPricePointLast(price);
+        setPricePointCurrent(price);
         return true;
     }
 }

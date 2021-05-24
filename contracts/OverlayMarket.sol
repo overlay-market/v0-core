@@ -33,6 +33,8 @@ contract OverlayMarket is OverlayERC1155, OverlayPricePoint {
 
     // leverage max allowed for a position: leverages are assumed to be discrete increments of 1
     uint8 public leverageMax;
+    // percentage of factory maintenance margin requirement to adjust for due to risk of feed
+    uint16 public marginAdjustment;
     // open interest cap on each side long/short
     uint144 public oiCap;
     // period size for calls to update
@@ -42,6 +44,7 @@ contract OverlayMarket is OverlayERC1155, OverlayPricePoint {
     // 1/d = 1 - 2k; 0 < k < 1/2, 1 < d < infty
     uint112 public fundingKNumerator;
     uint112 public fundingKDenominator;
+
     // block at which market update was last called: includes funding payment, fees, price fetching
     uint256 public updateBlockLast;
     // outstanding cumulative fees to be forwarded
@@ -90,6 +93,7 @@ contract OverlayMarket is OverlayERC1155, OverlayPricePoint {
         address _ovl,
         uint256 _updatePeriod,
         uint8 _leverageMax,
+        uint16 _marginAdjustment,
         uint144 _oiCap,
         uint112 _fundingKNumerator,
         uint112 _fundingKDenominator
@@ -101,6 +105,7 @@ contract OverlayMarket is OverlayERC1155, OverlayPricePoint {
         // per-market adjustable params
         updatePeriod = _updatePeriod;
         leverageMax = _leverageMax;
+        marginAdjustment = _marginAdjustment;
         oiCap = _oiCap;
 
         require(_fundingKDenominator > 2 * _fundingKNumerator, "OverlayV1: invalid k");
