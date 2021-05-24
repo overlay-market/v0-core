@@ -18,14 +18,7 @@ contract MirinOracleMock is IMirinOracle {
         uint256[] memory _price0Cumulatives,
         uint256[] memory _price1Cumulatives
     ) {
-        require(_timestamps.length == _price0Cumulatives.length && _price0Cumulatives.length == _price1Cumulatives.length, "price point arrays must have same length");
-        for (uint256 i = 0; i < _timestamps.length; i++) {
-            pricePoints.push(PricePoint(
-                _timestamps[i],
-                _price0Cumulatives[i],
-                _price1Cumulatives[i]
-            ));
-        }
+        addPricePoints(_timestamps, _price0Cumulatives, _price1Cumulatives);
     }
 
     function token0() external override pure returns (address) {
@@ -36,11 +29,19 @@ contract MirinOracleMock is IMirinOracle {
         return address(0);
     }
 
-    function addPricePoint(
-        uint256 price0Cumulative,
-        uint256 price1Cumulative
+    function addPricePoints(
+        uint256[] memory _timestamps,
+        uint256[] memory _price0Cumulatives,
+        uint256[] memory _price1Cumulatives
     ) public {
-        pricePoints.push(PricePoint(block.timestamp, price0Cumulative, price1Cumulative));
+        require(_timestamps.length == _price0Cumulatives.length && _price0Cumulatives.length == _price1Cumulatives.length, "price point arrays must have same length");
+        for (uint256 i = 0; i < _timestamps.length; i++) {
+            pricePoints.push(PricePoint(
+                _timestamps[i],
+                _price0Cumulatives[i],
+                _price1Cumulatives[i]
+            ));
+        }
     }
 
     function pricePointsLength() external override view returns (uint256) {

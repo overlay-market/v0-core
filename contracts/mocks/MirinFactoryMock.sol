@@ -21,4 +21,18 @@ contract MirinFactoryMock {
         isPool[address(pool)] = true;
         allPools.push(address(pool));
     }
+
+    function addPricePoints(
+        address pool,
+        uint256[] memory timestamps,
+        uint256[] memory price0Cumulatives,
+        uint256[] memory price1Cumulatives
+    ) external {
+        require(isPool[pool], "!pool");
+        MirinOracleMock(pool).addPricePoints(
+            timestamps,
+            price0Cumulatives,
+            price1Cumulatives
+        );
+    }
 }

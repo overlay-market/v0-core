@@ -7,6 +7,9 @@ TOKEN_DECIMALS = 18
 TOKEN_TOTAL_SUPPLY = 8000000
 OI_CAP = 800000
 AMOUNT_IN = 1
+PRICE_POINTS_START = 50
+PRICE_POINTS_END = 100
+FIRST_TIMESTAMP = chain.time()
 
 
 @pytest.fixture(scope="module")
@@ -55,12 +58,20 @@ def feed_owner(accounts):
 def price_points(token):
     # TODO: json import of real data ...
     decimals = token.decimals()
-    last_timestamp = chain.time()
-    r = 50
     return (
-        [ last_timestamp - r + i for i in range(1, r) ],
-        [ i * 10 ** decimals for i in range(1, r) ],
-        [ (1 / i) * 10 ** decimals for i in range(1, r) ]
+        [ FIRST_TIMESTAMP - PRICE_POINTS_START + i for i in range(1, PRICE_POINTS_START) ],
+        [ i * 10 ** decimals for i in range(1, PRICE_POINTS_START) ],
+        [ (1 / i) * 10 ** decimals for i in range(1, PRICE_POINTS_START) ]
+    )
+
+
+@pytest.fixture(scope="module")
+def price_points_after(token):
+    decimals = token.decimals()
+    return (
+        [ FIRST_TIMESTAMP - PRICE_POINTS_START + i for i in range(PRICE_POINTS_START, PRICE_POINTS_END) ],
+        [ i * 10 ** decimals for i in range(PRICE_POINTS_START, PRICE_POINTS_END) ],
+        [ (1 / i) * 10 ** decimals for i in range(PRICE_POINTS_START, PRICE_POINTS_END) ]
     )
 
 
@@ -72,7 +83,7 @@ def price_points(token):
          "MirinFactoryMock", [],
          "IMirinOracle"),
     ])
-def create_factory(token, gov, feed_owner, price_points, request):
+def create_factory(token, gov, feed_owner, price_points, price_points_after, request):
     ovlf_name, ovlf_args, _, ovlm_args, fdf_name, fdf_args, ifdp_name = request.param
     ovlf = getattr(brownie, ovlf_name)
     fdf = getattr(brownie, fdf_name)
@@ -102,6 +113,17 @@ def create_factory(token, gov, feed_owner, price_points, request):
         factory = gov.deploy(ovlf_type, tok, feed, *ovlf_args)
         tok.grantRole(tok.ADMIN_ROLE(), factory, {"from": gov})
         factory.createMarket(pool, *ovlm_args, {"from": gov})
+
+        # add "after" price points after market creation so mock is preloaded with enough future data for price tests
+        timestamps_after, p0cs_after, p1cs_after = price_points_after
+        feed.addPricePoints(
+            pool_addr,
+            timestamps_after,
+            p0cs_after,
+            p1cs_after,
+            {"from": feed_owner}
+        )
+
         return factory
 
     yield create_factory
