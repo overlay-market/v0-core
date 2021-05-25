@@ -12,8 +12,6 @@ def test_update(token, factory, market, alice, rewards, num_periods):
     update_blocks = num_periods * update_period
 
     chain.mine(update_blocks)
-    updatable = market.updatable()
-    assert updatable is True
 
     tx = market.update(rewards, {"from": alice})
     curr_update_block = market.updateBlockLast()
@@ -43,8 +41,6 @@ def test_update_between_periods(token, factory, market, alice, rewards):
     blocks_to_mine = update_period - (latest_block - prior_update_block) - 2
 
     chain.mine(blocks_to_mine)
-    updatable = market.updatable()
-    assert updatable is False
 
     # Should not update since update period hasn't passed yet
     market.update(rewards, {"from": alice})
@@ -60,8 +56,6 @@ def test_update_max_compound(token, factory, market, alice, rewards):
     prior_update_block = market.updateBlockLast()
 
     chain.mine(update_blocks)
-    updatable = market.updatable()
-    assert updatable is True
 
     tx = market.update(rewards, {"from": alice})
     curr_update_block = market.updateBlockLast()

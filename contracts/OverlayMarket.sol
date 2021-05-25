@@ -7,12 +7,12 @@ import "./libraries/FixedPoint.sol";
 import "./libraries/Position.sol";
 import "./interfaces/IOverlayFactory.sol";
 
-import "./OverlayERC1155.sol";
 import "./OverlayGovernance.sol";
-import "./OverlayPricePoint.sol";
+import "./OverlayOpenInterest.sol";
+import "./OverlayPosition.sol";
 import "./OverlayToken.sol";
 
-contract OverlayMarket is OverlayERC1155, OverlayPricePoint, OverlayGovernance {
+contract OverlayMarket is OverlayPosition, OverlayGovernance, OverlayOpenInterest {
     using FixedPoint for FixedPoint.uq112x112;
     using FixedPoint for FixedPoint.uq144x112;
     using Position for Position.Info;
@@ -23,34 +23,12 @@ contract OverlayMarket is OverlayERC1155, OverlayPricePoint, OverlayGovernance {
     event Update(address indexed sender, address indexed rewarded, uint256 reward);
     event Liquidate(address indexed sender, address indexed rewarded, uint256 reward);
 
-    // max number of periodSize periods before treat funding as completely rebalanced: done for gas savings on compute funding factor
-    uint16 public constant MAX_FUNDING_COMPOUND = 4320; // 30d at 10m for updatePeriod
     uint16 public constant MIN_COLLATERAL_AMOUNT = 10**4;
 
     // block at which market update was last called: includes funding payment, fees, price fetching
     uint256 public updateBlockLast;
     // outstanding cumulative fees to be forwarded
     uint256 public fees;
-
-    // total open interest long
-    uint256 public oiLong;
-    // total open interest short
-    uint256 public oiShort;
-    // total open interest long shares outstanding
-    uint256 private totalOiLongShares;
-    // total open interest short shares outstanding
-    uint256 private totalOiShortShares;
-
-    // array of pos attributes; id is index in array
-    Position.Info[] public positions;
-
-    // mapping from leverage to index in positions array of queued position; queued can still be built on while updatePeriod elapses
-    mapping(uint256 => uint256) private queuedPositionLongIds;
-    mapping(uint256 => uint256) private queuedPositionShortIds;
-
-    // mapping from position id to price point index pointer
-    // @dev used to calculate priceEntry for each position
-    mapping(uint256 => uint256) private pricePointIndexes;
 
     uint256 private unlocked = 1;
     modifier lock() {
@@ -69,7 +47,7 @@ contract OverlayMarket is OverlayERC1155, OverlayPricePoint, OverlayGovernance {
         uint144 _oiCap,
         uint112 _fundingKNumerator,
         uint112 _fundingKDenominator
-    ) OverlayERC1155(_uri) OverlayGovernance(
+    ) OverlayPosition(_uri) OverlayGovernance(
         _ovl,
         _updatePeriod,
         _leverageMax,
@@ -80,56 +58,6 @@ contract OverlayMarket is OverlayERC1155, OverlayPricePoint, OverlayGovernance {
     ) {
         // state params
         updateBlockLast = block.number;
-    }
-
-    /// @notice Computes f**m
-    /// @dev Works properly only when _fNumerator < _fDenominator
-    function computeFundingFactor(
-        uint112 _fNumerator,
-        uint112 _fDenominator,
-        uint256 _m
-    ) private pure returns (FixedPoint.uq144x112 memory factor) {
-        if (_m > MAX_FUNDING_COMPOUND) {
-            // cut off the recursion if power too large
-            factor = FixedPoint.encode144(0);
-        } else {
-            FixedPoint.uq144x112 memory f = FixedPoint.fraction144(_fNumerator, _fDenominator);
-            factor = FixedPoint.pow(f, _m);
-        }
-    }
-
-    /// @notice Whether the market can be successfully updated
-    function updatable() external view returns (bool) {
-        uint256 elapsed = (block.number - updateBlockLast) / updatePeriod;
-        return (elapsed > 0);
-    }
-
-    /// @notice Transfers funding payments
-    /// @dev oiImbalance(m) = oiImbalance(0) * (1 - 2k)**m
-    function updateFunding() private returns (uint256 amountToBurn) {
-        uint256 elapsed = (block.number - updateBlockLast) / updatePeriod;
-        FixedPoint.uq144x112 memory fundingFactor = computeFundingFactor(
-            fundingKDenominator - 2 * fundingKNumerator,
-            fundingKDenominator,
-            elapsed
-        );
-        if (oiShort == 0) {
-            uint256 oiLongNow = fundingFactor.mul(oiLong).decode144();
-            amountToBurn = oiLong - oiLongNow;
-            oiLong = oiLongNow;
-        } else if (oiLong == 0) {
-            uint256 oiShortNow = fundingFactor.mul(oiShort).decode144();
-            amountToBurn = oiShort - oiShortNow;
-            oiShort = oiShortNow;
-        } else if (oiLong > oiShort) {
-            uint256 oiImbNow = fundingFactor.mul(oiLong - oiShort).decode144();
-            oiLong = (oiLong + oiShort + oiImbNow) / 2;
-            oiShort = (oiLong + oiShort - oiImbNow) / 2;
-        } else {
-            uint256 oiImbNow = fundingFactor.mul(oiShort - oiLong).decode144();
-            oiShort = (oiLong + oiShort + oiImbNow) / 2;
-            oiLong = (oiLong + oiShort - oiImbNow) / 2;
-        }
     }
 
     /// @notice Computes fee pot distributions and zeroes pot
@@ -174,7 +102,8 @@ contract OverlayMarket is OverlayERC1155, OverlayPricePoint, OverlayGovernance {
                 uint256 amountToRewardUpdates,
                 address feeTo
             ) = updateFees();
-            amountToBurn += updateFunding();
+
+            amountToBurn += updateFunding(fundingKNumerator, fundingKDenominator, elapsed);
             updatePricePoints();
 
             updateBlockLast = blockNumber;
@@ -185,30 +114,6 @@ contract OverlayMarket is OverlayERC1155, OverlayPricePoint, OverlayGovernance {
             OverlayToken(ovl).safeTransfer(feeTo, amountToForward);
             OverlayToken(ovl).safeTransfer(rewardsTo, amountToRewardUpdates);
         }
-    }
-
-    function updateQueuedPosition(bool isLong, uint256 leverage) private returns (uint256 queuedPositionId) {
-        mapping(uint256 => uint256) storage queuedPositionIds = (
-            isLong ? queuedPositionLongIds : queuedPositionShortIds
-        );
-        queuedPositionId = queuedPositionIds[leverage];
-        if (pricePointIndexes[queuedPositionId] < pricePointCurrentIndex) {
-            // prior update window for this queued position has passed
-            positions.push(Position.Info({
-                isLong: isLong,
-                leverage: leverage,
-                oiShares: 0,
-                debt: 0,
-                cost: 0
-            }));
-            queuedPositionId = positions.length - 1;
-            pricePointIndexes[queuedPositionId] = pricePointCurrentIndex;
-            queuedPositionIds[leverage] = queuedPositionId;
-        }
-    }
-
-    function positionsLength() external view returns (uint256) {
-        return positions.length;
     }
 
     /// @notice Adjusts state variable fee pots, which are transferred on call to update()
