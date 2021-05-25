@@ -148,7 +148,7 @@ library Position {
         uint256 totalOiShares,
         uint256 priceEntry,
         uint256 priceExit,
-        uint16 maintenanceFactor,
+        uint16 marginMaintenance,
         uint16 marginResolution
     ) private pure returns (bool can) {
         FixedPoint.uq144x112 memory margin = _openMargin(
@@ -159,7 +159,7 @@ library Position {
             priceExit
         );
         FixedPoint.uq144x112 memory maintenance = FixedPoint
-            .encode144(uint144(maintenanceFactor))
+            .encode144(uint144(marginMaintenance))
             .div(uint112(marginResolution))
             .div(uint112(_self.leverage));
         can = margin.lt(maintenance);
@@ -290,7 +290,7 @@ library Position {
         uint256 totalOiShares,
         uint256 priceEntry,
         uint256 priceExit,
-        uint16 maintenanceFactor,
+        uint16 marginMaintenance,
         uint16 marginResolution
     ) internal view returns (bool) {
         Info memory _self = self;
@@ -300,7 +300,7 @@ library Position {
             totalOiShares,
             priceEntry,
             priceExit,
-            maintenanceFactor,
+            marginMaintenance,
             marginResolution
         );
     }

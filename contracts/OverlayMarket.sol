@@ -8,10 +8,11 @@ import "./libraries/Position.sol";
 import "./interfaces/IOverlayFactory.sol";
 
 import "./OverlayERC1155.sol";
+import "./OverlayGovernance.sol";
 import "./OverlayPricePoint.sol";
 import "./OverlayToken.sol";
 
-contract OverlayMarket is OverlayERC1155, OverlayPricePoint {
+contract OverlayMarket is OverlayERC1155, OverlayPricePoint, OverlayGovernance {
     using FixedPoint for FixedPoint.uq112x112;
     using FixedPoint for FixedPoint.uq144x112;
     using Position for Position.Info;
@@ -25,25 +26,6 @@ contract OverlayMarket is OverlayERC1155, OverlayPricePoint {
     // max number of periodSize periods before treat funding as completely rebalanced: done for gas savings on compute funding factor
     uint16 public constant MAX_FUNDING_COMPOUND = 4320; // 30d at 10m for updatePeriod
     uint16 public constant MIN_COLLATERAL_AMOUNT = 10**4;
-
-    // ovl erc20 token
-    address public immutable ovl;
-    // OverlayFactory address
-    address public immutable factory;
-
-    // leverage max allowed for a position: leverages are assumed to be discrete increments of 1
-    uint8 public leverageMax;
-    // percentage of factory maintenance margin requirement to adjust for due to risk of feed
-    uint16 public marginAdjustment;
-    // open interest cap on each side long/short
-    uint144 public oiCap;
-    // period size for calls to update
-    uint256 public updatePeriod;
-
-    // open interest funding constant factor, charged per updatePeriod
-    // 1/d = 1 - 2k; 0 < k < 1/2, 1 < d < infty
-    uint112 public fundingKNumerator;
-    uint112 public fundingKDenominator;
 
     // block at which market update was last called: includes funding payment, fees, price fetching
     uint256 public updateBlockLast;
@@ -78,16 +60,6 @@ contract OverlayMarket is OverlayERC1155, OverlayPricePoint {
         unlocked = 1;
     }
 
-    modifier onlyFactory() {
-        require(msg.sender == factory, "OverlayV1: !factory");
-        _;
-    }
-
-    modifier enabled() {
-        require(IOverlayFactory(factory).isMarket(address(this)), "OverlayV1: !enabled");
-        _;
-    }
-
     constructor(
         string memory _uri,
         address _ovl,
@@ -97,21 +69,15 @@ contract OverlayMarket is OverlayERC1155, OverlayPricePoint {
         uint144 _oiCap,
         uint112 _fundingKNumerator,
         uint112 _fundingKDenominator
-    ) OverlayERC1155(_uri) {
-        // immutables
-        factory = msg.sender;
-        ovl = _ovl;
-
-        // per-market adjustable params
-        updatePeriod = _updatePeriod;
-        leverageMax = _leverageMax;
-        marginAdjustment = _marginAdjustment;
-        oiCap = _oiCap;
-
-        require(_fundingKDenominator > 2 * _fundingKNumerator, "OverlayV1: invalid k");
-        fundingKNumerator = _fundingKNumerator;
-        fundingKDenominator = _fundingKDenominator;
-
+    ) OverlayERC1155(_uri) OverlayGovernance(
+        _ovl,
+        _updatePeriod,
+        _leverageMax,
+        _marginAdjustment,
+        _oiCap,
+        _fundingKNumerator,
+        _fundingKDenominator
+    ) {
         // state params
         updateBlockLast = block.number;
     }
@@ -381,25 +347,5 @@ contract OverlayMarket is OverlayERC1155, OverlayPricePoint {
 
         burn(msg.sender, positionId, shares);
         OverlayToken(ovl).safeTransfer(msg.sender, valueAdjusted);
-    }
-
-    /// @notice Adjusts params associated with this market
-    function adjustParams(
-        uint256 _updatePeriod,
-        uint8 _leverageMax,
-        uint16 _marginAdjustment,
-        uint144 _oiCap,
-        uint112 _fundingKNumerator,
-        uint112 _fundingKDenominator
-    ) external onlyFactory {
-        // TODO: requires on params; particularly leverageMax wrt MAX_FEE and cap
-        updatePeriod = _updatePeriod;
-        leverageMax = _leverageMax;
-        marginAdjustment = _marginAdjustment;
-        oiCap = _oiCap;
-
-        require(_fundingKDenominator > 2 * _fundingKNumerator, "OverlayV1: invalid k");
-        fundingKNumerator = _fundingKNumerator;
-        fundingKDenominator = _fundingKDenominator;
     }
 }
