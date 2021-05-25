@@ -3,18 +3,16 @@ pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "../libraries/FixedPoint.sol";
 import "../libraries/Position.sol";
 import "../interfaces/IOverlayFactory.sol";
 
 import "./OverlayGovernance.sol";
+import "./OverlayFees.sol";
 import "./OverlayOpenInterest.sol";
 import "./OverlayPosition.sol";
 import "../OverlayToken.sol";
 
-contract OverlayMarket is OverlayPosition, OverlayGovernance, OverlayOpenInterest {
-    using FixedPoint for FixedPoint.uq112x112;
-    using FixedPoint for FixedPoint.uq144x112;
+contract OverlayMarket is OverlayPosition, OverlayGovernance, OverlayOpenInterest, OverlayFees {
     using Position for Position.Info;
     using SafeERC20 for OverlayToken;
 
@@ -27,8 +25,6 @@ contract OverlayMarket is OverlayPosition, OverlayGovernance, OverlayOpenInteres
 
     // block at which market update was last called: includes funding payment, fees, price fetching
     uint256 public updateBlockLast;
-    // outstanding cumulative fees to be forwarded
-    uint256 public fees;
 
     uint256 private unlocked = 1;
     modifier lock() {
@@ -60,48 +56,24 @@ contract OverlayMarket is OverlayPosition, OverlayGovernance, OverlayOpenInteres
         updateBlockLast = block.number;
     }
 
-    /// @notice Computes fee pot distributions and zeroes pot
-    function updateFees()
-        private
-        returns (
-            uint256 amountToBurn,
-            uint256 amountToForward,
-            uint256 amountToRewardUpdates,
-            address feeTo
-        )
-    {
-        (
-            ,
-            uint16 _feeBurnRate,
-            uint16 _feeUpdateRewardsRate,
-            uint16 _feeResolution,
-            address _feeTo,
-            ,,,
-        ) = IOverlayFactory(factory).getGlobalParams();
-        uint256 feeAmount = fees;
-        uint256 feeAmountLessBurn = (feeAmount * _feeResolution - feeAmount * _feeBurnRate) / _feeResolution;
-        uint256 feeAmountLessBurnAndUpdate = (feeAmountLessBurn * _feeResolution - feeAmountLessBurn * _feeUpdateRewardsRate) / _feeResolution;
-
-        amountToBurn = feeAmount - feeAmountLessBurn;
-        amountToForward = feeAmountLessBurnAndUpdate;
-        amountToRewardUpdates = feeAmountLessBurn - feeAmountLessBurnAndUpdate;
-        feeTo = _feeTo;
-
-        // zero cumulative fees since last update
-        fees = 0;
-    }
-
     /// @notice Updates funding payments, cumulative fees, and price points
     function update(address rewardsTo) public {
         uint256 blockNumber = block.number;
         uint256 elapsed = (blockNumber - updateBlockLast) / updatePeriod;
         if (elapsed > 0) {
             (
+                ,
+                uint256 feeBurnRate,
+                uint256 feeUpdateRewardsRate,
+                uint256 feeResolution,
+                address feeTo,
+                ,,,
+            ) = IOverlayFactory(factory).getGlobalParams();
+            (
                 uint256 amountToBurn,
                 uint256 amountToForward,
-                uint256 amountToRewardUpdates,
-                address feeTo
-            ) = updateFees();
+                uint256 amountToRewardUpdates
+            ) = updateFees(feeBurnRate, feeUpdateRewardsRate, feeResolution);
 
             amountToBurn += updateFunding(fundingKNumerator, fundingKDenominator, elapsed);
             updatePricePoints();
@@ -114,13 +86,6 @@ contract OverlayMarket is OverlayPosition, OverlayGovernance, OverlayOpenInteres
             OverlayToken(ovl).safeTransfer(feeTo, amountToForward);
             OverlayToken(ovl).safeTransfer(rewardsTo, amountToRewardUpdates);
         }
-    }
-
-    /// @notice Adjusts state variable fee pots, which are transferred on call to update()
-    function adjustForFees(uint256 notional) private returns (uint256 notionalAdjusted, uint256 feeAmount) {
-        (uint256 fee,,, uint256 feeResolution,,,,,) = IOverlayFactory(factory).getGlobalParams();
-        notionalAdjusted = (notional * feeResolution - notional * fee) / feeResolution;
-        feeAmount = notional - notionalAdjusted;
     }
 
     /// @notice Builds a new position
@@ -141,7 +106,8 @@ contract OverlayMarket is OverlayPosition, OverlayGovernance, OverlayOpenInteres
         uint256 oi = collateralAmount * leverage;
 
         // adjust for fees
-        (uint256 oiAdjusted, uint256 feeAmount) = adjustForFees(oi);
+        (uint256 fee,,, uint256 feeResolution,,,,,) = IOverlayFactory(factory).getGlobalParams();
+        (uint256 oiAdjusted, uint256 feeAmount) = adjustForFees(oi, fee, feeResolution);
         uint256 collateralAmountAdjusted = oiAdjusted / leverage;
         uint256 debtAdjusted = oiAdjusted - collateralAmountAdjusted;
 
@@ -199,29 +165,22 @@ contract OverlayMarket is OverlayPosition, OverlayGovernance, OverlayOpenInteres
         uint256 valueAdjusted;
         uint256 feeAmount;
         { // avoid stack too deep errors in computing valueAdjusted of position
-        uint256 _positionId = positionId;
-        uint256 _pricePointCurrentIndex = pricePointCurrentIndex;
-        bool _isLong = isLong;
         Position.Info storage _position = position;
-
+        uint256 _positionId = positionId;
         uint256 _shares = shares;
         uint256 _totalShares = totalShares;
-        uint256 _totalOi = _isLong ? oiLong : oiShort;
-        uint256 _totalOiShares = _isLong ? totalOiLongShares : totalOiShortShares;
-
         uint256 _debt = debt;
-        uint256 _priceEntry = pricePoints[pricePointIndexes[_positionId]];
-        uint256 _priceExit = pricePoints[_pricePointCurrentIndex-1]; // potential sacrifice of profit for UX purposes - implicit option to user here since using T instead of T+1 settlement on unwind (T < t < T+1; t=block.number)
         uint256 _notional = _shares * _position.notional(
-            _totalOi,
-            _totalOiShares,
-            _priceEntry,
-            _priceExit
+            _position.isLong ? oiLong : oiShort,
+            _position.isLong ? totalOiLongShares : totalOiShortShares,
+            pricePoints[pricePointIndexes[_positionId]], // priceEntry
+            pricePoints[pricePointCurrentIndex-1] // priceExit: potential sacrifice of profit for UX purposes - implicit option to user here since using T instead of T+1 settlement on unwind (T < t < T+1; t=block.number)
         ) / _totalShares;
 
         // adjust for fees
         // TODO: think through edge case of underwater position ... and fee adjustments ...
-        (uint256 _notionalAdjusted, uint256 _feeAmount) = adjustForFees(_notional);
+        (uint256 _fee,,, uint256 _feeResolution,,,,,) = IOverlayFactory(factory).getGlobalParams();
+        (uint256 _notionalAdjusted, uint256 _feeAmount) = adjustForFees(_notional, _fee, _feeResolution);
         valueAdjusted = _notionalAdjusted > _debt ? _notionalAdjusted - _debt : 0; // floor in case underwater, and protocol loses out on any maintenance margin
         feeAmount = _feeAmount;
         }

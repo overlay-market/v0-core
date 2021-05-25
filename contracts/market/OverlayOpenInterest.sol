@@ -11,14 +11,14 @@ contract OverlayOpenInterest {
     // max number of periodSize periods before treat funding as completely rebalanced: done for gas savings on compute funding factor
     uint16 public constant MAX_FUNDING_COMPOUND = 4320; // 30d at 10m for updatePeriod
 
-    // total open interest long
+    // total long open interest
     uint256 public oiLong;
-    // total open interest short
+    // total short open interest
     uint256 public oiShort;
 
-    // total open interest long shares outstanding
+    // total shares of long open interest outstanding
     uint256 internal totalOiLongShares;
-    // total open interest short shares outstanding
+    // total shares of short open interest outstanding
     uint256 internal totalOiShortShares;
 
     /// @notice Computes f**m
