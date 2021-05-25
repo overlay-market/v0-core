@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-import "./libraries/Position.sol";
+import "../libraries/Position.sol";
 
 contract OverlayOpenInterest {
     using FixedPoint for FixedPoint.uq112x112;

@@ -3,8 +3,7 @@ pragma solidity ^0.8.2;
 
 import "./libraries/FixedPoint.sol";
 import "./interfaces/IMirinOracle.sol";
-
-import "./OverlayMarket.sol";
+import "./market/OverlayMarket.sol";
 
 contract OverlayMirinMarket is OverlayMarket {
     using FixedPoint for FixedPoint.uq112x112;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-import "./interfaces/IOverlayFactory.sol";
+import "../interfaces/IOverlayFactory.sol";
 
 contract OverlayGovernance {
     // ovl erc20 token

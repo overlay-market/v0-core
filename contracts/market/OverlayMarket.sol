@@ -3,14 +3,14 @@ pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "./libraries/FixedPoint.sol";
-import "./libraries/Position.sol";
-import "./interfaces/IOverlayFactory.sol";
+import "../libraries/FixedPoint.sol";
+import "../libraries/Position.sol";
+import "../interfaces/IOverlayFactory.sol";
 
 import "./OverlayGovernance.sol";
 import "./OverlayOpenInterest.sol";
 import "./OverlayPosition.sol";
-import "./OverlayToken.sol";
+import "../OverlayToken.sol";
 
 contract OverlayMarket is OverlayPosition, OverlayGovernance, OverlayOpenInterest {
     using FixedPoint for FixedPoint.uq112x112;
