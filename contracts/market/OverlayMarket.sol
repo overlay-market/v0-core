@@ -16,9 +16,9 @@ contract OverlayMarket is OverlayPosition, OverlayGovernance, OverlayOpenInteres
     using Position for Position.Info;
     using SafeERC20 for OverlayToken;
 
+    event Update(address indexed sender, address indexed rewarded, uint256 reward);
     event Build(address indexed sender, uint256 positionId, uint256 oi, uint256 debt);
     event Unwind(address indexed sender, uint256 positionId, uint256 oi, uint256 debt);
-    event Update(address indexed sender, address indexed rewarded, uint256 reward);
     event Liquidate(address indexed sender, address indexed rewarded, uint256 reward);
 
     uint16 public constant MIN_COLLATERAL_AMOUNT = 10**4;

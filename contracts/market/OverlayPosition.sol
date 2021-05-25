@@ -25,13 +25,13 @@ contract OverlayPosition is ERC1155, OverlayPricePoint {
 
     constructor(string memory _uri) ERC1155(_uri) {}
 
-    // mint overrides erc1155 _mint to track total shares issued for given position id
+    /// @notice Mint overrides erc1155 _mint to track total shares issued for given position id
     function mint(address account, uint256 id, uint256 shares, bytes memory data) internal {
         totalPositionShares[id] += shares;
         _mint(account, id, shares, data);
     }
 
-    // burn overrides erc1155 _burn to track total shares issued for given position id
+    /// @notice Burn overrides erc1155 _burn to track total shares issued for given position id
     function burn(address account, uint256 id, uint256 shares) internal {
         uint256 totalShares = totalPositionShares[id];
         require(totalShares >= shares, "OverlayV1: burn shares exceeds total");
@@ -39,7 +39,7 @@ contract OverlayPosition is ERC1155, OverlayPricePoint {
         _burn(account, id, shares);
     }
 
-    // updates position queue for T+1 price settlement
+    /// @notice Updates position queue for T+1 price settlement
     function updateQueuedPosition(bool isLong, uint256 leverage) internal returns (uint256 queuedPositionId) {
         mapping(uint256 => uint256) storage queuedPositionIds = (
             isLong ? queuedPositionLongIds : queuedPositionShortIds

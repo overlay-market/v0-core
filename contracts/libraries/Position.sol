@@ -165,18 +165,6 @@ library Position {
         can = margin.lt(maintenance);
     }
 
-    function _liquidationPrice(
-        Info memory _self,
-        uint256 totalOi,
-        uint256 totalOiShares,
-        uint256 priceEntry,
-        uint16 maintenanceFactor,
-        uint16 marginResolution
-    ) private pure returns (uint256 liqPrice) {
-        // TODO: compute estimate for liquidation price ...
-        return 0;
-    }
-
     /// @notice Computes the open interest of a position
     function openInterest(
         Info storage self,
@@ -306,23 +294,5 @@ library Position {
     }
 
     /// @notice Computes the liquidation price of a position
-    /// @dev TODO: ...
-    function liquidationPrice(
-        Info storage self,
-        uint256 totalOi,
-        uint256 totalOiShares,
-        uint256 priceEntry,
-        uint16 maintenanceFactor,
-        uint16 marginResolution
-    ) internal view returns (uint256) {
-        Info memory _self = self;
-        return _liquidationPrice(
-            _self,
-            totalOi,
-            totalOiShares,
-            priceEntry,
-            maintenanceFactor,
-            marginResolution
-        );
-    }
+    /// @dev TODO: ... function liquidationPrice()
 }
