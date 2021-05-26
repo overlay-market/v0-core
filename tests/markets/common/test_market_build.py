@@ -1,5 +1,6 @@
 import pytest
 
+from brownie import reverts
 from brownie.test import given, strategy
 from collections import OrderedDict
 
@@ -22,7 +23,6 @@ def test_build(token, factory, market, bob, collateral, leverage, is_long):
     fee_perc = fee / fee_resolution
 
     # adjust for build fees
-    collateral_adjusted = collateral - fee_perc * oi
     oi_adjusted = int(oi * (1 - fee_perc))
     collateral_adjusted = int(oi_adjusted / leverage)
     debt_adjusted = oi_adjusted - collateral_adjusted
@@ -55,5 +55,11 @@ def test_build_breach_max_leverage(token, market, bob):
     pass
 
 
-def test_build_breach_cap(token, market, bob):
-    pass
+@given(
+    leverage=strategy('uint8', min_value=1, max_value=100),
+    is_long=strategy('bool'))
+def test_build_breach_cap(token, factory, market, bob, leverage, is_long):
+    collateral = 1.01 * OI_CAP*10**TOKEN_DECIMALS
+    token.approve(market, collateral, {"from": bob})
+    with reverts("OverlayV1: breached oi cap"):
+        market.build(collateral, is_long, leverage, bob, {"from": bob})

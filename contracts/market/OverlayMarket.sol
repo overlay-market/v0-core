@@ -212,4 +212,7 @@ contract OverlayMarket is OverlayPosition, OverlayGovernance, OverlayOpenInteres
         burn(msg.sender, positionId, shares);
         OverlayToken(ovl).safeTransfer(msg.sender, valueAdjusted);
     }
+
+    /// @notice Liquidates an existing position
+    // function liquidate(uint256 positionId, address rewardsTo) external lock enabled {}
 }
