@@ -51,15 +51,20 @@ def test_build(token, factory, market, bob, collateral, leverage, is_long):
     # TODO: check fees, position attributes, etc. ..
 
 
+def test_build_breach_min_collateral(token, market, bob):
+    pass
+
+
 def test_build_breach_max_leverage(token, market, bob):
     pass
 
 
 @given(
+    oi=strategy('uint256', min_value=1.01*OI_CAP*10**TOKEN_DECIMALS, max_value=2**144-1),
     leverage=strategy('uint8', min_value=1, max_value=100),
     is_long=strategy('bool'))
-def test_build_breach_cap(token, factory, market, bob, leverage, is_long):
-    collateral = 1.01 * OI_CAP*10**TOKEN_DECIMALS
+def test_build_breach_cap(token, factory, market, bob, oi, leverage, is_long):
+    collateral = int(oi / leverage)
     token.approve(market, collateral, {"from": bob})
     with reverts("OverlayV1: breached oi cap"):
         market.build(collateral, is_long, leverage, bob, {"from": bob})
