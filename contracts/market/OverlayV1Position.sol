@@ -4,9 +4,9 @@ pragma solidity ^0.8.2;
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 
 import "../libraries/Position.sol";
-import "./OverlayPricePoint.sol";
+import "./OverlayV1PricePoint.sol";
 
-contract OverlayPosition is ERC1155, OverlayPricePoint {
+contract OverlayV1Position is ERC1155, OverlayV1PricePoint {
     using Position for Position.Info;
 
     // array of pos attributes; id is index in array

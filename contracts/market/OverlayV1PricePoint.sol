@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-contract OverlayPricePoint {
+contract OverlayV1PricePoint {
     // current index pointer for the upcoming price fetch on update
     uint256 public pricePointCurrentIndex;
     // mapping from price point index to realized historical prices

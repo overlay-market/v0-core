@@ -78,8 +78,8 @@ def price_points_after(token):
 @pytest.fixture(
     scope="module",
     params=[
-        ("OverlayMirinFactory", [15, 5000, 100, ETH_ADDRESS, 60, 50, ETH_ADDRESS],
-         "OverlayMirinMarket", [True, 4, 24, 100, 100, OI_CAP*10**TOKEN_DECIMALS, 1, 8, AMOUNT_IN*10**TOKEN_DECIMALS],
+        ("OverlayV1MirinFactory", [15, 5000, 100, ETH_ADDRESS, 60, 50, ETH_ADDRESS],
+         "OverlayV1MirinMarket", [True, 4, 24, 100, 100, OI_CAP*10**TOKEN_DECIMALS, 1, 8, AMOUNT_IN*10**TOKEN_DECIMALS],
          "MirinFactoryMock", [],
          "IMirinOracle"),
     ])
@@ -136,7 +136,7 @@ def factory(create_factory):
 
 @pytest.fixture(
     scope="module",
-    params=["IOverlayMarket"])
+    params=["IOverlayV1Market"])
 def market(factory, request):
     addr = factory.allMarkets(0)
     market = getattr(interface, request.param)(addr)

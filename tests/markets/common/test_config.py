@@ -55,7 +55,7 @@ def test_market_is_enabled(factory, market):
 
 def test_market_erc1155(market):
     match = re.fullmatch(
-        r"https://metadata.overlay.exchange/(\w+)/{id}.json",
+        r"https://metadata.overlay.exchange/v1/(\w+)/{id}.json",
         market.uri(0),
     )
     assert match is not None

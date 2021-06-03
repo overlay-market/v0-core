@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-import "../interfaces/IOverlayFactory.sol";
+import "../interfaces/IOverlayV1Factory.sol";
 
-contract OverlayGovernance {
+contract OverlayV1Governance {
     // ovl erc20 token
     address public immutable ovl;
     // OverlayFactory address
@@ -29,7 +29,7 @@ contract OverlayGovernance {
     }
 
     modifier enabled() {
-        require(IOverlayFactory(factory).isMarket(address(this)), "OverlayV1: !enabled");
+        require(IOverlayV1Factory(factory).isMarket(address(this)), "OverlayV1: !enabled");
         _;
     }
 

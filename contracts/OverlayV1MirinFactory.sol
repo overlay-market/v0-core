@@ -6,10 +6,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IMirinFactory.sol";
 import "./interfaces/IMirinOracle.sol";
 
-import "./OverlayMirinMarket.sol";
+import "./OverlayV1MirinMarket.sol";
 import "./OverlayToken.sol";
 
-contract OverlayMirinFactory is Ownable {
+contract OverlayV1MirinFactory is Ownable {
 
     uint16 public constant MIN_FEE = 1; // 0.01%
     uint16 public constant MAX_FEE = 100; // 1.00%
@@ -83,10 +83,10 @@ contract OverlayMirinFactory is Ownable {
         uint112 fundingKNumerator,
         uint112 fundingKDenominator,
         uint256 amountIn
-    ) external onlyOwner returns (OverlayMirinMarket marketContract) {
+    ) external onlyOwner returns (OverlayV1MirinMarket marketContract) {
         require(IMirinFactory(mirinFactory).isPool(mirinPool), "OverlayV1: !MirinPool");
         require(IMirinOracle(mirinPool).pricePointsLength() > 1, "OverlayV1: !MirinInitialized");
-        marketContract = new OverlayMirinMarket(
+        marketContract = new OverlayV1MirinMarket(
             ovl,
             mirinPool,
             isPrice0,
@@ -132,13 +132,13 @@ contract OverlayMirinFactory is Ownable {
 
     /// @notice Calls the update function on a market
     function updateMarket(address market, address rewardsTo) external {
-        OverlayMirinMarket(market).update(rewardsTo);
+        OverlayV1MirinMarket(market).update(rewardsTo);
     }
 
     /// @notice Mass calls update functions on all markets
     function massUpdateMarkets(address rewardsTo) external {
         for (uint256 i=0; i < allMarkets.length; ++i) {
-            OverlayMirinMarket(allMarkets[i]).update(rewardsTo);
+            OverlayV1MirinMarket(allMarkets[i]).update(rewardsTo);
         }
     }
 
@@ -152,7 +152,7 @@ contract OverlayMirinFactory is Ownable {
         uint112 fundingKNumerator,
         uint112 fundingKDenominator
     ) external onlyOwner {
-        OverlayMirinMarket(market).adjustParams(
+        OverlayV1MirinMarket(market).adjustParams(
             updatePeriod,
             leverageMax,
             marginAdjustment,

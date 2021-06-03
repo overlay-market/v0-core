@@ -4,15 +4,15 @@ pragma solidity ^0.8.2;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../libraries/Position.sol";
-import "../interfaces/IOverlayFactory.sol";
+import "../interfaces/IOverlayV1Factory.sol";
 
-import "./OverlayGovernance.sol";
-import "./OverlayFees.sol";
-import "./OverlayOpenInterest.sol";
-import "./OverlayPosition.sol";
+import "./OverlayV1Governance.sol";
+import "./OverlayV1Fees.sol";
+import "./OverlayV1OI.sol";
+import "./OverlayV1Position.sol";
 import "../OverlayToken.sol";
 
-contract OverlayMarket is OverlayPosition, OverlayGovernance, OverlayOpenInterest, OverlayFees {
+contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1OI, OverlayV1Fees {
     using Position for Position.Info;
     using SafeERC20 for OverlayToken;
 
@@ -43,7 +43,7 @@ contract OverlayMarket is OverlayPosition, OverlayGovernance, OverlayOpenInteres
         uint144 _oiCap,
         uint112 _fundingKNumerator,
         uint112 _fundingKDenominator
-    ) OverlayPosition(_uri) OverlayGovernance(
+    ) OverlayV1Position(_uri) OverlayV1Governance(
         _ovl,
         _updatePeriod,
         _leverageMax,
@@ -68,7 +68,7 @@ contract OverlayMarket is OverlayPosition, OverlayGovernance, OverlayOpenInteres
                 uint256 feeResolution,
                 address feeTo,
                 ,,,
-            ) = IOverlayFactory(factory).getGlobalParams();
+            ) = IOverlayV1Factory(factory).getGlobalParams();
             (
                 uint256 amountToBurn,
                 uint256 amountToForward,
@@ -106,7 +106,7 @@ contract OverlayMarket is OverlayPosition, OverlayGovernance, OverlayOpenInteres
         uint256 oi = collateralAmount * leverage;
 
         // adjust for fees
-        (uint256 fee,,, uint256 feeResolution,,,,,) = IOverlayFactory(factory).getGlobalParams();
+        (uint256 fee,,, uint256 feeResolution,,,,,) = IOverlayV1Factory(factory).getGlobalParams();
         (uint256 oiAdjusted, uint256 feeAmount) = adjustForFees(oi, fee, feeResolution);
         uint256 collateralAmountAdjusted = oiAdjusted / leverage;
         uint256 debtAdjusted = oiAdjusted - collateralAmountAdjusted;
@@ -179,7 +179,7 @@ contract OverlayMarket is OverlayPosition, OverlayGovernance, OverlayOpenInteres
 
         // adjust for fees
         // TODO: think through edge case of underwater position ... and fee adjustments ...
-        (uint256 _fee,,, uint256 _feeResolution,,,,,) = IOverlayFactory(factory).getGlobalParams();
+        (uint256 _fee,,, uint256 _feeResolution,,,,,) = IOverlayV1Factory(factory).getGlobalParams();
         (uint256 _notionalAdjusted, uint256 _feeAmount) = adjustForFees(_notional, _fee, _feeResolution);
         valueAdjusted = _notionalAdjusted > _debt ? _notionalAdjusted - _debt : 0; // floor in case underwater, and protocol loses out on any maintenance margin
         feeAmount = _feeAmount;

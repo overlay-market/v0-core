@@ -3,9 +3,9 @@ pragma solidity ^0.8.2;
 
 import "./libraries/FixedPoint.sol";
 import "./interfaces/IMirinOracle.sol";
-import "./market/OverlayMarket.sol";
+import "./market/OverlayV1Market.sol";
 
-contract OverlayMirinMarket is OverlayMarket {
+contract OverlayV1MirinMarket is OverlayV1Market {
     using FixedPoint for FixedPoint.uq112x112;
     using FixedPoint for FixedPoint.uq144x112;
 
@@ -29,8 +29,8 @@ contract OverlayMirinMarket is OverlayMarket {
         uint112 _fundingKNumerator,
         uint112 _fundingKDenominator,
         uint256 _amountIn
-    ) OverlayMarket(
-        "https://metadata.overlay.exchange/mirin/{id}.json",
+    ) OverlayV1Market(
+        "https://metadata.overlay.exchange/v1/mirin/{id}.json",
         _ovl,
         _updatePeriod,
         _leverageMax,

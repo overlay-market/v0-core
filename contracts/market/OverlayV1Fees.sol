@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-contract OverlayFees {
+contract OverlayV1Fees {
     // outstanding cumulative fees to be forwarded on update
     uint256 public fees;
 
