@@ -56,11 +56,12 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1OI,
         updateBlockLast = block.number;
     }
 
-    /// @notice Updates funding payments, cumulative fees, and price points
+    /// @notice Updates funding payments, cumulative fees, queued position builds, and price points
     function update(address rewardsTo) public {
         uint256 blockNumber = block.number;
         uint256 elapsed = (blockNumber - updateBlockLast) / updatePeriod;
         if (elapsed > 0) {
+            // Forwards all fees charged from T < t < T+1 at T+1 update
             (
                 ,
                 uint256 feeBurnRate,
@@ -75,9 +76,15 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1OI,
                 uint256 amountToRewardUpdates
             ) = updateFees(feeBurnRate, feeUpdateRewardsRate, feeResolution);
 
+            // Funding payment changes at T+1
             amountToBurn += updateFunding(fundingKNumerator, fundingKDenominator, elapsed);
-            updatePricePoints();
 
+            // Settle T < t < T+1 built positions at T+1 update
+            // WARNING: Must come after funding to prevent funding harvesting w zero price risk
+            updatePricePoints();
+            updateOi();
+
+            // Increment update block
             updateBlockLast = blockNumber;
 
             emit Update(msg.sender, rewardsTo, amountToRewardUpdates);
@@ -116,15 +123,7 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1OI,
         position.oiShares += oiAdjusted;
         position.debt += debtAdjusted;
         position.cost += collateralAmountAdjusted;
-        if (isLong) {
-            oiLong += oiAdjusted;
-            require(oiLong <= oiCap, "OverlayV1: breached oi cap");
-            totalOiLongShares += oiAdjusted;
-        } else {
-            oiShort += oiAdjusted;
-            require(oiShort <= oiCap, "OverlayV1: breached oi cap");
-            totalOiShortShares += oiAdjusted;
-        }
+        queueOi(isLong, oiAdjusted, oiCap);
 
         // events
         emit Build(msg.sender, positionId, oiAdjusted, debtAdjusted);

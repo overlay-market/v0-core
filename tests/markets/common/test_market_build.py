@@ -43,10 +43,10 @@ def test_build(token, factory, market, bob, collateral, leverage, is_long):
 
     # check shares of erc 1155 match contribution to oi
     assert market.balanceOf(bob, pid) == oi_adjusted
-    # check market state updated
-    oi_aggregate_new = market.oiLong() if is_long else market.oiShort()
-    oi_aggregate_plus_adjusted = oi_adjusted + oi_aggregate
-    assert oi_aggregate_new == oi_aggregate_plus_adjusted
+
+    # should be unchanged as build settles at T+1
+    oi_aggregate_unsettled = market.oiLong() if is_long else market.oiShort()
+    assert oi_aggregate_unsettled == oi_aggregate
 
     # TODO: check fees, position attributes, etc. ..
 

@@ -21,6 +21,11 @@ contract OverlayV1OI {
     // total shares of short open interest outstanding
     uint256 internal totalOiShortShares;
 
+    // queued long open interest to be settled at T+1
+    uint256 private queuedOiLong;
+    // queued short open interest to be settled at T+1
+    uint256 private queuedOiShort;
+
     /// @notice Computes f**m
     /// @dev Works properly only when fundingKNumerator < fundingKDenominator
     function computeFundingFactor(
@@ -69,5 +74,28 @@ contract OverlayV1OI {
             oiShort = (oiLong + oiShort + oiImbNow) / 2;
             oiLong = (oiLong + oiShort - oiImbNow) / 2;
         }
+    }
+
+    /// @notice Adds to queued open interest to prep for T+1 price settlement
+    function queueOi(bool isLong, uint256 oi, uint256 oiCap) internal {
+        if (isLong) {
+            queuedOiLong += oi;
+            require(oiLong + queuedOiLong <= oiCap, "OverlayV1: breached oi cap");
+        } else {
+            queuedOiShort += oi;
+            require(oiShort + queuedOiShort <= oiCap, "OverlayV1: breached oi cap");
+        }
+    }
+
+    /// @notice Updates open interest at T+1 price settlement
+    /// @dev Execute at market update() to prevent funding payment harvest without price risk
+    function updateOi() internal {
+        oiLong += queuedOiLong;
+        oiShort += queuedOiShort;
+        totalOiLongShares += queuedOiLong;
+        totalOiShortShares += queuedOiShort;
+
+        queuedOiLong = 0;
+        queuedOiShort = 0;
     }
 }

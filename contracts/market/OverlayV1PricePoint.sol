@@ -23,7 +23,7 @@ contract OverlayV1PricePoint {
     }
 
     /// @notice Fetches last price from oracle and sets in pricePoints
-    /// @dev Override for each specific market feed to also fetch from oracle value at T
+    /// @dev Override for each specific market feed to also fetch from oracle value for T+1
     function fetchPricePoint() internal virtual returns (bool success) {
         return true;
     }
