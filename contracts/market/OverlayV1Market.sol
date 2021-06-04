@@ -8,11 +8,11 @@ import "../interfaces/IOverlayV1Factory.sol";
 
 import "./OverlayV1Governance.sol";
 import "./OverlayV1Fees.sol";
-import "./OverlayV1OI.sol";
+import "./OverlayV1Oi.sol";
 import "./OverlayV1Position.sol";
 import "../OverlayToken.sol";
 
-contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1OI, OverlayV1Fees {
+contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi, OverlayV1Fees {
     using Position for Position.Info;
     using SafeERC20 for OverlayToken;
 
