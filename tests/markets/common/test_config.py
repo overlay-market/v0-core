@@ -40,6 +40,7 @@ def test_roles(token, gov, feed_owner, factory, market, alice, bob):
 
 def test_params(factory, market):
     # TODO: test all factory and market params set properly
+    #= factory.getGlobalParams()
     pass
 
 

@@ -22,9 +22,9 @@ contract OverlayV1Oi {
     uint256 internal totalOiShortShares;
 
     // queued long open interest to be settled at T+1
-    uint256 private queuedOiLong;
+    uint256 public queuedOiLong;
     // queued short open interest to be settled at T+1
-    uint256 private queuedOiShort;
+    uint256 public queuedOiShort;
 
     /// @notice Computes f**m
     /// @dev Works properly only when fundingKNumerator < fundingKDenominator
