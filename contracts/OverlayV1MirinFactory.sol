@@ -14,8 +14,8 @@ contract OverlayV1MirinFactory is Ownable {
     uint16 public constant MIN_FEE = 1; // 0.01%
     uint16 public constant MAX_FEE = 100; // 1.00%
 
-    uint16 public constant MIN_MARGIN_MAINTENANCE = 1; // 1% maintenance
-    uint16 public constant MAX_MARGIN_MAINTENANCE = 60; // 60% maintenance
+    uint16 public constant MIN_MARGIN_MAINTENANCE = 100; // 1% maintenance
+    uint16 public constant MAX_MARGIN_MAINTENANCE = 6000; // 60% maintenance
 
     uint16 public constant RESOLUTION = 10**4; // bps
 
