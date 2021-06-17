@@ -227,7 +227,7 @@ contract OverlayV1MirinFactory is Ownable {
         return (
             marginMaintenance,
             marginBurnRate,
-            feeTo
+            marginTo
         );
     }
 }
