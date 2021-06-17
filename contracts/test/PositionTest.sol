@@ -92,8 +92,7 @@ contract PositionTest {
         uint256 totalOiShares,
         uint256 priceEntry,
         uint256 priceExit,
-        uint16 maintenanceFactor,
-        uint16 marginResolution
+        uint16 maintenanceFactor
     ) external view returns (bool) {
         Position.Info storage position = positions[positionId];
         return position.isLiquidatable(
@@ -101,8 +100,7 @@ contract PositionTest {
             totalOiShares,
             priceEntry,
             priceExit,
-            maintenanceFactor,
-            marginResolution
+            maintenanceFactor
         );
     }
 }

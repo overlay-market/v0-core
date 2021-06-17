@@ -5,21 +5,21 @@ contract OverlayV1Fees {
     // outstanding cumulative fees to be forwarded on update
     uint256 public fees;
 
+    uint constant RESOLUTION = 1e4;
+
     /// @notice Adjusts state variable fee pots, which are transferred on call to update()
     function adjustForFees(
         uint256 notional,
-        uint256 fee,
-        uint256 feeResolution
+        uint256 fee
     ) internal pure returns (uint256 notionalAdjusted, uint256 feeAmount) {
-        notionalAdjusted = (notional * feeResolution - notional * fee) / feeResolution;
+        notionalAdjusted = (notional * RESOLUTION - notional * fee) / RESOLUTION;
         feeAmount = notional - notionalAdjusted;
     }
 
     /// @notice Computes fee pot distributions and zeroes pot
     function updateFees(
         uint256 feeBurnRate,
-        uint256 feeUpdateRewardsRate,
-        uint256 feeResolution
+        uint256 feeUpdateRewardsRate
     )
         internal
         returns (
@@ -29,8 +29,8 @@ contract OverlayV1Fees {
         )
     {
         uint256 feeAmount = fees;
-        uint256 feeAmountLessBurn = (feeAmount * feeResolution - feeAmount * feeBurnRate) / feeResolution;
-        uint256 feeAmountLessBurnAndUpdate = (feeAmountLessBurn * feeResolution - feeAmountLessBurn * feeUpdateRewardsRate) / feeResolution;
+        uint256 feeAmountLessBurn = (feeAmount * RESOLUTION - feeAmount * feeBurnRate) / RESOLUTION;
+        uint256 feeAmountLessBurnAndUpdate = (feeAmountLessBurn * RESOLUTION - feeAmountLessBurn * feeUpdateRewardsRate) / RESOLUTION;
 
         amountToBurn = feeAmount - feeAmountLessBurn;
         amountToForward = feeAmountLessBurnAndUpdate;

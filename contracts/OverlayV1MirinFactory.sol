@@ -13,11 +13,11 @@ contract OverlayV1MirinFactory is Ownable {
 
     uint16 public constant MIN_FEE = 1; // 0.01%
     uint16 public constant MAX_FEE = 100; // 1.00%
-    uint16 public constant FEE_RESOLUTION = 10**4; // bps
 
     uint16 public constant MIN_MARGIN_MAINTENANCE = 1; // 1% maintenance
     uint16 public constant MAX_MARGIN_MAINTENANCE = 60; // 60% maintenance
-    uint16 public constant MARGIN_RESOLUTION = 10**2; // percentage points
+
+    uint16 public constant RESOLUTION = 10**4; // bps
 
     // ovl erc20 token
     address public immutable ovl;
@@ -188,9 +188,7 @@ contract OverlayV1MirinFactory is Ownable {
             uint16,
             uint16,
             uint16,
-            uint16,
             address,
-            uint16,
             uint16,
             uint16,
             address
@@ -200,12 +198,36 @@ contract OverlayV1MirinFactory is Ownable {
             fee,
             feeBurnRate,
             feeUpdateRewardsRate,
-            FEE_RESOLUTION,
             feeTo,
             marginMaintenance,
             marginBurnRate,
-            MARGIN_RESOLUTION,
             marginTo
+        );
+    }
+
+    function getFeeParams () external view returns (
+        uint16,
+        uint16,
+        uint16,
+        address
+    ) { 
+        return (
+            fee,
+            feeBurnRate,
+            feeUpdateRewardsRate,
+            feeTo
+        );
+    }
+
+    function getMarginParams () external view returns (
+        uint16,
+        uint16,
+        address
+    ) {
+        return (
+            marginMaintenance,
+            marginBurnRate,
+            feeTo
         );
     }
 }

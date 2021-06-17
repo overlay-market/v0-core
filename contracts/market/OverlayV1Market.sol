@@ -62,19 +62,16 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi,
         uint256 elapsed = (blockNumber - updateBlockLast) / updatePeriod;
         if (elapsed > 0) {
             // Forwards all fees charged from T < t < T+1 at T+1 update
-            (
-                ,
-                uint256 feeBurnRate,
+
+            ( , uint256 feeBurnRate,
                 uint256 feeUpdateRewardsRate,
-                uint256 feeResolution,
-                address feeTo,
-                ,,,
-            ) = IOverlayV1Factory(factory).getGlobalParams();
-            (
-                uint256 amountToBurn,
+                address feeTo
+            ) = IOverlayV1Factory(factory).getFeeParams();
+
+            (   uint256 amountToBurn,
                 uint256 amountToForward,
                 uint256 amountToRewardUpdates
-            ) = updateFees(feeBurnRate, feeUpdateRewardsRate, feeResolution);
+            ) = updateFees(feeBurnRate, feeUpdateRewardsRate);
 
             // Funding payment changes at T+1
             amountToBurn += updateFunding(fundingKNumerator, fundingKDenominator, elapsed);
@@ -113,8 +110,8 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi,
         uint256 oi = collateralAmount * leverage;
 
         // adjust for fees
-        (uint256 fee,,, uint256 feeResolution,,,,,) = IOverlayV1Factory(factory).getGlobalParams();
-        (uint256 oiAdjusted, uint256 feeAmount) = adjustForFees(oi, fee, feeResolution);
+        uint256 fee = IOverlayV1Factory(factory).fee();
+        (uint256 oiAdjusted, uint256 feeAmount) = adjustForFees(oi, fee);
         uint256 collateralAmountAdjusted = oiAdjusted / leverage;
         uint256 debtAdjusted = oiAdjusted - collateralAmountAdjusted;
 
@@ -178,8 +175,8 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi,
 
         // adjust for fees
         // TODO: think through edge case of underwater position ... and fee adjustments ...
-        (uint256 _fee,,, uint256 _feeResolution,,,,,) = IOverlayV1Factory(factory).getGlobalParams();
-        (uint256 _notionalAdjusted, uint256 _feeAmount) = adjustForFees(_notional, _fee, _feeResolution);
+        uint256 _fee = IOverlayV1Factory(factory).fee();
+        (uint256 _notionalAdjusted, uint256 _feeAmount) = adjustForFees(_notional, _fee);
         valueAdjusted = _notionalAdjusted > _debt ? _notionalAdjusted - _debt : 0; // floor in case underwater, and protocol loses out on any maintenance margin
         feeAmount = _feeAmount;
         }
