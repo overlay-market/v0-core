@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-import "./libraries/FixedPoint.sol";
-import "./interfaces/IMirinOracle.sol";
-import "./market/OverlayV1Market.sol";
+import "../libraries/FixedPoint.sol";
+import "../market/OverlayV1Market.sol";
 
 contract OverlayV1MockMarket is OverlayV1Market {
     using FixedPoint for FixedPoint.uq112x112;
@@ -17,7 +16,6 @@ contract OverlayV1MockMarket is OverlayV1Market {
 
     constructor(
         address _ovl,
-        address _mirinPool,
         bool _isPrice0,
         uint[] memory _price0s,
         uint[] memory _price1s,
@@ -53,7 +51,14 @@ contract OverlayV1MockMarket is OverlayV1Market {
 
     /// @dev Override for mock market feed to feed price to contract
     function fetchPricePoint() internal virtual override returns (bool success) {
-        setPricePointCurrent(isPrice0 ? price0s[priceIx++] : price1s[priceIx++]);
+
+        setPricePointCurrent(isPrice0 
+            ? price0s[priceIx++] 
+            : price1s[priceIx++]
+        );
+
         return true;
+
     }
+
 }
