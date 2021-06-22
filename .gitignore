@@ -4,3 +4,5 @@ __pycache__
 .hypothesis/
 build/
 reports/
+node_modules
+temp.txt
