@@ -8,7 +8,7 @@ import "../interfaces/IOverlayV1Factory.sol";
 
 import "./OverlayV1Governance.sol";
 import "./OverlayV1Fees.sol";
-import "./OverlayV1Oi.sol";
+import "./OverlayV1OI.sol";
 import "./OverlayV1Position.sol";
 import "../OverlayToken.sol";
 
