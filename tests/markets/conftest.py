@@ -2,7 +2,6 @@ import pytest
 import brownie
 from brownie import ETH_ADDRESS, OverlayToken, chain, interface
 
-
 TOKEN_DECIMALS = 18
 TOKEN_TOTAL_SUPPLY = 8000000
 OI_CAP = 800000
@@ -77,13 +76,36 @@ def price_points_after(token):
 
 @pytest.fixture(
     scope="module",
+    params=[(
+        "OverlayV1FactoryGeneralMock", 
+    )])
+def create_general_factory(token, gov, price_points):
+
+    def create_factory(
+        tok = token,
+        ovlf = getattr(brownie, "OverlayV1FactoryGeneralOracleMock"),
+        ovlf_args = [ 15, 5000, 100, ETH_ADDRESS, 60, 50, ETH_ADDRESS ],
+        ovlm_args = [ True, price_points[1], 24, 100, 100, OI_CAP*10*TOKEN_DECIMALS, 1, 8 ]
+    ):
+
+        factory = gov.deploy(ovlf, token, *ovlf_args)
+        tok.grantRole(tok.ADMIN_ROLE(), factory, { "from": gov })
+        factory.createMarket(*ovlm_args)
+
+        return factory
+
+    yield create_factory
+
+
+@pytest.fixture(
+    scope="module",
     params=[
         ("OverlayV1MirinFactory", [15, 5000, 100, ETH_ADDRESS, 60, 50, ETH_ADDRESS],
          "OverlayV1MirinMarket", [True, 4, 24, 100, 100, OI_CAP*10**TOKEN_DECIMALS, 1, 8, AMOUNT_IN*10**TOKEN_DECIMALS],
          "MirinFactoryMock", [],
          "IMirinOracle"),
     ])
-def create_factory(token, gov, feed_owner, price_points, price_points_after, request):
+def create_mirin_market_factory(token, gov, feed_owner, price_points, price_points_after, request):
     ovlf_name, ovlf_args, _, ovlm_args, fdf_name, fdf_args, ifdp_name = request.param
     ovlf = getattr(brownie, ovlf_name)
     fdf = getattr(brownie, fdf_name)
@@ -130,14 +152,23 @@ def create_factory(token, gov, feed_owner, price_points, price_points_after, req
 
 
 @pytest.fixture(scope="module")
-def factory(create_factory):
-    yield create_factory()
+def factory(create_mirin_market_factory):
+    yield create_mirin_market_factory()
 
+@pytest.fixture(scope="module")
+def f_gen(create_general_factory):
+    yield create_general_factory()
+
+@pytest.fixture(scope="module")
+def m_gen(f_gen):
+    addr = f_gen.allMarkets(0)
+    market = getattr(interface, "IOverlayV1Market")(addr)
+    yield market
 
 @pytest.fixture(
     scope="module",
     params=["IOverlayV1Market"])
-def market(factory, request):
-    addr = factory.allMarkets(0)
+def market(f_gen, request):
+    addr = f_gen.allMarkets(0)
     market = getattr(interface, request.param)(addr)
     yield market

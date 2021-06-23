@@ -4,3 +4,12 @@ __pycache__
 .hypothesis/
 build/
 reports/
+node_modules
+temp.txt
+package.json
+package-lock.json
+hhtests
+artifacts
+cache
+hardhat.config.js
+

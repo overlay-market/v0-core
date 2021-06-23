@@ -18,9 +18,13 @@ contract OverlayV1PricePoint {
     }
 
     /// @notice Whether price has been realized for given index
-    function hasPricePoint(uint256 pricePointIndex) internal returns (bool) {
+    function hasPricePoint(uint256 pricePointIndex) internal view returns (bool) {
         return pricePoints[pricePointIndex] > 0;
     }
+
+    // TODO: collapse updatePricePoints and fetchPricePoints into one function 
+    // where inherited function uses super. Check that SOLC 0.8.2 still uses
+    // super as such.
 
     /// @notice Fetches last price from oracle and sets in pricePoints
     /// @dev Override for each specific market feed to also fetch from oracle value for T+1
