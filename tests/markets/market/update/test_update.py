@@ -26,3 +26,4 @@ def test_update(token, factory, market, alice, rewards, num_periods):
         'rewarded': rewards.address,
         'reward': 0, # TODO: ...
     })
+    

@@ -4,21 +4,19 @@ pragma solidity ^0.8.2;
 import "../libraries/FixedPoint.sol";
 import "../market/OverlayV1Market.sol";
 
-contract OverlayV1MockMarket is OverlayV1Market {
+contract OverlayV1MarketGeneralOracleMock is OverlayV1Market {
     using FixedPoint for FixedPoint.uq112x112;
     using FixedPoint for FixedPoint.uq144x112;
 
     uint priceIx;
-    uint[] public price0s;
-    uint[] public price1s;
+    uint[] public prices;
 
     bool public immutable isPrice0;
 
     constructor(
         address _ovl,
         bool _isPrice0,
-        uint[] memory _price0s,
-        uint[] memory _price1s,
+        uint[] memory _prices,
         uint256 _updatePeriod,
         uint8 _leverageMax,
         uint16 _marginAdjustment,
@@ -37,26 +35,25 @@ contract OverlayV1MockMarket is OverlayV1Market {
     ) {
 
         isPrice0 = _isPrice0;
-        includePrices(_price0s, _price1s);
+        includePrices(_prices);
 
     }
 
+    function test () public pure returns (string memory) {
+        string memory hello = "hello";
+        return hello;
+    }
+
     function includePrices (
-        uint[] memory _price0s,
-        uint[] memory _price1s
-    ) public {
-        price0s = _price0s;
-        price1s = _price1s;
+        uint[] memory _prices
+    ) public { 
+        prices = _prices; 
     }
 
     /// @dev Override for mock market feed to feed price to contract
     function fetchPricePoint() internal virtual override returns (bool success) {
 
-        setPricePointCurrent(isPrice0 
-            ? price0s[priceIx++] 
-            : price1s[priceIx++]
-        );
-
+        setPricePointCurrent(prices[priceIx++]);
         return true;
 
     }
