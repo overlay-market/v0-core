@@ -129,9 +129,8 @@ library Position {
             priceEntry,
             priceExit
         ));
-        if (notion == 0) {
-            margin = FixedPoint.uq144x112(0);
-        } else {
+        if (notion == 0) margin = FixedPoint.uq144x112(0);
+        else {
             uint256 val = _value(
                 _self,
                 totalOi,
@@ -171,7 +170,7 @@ library Position {
         Info storage self,
         uint256 totalOi,
         uint256 totalOiShares
-    ) internal view returns (uint256) {
+    ) internal pure returns (uint256) {
         Info memory _self = self;
         return _openInterest(_self, totalOi, totalOiShares);
     }
@@ -184,7 +183,7 @@ library Position {
         uint256 totalOiShares,
         uint256 priceEntry,
         uint256 priceExit
-    ) internal view returns (uint256) {
+    ) internal pure returns (uint256) {
         Info memory _self = self;
         return _value(
             _self,
@@ -222,7 +221,7 @@ library Position {
         uint256 totalOiShares,
         uint256 priceEntry,
         uint256 priceExit
-    ) internal view returns (uint256) {
+    ) internal pure returns (uint256) {
         Info memory _self = self;
         return _notional(
             _self,
@@ -241,7 +240,7 @@ library Position {
         uint256 totalOiShares,
         uint256 priceEntry,
         uint256 priceExit
-    ) internal view returns (FixedPoint.uq144x112 memory) {
+    ) internal pure returns (FixedPoint.uq144x112 memory) {
         Info memory _self = self;
         return _openLeverage(
             _self,
@@ -260,7 +259,7 @@ library Position {
         uint256 totalOiShares,
         uint256 priceEntry,
         uint256 priceExit
-    ) internal view returns (FixedPoint.uq144x112 memory) {
+    ) internal pure returns (FixedPoint.uq144x112 memory) {
         Info memory _self = self;
         return _openMargin(
             _self,
@@ -280,7 +279,7 @@ library Position {
         uint256 priceEntry,
         uint256 priceExit,
         uint16 marginMaintenance
-    ) internal view returns (bool) {
+    ) internal pure returns (bool) {
         Info memory _self = self;
         return _isLiquidatable(
             _self,
