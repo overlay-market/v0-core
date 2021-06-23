@@ -152,7 +152,7 @@ def create_mirin_market_factory(token, gov, feed_owner, price_points, price_poin
 
 
 @pytest.fixture(scope="module")
-def factory(create_miring_market_factory):
+def factory(create_mirin_market_factory):
     yield create_mirin_market_factory()
 
 @pytest.fixture(scope="module")
@@ -168,7 +168,7 @@ def m_gen(f_gen):
 @pytest.fixture(
     scope="module",
     params=["IOverlayV1Market"])
-def market(factory, request):
-    addr = factory.allMarkets(0)
+def market(f_gen, request):
+    addr = f_gen.allMarkets(0)
     market = getattr(interface, request.param)(addr)
     yield market
