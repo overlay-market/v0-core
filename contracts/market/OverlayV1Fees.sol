@@ -34,9 +34,9 @@ contract OverlayV1Fees {
 
         uint256 feeAmount = fees;
 
-        uint256 burnFee = ( feeAmount * ( feeBurnRate ) ) / RESOLUTION;
+        uint256 burnFee = ( feeAmount * feeBurnRate ) / RESOLUTION;
 
-        uint256 updateFee = ( feeAmount * ( feeUpdateRewardsRate) ) / RESOLUTION;
+        uint256 updateFee = ( feeAmount * feeUpdateRewardsRate) / RESOLUTION;
 
         amountToBurn = burnFee;
         amountToReward = updateFee;
