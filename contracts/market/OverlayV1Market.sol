@@ -84,7 +84,7 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi,
             // Increment update block
             updateBlockLast = blockNumber;
 
-            emit Update(msg.sender, rewardsTo, amountToRewardUpdates);
+            emit Update(msg.sender, rewardsTo, amountToReward);
 
             OverlayToken(ovl).burn(address(this), amountToBurn);
             OverlayToken(ovl).safeTransfer(feeTo, amountToForward);
@@ -128,7 +128,7 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi,
         // interactions
         OverlayToken(ovl).safeTransferFrom(msg.sender, address(this), collateralAmount);
         // mint the debt, before fees, to accomodate funding payment burns (edge case: oiLong == 0 || oiShort == 0)
-        OverlayToken(ovl).mint(address(this), oi - collateralAmount);
+        if (leverage > 1) OverlayToken(ovl).mint(address(this), oi - collateralAmount);
         // WARNING: _mint shares should be last given erc1155 callback; mint shares based on OI contribution
         mint(msg.sender, positionId, oiAdjusted, "");
     }
