@@ -105,7 +105,7 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi,
         // update market for funding, price points, fees before all else
         update(rewardsTo);
 
-        uint256 positionId = updateQueuedPosition(isLong, leverage);
+        uint256 positionId = getQueuedPosition(isLong, leverage);
         Position.Info storage position = positions[positionId];
         uint256 oi = collateralAmount * leverage;
 

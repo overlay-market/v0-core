@@ -40,7 +40,7 @@ contract OverlayV1Position is ERC1155, OverlayV1PricePoint {
     }
 
     /// @notice Updates position queue for T+1 price settlement
-    function updateQueuedPosition(bool isLong, uint256 leverage) internal returns (uint256 queuedPositionId) {
+    function getQueuedPosition(bool isLong, uint256 leverage) internal returns (uint256 queuedPositionId) {
         mapping(uint256 => uint256) storage queuedPositionIds = (
             isLong ? queuedPositionLongIds : queuedPositionShortIds
         );
