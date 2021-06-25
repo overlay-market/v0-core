@@ -12,8 +12,11 @@ contract OverlayV1Fees {
         uint256 notional,
         uint256 fee
     ) internal pure returns (uint256 notionalAdjusted, uint256 feeAmount) {
-        notionalAdjusted = (notional * RESOLUTION - notional * fee) / RESOLUTION;
-        feeAmount = notional - notionalAdjusted;
+
+        feeAmount = ( notional * fee ) / RESOLUTION;
+
+        notionalAdjusted = notional - feeAmount;
+
     }
 
     /// @notice Computes fee pot distributions and zeroes pot
@@ -24,19 +27,23 @@ contract OverlayV1Fees {
         internal
         returns (
             uint256 amountToBurn,
-            uint256 amountToForward,
-            uint256 amountToRewardUpdates
+            uint256 amountToReward,
+            uint256 amountToForward
         )
     {
-        uint256 feeAmount = fees;
-        uint256 feeAmountLessBurn = (feeAmount * RESOLUTION - feeAmount * feeBurnRate) / RESOLUTION;
-        uint256 feeAmountLessBurnAndUpdate = (feeAmountLessBurn * RESOLUTION - feeAmountLessBurn * feeUpdateRewardsRate) / RESOLUTION;
 
-        amountToBurn = feeAmount - feeAmountLessBurn;
-        amountToForward = feeAmountLessBurnAndUpdate;
-        amountToRewardUpdates = feeAmountLessBurn - feeAmountLessBurnAndUpdate;
+        uint256 feeAmount = fees;
+
+        uint256 burnFee = ( feeAmount * ( feeBurnRate ) ) / RESOLUTION;
+
+        uint256 updateFee = ( feeAmount * ( feeUpdateRewardsRate) ) / RESOLUTION;
+
+        amountToBurn = burnFee;
+        amountToReward = updateFee;
+        amountToForward = feeAmount - burnFee - updateFee;
 
         // zero cumulative fees since last update
         fees = 0;
+
     }
 }

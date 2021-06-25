@@ -64,14 +64,14 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi,
             // Forwards all fees charged from T < t < T+1 at T+1 update
 
             ( , uint256 feeBurnRate,
-                uint256 feeUpdateRewardsRate,
+                uint256 feeRewardsRate,
                 address feeTo
             ) = IOverlayV1Factory(factory).getFeeParams();
 
             (   uint256 amountToBurn,
-                uint256 amountToForward,
-                uint256 amountToRewardUpdates
-            ) = updateFees(feeBurnRate, feeUpdateRewardsRate);
+                uint256 amountToReward,
+                uint256 amountToForward
+            ) = updateFees(feeBurnRate, feeRewardsRate);
 
             // Funding payment changes at T+1
             amountToBurn += updateFunding(fundingKNumerator, fundingKDenominator, elapsed);
@@ -88,7 +88,7 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi,
 
             OverlayToken(ovl).burn(address(this), amountToBurn);
             OverlayToken(ovl).safeTransfer(feeTo, amountToForward);
-            OverlayToken(ovl).safeTransfer(rewardsTo, amountToRewardUpdates);
+            OverlayToken(ovl).safeTransfer(rewardsTo, amountToReward);
         }
     }
 
