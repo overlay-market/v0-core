@@ -19,6 +19,9 @@ interface IOverlayV1Market is IERC1155 {
     function fundingKDenominator() external view returns (uint256);
     function updateBlockLast() external view returns (uint256);
     function MAX_FUNDING_COMPOUND() external view returns (uint16);
+    function fees() external view returns (uint256);
+    function queuedOiLong() external view returns (uint256);
+    function queuedOiShort() external view returns (uint256);
     function oiLong() external view returns (uint256);
     function oiShort() external view returns (uint256);
     function positions(uint256) external view returns (Position.Info memory);
