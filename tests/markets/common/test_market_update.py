@@ -24,10 +24,10 @@ def _build_positions(token, market, bob, oi_long, oi_short):
 
 @given(
     oi_long=strategy('uint256',
-                     min_value=0,
+                     min_value=MIN_COLLATERAL_AMOUNT,
                      max_value=0.999*OI_CAP*10**TOKEN_DECIMALS),
     oi_short=strategy('uint256',
-                      min_value=0,
+                      min_value=MIN_COLLATERAL_AMOUNT,
                       max_value=0.999*OI_CAP*10**TOKEN_DECIMALS),
     num_periods=strategy('uint16', min_value=1, max_value=144),
 )
@@ -53,13 +53,13 @@ def test_update(token,
     reward_amount = reward_perc * market.fees()
 
     start_block = chain[-1]['number']
-    chain.mine(update_period)
+    chain.mine(update_period+1)
 
     tx = market.update(rewards, {"from": alice})
     curr_update_block = market.updateBlockLast()
 
-    # plus 1 since tx will mine a block
-    prior_plus_updates = start_block + update_period + 1
+    # plus another 1 since tx will mine a block
+    prior_plus_updates = start_block + update_period + 2
     assert curr_update_block == prior_plus_updates
 
     print("events" + str(tx.events))
@@ -116,20 +116,18 @@ def test_update(token,
     # check funding payments over longer period
     k = market.fundingKNumerator() / market.fundingKDenominator()
     expected_oi_imb = curr_oi_imb * (1 - 2*k)**num_periods
-    if curr_oi_long == 0:
-        expected_oi_long = 0
-        expected_oi_short = expected_oi_imb
-    elif curr_oi_short == 0:
-        expected_oi_long = expected_oi_imb
-        expected_oi_short = 0
-    else:
-        expected_oi_long = (curr_oi_tot + expected_oi_imb) / 2
-        expected_oi_short = (curr_oi_tot - expected_oi_imb) / 2
+    expected_oi_long = (curr_oi_tot + expected_oi_imb) / 2
+    expected_oi_short = (curr_oi_tot - expected_oi_imb) / 2
 
     next_oi_long = market.oiLong()
     next_oi_short = market.oiShort()
+
     assert next_oi_long == expected_oi_long
     assert next_oi_short == expected_oi_short
+
+
+def test_update_funding_burn():
+    pass
 
 
 def test_update_early():

@@ -28,6 +28,9 @@ def test_build(token, factory, market, bob, collateral, leverage, is_long):
     prior_oi_long = market.oiLong()
     prior_oi_short = market.oiShort()
 
+    # prior price info
+    prior_price_point_idx = market.pricePointCurrentIndex()
+
     # adjust for build fees
     oi_adjusted = int(oi * (1 - fee_perc))
     collateral_adjusted = int(oi_adjusted / leverage)
@@ -51,6 +54,15 @@ def test_build(token, factory, market, bob, collateral, leverage, is_long):
     # check shares of erc 1155 match contribution to oi
     assert market.balanceOf(bob, pid) == oi_adjusted or oi_adjusted - 1
 
+    # check position info
+    # info = (isLong, leverage, oiShares, debt, cost)
+    info = market.positions(pid)
+    assert info[0] == is_long
+    assert info[1] == leverage
+    assert info[2] == oi_adjusted or oi_adjusted - 1
+    assert info[3] == debt_adjusted or debt_adjusted - 1
+    assert info[4] == collateral_adjusted or collateral_adjusted - 1
+
     # oi aggregates should be unchanged as build settles at T+1
     curr_oi_long = market.oiLong()
     curr_oi_short = market.oiShort()
@@ -65,7 +77,15 @@ def test_build(token, factory, market, bob, collateral, leverage, is_long):
     assert curr_queued_oi_long == expected_queued_oi_long or expected_queued_oi_long - 1
     assert curr_queued_oi_short == expected_queued_oi_short or expected_queued_oi_short - 1
 
-    # TODO: check fees, position attributes, etc. ..
+    # check position receives current price point index ...
+    current_price_point_idx = market.pricePointCurrentIndex()
+    assert current_price_point_idx == prior_price_point_idx
+    assert market.pricePointIndexes(pid) == current_price_point_idx
+
+    # ... and price hasn't settled
+    assert market.pricePoints(current_price_point_idx) == 0
+
+    # TODO: check fees, etc ...
 
 
 def test_build_breach_min_collateral(token, market, bob):
