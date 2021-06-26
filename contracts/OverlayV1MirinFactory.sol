@@ -5,8 +5,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./interfaces/IMirinFactory.sol";
 import "./interfaces/IMirinOracle.sol";
-
 import "./OverlayV1MirinMarket.sol";
+import "./OverlayV1MirinMarketDeployer.sol";
 import "./OverlayToken.sol";
 
 contract OverlayV1MirinFactory is Ownable {
@@ -23,6 +23,8 @@ contract OverlayV1MirinFactory is Ownable {
     address public immutable ovl;
     // mirin pool factory
     address public immutable mirinFactory;
+
+    address public immutable mirinMarketDeployer;
 
     // global params adjustable by gov
     // build/unwind trading fee
@@ -48,6 +50,7 @@ contract OverlayV1MirinFactory is Ownable {
 
     constructor(
         address _ovl,
+        address _mirinMarketDeployer,
         address _mirinFactory,
         uint16 _fee,
         uint16 _feeBurnRate,
@@ -59,6 +62,7 @@ contract OverlayV1MirinFactory is Ownable {
     ) {
         // immutables
         ovl = _ovl;
+        mirinMarketDeployer = _mirinMarketDeployer;
         mirinFactory = _mirinFactory;
 
         // global params
@@ -84,10 +88,9 @@ contract OverlayV1MirinFactory is Ownable {
         uint112 fundingKDenominator,
         uint256 amountIn
     ) external onlyOwner returns (OverlayV1MirinMarket marketContract) {
-        require(IMirinFactory(mirinFactory).isPool(mirinPool), "OverlayV1: !MirinPool");
-        require(IMirinOracle(mirinPool).pricePointsLength() > 1, "OverlayV1: !MirinInitialized");
-        marketContract = new OverlayV1MirinMarket(
-            ovl,
+
+        (bool success, bytes memory result) = mirinMarketDeployer.delegatecall(
+            abi.encodeWithSignature("deployMarket(address,bool,uint256,uint256,uint8,uint16,uint144,uint112,uint112,uint256)",
             mirinPool,
             isPrice0,
             updatePeriod,
@@ -98,7 +101,9 @@ contract OverlayV1MirinFactory is Ownable {
             fundingKNumerator,
             fundingKDenominator,
             amountIn
-        );
+        ));
+
+        marketContract = abi.decode(result, (OverlayV1MirinMarket));
 
         marketExists[address(marketContract)] = true;
         isMarket[address(marketContract)] = true;
