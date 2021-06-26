@@ -16,10 +16,17 @@ FEE_RESOLUTION = 1e4
     is_long=strategy('bool'))
 def test_build(token, factory, market, bob, collateral, leverage, is_long):
     oi = collateral * leverage
-    oi_aggregate = market.oiLong() if is_long else market.oiShort()
-
     fee = factory.fee()
     fee_perc = fee / FEE_RESOLUTION
+
+    # prior bob token balance
+    prior_balance = token.balanceOf(bob)
+
+    # prior oi state
+    prior_queued_oi_long = market.queuedOiLong()
+    prior_queued_oi_short = market.queuedOiShort()
+    prior_oi_long = market.oiLong()
+    prior_oi_short = market.oiShort()
 
     # adjust for build fees
     oi_adjusted = int(oi * (1 - fee_perc))
@@ -40,12 +47,26 @@ def test_build(token, factory, market, bob, collateral, leverage, is_long):
         'debt': debt_adjusted,
     })
 
+    # check collateral transferred from bob's address
+    expected_balance = prior_balance - collateral
+    assert token.balanceOf(bob) == expected_balance
+
     # check shares of erc 1155 match contribution to oi
     assert market.balanceOf(bob, pid) == oi_adjusted or oi_adjusted - 1
 
-    # should be unchanged as build settles at T+1
-    oi_aggregate_unsettled = market.oiLong() if is_long else market.oiShort()
-    assert oi_aggregate_unsettled == oi_aggregate
+    # oi aggregates should be unchanged as build settles at T+1
+    curr_oi_long = market.oiLong()
+    curr_oi_short = market.oiShort()
+    assert prior_oi_long == curr_oi_long
+    assert prior_oi_short == curr_oi_short
+
+    # queued oi aggregates should increase prior to T+1 tho
+    expected_queued_oi_long = prior_queued_oi_long + oi_adjusted if is_long else prior_queued_oi_long
+    expected_queued_oi_short = prior_queued_oi_short + oi_adjusted if not is_long else prior_queued_oi_short
+    curr_queued_oi_long = market.queuedOiLong()
+    curr_queued_oi_short = market.queuedOiShort()
+    assert curr_queued_oi_long == expected_queued_oi_long
+    assert curr_queued_oi_short == expected_queued_oi_short
 
     # TODO: check fees, position attributes, etc. ..
 
