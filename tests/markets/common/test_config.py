@@ -47,6 +47,7 @@ def test_markets(factory, market):
     assert market.marginAdjustment() == 100
     assert market.oiCap() == OI_CAP*10**TOKEN_DECIMALS
 
+
 def test_market_is_enabled(factory, market):
     assert factory.isMarket(market) is True
 

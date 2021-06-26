@@ -33,6 +33,7 @@ def test_build(token, factory, market, bob, collateral, leverage, is_long):
     assert 'Build' in tx.events
     assert 'positionId' in tx.events['Build']
     pid = tx.events['Build']['positionId']
+
     assert tx.events['Build'] == OrderedDict({
         'sender': bob.address,
         'positionId': pid,
