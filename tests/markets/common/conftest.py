@@ -81,8 +81,7 @@ def price_points_after(token):
 @pytest.fixture(
     scope="module",
     params=[
-        ("OverlayV1MirinMarketDeployer", [],
-         "OverlayV1MirinFactory", [15, 5000, 100, ETH_ADDRESS, 60, 50, ETH_ADDRESS],
+        ("OverlayV1MirinFactory", [15, 5000, 100, ETH_ADDRESS, 60, 50, ETH_ADDRESS],
          "OverlayV1MirinMarket", [True, 4, 24, 100, 100, OI_CAP*10**TOKEN_DECIMALS, 3293944666953, 9007199254740992, AMOUNT_IN*10**TOKEN_DECIMALS],
          "MirinFactoryMock", [],
          "IMirinOracle"),
