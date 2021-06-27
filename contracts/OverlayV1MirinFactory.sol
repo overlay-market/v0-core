@@ -12,15 +12,15 @@ contract OverlayV1MirinFactory is OverlayV1Factory {
 
     constructor(
         address _ovl,
+        address _deployer,
+        address _mirinFactory,
         uint16 _fee,
         uint16 _feeBurnRate,
         uint16 _feeUpdateRewardsRate,
         address _feeTo,
         uint16 _marginMaintenance,
         uint16 _marginBurnRate,
-        address _marginTo,
-        address _mirinFactory,
-        address _deployer
+        address _marginTo
     ) OverlayV1Factory(
         _ovl,
         _fee,
@@ -32,8 +32,8 @@ contract OverlayV1MirinFactory is OverlayV1Factory {
         _marginTo
     ) {
         // immutables
-        mirinFactory = _mirinFactory;
         deployer = _deployer;
+        mirinFactory = _mirinFactory;
     }
 
     /// @notice Creates a new market contract for given mirin pool address
@@ -52,16 +52,17 @@ contract OverlayV1MirinFactory is OverlayV1Factory {
         require(IMirinFactory(mirinFactory).isPool(mirinPool), "OverlayV1: !MirinPool");
 
         (bool success, bytes memory result) = deployer.delegatecall(
-            abi.encodeWithSignature("deployMarket(address,bool,uint256,uint256,uint8,uint16,uint144,uint112,uint112,uint256)",
+            abi.encodeWithSignature("deployMarket(address,address,uint256,uint8,uint16,uint144,uint112,uint112,bool,uint256,uint256)",
+            ovl,
             mirinPool,
-            isPrice0,
             updatePeriod,
-            windowSize,
             leverageMax,
             marginAdjustment,
             oiCap,
             fundingKNumerator,
             fundingKDenominator,
+            isPrice0,
+            windowSize,
             amountIn
         ));
         marketContract = abi.decode(result, (OverlayV1MirinMarket));

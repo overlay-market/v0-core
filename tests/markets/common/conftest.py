@@ -81,9 +81,9 @@ def price_points_after(token):
 @pytest.fixture(
     scope="module",
     params=[
-        ("OverlayV1MirinMarketDeployer", [],
+        ("OverlayV1MirinDeployer", [],
          "OverlayV1MirinFactory", [15, 5000, 100, ETH_ADDRESS, 60, 50, ETH_ADDRESS],
-         "OverlayV1MirinMarket", [True, 4, 24, 100, 100, OI_CAP*10**TOKEN_DECIMALS, 1, 8, AMOUNT_IN*10**TOKEN_DECIMALS],
+         "OverlayV1MirinMarket", [4, 100, 100, OI_CAP*10**TOKEN_DECIMALS, 1, 8, True, 24, AMOUNT_IN*10**TOKEN_DECIMALS],
          "MirinFactoryMock", [],
          "IMirinOracle"),
     ])
@@ -98,7 +98,7 @@ def create_factory(token, gov, feed_owner, price_points, price_points_after, req
 
     def create_factory(
         tok=token,
-        ovlmd_type = ovlmd,
+        ovlmd_type=ovlmd,
         ovlf_type=ovlf,
         ovlf_args=ovlf_args,
         ovlm_args=ovlm_args,
@@ -117,8 +117,7 @@ def create_factory(token, gov, feed_owner, price_points, price_points_after, req
         pool_addr = feed.allPools(0)
         pool = ifdp_type(pool_addr)
 
-        deployer = gov.deploy(ovlmd_type, tok, feed)
-
+        deployer = gov.deploy(ovlmd_type)
         factory = gov.deploy(ovlf_type, tok, deployer, feed, *ovlf_args)
         tok.grantRole(tok.ADMIN_ROLE(), factory, {"from": gov})
         factory.createMarket(pool, *ovlm_args, {"from": gov})

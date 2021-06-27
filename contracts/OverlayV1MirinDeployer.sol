@@ -20,7 +20,7 @@ contract OverlayV1MirinDeployer {
         bool isPrice0,
         uint256 windowSize,
         uint256 amountIn
-    ) internal returns (OverlayV1MirinMarket marketContract) {
+    ) external returns (OverlayV1MirinMarket marketContract) {
         marketContract = new OverlayV1MirinMarket(
             ovl,
             mirinPool,
