@@ -259,6 +259,8 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
 
         oi -= position.openInterest(oi, oiShares);
 
+        position.oiShares = 0;
+
         uint toForward = position.cost;
         uint toReward = ( toForward * marginRewardRate ) / RESOLUTION;
 
