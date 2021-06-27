@@ -2,7 +2,6 @@
 pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-
 import "./OverlayV1MarketGeneralOracleMock.sol";
 import "../OverlayToken.sol";
 
@@ -25,13 +24,15 @@ contract OverlayV1FactoryGeneralOracleMock is Ownable {
     // portion of build/unwind fee burnt
     uint16 public feeBurnRate;
     // portion of non-burned fees to reward market updaters with (funding + price)
-    uint16 public feeUpdateRewardsRate;
+    uint16 public feeRewardsRate;
     // address to send fees to
     address public feeTo;
     // maintenance margin requirement
     uint16 public marginMaintenance;
     // maintenance margin burn rate on liquidations
     uint16 public marginBurnRate;
+    // maintenance margin reward rate on liquidations
+    uint16 public marginRewardRate;
     // address to send margin to
     address public marginTo;
 
@@ -45,7 +46,7 @@ contract OverlayV1FactoryGeneralOracleMock is Ownable {
         address _ovl,
         uint16 _fee,
         uint16 _feeBurnRate,
-        uint16 _feeUpdateRewardsRate,
+        uint16 _feeRewardsRate,
         address _feeTo,
         uint16 _marginMaintenance,
         uint16 _marginBurnRate,
@@ -57,7 +58,7 @@ contract OverlayV1FactoryGeneralOracleMock is Ownable {
         // global params
         fee = _fee;
         feeBurnRate = _feeBurnRate;
-        feeUpdateRewardsRate = _feeUpdateRewardsRate;
+        feeRewardsRate = _feeRewardsRate;
         feeTo = _feeTo;
         marginMaintenance = _marginMaintenance;
         marginBurnRate = _marginBurnRate;
@@ -153,7 +154,7 @@ contract OverlayV1FactoryGeneralOracleMock is Ownable {
     function adjustGlobalParams(
         uint16 _fee,
         uint16 _feeBurnRate,
-        uint16 _feeUpdateRewardsRate,
+        uint16 _feeRewardsRate,
         address _feeTo,
         uint16 _marginMaintenance,
         uint16 _marginBurnRate,
@@ -161,36 +162,34 @@ contract OverlayV1FactoryGeneralOracleMock is Ownable {
     ) external onlyOwner {
         fee = _fee;
         feeBurnRate = _feeBurnRate;
-        feeUpdateRewardsRate = _feeUpdateRewardsRate;
+        feeRewardsRate = _feeRewardsRate;
         feeTo = _feeTo;
         marginMaintenance = _marginMaintenance;
         marginBurnRate = _marginBurnRate;
         marginTo = _marginTo;
     }
 
-    function getFeeParams () external view returns (
+    function getUpdateParams () external view returns (
         uint16,
         uint16,
         uint16,
         address
     ) { 
         return (
-            fee,
+            marginBurnRate,
             feeBurnRate,
-            feeUpdateRewardsRate,
+            feeRewardsRate,
             feeTo
         );
     }
 
     function getMarginParams () external view returns (
         uint16,
-        uint16,
-        address
+        uint16
     ) {
         return (
             marginMaintenance,
-            marginBurnRate,
-            marginTo
+            marginRewardRate
         );
     }
 }

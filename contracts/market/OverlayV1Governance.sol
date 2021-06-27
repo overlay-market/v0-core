@@ -2,12 +2,13 @@
 pragma solidity ^0.8.2;
 
 import "../interfaces/IOverlayV1Factory.sol";
+import "../interfaces/IOverlayToken.sol";
 
 contract OverlayV1Governance {
     // ovl erc20 token
-    address public immutable ovl;
+    IOverlayToken public immutable ovl;
     // OverlayFactory address
-    address public immutable factory;
+    IOverlayV1Factory public immutable factory;
 
     // leverage max allowed for a position: leverages are assumed to be discrete increments of 1
     uint8 public leverageMax;
@@ -24,12 +25,12 @@ contract OverlayV1Governance {
     uint112 public fundingKDenominator;
 
     modifier onlyFactory() {
-        require(msg.sender == factory, "OverlayV1: !factory");
+        require(msg.sender == address(factory), "OverlayV1: !factory");
         _;
     }
 
     modifier enabled() {
-        require(IOverlayV1Factory(factory).isMarket(address(this)), "OverlayV1: !enabled");
+        require(factory.isMarket(address(this)), "OverlayV1: !enabled");
         _;
     }
 
@@ -43,8 +44,8 @@ contract OverlayV1Governance {
         uint112 _fundingKDenominator
     ) {
         // immutables
-        factory = msg.sender;
-        ovl = _ovl;
+        factory = IOverlayV1Factory(msg.sender);
+        ovl = IOverlayToken(_ovl);
 
         // per-market adjustable params
         updatePeriod = _updatePeriod;

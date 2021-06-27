@@ -19,18 +19,16 @@ interface IOverlayV1Factory {
         address marginTo_
     );
 
-    function getFeeParams() external view returns (
-        uint16 fee_, 
+    function getUpdateParams() external view returns (
         uint16 feeBurnRate_, 
         uint16 feeUpdateRewardsRate_, 
+        uint16 marginBurnRate_,
         address feeTo_
     );
 
     function getMarginParams() external view returns (
         uint marginMaintenance_, 
-        uint marginBurnRate_, 
-        uint marginRewardRate_, 
-        address marginTo_
+        uint marginRewardRate_
     );
 
     function fee() external view returns (uint256);

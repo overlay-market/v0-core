@@ -2,10 +2,8 @@
 pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
 import "../libraries/Position.sol";
 import "../interfaces/IOverlayV1Factory.sol";
-
 import "./OverlayV1Governance.sol";
 import "./OverlayV1Fees.sol";
 import "./OverlayV1OI.sol";
@@ -14,9 +12,16 @@ import "../OverlayToken.sol";
 
 contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi, OverlayV1Fees {
     using Position for Position.Info;
-    using SafeERC20 for OverlayToken;
 
-    event Update(address indexed sender, address indexed rewarded, uint256 reward);
+    event Update(
+        address indexed rewarded, 
+        uint256 reward, 
+        uint256 feesCollected, 
+        uint256 feeBurned, 
+        uint256 liquidationsCollected,
+        uint256 liquidationsBurned, 
+        uint256 fundingBurned
+    );
     event Build(address indexed sender, uint256 positionId, uint256 oi, uint256 debt);
     event Unwind(address indexed sender, uint256 positionId, uint256 oi, uint256 debt);
     event Liquidate(address indexed sender, address indexed rewarded, uint256 reward);
@@ -61,20 +66,23 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi,
         uint256 blockNumber = block.number;
         uint256 elapsed = (blockNumber - updateBlockLast) / updatePeriod;
         if (elapsed > 0) {
-            // Forwards all fees charged from T < t < T+1 at T+1 update
 
-            ( , uint256 feeBurnRate,
+            (   uint256 marginBurnRate, 
+                uint256 feeBurnRate,
                 uint256 feeRewardsRate,
-                address feeTo
-            ) = IOverlayV1Factory(factory).getFeeParams();
+                address feeTo ) = factory.getUpdateParams();
 
-            (   uint256 amountToBurn,
-                uint256 amountToReward,
-                uint256 amountToForward
-            ) = updateFees(feeBurnRate, feeRewardsRate);
+            uint feesForward = fees;
+            uint feesBurn = ( feesForward * feeBurnRate ) / RESOLUTION;
+            uint feesReward = ( feesForward * feeRewardsRate ) / RESOLUTION;
+            feesForward = feesForward - feesBurn - feesReward;
+            uint liquidationForward = liquidations;
+            uint liquidationBurn = ( liquidationForward * marginBurnRate ) / RESOLUTION;
+            liquidationForward -= liquidationBurn;
+
+            uint fundingBurn = updateFunding(fundingKNumerator, fundingKDenominator, elapsed);
 
             // Funding payment changes at T+1
-            amountToBurn += updateFunding(fundingKNumerator, fundingKDenominator, elapsed);
 
             // Settle T < t < T+1 built positions at T+1 update
             // WARNING: Must come after funding to prevent funding harvesting w zero price risk
@@ -84,11 +92,20 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi,
             // Increment update block
             updateBlockLast = blockNumber;
 
-            emit Update(msg.sender, rewardsTo, amountToReward);
+            emit Update(
+                rewardsTo, 
+                feesReward, 
+                feesForward, 
+                feesBurn, 
+                liquidationForward,
+                liquidationBurn, 
+                fundingBurn
+            );
 
-            OverlayToken(ovl).burn(address(this), amountToBurn);
-            OverlayToken(ovl).safeTransfer(feeTo, amountToForward);
-            OverlayToken(ovl).safeTransfer(rewardsTo, amountToReward);
+            ovl.burn(address(this), feesBurn + liquidationBurn + fundingBurn);
+            ovl.transfer(feeTo, feesForward + liquidationForward);
+            ovl.transfer(rewardsTo, feesReward);
+
         }
     }
 
@@ -110,8 +127,9 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi,
         uint256 oi = collateralAmount * leverage;
 
         // adjust for fees
-        uint256 fee = IOverlayV1Factory(factory).fee();
-        (uint256 oiAdjusted, uint256 feeAmount) = adjustForFees(oi, fee);
+        uint256 fee = factory.fee();
+        uint feeAmount = ( oi * fee ) / RESOLUTION;
+        uint oiAdjusted = oi - feeAmount;
         uint256 collateralAmountAdjusted = oiAdjusted / leverage;
         uint256 debtAdjusted = oiAdjusted - collateralAmountAdjusted;
 
@@ -126,9 +144,9 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi,
         emit Build(msg.sender, positionId, oiAdjusted, debtAdjusted);
 
         // interactions
-        OverlayToken(ovl).safeTransferFrom(msg.sender, address(this), collateralAmount);
+        ovl.transferFrom(msg.sender, address(this), collateralAmount);
         // mint the debt, before fees, to accomodate funding payment burns (edge case: oiLong == 0 || oiShort == 0)
-        if (leverage > 1) OverlayToken(ovl).mint(address(this), oi - collateralAmount);
+        if (leverage > 1) ovl.mint(address(this), oi - collateralAmount);
         // WARNING: _mint shares should be last given erc1155 callback; mint shares based on OI contribution
         mint(msg.sender, positionId, oiAdjusted, "");
     }
@@ -175,10 +193,9 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi,
 
         // adjust for fees
         // TODO: think through edge case of underwater position ... and fee adjustments ...
-        uint256 _fee = IOverlayV1Factory(factory).fee();
-        (uint256 _notionalAdjusted, uint256 _feeAmount) = adjustForFees(_notional, _fee);
-        valueAdjusted = _notionalAdjusted > _debt ? _notionalAdjusted - _debt : 0; // floor in case underwater, and protocol loses out on any maintenance margin
-        feeAmount = _feeAmount;
+        feeAmount = ( _notional * factory.fee() ) / RESOLUTION;
+        valueAdjusted = _notional - feeAmount;
+        valueAdjusted = valueAdjusted > _debt ? valueAdjusted - _debt : 0; // floor in case underwater, and protocol loses out on any maintenance margin
         }
 
         // effects
@@ -200,13 +217,13 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi,
         // interactions
         // mint/burn excess PnL = valueAdjusted - cost, accounting for need to also burn debt
         if (debt + cost < valueAdjusted) {
-            OverlayToken(ovl).mint(address(this), valueAdjusted - cost - debt);
+            ovl.mint(address(this), valueAdjusted - cost - debt);
         } else {
-            OverlayToken(ovl).burn(address(this), debt + cost - valueAdjusted);
+            ovl.burn(address(this), debt + cost - valueAdjusted);
         }
 
         burn(msg.sender, positionId, shares);
-        OverlayToken(ovl).safeTransfer(msg.sender, valueAdjusted);
+        ovl.transfer(msg.sender, valueAdjusted);
     }
 
     /// @notice Liquidates an existing position
@@ -217,10 +234,10 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi,
         require(positionId < positions.length, "OverlayV1: invalid position id");
         require(hasPricePoint(pricePointIndexes[positionId]), "OverlayV1: !settled");
 
-        (   uint256 marginMaintenance,
-            uint256 marginBurnRate,
-            uint256 marginRewardRate,
-            address marginTo ) = IOverlayV1Factory(factory).getMarginParams();
+        update(rewardsTo);
+
+        (   uint marginMaintenance,
+            uint marginRewardRate   ) = factory.getMarginParams();
 
         Position.Info storage position = positions[positionId];
 
@@ -237,18 +254,15 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi,
             marginMaintenance
         ), "OverlayV1: position not liquidatable");
 
-        uint toLiquidate = position.cost;
-
-        uint toForward = position.cost;
-
-        uint toBurn = ( toForward * marginBurnRate ) / RESOLUTION;
-        uint toReward = ( toForward * marginRewardRate ) / RESOLUTION;
-        fees += toForward - toBurn - toReward;
-
         oi -= position.openInterest(oi, oiShares);
 
-        OverlayToken(ovl).burn(address(this), toBurn);
-        OverlayToken(ovl).transfer(rewardsTo, toReward);
+        uint toForward = position.cost;
+        uint toReward = ( toForward * marginRewardRate ) / RESOLUTION;
+
+        liquidations += toForward - toReward;
+
+        ovl.transfer(rewardsTo, toReward);
 
     }
+
 }

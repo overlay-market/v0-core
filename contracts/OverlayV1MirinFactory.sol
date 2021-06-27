@@ -191,14 +191,14 @@ contract OverlayV1MirinFactory is Ownable {
         marginTo = _marginTo;
     }
 
-    function getFeeParams () external view returns (
+    function getUpdateParams () external view returns (
         uint16,
         uint16,
         uint16,
         address
     ) { 
         return (
-            fee,
+            marginBurnRate,
             feeBurnRate,
             feeUpdateRewardsRate,
             feeTo
@@ -207,15 +207,11 @@ contract OverlayV1MirinFactory is Ownable {
 
     function getMarginParams () external view returns (
         uint16,
-        uint16,
-        uint16,
-        address
+        uint16
     ) {
         return (
             marginMaintenance,
-            marginBurnRate,
-            marginRewardRate,
-            marginTo
+            marginRewardRate
         );
     }
 }
