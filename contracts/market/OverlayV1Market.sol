@@ -5,13 +5,17 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../libraries/Position.sol";
 import "../interfaces/IOverlayV1Factory.sol";
 import "./OverlayV1Governance.sol";
-import "./OverlayV1Fees.sol";
 import "./OverlayV1OI.sol";
 import "./OverlayV1Position.sol";
 import "../OverlayToken.sol";
 
-contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi, OverlayV1Fees {
+contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi {
     using Position for Position.Info;
+
+    uint256 public fees;
+    uint256 public liquidations;
+
+    uint constant RESOLUTION = 1e4;
 
     event Update(
         address indexed rewarded, 
@@ -127,8 +131,7 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi,
         uint256 oi = collateralAmount * leverage;
 
         // adjust for fees
-        uint256 fee = factory.fee();
-        uint feeAmount = ( oi * fee ) / RESOLUTION;
+        uint feeAmount = ( oi * factory.fee() ) / RESOLUTION;
         uint oiAdjusted = oi - feeAmount;
         uint256 collateralAmountAdjusted = oiAdjusted / leverage;
         uint256 debtAdjusted = oiAdjusted - collateralAmountAdjusted;
