@@ -39,6 +39,8 @@ contract OverlayV1MirinFactory is Ownable {
     uint16 public marginMaintenance;
     // maintenance margin burn rate on liquidations
     uint16 public marginBurnRate;
+    // maintenance margin reward rate on liquidations
+    uint16 public marginRewardRate;
     // address to send margin to
     address public marginTo;
 
@@ -58,6 +60,7 @@ contract OverlayV1MirinFactory is Ownable {
         address _feeTo,
         uint16 _marginMaintenance,
         uint16 _marginBurnRate,
+        uint16 _marginRewardRate,
         address _marginTo
     ) {
         // immutables
@@ -72,6 +75,7 @@ contract OverlayV1MirinFactory is Ownable {
         feeTo = _feeTo;
         marginMaintenance = _marginMaintenance;
         marginBurnRate = _marginBurnRate;
+        marginRewardRate = _marginRewardRate;
         marginTo = _marginTo;
     }
 
@@ -175,6 +179,7 @@ contract OverlayV1MirinFactory is Ownable {
         address _feeTo,
         uint16 _marginMaintenance,
         uint16 _marginBurnRate,
+        uint16 _marginRewardRate,
         address _marginTo
     ) external onlyOwner {
         fee = _fee;
@@ -203,11 +208,13 @@ contract OverlayV1MirinFactory is Ownable {
     function getMarginParams () external view returns (
         uint16,
         uint16,
+        uint16,
         address
     ) {
         return (
             marginMaintenance,
             marginBurnRate,
+            marginRewardRate,
             marginTo
         );
     }

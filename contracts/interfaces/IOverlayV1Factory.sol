@@ -27,8 +27,9 @@ interface IOverlayV1Factory {
     );
 
     function getMarginParams() external view returns (
-        uint8 marginMaintenance_, 
-        uint8 marginBurnRate_, 
+        uint marginMaintenance_, 
+        uint marginBurnRate_, 
+        uint marginRewardRate_, 
         address marginTo_
     );
 

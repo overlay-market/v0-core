@@ -149,20 +149,24 @@ library Position {
         uint256 totalOiShares,
         uint256 priceEntry,
         uint256 priceExit,
-        uint16 marginMaintenance
+        uint256 marginMaintenance
     ) private pure returns (bool can) {
-        FixedPoint.uq144x112 memory margin = _openMargin(
+
+        uint256 positionValue = _value(
             _self,
             totalOi,
             totalOiShares,
             priceEntry,
             priceExit
         );
+
         FixedPoint.uq144x112 memory maintenance = FixedPoint
             .encode144(uint144(marginMaintenance))
             .div(uint112(RESOLUTION))
             .div(uint112(_self.leverage));
-        can = margin.lt(maintenance);
+
+        can = FixedPoint.encode144(uint144(positionValue)).lt(maintenance);
+
     }
 
     /// @notice Computes the open interest of a position
@@ -278,7 +282,7 @@ library Position {
         uint256 totalOiShares,
         uint256 priceEntry,
         uint256 priceExit,
-        uint16 marginMaintenance
+        uint256 marginMaintenance
     ) internal pure returns (bool) {
         Info memory _self = self;
         return _isLiquidatable(

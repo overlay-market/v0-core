@@ -210,5 +210,45 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi,
     }
 
     /// @notice Liquidates an existing position
-    // function liquidate(uint256 positionId, address rewardsTo) external lock enabled {}
+    function liquidate(
+        uint256 positionId, 
+        address rewardsTo
+    ) external lock enabled {
+        require(positionId < positions.length, "OverlayV1: invalid position id");
+        require(hasPricePoint(pricePointIndexes[positionId]), "OverlayV1: !settled");
+
+        (   uint256 marginMaintenance,
+            uint256 marginBurnRate,
+            uint256 marginRewardRate,
+            address marginTo ) = IOverlayV1Factory(factory).getMarginParams();
+
+        Position.Info storage position = positions[positionId];
+
+        uint oi;
+        uint oiShares;
+        if (position.isLong) ( oi = oiLong, oiShares = totalOiLongShares );
+        else ( oi = oiShort, oiShares = totalOiShortShares );
+
+        require(position.isLiquidatable(
+            oi,
+            oiShares,
+            pricePoints[pricePointIndexes[positionId]],
+            pricePoints[pricePointCurrentIndex],
+            marginMaintenance
+        ), "OverlayV1: position not liquidatable");
+
+        uint toLiquidate = position.cost;
+
+        uint toForward = position.cost;
+
+        uint toBurn = ( toForward * marginBurnRate ) / RESOLUTION;
+        uint toReward = ( toForward * marginRewardRate ) / RESOLUTION;
+        fees += toForward - toBurn - toReward;
+
+        oi -= position.openInterest(oi, oiShares);
+
+        OverlayToken(ovl).burn(address(this), toBurn);
+        OverlayToken(ovl).transfer(rewardsTo, toReward);
+
+    }
 }
