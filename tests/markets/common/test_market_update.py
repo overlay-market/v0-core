@@ -128,7 +128,8 @@ def test_update_funding_k():
 
 
 def test_update_early():
-    # TODO: number of update periods have gone by is zero so nothing should happen to state
+    # TODO: number of update periods have gone by is zero so nothing
+    # should happen to state
     pass
 
 
