@@ -173,8 +173,8 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
         uint256 posOiShares = shares * position.oiShares / totalShares;
 
         uint256 oi = shares * position.openInterest(
-            isLong ? oiLong : oiShort, // totalOi
-            isLong ? totalOiLongShares : totalOiShortShares // totalOiShares
+            isLong ? oiLong : oiShort, // oi
+            isLong ? oiLongShares : oiShortShares // oiShares
         ) / totalShares;
         uint256 debt = shares * position.debt / totalShares;
         uint256 cost = shares * position.cost / totalShares;
@@ -189,7 +189,7 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
         uint256 _debt = debt;
         uint256 _notional = _shares * _position.notional(
             _position.isLong ? oiLong : oiShort,
-            _position.isLong ? totalOiLongShares : totalOiShortShares,
+            _position.isLong ? oiLongShares : oiShortShares,
             pricePoints[pricePointIndexes[_positionId]], // priceEntry
             pricePoints[pricePointCurrentIndex-1] // priceExit: potential sacrifice of profit for UX purposes - implicit option to user here since using T instead of T+1 settlement on unwind (T < t < T+1; t=block.number)
         ) / _totalShares;
@@ -208,10 +208,10 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
         position.cost -= cost;
         if (isLong) {
             oiLong -= oi;
-            totalOiLongShares -= posOiShares;
+            oiLongShares -= posOiShares;
         } else {
             oiShort -= oi;
-            totalOiShortShares -= posOiShares;
+            oiShortShares -= posOiShares;
         }
 
         // events
@@ -246,8 +246,9 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
 
         uint oi;
         uint oiShares;
-        if (position.isLong) ( oi = oiLong, oiShares = totalOiLongShares );
-        else ( oi = oiShort, oiShares = totalOiShortShares );
+
+        if (position.isLong) ( oi = oiLong, oiShares = oiLongShares );
+        else ( oi = oiShort, oiShares = oiShortShares );
 
         require(position.isLiquidatable(
             oi,
@@ -258,8 +259,12 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
         ), "OverlayV1: position not liquidatable");
 
         oi -= position.openInterest(oi, oiShares);
+        oiShares -= position.oiShares;
 
-        position.oiShares = 0;
+        if (position.isLong) ( oiLong = oi, oiLongShares = oiShares );
+        else ( oiShort = oi, oiShortShares = oiShares );
+
+        positions[positionId].oiShares = 0;
 
         uint toForward = position.cost;
         uint toReward = ( toForward * marginRewardRate ) / RESOLUTION;
