@@ -81,13 +81,17 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
             uint feesBurn = ( feesForward * feeBurnRate ) / RESOLUTION;
             uint feesReward = ( feesForward * feeRewardsRate ) / RESOLUTION;
             feesForward = feesForward - feesBurn - feesReward;
+
             uint liquidationForward = liquidations;
             uint liquidationBurn = ( liquidationForward * marginBurnRate ) / RESOLUTION;
             liquidationForward -= liquidationBurn;
 
-            uint fundingBurn = updateFunding(fundingKNumerator, fundingKDenominator, elapsed);
+            // zero cumulative fees and liquidations since last update
+            fees = 0;
+            liquidations = 0;
 
             // Funding payment changes at T+1
+            uint fundingBurn = updateFunding(fundingKNumerator, fundingKDenominator, elapsed);
 
             // Settle T < t < T+1 built positions at T+1 update
             // WARNING: Must come after funding to prevent funding harvesting w zero price risk
