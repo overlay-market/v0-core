@@ -15,10 +15,6 @@ contract OverlayV1Position is ERC1155, OverlayV1PricePoint {
     // mapping from position (erc1155) id to total shares issued of position
     mapping(uint256 => uint256) public totalPositionShares;
 
-    // mapping from position id to price point index pointer
-    // @dev used to calculate priceEntry for each position
-    mapping(uint256 => uint256) public pricePointIndexes;
-
     // mapping from leverage to index in positions array of queued position; queued can still be built on while updatePeriod elapses
     mapping(uint256 => uint256) private queuedPositionLongIds;
     mapping(uint256 => uint256) private queuedPositionShortIds;
