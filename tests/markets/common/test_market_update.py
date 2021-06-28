@@ -122,7 +122,8 @@ def test_update_funding_burn():
     pass
 
 
-def test_update_funding_burn():
+def test_update_funding_k():
+    # TODO: test for different k values via an adjust
     pass
 
 
