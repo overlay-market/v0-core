@@ -122,6 +122,10 @@ def test_update_funding_burn():
     pass
 
 
+def test_update_funding_burn():
+    pass
+
+
 def test_update_early():
     # TODO: number of update periods have gone by is zero so nothing should happen to state
     pass
