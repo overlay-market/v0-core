@@ -63,6 +63,10 @@ def test_build(token, factory, market, bob, collateral, leverage, is_long):
     expected_balance = prior_balance - collateral
     assert token.balanceOf(bob) == expected_balance
 
+    # check collateral transferred from bob's address
+    expected_balance = prior_balance - collateral
+    assert token.balanceOf(bob) == expected_balance
+
     # check shares of erc 1155 match contribution to oi
     assert market.balanceOf(bob, pid) == oi_adjusted or oi_adjusted - 1
 
