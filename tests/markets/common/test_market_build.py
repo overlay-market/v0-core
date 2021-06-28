@@ -97,12 +97,8 @@ def test_build(token, factory, market, bob, collateral, leverage, is_long):
     )
     curr_queued_oi_long = market.queuedOiLong()
     curr_queued_oi_short = market.queuedOiShort()
-    assert curr_queued_oi_long == (
-        expected_queued_oi_long or expected_queued_oi_long - 1
-    )
-    assert curr_queued_oi_short == (
-        expected_queued_oi_short or expected_queued_oi_short - 1
-    )
+    assert curr_queued_oi_long == expected_queued_oi_long or expected_queued_oi_long - 1
+    assert curr_queued_oi_short == expected_queued_oi_short or expected_queued_oi_short - 1
 
     # check position receives current price point index ...
     current_price_point_idx = market.pricePointCurrentIndex()
@@ -115,9 +111,7 @@ def test_build(token, factory, market, bob, collateral, leverage, is_long):
     # check fees assessed and accounted for in fee bucket
     # +1 with or rounding catch given fee_adjustment var definition
     expected_fees = prior_fees + fee_adjustment
-    assert market.fees() == (
-        expected_fees or expected_fees + 1
-    )
+    assert market.fees() == expected_fees or expected_fees + 1
 
 
 def test_build_breach_min_collateral(token, market, bob):
