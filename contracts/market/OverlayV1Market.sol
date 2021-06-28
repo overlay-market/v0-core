@@ -61,19 +61,8 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
         _fundingKNumerator,
         _fundingKDenominator
     ) {
-        // state params
-        updateBlockLast = block.number;
 
-        pricePointCurrentIndex = 1;
-        pricePoints[0] = 0;
-        positions.push(Position.Info({
-            isLong: false,
-            leverage: 0,
-            pricePoint: 0,
-            oiShares: 0,
-            debt: 0,
-            cost: 0
-        }));
+        updateBlockLast = block.number;
 
     }
 

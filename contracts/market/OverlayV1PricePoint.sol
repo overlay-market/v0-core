@@ -2,14 +2,18 @@
 pragma solidity ^0.8.2;
 
 contract OverlayV1PricePoint {
+
     // current index pointer for the upcoming price fetch on update
     uint256 public pricePointCurrentIndex;
+
     // mapping from price point index to realized historical prices
     mapping(uint256 => uint256) public pricePoints;
 
     constructor() {
-        // set to 1 given update window T+1 settlement logic on build
-        pricePointCurrentIndex = 1;
+
+        pricePoints[0] = 0;
+        pricePointCurrentIndex = 1; // set to 1 given update window T+1 settlement logic on build
+
     }
 
     /// @notice Allows inheriting contracts to add the latest realized price

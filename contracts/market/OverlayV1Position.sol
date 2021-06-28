@@ -19,7 +19,18 @@ contract OverlayV1Position is ERC1155, OverlayV1PricePoint {
     mapping(uint256 => uint256) private queuedPositionLongIds;
     mapping(uint256 => uint256) private queuedPositionShortIds;
 
-    constructor(string memory _uri) ERC1155(_uri) {}
+    constructor(string memory _uri) ERC1155(_uri) {
+
+        positions.push(Position.Info({
+            isLong: false,
+            leverage: 0,
+            pricePoint: 0,
+            oiShares: 0,
+            debt: 0,
+            cost: 0
+        }));
+
+    }
 
     /// @notice Mint overrides erc1155 _mint to track total shares issued for given position id
     function mint(address account, uint256 id, uint256 shares, bytes memory data) internal {
