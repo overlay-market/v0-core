@@ -48,6 +48,7 @@ contract OverlayV1Governance {
         ovl = IOverlayToken(_ovl);
 
         // per-market adjustable params
+        require(_updatePeriod >= 1, "OverlayV1: invalid update period");
         updatePeriod = _updatePeriod;
         leverageMax = _leverageMax;
         marginAdjustment = _marginAdjustment;
@@ -68,6 +69,7 @@ contract OverlayV1Governance {
         uint112 _fundingKDenominator
     ) external onlyFactory {
         // TODO: requires on params; particularly leverageMax wrt MAX_FEE and cap
+        require(_updatePeriod >= 1, "OverlayV1: invalid update period");
         updatePeriod = _updatePeriod;
         leverageMax = _leverageMax;
         marginAdjustment = _marginAdjustment;
