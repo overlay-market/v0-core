@@ -20,9 +20,8 @@ contract OverlayV1MirinFactory is OverlayV1Factory {
         address _feeTo,
         uint16 _marginMaintenance,
         uint16 _marginBurnRate,
-        uint16 _marginRewardRate,
-        address _marginTo
-    ) OverlayV1Factory(
+        uint16 _marginRewardRate
+    ) OverlayV1Factory (
         _ovl,
         _fee,
         _feeBurnRate,
@@ -30,7 +29,7 @@ contract OverlayV1MirinFactory is OverlayV1Factory {
         _feeTo,
         _marginMaintenance,
         _marginBurnRate,
-        _marginTo
+        _marginRewardRate
     ) {
     
         // immutables

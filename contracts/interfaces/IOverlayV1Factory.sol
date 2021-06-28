@@ -15,8 +15,7 @@ interface IOverlayV1Factory {
         uint16 feeUpdateRewardsRate_, 
         address feeTo_, 
         uint8 marginMaintenance_, 
-        uint8 marginBurnRate_, 
-        address marginTo_
+        uint8 marginBurnRate_
     );
 
     function getUpdateParams() external view returns (
