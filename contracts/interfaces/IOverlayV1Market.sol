@@ -8,7 +8,7 @@ interface IOverlayV1Market is IERC1155 {
     event Build(address indexed sender, uint256 positionId, uint256 oi, uint256 debt);
     event Unwind(address indexed sender, uint256 positionId, uint256 oi, uint256 debt);
     event Update(
-        address indexed rewarded, 
+        address indexed rewarded,
         uint256 reward,
         uint256 feesCollected,
         uint256 feesBurned,
