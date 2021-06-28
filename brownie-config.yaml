@@ -14,4 +14,3 @@ compiler:
     optimizer:
       enabled: true
       runs: 800 #200
-
