@@ -18,17 +18,17 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
     uint constant RESOLUTION = 1e4;
 
     event Update(
-        address indexed rewarded, 
-        uint256 reward, 
-        uint256 feesCollected, 
-        uint256 feeBurned, 
+        address indexed rewarded,
+        uint256 reward,
+        uint256 feesCollected,
+        uint256 feeBurned,
         uint256 liquidationsCollected,
-        uint256 liquidationsBurned, 
+        uint256 liquidationsBurned,
         uint256 fundingBurned
     );
-    event Build(address indexed sender, uint256 positionId, uint256 oi, uint256 debt);
-    event Unwind(address indexed sender, uint256 positionId, uint256 oi, uint256 debt);
-    event Liquidate(address indexed sender, address indexed rewarded, uint256 reward);
+    event Build(uint256 positionId, uint256 oi, uint256 debt);
+    event Unwind(uint256 positionId, uint256 oi, uint256 debt);
+    event Liquidate(address indexed rewarded, uint256 reward);
 
     uint16 public constant MIN_COLLATERAL_AMOUNT = 10**4;
 
@@ -72,7 +72,7 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
         uint256 elapsed = (blockNumber - updateBlockLast) / updatePeriod;
         if (elapsed > 0) {
 
-            (   uint256 marginBurnRate, 
+            (   uint256 marginBurnRate,
                 uint256 feeBurnRate,
                 uint256 feeRewardsRate,
                 address feeTo ) = factory.getUpdateParams();
@@ -98,12 +98,12 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
             updateBlockLast = blockNumber;
 
             emit Update(
-                rewardsTo, 
-                feesReward, 
-                feesForward, 
-                feesBurn, 
+                rewardsTo,
+                feesReward,
+                feesForward,
+                feesBurn,
                 liquidationForward,
-                liquidationBurn, 
+                liquidationBurn,
                 fundingBurn
             );
 
@@ -145,7 +145,7 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
         queueOi(isLong, oiAdjusted, oiCap);
 
         // events
-        emit Build(msg.sender, positionId, oiAdjusted, debtAdjusted);
+        emit Build(positionId, oiAdjusted, debtAdjusted);
 
         // interactions
         ovl.transferFrom(msg.sender, address(this), collateralAmount);
@@ -219,7 +219,7 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
         }
 
         // events
-        emit Unwind(msg.sender, positionId, oi, debt);
+        emit Unwind(positionId, oi, debt);
 
         // interactions
         // mint/burn excess PnL = valueAdjusted - cost, accounting for need to also burn debt
@@ -235,7 +235,7 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
 
     /// @notice Liquidates an existing position
     function liquidate(
-        uint256 positionId, 
+        uint256 positionId,
         address rewardsTo
     ) external lock enabled {
 

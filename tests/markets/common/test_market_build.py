@@ -50,7 +50,6 @@ def test_build(token, factory, market, bob, collateral, leverage, is_long):
     assert 'Build' in tx.events
     assert 'positionId' in tx.events['Build']
     pid = tx.events['Build']['positionId']
-    assert tx.events['Build']['sender'] == bob.address
     assert tx.events['Build']['oi'] == oi_adjusted or oi_adjusted-1
     assert tx.events['Build']['debt'] == debt_adjusted or debt_adjusted-1
 
@@ -65,13 +64,14 @@ def test_build(token, factory, market, bob, collateral, leverage, is_long):
     assert market.balanceOf(bob, pid) == oi_adjusted or oi_adjusted - 1
 
     # check position info
-    # info = (isLong, leverage, oiShares, debt, cost)
+    # info = (isLong, leverage, pricePoint, oiShares, debt, cost)
     info = market.positions(pid)
     assert info[0] == is_long
     assert info[1] == leverage
-    assert info[2] == oi_adjusted or oi_adjusted - 1
-    assert info[3] == debt_adjusted or debt_adjusted - 1
-    assert info[4] == collateral_adjusted or collateral_adjusted - 1
+    assert info[2] == prior_price_point_idx
+    assert info[3] == oi_adjusted or oi_adjusted - 1
+    assert info[4] == debt_adjusted or debt_adjusted - 1
+    assert info[5] == collateral_adjusted or collateral_adjusted - 1
 
     # oi aggregates should be unchanged as build settles at T+1
     curr_oi_long = market.oiLong()
@@ -96,7 +96,6 @@ def test_build(token, factory, market, bob, collateral, leverage, is_long):
     # check position receives current price point index ...
     current_price_point_idx = market.pricePointCurrentIndex()
     assert current_price_point_idx == prior_price_point_idx
-    assert market.pricePointIndexes(pid) == current_price_point_idx
 
     # ... and price hasn't settled
     assert market.pricePoints(current_price_point_idx) == 0

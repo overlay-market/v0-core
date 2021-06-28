@@ -5,8 +5,8 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "../libraries/Position.sol";
 
 interface IOverlayV1Market is IERC1155 {
-    event Build(address indexed sender, uint256 positionId, uint256 oi, uint256 debt);
-    event Unwind(address indexed sender, uint256 positionId, uint256 oi, uint256 debt);
+    event Build(uint256 positionId, uint256 oi, uint256 debt);
+    event Unwind(uint256 positionId, uint256 oi, uint256 debt);
     event Update(
         address indexed rewarded,
         uint256 reward,
@@ -16,7 +16,7 @@ interface IOverlayV1Market is IERC1155 {
         uint256 liquidationsBurned,
         uint256 fundingBurned
     );
-    event Liquidate(address indexed sender, address indexed rewarded, uint256 reward);
+    event Liquidate(address indexed rewarded, uint256 reward);
 
     function ovl() external view returns (address);
     function factory() external view returns (address);

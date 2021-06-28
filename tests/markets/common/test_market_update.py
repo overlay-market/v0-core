@@ -45,7 +45,7 @@ def test_update(token,
     market.build(oi_short, False, 1, bob, {"from": bob})
 
     # prior fee state
-    _, fee_burn_rate, fee_reward_rate, fee_to = factory.getFeeParams()
+    _, fee_burn_rate, fee_reward_rate, fee_to = factory.getUpdateParams()
     prior_fees = market.fees()
 
     # prior token balances
@@ -79,7 +79,6 @@ def test_update(token,
 
     # check update event attrs
     assert 'Update' in tx.events
-    assert tx.events['Update']['sender'] == alice.address
     assert tx.events['Update']['rewarded'] == rewards.address
     assert tx.events['Update']['reward'] == expected_fee_reward or expected_fee_reward - 1
 
@@ -140,7 +139,6 @@ def test_update(token,
 
     # check update event attrs
     assert 'Update' in tx.events
-    assert tx.events['Update']['sender'] == alice.address
     assert tx.events['Update']['rewarded'] == rewards.address
     assert tx.events['Update']['reward'] == 0  # rewarded 0 since no positions built
 
