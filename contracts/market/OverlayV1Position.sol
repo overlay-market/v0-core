@@ -65,7 +65,6 @@ contract OverlayV1Position is ERC1155, OverlayV1PricePoint {
                 cost: 0
             }));
             queuedPositionId = positions.length - 1;
-            pricePointIndexes[queuedPositionId] = pricePointCurrentIndex;
             queuedPositionIds[leverage] = queuedPositionId;
         }
     }
