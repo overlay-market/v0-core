@@ -14,6 +14,7 @@ contract PositionTest {
     function push(
         bool _isLong,
         uint256 _leverage,
+        uint256 _pricePoint,
         uint256 _oiShares,
         uint256 _debt,
         uint256 _cost
@@ -21,6 +22,7 @@ contract PositionTest {
         positions.push(Position.Info({
             isLong: _isLong,
             leverage: _leverage,
+            pricePoint: _pricePoint,
             oiShares: _oiShares,
             debt: _debt,
             cost: _cost

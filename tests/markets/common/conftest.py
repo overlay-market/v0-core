@@ -82,7 +82,7 @@ def price_points_after(token):
     scope="module",
     params=[
         ("OverlayV1MirinDeployer", [],
-         "OverlayV1MirinFactory", [15, 5000, 100, ETH_ADDRESS, 60, 50, ETH_ADDRESS],
+         "OverlayV1MirinFactory", [15, 5000, 100, ETH_ADDRESS, 60, 50, 25, ETH_ADDRESS],
          "OverlayV1MirinMarket", [4, 100, 100, OI_CAP*10**TOKEN_DECIMALS, 1, 8, True, 24, AMOUNT_IN*10**TOKEN_DECIMALS],
          "MirinFactoryMock", [],
          "IMirinOracle"),

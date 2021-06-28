@@ -7,7 +7,15 @@ import "../libraries/Position.sol";
 interface IOverlayV1Market is IERC1155 {
     event Build(address indexed sender, uint256 positionId, uint256 oi, uint256 debt);
     event Unwind(address indexed sender, uint256 positionId, uint256 oi, uint256 debt);
-    event Update(address indexed sender, address indexed rewarded, uint256 reward);
+    event Update(
+        address indexed rewarded, 
+        uint256 reward,
+        uint256 feesCollected,
+        uint256 feesBurned,
+        uint256 liquidationsCollected,
+        uint256 liquidationsBurned,
+        uint256 fundingBurned
+    );
     event Liquidate(address indexed sender, address indexed rewarded, uint256 reward);
     function ovl() external view returns (address);
     function factory() external view returns (address);

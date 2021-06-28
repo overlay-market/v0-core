@@ -17,9 +17,9 @@ contract OverlayV1Oi {
     uint256 public oiShort;
 
     // total shares of long open interest outstanding
-    uint256 internal totalOiLongShares;
+    uint256 internal oiLongShares;
     // total shares of short open interest outstanding
-    uint256 internal totalOiShortShares;
+    uint256 internal oiShortShares;
 
     // queued long open interest to be settled at T+1
     uint256 public queuedOiLong;
@@ -112,8 +112,8 @@ contract OverlayV1Oi {
     function updateOi() internal {
         oiLong += queuedOiLong;
         oiShort += queuedOiShort;
-        totalOiLongShares += queuedOiLong;
-        totalOiShortShares += queuedOiShort;
+        oiLongShares += queuedOiLong;
+        oiShortShares += queuedOiShort;
 
         queuedOiLong = 0;
         queuedOiShort = 0;

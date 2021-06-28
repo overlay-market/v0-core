@@ -20,6 +20,7 @@ contract OverlayV1MirinFactory is OverlayV1Factory {
         address _feeTo,
         uint16 _marginMaintenance,
         uint16 _marginBurnRate,
+        uint16 _marginRewardRate,
         address _marginTo
     ) OverlayV1Factory(
         _ovl,
@@ -31,9 +32,11 @@ contract OverlayV1MirinFactory is OverlayV1Factory {
         _marginBurnRate,
         _marginTo
     ) {
+    
         // immutables
         deployer = _deployer;
         mirinFactory = _mirinFactory;
+
     }
 
     /// @notice Creates a new market contract for given mirin pool address
@@ -65,8 +68,10 @@ contract OverlayV1MirinFactory is OverlayV1Factory {
             windowSize,
             amountIn
         ));
+        
         marketContract = abi.decode(result, (OverlayV1MirinMarket));
 
         initializeMarket(address(marketContract));
+        
     }
 }
