@@ -12,7 +12,8 @@ library Position {
 
     struct Info {
         bool isLong; // whether long or short
-        uint256 leverage; // discrete initial leverage amount
+        uint leverage; // discrete initial leverage amount
+        uint pricePoint; // pricePointIndex
         uint256 oiShares; // shares of total open interest on long/short side, depending on isLong value
         uint256 debt; // total debt associated with this position
         uint256 cost; // total amount of collateral initially locked; effectively, cost to enter position

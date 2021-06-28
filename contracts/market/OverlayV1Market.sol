@@ -63,6 +63,18 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
     ) {
         // state params
         updateBlockLast = block.number;
+
+        pricePointCurrentIndex = 1;
+        pricePoints[0] = 0;
+        positions.push(Position.Info({
+            isLong: false,
+            leverage: 0,
+            pricePoint: 0,
+            oiShares: 0,
+            debt: 0,
+            cost: 0
+        }));
+
     }
 
     /// @notice Updates funding payments, cumulative fees, queued position builds, and price points
@@ -126,8 +138,8 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
         // update market for funding, price points, fees before all else
         update(rewardsTo);
 
-        uint256 positionId = getQueuedPosition(isLong, leverage);
-        Position.Info storage position = positions[positionId];
+        (   Position.Info storage position,
+            uint256 positionId )= getQueuedPosition(isLong, leverage);
         uint256 oi = collateralAmount * leverage;
 
         // adjust for fees
@@ -165,32 +177,34 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
         require(hasPricePoint(pricePointIndexes[positionId]), "OverlayV1: !settled");
 
         // update market for funding, price point, fees before all else
+        Position.Info storage position = positions[positionId];
+
         update(rewardsTo);
 
-        Position.Info storage position = positions[positionId];
         bool isLong = position.isLong;
         uint256 totalShares = totalPositionShares[positionId];
         uint256 posOiShares = shares * position.oiShares / totalShares;
 
+        // TODO: more reads from storage here
         uint256 oi = shares * position.openInterest(
             isLong ? oiLong : oiShort, // oi
             isLong ? oiLongShares : oiShortShares // oiShares
         ) / totalShares;
-        uint256 debt = shares * position.debt / totalShares;
-        uint256 cost = shares * position.cost / totalShares;
+
+        uint256 debt = shares * position.debt / totalShares; // TODO: read from storage here
+        uint256 cost = shares * position.cost / totalShares; // TODO: read from storage here
 
         uint256 valueAdjusted;
         uint256 feeAmount;
         { // avoid stack too deep errors in computing valueAdjusted of position
         Position.Info storage _position = position;
-        uint256 _positionId = positionId;
         uint256 _shares = shares;
-        uint256 _totalShares = totalShares;
+        uint256 _totalShares = totalShares; // TODO: read from storage here
         uint256 _debt = debt;
         uint256 _notional = _shares * _position.notional(
-            _position.isLong ? oiLong : oiShort,
-            _position.isLong ? oiLongShares : oiShortShares,
-            pricePoints[pricePointIndexes[_positionId]], // priceEntry
+            _position.isLong ? oiLong : oiShort, // TODO: read from storage here
+            _position.isLong ? oiLongShares : oiShortShares, // TODO: read from storage here
+            pricePoints[_position.pricePoint], // priceEntry
             pricePoints[pricePointCurrentIndex-1] // priceExit: potential sacrifice of profit for UX purposes - implicit option to user here since using T instead of T+1 settlement on unwind (T < t < T+1; t=block.number)
         ) / _totalShares;
 
@@ -237,12 +251,12 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
         require(positionId < positions.length, "OverlayV1: invalid position id");
         require(hasPricePoint(pricePointIndexes[positionId]), "OverlayV1: !settled");
 
+        Position.Info storage position = positions[positionId];
+
         update(rewardsTo);
 
         (   uint marginMaintenance,
             uint marginRewardRate   ) = factory.getMarginParams();
-
-        Position.Info storage position = positions[positionId];
 
         uint oi;
         uint oiShares;
@@ -253,7 +267,7 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
         require(position.isLiquidatable(
             oi,
             oiShares,
-            pricePoints[pricePointIndexes[positionId]],
+            pricePoints[position.pricePoint],
             pricePoints[pricePointCurrentIndex],
             marginMaintenance
         ), "OverlayV1: position not liquidatable");
