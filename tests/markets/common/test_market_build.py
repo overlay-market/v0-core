@@ -11,7 +11,9 @@ FEE_RESOLUTION = 1e4
 
 
 @given(
-    collateral=strategy('uint256', min_value=MIN_COLLATERAL_AMOUNT, max_value=0.00999*OI_CAP*10**TOKEN_DECIMALS),
+    collateral=strategy('uint256',
+                        min_value=MIN_COLLATERAL_AMOUNT,
+                        max_value=0.00999*OI_CAP*10**TOKEN_DECIMALS),
     leverage=strategy('uint8', min_value=1, max_value=100),
     is_long=strategy('bool'))
 def test_build(token, factory, market, bob, collateral, leverage, is_long):
@@ -19,7 +21,7 @@ def test_build(token, factory, market, bob, collateral, leverage, is_long):
     fee = factory.fee()
     fee_perc = fee / FEE_RESOLUTION
 
-    # prior bob token balance
+    # prior token balances
     prior_balance_market = token.balanceOf(market)
     prior_balance_trader = token.balanceOf(bob)
 
@@ -29,6 +31,9 @@ def test_build(token, factory, market, bob, collateral, leverage, is_long):
     prior_oi_long = market.oiLong()
     prior_oi_short = market.oiShort()
 
+    # prior fee state
+    prior_fees = market.fees()
+
     # prior price info
     prior_price_point_idx = market.pricePointCurrentIndex()
 
@@ -36,6 +41,7 @@ def test_build(token, factory, market, bob, collateral, leverage, is_long):
     oi_adjusted = int(oi * (1 - fee_perc))
     collateral_adjusted = int(oi_adjusted / leverage)
     debt_adjusted = oi_adjusted - collateral_adjusted
+    fee_adjustment = oi - oi_adjusted
 
     # approve market to spend bob's ovl to build position
     token.approve(market, collateral, {"from": bob})
@@ -74,12 +80,22 @@ def test_build(token, factory, market, bob, collateral, leverage, is_long):
     assert prior_oi_short == curr_oi_short
 
     # queued oi aggregates should increase prior to T+1 tho
-    expected_queued_oi_long = prior_queued_oi_long + oi_adjusted if is_long else prior_queued_oi_long
-    expected_queued_oi_short = prior_queued_oi_short + oi_adjusted if not is_long else prior_queued_oi_short
+    expected_queued_oi_long = (
+        prior_queued_oi_long + oi_adjusted
+        if is_long else prior_queued_oi_long
+    )
+    expected_queued_oi_short = (
+        prior_queued_oi_short + oi_adjusted
+        if not is_long else prior_queued_oi_short
+    )
     curr_queued_oi_long = market.queuedOiLong()
     curr_queued_oi_short = market.queuedOiShort()
-    assert curr_queued_oi_long == expected_queued_oi_long or expected_queued_oi_long - 1
-    assert curr_queued_oi_short == expected_queued_oi_short or expected_queued_oi_short - 1
+    assert curr_queued_oi_long == (
+        expected_queued_oi_long or expected_queued_oi_long - 1
+    )
+    assert curr_queued_oi_short == (
+        expected_queued_oi_short or expected_queued_oi_short - 1
+    )
 
     # check position receives current price point index ...
     current_price_point_idx = market.pricePointCurrentIndex()
@@ -89,7 +105,12 @@ def test_build(token, factory, market, bob, collateral, leverage, is_long):
     # ... and price hasn't settled
     assert market.pricePoints(current_price_point_idx) == 0
 
-    # TODO: check fees, etc ...
+    # check fees assessed and accounted for in fee bucket
+    # +1 with or rounding catch given fee_adjustment var definition
+    expected_fees = prior_fees + fee_adjustment
+    assert market.fees() == (
+        expected_fees or expected_fees + 1
+    )
 
 
 def test_build_breach_min_collateral(token, market, bob):
@@ -101,7 +122,8 @@ def test_build_breach_max_leverage(token, market, bob):
 
 
 @given(
-    oi=strategy('uint256', min_value=1.01*OI_CAP*10**TOKEN_DECIMALS, max_value=2**144-1),
+    oi=strategy('uint256',
+                min_value=1.01*OI_CAP*10**TOKEN_DECIMALS, max_value=2**144-1),
     leverage=strategy('uint8', min_value=1, max_value=100),
     is_long=strategy('bool'))
 def test_build_breach_cap(token, factory, market, bob, oi, leverage, is_long):
