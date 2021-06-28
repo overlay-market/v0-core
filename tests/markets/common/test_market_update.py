@@ -31,7 +31,6 @@ def test_update(token,
                 oi_short,
                 num_periods):
     update_period = market.updatePeriod()
-    update_blocks = num_periods * update_period * 12
 
     # queue up bob's positions to be settled at next update (T+1)
     # 1x long w oi_long as collateral and 1x short with oi_short
@@ -78,15 +77,11 @@ def test_update(token,
     prior_plus_updates = start_block + update_period + 2
     assert curr_update_block == prior_plus_updates
 
+    # check update event attrs
     assert 'Update' in tx.events
     assert tx.events['Update']['sender'] == alice.address
     assert tx.events['Update']['rewarded'] == rewards.address
-    assert tx.events['Update']['reward'] == reward_amount or reward_amount - 1
-    assert tx.events['Update']['feesCollected'] == 0
-    assert tx.events['Update']['feesBurned'] == 0
-    assert tx.events['Update']['liquidationsCollected'] == 0
-    assert tx.events['Update']['liquidationsBurned'] == 0
-    assert tx.events['Update']['fundingBurned'] == 0
+    assert tx.events['Update']['reward'] == expected_fee_reward or expected_fee_reward - 1
 
     # Check queued OI settled
     expected_oi_long = prior_queued_oi_long + prior_oi_long
