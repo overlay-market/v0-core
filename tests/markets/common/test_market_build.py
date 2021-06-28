@@ -20,7 +20,8 @@ def test_build(token, factory, market, bob, collateral, leverage, is_long):
     fee_perc = fee / FEE_RESOLUTION
 
     # prior bob token balance
-    prior_balance = token.balanceOf(bob)
+    prior_balance_market = token.balanceOf(market)
+    prior_balance_trader = token.balanceOf(bob)
 
     # prior oi state
     prior_queued_oi_long = market.queuedOiLong()
@@ -48,8 +49,11 @@ def test_build(token, factory, market, bob, collateral, leverage, is_long):
     assert tx.events['Build']['debt'] == debt_adjusted or debt_adjusted-1
 
     # check collateral transferred from bob's address
-    expected_balance = prior_balance - collateral
-    assert token.balanceOf(bob) == expected_balance
+    expected_balance_trader = prior_balance_trader - collateral
+    # mints debt to contract + additional collateral sent from trader
+    expected_balance_market = prior_balance_market + oi
+    assert token.balanceOf(bob) == expected_balance_trader
+    assert token.balanceOf(market) == expected_balance_market
 
     # check shares of erc 1155 match contribution to oi
     assert market.balanceOf(bob, pid) == oi_adjusted or oi_adjusted - 1
