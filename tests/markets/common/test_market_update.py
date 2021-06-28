@@ -38,19 +38,35 @@ def test_update(token,
     token.approve(market, oi_long+oi_short, {"from": bob})
 
     # do an initial update before build so all oi is queued
-    # TODO: check no issues when some queued, some settled
     market.update(rewards, {"from": alice})
+
+    # build so all oi is queued
+    # TODO: check no issues when some queued, some settled
     market.build(oi_long, True, 1, bob, {"from": bob})
     market.build(oi_short, False, 1, bob, {"from": bob})
 
+    # prior fee state
+    _, fee_burn_rate, fee_reward_rate, fee_to = factory.getFeeParams()
+    prior_fees = market.fees()
+
+    # prior token balances
+    prior_balance_market = token.balanceOf(market)
+    prior_balance_fee_to = token.balanceOf(fee_to)
+    prior_balance_rewards_to = token.balanceOf(rewards)
+    prior_total_supply = token.totalSupply()
+
+    # prior oi state
     prior_queued_oi_long = market.queuedOiLong()
     prior_queued_oi_short = market.queuedOiShort()
     prior_oi_long = market.oiLong()
     prior_oi_short = market.oiShort()
 
-    _, _, reward_rate, _ = factory.getFeeParams()
-    reward_perc = reward_rate / FEE_RESOLUTION
-    reward_amount = reward_perc * market.fees()
+    # prior price point state
+    prior_price_point_idx = market.pricePointCurrentIndex()
+
+    # Calc reward rate before update
+    reward_perc = fee_reward_rate / FEE_RESOLUTION
+    expected_fee_reward = int(reward_perc * prior_fees)
 
     start_block = chain[-1]['number']
     chain.mine(update_period+1)
@@ -61,8 +77,6 @@ def test_update(token,
     # plus another 1 since tx will mine a block
     prior_plus_updates = start_block + update_period + 2
     assert curr_update_block == prior_plus_updates
-
-    print("events" + str(tx.events))
 
     assert 'Update' in tx.events
     assert tx.events['Update']['sender'] == alice.address
@@ -90,9 +104,32 @@ def test_update(token,
     curr_oi_imb = curr_oi_long - curr_oi_short
     curr_oi_tot = curr_oi_long + curr_oi_short
 
-    # TODO: Check price points updated
+    # Check price points updated ...
+    expected_price_point_idx = prior_price_point_idx + 1
+    curr_price_point_idx = market.pricePointCurrentIndex()
+    assert curr_price_point_idx == expected_price_point_idx
 
-    # TODO: Check fee burn and forward
+    # ... and price has settled
+    assert market.pricePoints(prior_price_point_idx) > 0
+
+    # Check fee burn ...
+    expected_fee_burn = int(prior_fees * fee_burn_rate / FEE_RESOLUTION)
+    expected_total_supply = prior_total_supply - expected_fee_burn
+    assert token.totalSupply() == expected_total_supply or expected_total_supply + 1
+
+    # ... and rewards sent to address to be rewarded
+    expected_balance_rewards_to = prior_balance_rewards_to + expected_fee_reward
+    assert token.balanceOf(rewards) == expected_balance_rewards_to or expected_balance_rewards_to - 1
+
+    # ... and fees forwarded
+    expected_balance_market = prior_balance_market - prior_fees
+    expected_fee_forward = prior_fees - expected_fee_burn - expected_fee_reward
+    expected_balance_fee_to = prior_balance_fee_to + expected_fee_forward
+    assert token.balanceOf(fee_to) == expected_balance_fee_to or expected_balance_fee_to - 1
+    assert token.balanceOf(market) == expected_balance_market
+
+    # Check cumulative fee pot zeroed
+    assert market.fees() == 0
 
     # Now do a longer update ...
     curr_block = chain[-1]['number']
@@ -106,12 +143,11 @@ def test_update(token,
     curr_plus_updates = curr_block + update_blocks + 1
     assert next_update_block == curr_plus_updates
 
+    # check update event attrs
     assert 'Update' in tx.events
-    assert tx.events['Update'] == OrderedDict({
-        'sender': alice.address,
-        'rewarded': rewards.address,
-        'reward': 0,  # rewarded 0 since no positions built
-    })
+    assert tx.events['Update']['sender'] == alice.address
+    assert tx.events['Update']['rewarded'] == rewards.address
+    assert tx.events['Update']['reward'] == 0  # rewarded 0 since no positions built
 
     # check funding payments over longer period
     k = market.fundingKNumerator() / market.fundingKDenominator()
