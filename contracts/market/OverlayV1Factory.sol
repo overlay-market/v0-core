@@ -30,10 +30,10 @@ contract OverlayV1Factory is Ownable {
     address public feeTo;
     // maintenance margin requirement
     uint16 public marginMaintenance;
+    // maintenance margin reward rate on liquidations
+    uint16 public marginRewardRate;
     // maintenance margin burn rate on liquidations
     uint16 public marginBurnRate;
-    // address to send margin to
-    address public marginTo;
 
     // whether is a market AND is enabled
     mapping(address => bool) public isMarket;
@@ -49,7 +49,7 @@ contract OverlayV1Factory is Ownable {
         address _feeTo,
         uint16 _marginMaintenance,
         uint16 _marginBurnRate,
-        address _marginTo
+        uint16 _marginRewardRate
     ) {
         // immutables
         ovl = _ovl;
@@ -61,7 +61,7 @@ contract OverlayV1Factory is Ownable {
         feeTo = _feeTo;
         marginMaintenance = _marginMaintenance;
         marginBurnRate = _marginBurnRate;
-        marginTo = _marginTo;
+        marginRewardRate = _marginRewardRate;
     }
 
     /// @notice Initializes an existing market contract after deployment
@@ -137,7 +137,7 @@ contract OverlayV1Factory is Ownable {
         address _feeTo,
         uint16 _marginMaintenance,
         uint16 _marginBurnRate,
-        address _marginTo
+        uint16 _marginRewardRate
     ) external onlyOwner {
         fee = _fee;
         feeBurnRate = _feeBurnRate;
@@ -145,17 +145,17 @@ contract OverlayV1Factory is Ownable {
         feeTo = _feeTo;
         marginMaintenance = _marginMaintenance;
         marginBurnRate = _marginBurnRate;
-        marginTo = _marginTo;
+        marginRewardRate = _marginRewardRate;
     }
 
-    function getFeeParams() external view returns (
+    function getUpdateParams() external view returns (
         uint16,
         uint16,
         uint16,
         address
     ) {
         return (
-            fee,
+            marginBurnRate,
             feeBurnRate,
             feeUpdateRewardsRate,
             feeTo
@@ -164,13 +164,11 @@ contract OverlayV1Factory is Ownable {
 
     function getMarginParams() external view returns (
         uint16,
-        uint16,
-        address
+        uint16
     ) {
         return (
             marginMaintenance,
-            marginBurnRate,
-            marginTo
+            marginRewardRate
         );
     }
 }

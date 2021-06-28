@@ -163,10 +163,11 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
     ) external lock enabled {
         require(positionId < positions.length, "OverlayV1: invalid position id");
         require(shares > 0 && shares <= balanceOf(msg.sender, positionId), "OverlayV1: invalid position shares");
-        require(hasPricePoint(pricePointIndexes[positionId]), "OverlayV1: !settled");
 
         // update market for funding, price point, fees before all else
         Position.Info storage position = positions[positionId];
+
+        require(hasPricePoint(position.pricePoint), "OverlayV1: !settled");
 
         update(rewardsTo);
 
@@ -237,10 +238,12 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
         uint256 positionId, 
         address rewardsTo
     ) external lock enabled {
+
         require(positionId < positions.length, "OverlayV1: invalid position id");
-        require(hasPricePoint(pricePointIndexes[positionId]), "OverlayV1: !settled");
 
         Position.Info storage position = positions[positionId];
+
+        require(hasPricePoint(position.pricePoint), "OverlayV1: !settled");
 
         update(rewardsTo);
 
