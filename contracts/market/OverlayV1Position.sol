@@ -54,12 +54,14 @@ contract OverlayV1Position is ERC1155, OverlayV1PricePoint {
         Position.Info storage position,
         uint256 queuedPositionId
     ) {
+        
         mapping(uint256 => uint256) storage queuedPositionIds = (
             isLong ? queuedPositionLongIds : queuedPositionShortIds
         );
-        // TODO simplify this with a struct containing positionId and priceIndex
-        queuedPositionId = queuedPositionIds[leverage];
+
         position = positions[queuedPositionId];
+        queuedPositionId = queuedPositionIds[leverage];
+        uint pricePointCurrentIndex = pricePoints.length;
 
         if (position.pricePoint < pricePointCurrentIndex) {
             // prior update window for this queued position has passed
@@ -74,5 +76,6 @@ contract OverlayV1Position is ERC1155, OverlayV1PricePoint {
             queuedPositionId = positions.length - 1;
             queuedPositionIds[leverage] = queuedPositionId;
         }
+
     }
 }

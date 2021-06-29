@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../libraries/Position.sol";
 import "../interfaces/IOverlayV1Factory.sol";
 import "./OverlayV1Governance.sol";
@@ -165,76 +164,60 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
         uint256 shares,
         address rewardsTo
     ) external lock enabled {
-        require(positionId < positions.length, "OverlayV1: invalid position id");
         require(shares > 0 && shares <= balanceOf(msg.sender, positionId), "OverlayV1: invalid position shares");
 
-        // update market for funding, price point, fees before all else
         Position.Info storage position = positions[positionId];
 
-        require(hasPricePoint(position.pricePoint), "OverlayV1: !settled");
+        require(position.pricePoint < pricePoints.length, "OverlayV1: position has not settled");
 
+        // update market for funding, price point, fees before all else
         update(rewardsTo);
 
+        uint valueAdjusted;
+
+        {
         bool isLong = position.isLong;
         uint256 totalShares = totalPositionShares[positionId];
         uint256 posOiShares = shares * position.oiShares / totalShares;
 
+        uint256 oi = isLong ? oiLong : oiShort;
+        uint256 oiShares = isLong ? oiLongShares : oiShortShares;
+
         // TODO: more reads from storage here
-        uint256 oi = shares * position.openInterest(
-            isLong ? oiLong : oiShort, // oi
-            isLong ? oiLongShares : oiShortShares // oiShares
-        ) / totalShares;
+        uint256 posOi = shares * position.openInterest(oi, oiShares ) / totalShares;
 
         uint256 debt = shares * position.debt / totalShares; // TODO: read from storage here
         uint256 cost = shares * position.cost / totalShares; // TODO: read from storage here
 
-        uint256 valueAdjusted;
-        uint256 feeAmount;
-        { // avoid stack too deep errors in computing valueAdjusted of position
-        Position.Info storage _position = position;
-        uint256 _shares = shares;
-        uint256 _totalShares = totalShares; // TODO: read from storage here
-        uint256 _debt = debt;
-        uint256 _notional = _shares * _position.notional(
-            _position.isLong ? oiLong : oiShort, // TODO: read from storage here
-            _position.isLong ? oiLongShares : oiShortShares, // TODO: read from storage here
-            pricePoints[_position.pricePoint], // priceEntry
-            pricePoints[pricePointCurrentIndex-1] // priceExit: potential sacrifice of profit for UX purposes - implicit option to user here since using T instead of T+1 settlement on unwind (T < t < T+1; t=block.number)
-        ) / _totalShares;
+        uint256 _notional = shares * position.notional(pricePoints, oi, oiShares) / totalShares;
 
         // adjust for fees
         // TODO: think through edge case of underwater position ... and fee adjustments ...
-        feeAmount = ( _notional * factory.fee() ) / RESOLUTION;
+        uint feeAmount = ( _notional * factory.fee() ) / RESOLUTION;
         valueAdjusted = _notional - feeAmount;
-        valueAdjusted = valueAdjusted > _debt ? valueAdjusted - _debt : 0; // floor in case underwater, and protocol loses out on any maintenance margin
-        }
+        valueAdjusted = valueAdjusted > debt ? valueAdjusted - debt : 0; // floor in case underwater, and protocol loses out on any maintenance margin
 
         // effects
         fees += feeAmount; // adds to fee pot, which is transferred on update
         position.oiShares -= posOiShares;
         position.debt -= debt;
         position.cost -= cost;
-        if (isLong) {
-            oiLong -= oi;
-            oiLongShares -= posOiShares;
-        } else {
-            oiShort -= oi;
-            oiShortShares -= posOiShares;
-        }
+
+        if (isLong) ( oiLong = oi - posOi, oiLongShares = oiShares - posOiShares );
+        else ( oiShort = oi - posOi, oiShortShares = oiShares - posOiShares );
 
         // events
-        emit Unwind(positionId, oi, debt);
+        emit Unwind(positionId, posOi, debt);
 
         // interactions
         // mint/burn excess PnL = valueAdjusted - cost, accounting for need to also burn debt
-        if (debt + cost < valueAdjusted) {
-            ovl.mint(address(this), valueAdjusted - cost - debt);
-        } else {
-            ovl.burn(address(this), debt + cost - valueAdjusted);
+        if (debt + cost < valueAdjusted) ovl.mint(address(this), valueAdjusted - cost - debt);
+        else ovl.burn(address(this), debt + cost - valueAdjusted);
         }
 
         burn(msg.sender, positionId, shares);
         ovl.transfer(msg.sender, valueAdjusted);
+
     }
 
     /// @notice Liquidates an existing position
@@ -243,11 +226,9 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
         address rewardsTo
     ) external lock enabled {
 
-        require(positionId < positions.length, "OverlayV1: invalid position id");
-
         Position.Info storage position = positions[positionId];
 
-        require(hasPricePoint(position.pricePoint), "OverlayV1: !settled");
+        require(position.pricePoint < pricePoints.length, "OverlayV1: position has not settled");
 
         update(rewardsTo);
 
@@ -261,10 +242,9 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
         else ( oi = oiShort, oiShares = oiShortShares );
 
         require(position.isLiquidatable(
+            pricePoints,
             oi,
             oiShares,
-            pricePoints[position.pricePoint],
-            pricePoints[pricePointCurrentIndex],
             marginMaintenance
         ), "OverlayV1: position not liquidatable");
 

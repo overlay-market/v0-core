@@ -175,21 +175,27 @@ library Position {
         Info storage self,
         uint256 totalOi,
         uint256 totalOiShares
-    ) internal pure returns (uint256) {
+    ) internal view returns (uint256) {
+
         Info memory _self = self;
+
         return _openInterest(_self, totalOi, totalOiShares);
+
     }
 
     /// @notice Computes the value of a position
     /// @dev Floors to zero, so won't properly compute if self is underwater
     function value(
         Info storage self,
+        uint[] storage pricePoints,
         uint256 totalOi,
-        uint256 totalOiShares,
-        uint256 priceEntry,
-        uint256 priceExit
-    ) internal pure returns (uint256) {
+        uint256 totalOiShares
+    ) internal view returns (uint256) {
+
         Info memory _self = self;
+        uint priceEntry = pricePoints[ _self.pricePoint ];
+        uint priceExit = pricePoints[ pricePoints.length - 1 ];
+
         return _value(
             _self,
             totalOi,
@@ -197,18 +203,22 @@ library Position {
             priceEntry,
             priceExit
         );
+
     }
 
     /// @notice Whether position is underwater
     /// @dev is true when position value <= 0
     function isUnderwater(
         Info storage self,
+        uint[] storage pricePoints,
         uint256 totalOi,
-        uint256 totalOiShares,
-        uint256 priceEntry,
-        uint256 priceExit
-    ) internal pure returns (bool) {
+        uint256 totalOiShares
+    ) internal view returns (bool) {
+
         Info memory _self = self;
+        uint256 priceEntry = pricePoints[ _self.pricePoint ];
+        uint256 priceExit = pricePoints[ pricePoints.length - 1 ];
+
         return _isUnderwater(
             _self,
             totalOi,
@@ -216,18 +226,22 @@ library Position {
             priceEntry,
             priceExit
         );
+
     }
 
     /// @notice Computes the notional of a position
     /// @dev Floors to _self.debt, so won't properly compute if _self is underwater
     function notional(
         Info storage self,
+        uint[] storage pricePoints,
         uint256 totalOi,
-        uint256 totalOiShares,
-        uint256 priceEntry,
-        uint256 priceExit
-    ) internal pure returns (uint256) {
+        uint256 totalOiShares
+    ) internal view returns (uint256) {
+
         Info memory _self = self;
+        uint priceEntry = pricePoints[ _self.pricePoint ];
+        uint priceExit = pricePoints[ pricePoints.length - 1 ];
+
         return _notional(
             _self,
             totalOi,
@@ -235,18 +249,22 @@ library Position {
             priceEntry,
             priceExit
         );
+
     }
 
     /// @notice Computes the open leverage of a position
     /// @dev ceils FixedPoint.uq144x112(uint256.max) if position value <= 0
     function openLeverage(
         Info storage self,
+        uint[] storage pricePoints,
         uint256 totalOi,
-        uint256 totalOiShares,
-        uint256 priceEntry,
-        uint256 priceExit
-    ) internal pure returns (FixedPoint.uq144x112 memory) {
+        uint256 totalOiShares
+    ) internal view returns (FixedPoint.uq144x112 memory) {
+
         Info memory _self = self;
+        uint priceEntry = pricePoints[ _self.pricePoint ];
+        uint priceExit = pricePoints[ pricePoints.length - 1 ];
+
         return _openLeverage(
             _self,
             totalOi,
@@ -260,32 +278,39 @@ library Position {
     /// @dev floors zero if position value <= 0; equiv to 1 / open leverage
     function openMargin(
         Info storage self,
+        uint[] storage pricePoints,
         uint256 totalOi,
-        uint256 totalOiShares,
-        uint256 priceEntry,
-        uint256 priceExit
-    ) internal pure returns (FixedPoint.uq144x112 memory) {
+        uint256 totalOiShares
+    ) internal view returns (FixedPoint.uq144x112 memory) {
+
         Info memory _self = self;
+        uint priceEntry = pricePoints[ _self.pricePoint ];
+        uint priceExit = pricePoints[ pricePoints.length - 1 ];
+
         return _openMargin(
             _self,
             totalOi,
             totalOiShares,
-            priceEntry,
+        priceEntry,
             priceExit
         );
+
     }
 
     /// @notice Whether a position can be liquidated
     /// @dev is true when open margin < maintenance margin
     function isLiquidatable(
         Info storage self,
+        uint[] storage pricePoints,
         uint256 totalOi,
         uint256 totalOiShares,
-        uint256 priceEntry,
-        uint256 priceExit,
-        uint256 marginMaintenance
-    ) internal pure returns (bool) {
+    uint256 marginMaintenance
+    ) internal view returns (bool) {
+
         Info memory _self = self;
+        uint priceEntry = pricePoints[ _self.pricePoint ];
+        uint priceExit = pricePoints[ pricePoints.length - 1 ];
+
         return _isLiquidatable(
             _self,
             totalOi,
@@ -294,6 +319,7 @@ library Position {
             priceExit,
             marginMaintenance
         );
+
     }
 
     /// @notice Computes the liquidation price of a position
