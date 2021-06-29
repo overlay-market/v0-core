@@ -309,7 +309,7 @@ library Position {
 
         Info memory _self = self;
         uint priceEntry = pricePoints[ _self.pricePoint ];
-        uint priceExit = pricePoints[ pricePoints.length ];
+        uint priceExit = pricePoints[ pricePoints.length - 1 ];
 
         return _isLiquidatable(
             _self,
