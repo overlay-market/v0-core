@@ -130,11 +130,11 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
         // update market for funding, price points, fees before all else
         update(rewardsTo);
 
-        (   Position.Info storage position,
-            uint256 positionId )= getQueuedPosition(isLong, leverage);
-        uint256 oi = collateralAmount * leverage;
+        uint256 positionId = getQueuedPositionId(isLong, leverage);
+        Position.Info storage position = positions[positionId];
 
         // adjust for fees
+        uint256 oi = collateralAmount * leverage;
         uint feeAmount = ( oi * factory.fee() ) / RESOLUTION;
         uint oiAdjusted = oi - feeAmount;
         uint256 collateralAmountAdjusted = oiAdjusted / leverage;
