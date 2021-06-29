@@ -165,13 +165,10 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
         uint256 shares,
         address rewardsTo
     ) external lock enabled {
-        require(positionId < positions.length, "OverlayV1: invalid position id");
         require(shares > 0 && shares <= balanceOf(msg.sender, positionId), "OverlayV1: invalid position shares");
 
         // update market for funding, price point, fees before all else
         Position.Info storage position = positions[positionId];
-
-        require(hasPricePoint(position.pricePoint), "OverlayV1: !settled");
 
         update(rewardsTo);
 
@@ -188,26 +185,17 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
         uint256 debt = shares * position.debt / totalShares; // TODO: read from storage here
         uint256 cost = shares * position.cost / totalShares; // TODO: read from storage here
 
-        uint256 valueAdjusted;
-        uint256 feeAmount;
-        { // avoid stack too deep errors in computing valueAdjusted of position
-        Position.Info storage _position = position;
-        uint256 _shares = shares;
-        uint256 _totalShares = totalShares; // TODO: read from storage here
-        uint256 _debt = debt;
-        uint256 _notional = _shares * _position.notional(
-            _position.isLong ? oiLong : oiShort, // TODO: read from storage here
-            _position.isLong ? oiLongShares : oiShortShares, // TODO: read from storage here
-            pricePoints[_position.pricePoint], // priceEntry
-            pricePoints[pricePointCurrentIndex-1] // priceExit: potential sacrifice of profit for UX purposes - implicit option to user here since using T instead of T+1 settlement on unwind (T < t < T+1; t=block.number)
-        ) / _totalShares;
+        uint256 _notional = shares * position.notional(
+            pricePoints,
+            isLong ? oiLong : oiShort, // TODO: read from storage here
+            isLong ? oiLongShares : oiShortShares // TODO: read from storage here
+        ) / totalShares;
 
         // adjust for fees
         // TODO: think through edge case of underwater position ... and fee adjustments ...
-        feeAmount = ( _notional * factory.fee() ) / RESOLUTION;
-        valueAdjusted = _notional - feeAmount;
-        valueAdjusted = valueAdjusted > _debt ? valueAdjusted - _debt : 0; // floor in case underwater, and protocol loses out on any maintenance margin
-        }
+        uint feeAmount = ( _notional * factory.fee() ) / RESOLUTION;
+        uint valueAdjusted = _notional - feeAmount;
+        valueAdjusted = valueAdjusted > debt ? valueAdjusted - debt : 0; // floor in case underwater, and protocol loses out on any maintenance margin
 
         // effects
         fees += feeAmount; // adds to fee pot, which is transferred on update
@@ -243,11 +231,7 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
         address rewardsTo
     ) external lock enabled {
 
-        require(positionId < positions.length, "OverlayV1: invalid position id");
-
         Position.Info storage position = positions[positionId];
-
-        require(hasPricePoint(position.pricePoint), "OverlayV1: !settled");
 
         update(rewardsTo);
 
@@ -261,10 +245,9 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
         else ( oi = oiShort, oiShares = oiShortShares );
 
         require(position.isLiquidatable(
+            pricePoints,
             oi,
             oiShares,
-            pricePoints[position.pricePoint],
-            pricePoints[pricePointCurrentIndex],
             marginMaintenance
         ), "OverlayV1: position not liquidatable");
 

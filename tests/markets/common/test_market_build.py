@@ -97,8 +97,13 @@ def test_build(token, factory, market, bob, collateral, leverage, is_long):
     current_price_point_idx = market.pricePointCurrentIndex()
     assert current_price_point_idx == prior_price_point_idx
 
+    print("current index " + str(current_price_point_idx))
+
     # ... and price hasn't settled
-    assert market.pricePoints(current_price_point_idx) == 0
+    with reverts(''):
+        market.pricePoints(current_price_point_idx)
+
+    assert market.pricePoints(current_price_point_idx - 1) == 0
 
     # check fees assessed and accounted for in fee bucket
     # +1 with or rounding catch given fee_adjustment var definition

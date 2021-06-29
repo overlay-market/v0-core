@@ -71,14 +71,14 @@ contract OverlayV1MirinMarket is OverlayV1Market {
             uint256 price0CumulativeEnd,
             uint256 price1CumulativeEnd
         ) = IMirinOracle(mirinPool).pricePoints(
-            mirinPoolStartIndex + pricePointCurrentIndex * updatePeriod
+            mirinPoolStartIndex + pricePoints.length * updatePeriod
         );
         (
             uint256 timestampStart,
             uint256 price0CumulativeStart,
             uint256 price1CumulativeStart
         ) = IMirinOracle(mirinPool).pricePoints(
-            mirinPoolStartIndex + pricePointCurrentIndex * updatePeriod - windowSize
+            mirinPoolStartIndex + pricePoints.length * updatePeriod - windowSize
         );
 
         if (isPrice0) {
