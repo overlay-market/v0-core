@@ -23,7 +23,7 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
         uint256 feeBurned,
         uint256 liquidationsCollected,
         uint256 liquidationsBurned,
-        uint256 fundingBurned
+        int256 fundingPaid
     );
     event Build(uint256 positionId, uint256 oi, uint256 debt);
     event Unwind(uint256 positionId, uint256 oi, uint256 debt);
@@ -90,7 +90,7 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
             liquidations = 0;
 
             // Funding payment changes at T+1
-            uint fundingBurn = updateFunding(fundingKNumerator, fundingKDenominator, elapsed);
+            int fundingPaid = updateFunding(fundingKNumerator, fundingKDenominator, elapsed);
 
             // Settle T < t < T+1 built positions at T+1 update
             // WARNING: Must come after funding to prevent funding harvesting w zero price risk
@@ -107,10 +107,10 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
                 feesBurn,
                 liquidationForward,
                 liquidationBurn,
-                fundingBurn
+                fundingPaid
             );
 
-            ovl.burn(address(this), feesBurn + liquidationBurn + fundingBurn);
+            ovl.burn(address(this), feesBurn + liquidationBurn);
             ovl.transfer(feeTo, feesForward + liquidationForward);
             ovl.transfer(rewardsTo, feesReward);
 
@@ -152,8 +152,6 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
 
         // interactions
         ovl.transferFrom(msg.sender, address(this), collateralAmount);
-        // mint the debt, before fees, to accomodate funding payment burns (edge case: oiLong == 0 || oiShort == 0)
-        if (leverage > 1) ovl.mint(address(this), oi - collateralAmount);
         // WARNING: _mint shares should be last given erc1155 callback; mint shares based on OI contribution
         mint(msg.sender, positionId, oiAdjusted, "");
     }
@@ -184,7 +182,7 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
         uint256 oiShares = isLong ? oiLongShares : oiShortShares;
 
         // TODO: more reads from storage here
-        uint256 posOi = shares * position.openInterest(oi, oiShares ) / totalShares;
+        uint256 posOi = shares * position.openInterest(oi, oiShares) / totalShares;
 
         uint256 debt = shares * position.debt / totalShares; // TODO: read from storage here
         uint256 cost = shares * position.cost / totalShares; // TODO: read from storage here
@@ -211,8 +209,8 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
 
         // interactions
         // mint/burn excess PnL = valueAdjusted - cost, accounting for need to also burn debt
-        if (debt + cost < valueAdjusted) ovl.mint(address(this), valueAdjusted - cost - debt);
-        else ovl.burn(address(this), debt + cost - valueAdjusted);
+        if (cost < valueAdjusted) ovl.mint(address(this), valueAdjusted - cost);
+        else ovl.burn(address(this), cost - valueAdjusted);
         }
 
         burn(msg.sender, positionId, shares);
