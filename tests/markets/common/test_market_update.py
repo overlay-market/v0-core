@@ -80,7 +80,10 @@ def test_update(token,
     # check update event attrs
     assert 'Update' in tx.events
     assert tx.events['Update']['rewarded'] == rewards.address
-    assert tx.events['Update']['reward'] == expected_fee_reward or expected_fee_reward - 1
+    assert (
+        tx.events['Update']['reward'] == expected_fee_reward
+        or tx.events['Update']['reward'] == expected_fee_reward - 1
+    )
 
     # Check queued OI settled
     expected_oi_long = prior_queued_oi_long + prior_oi_long
@@ -109,18 +112,32 @@ def test_update(token,
     # Check fee burn ...
     expected_fee_burn = int(prior_fees * fee_burn_rate / FEE_RESOLUTION)
     expected_total_supply = prior_total_supply - expected_fee_burn
-    assert token.totalSupply() == expected_total_supply or expected_total_supply + 1
+    curr_total_supply = token.totalSupply()
+    assert (
+        curr_total_supply == expected_total_supply
+        or curr_total_supply == expected_total_supply + 1
+    )
 
     # ... and rewards sent to address to be rewarded
     expected_balance_rewards_to = prior_balance_rewards_to + expected_fee_reward
-    assert token.balanceOf(rewards) == expected_balance_rewards_to or expected_balance_rewards_to - 1
+    curr_balance_rewards_to = token.balanceOf(rewards)
+    assert (
+        curr_balance_rewards_to == expected_balance_rewards_to
+        or curr_balance_rewards_to == expected_balance_rewards_to - 1
+    )
 
     # ... and fees forwarded
     expected_balance_market = prior_balance_market - prior_fees
     expected_fee_forward = prior_fees - expected_fee_burn - expected_fee_reward
     expected_balance_fee_to = prior_balance_fee_to + expected_fee_forward
-    assert token.balanceOf(fee_to) == expected_balance_fee_to or expected_balance_fee_to - 1
-    assert token.balanceOf(market) == expected_balance_market
+
+    curr_balance_fee_to = token.balanceOf(fee_to)
+    curr_balance_market = token.balanceOf(market)
+    assert (
+        curr_balance_fee_to == expected_balance_fee_to
+        or curr_balance_fee_to == expected_balance_fee_to - 1
+    )
+    assert curr_balance_market == expected_balance_market
 
     # Check cumulative fee pot zeroed
     assert market.fees() == 0
@@ -151,8 +168,14 @@ def test_update(token,
     next_oi_long = market.oiLong()
     next_oi_short = market.oiShort()
 
-    assert next_oi_long == expected_oi_long or expected_oi_long - 1
-    assert next_oi_short == expected_oi_short or expected_oi_short - 1
+    assert (
+        next_oi_long == expected_oi_long
+        or next_oi_long == expected_oi_long - 1
+    )
+    assert (
+        next_oi_short == expected_oi_short
+        or next_oi_short == expected_oi_short + 1
+    )
 
 
 def test_update_funding_burn():
