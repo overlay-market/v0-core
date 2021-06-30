@@ -52,7 +52,7 @@ contract OverlayV1Oi {
         uint112 fundingKNumerator,
         uint112 fundingKDenominator,
         uint256 elapsed
-    ) internal returns (uint256 amountToBurn) {
+    ) internal returns (int256 fundingPaid) {
 
         // TODO: can we remove safemath in this call - would need another library function
         FixedPoint.uq144x112 memory fundingFactor = computeFundingFactor(
@@ -73,10 +73,10 @@ contract OverlayV1Oi {
                 
                 // TODO: we can make an unsafe mul function here
                 uint256 oiNow = fundingFactor.mul(funding).decode144();
-                amountToBurn = funding - oiNow;
+                fundingPaid = int(funding - oiNow);
 
                 if (paidByShorts) oiShort = oiNow;
-                else oiLong = oiNow;
+                else ( oiLong = oiNow, fundingPaid = -fundingPaid );
 
             } else {
 
@@ -86,9 +86,10 @@ contract OverlayV1Oi {
 
                 funding = ( total + oiImbNow ) / 2;
                 funded = ( total - oiImbNow ) / 2;
+                fundingPaid = int( oiImbNow / 2 );
 
                 if (paidByShorts) ( oiShort = funding, oiLong = funded );
-                else ( oiLong = funding, oiShort = funded );
+                else ( oiLong = funding, oiShort = funded, fundingPaid = -fundingPaid );
 
             }
 

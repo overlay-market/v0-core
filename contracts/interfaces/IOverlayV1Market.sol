@@ -14,7 +14,7 @@ interface IOverlayV1Market is IERC1155 {
         uint256 feesBurned,
         uint256 liquidationsCollected,
         uint256 liquidationsBurned,
-        uint256 fundingBurned
+        int256 fundingPaid
     );
     event Liquidate(address indexed rewarded, uint256 reward);
 
