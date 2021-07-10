@@ -47,6 +47,5 @@ interface IOverlayV1Market is IERC1155 {
     function liquidate(uint256, address) external;
 
     function pricePointCurrentIndex() external view returns (uint256);
-    function pricePointIndexes(uint256) external view returns (uint256);
     function pricePoints(uint256) external view returns (uint256);
 }
