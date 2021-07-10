@@ -3,14 +3,14 @@ pragma solidity ^0.8.2;
 
 import "./libraries/UniswapV3OracleLibrary/UniswapV3OracleLibrary.sol";
 import "./interfaces/IUniV3Oracle.sol";
+import "./interfaces/IUniswapV3Pool.sol";
 import "./market/OverlayV1Market.sol";
 
 contract UniswapV3Listener {
 
     address public immutable uniV3Pool;
-
-    address dai = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-    address weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address public immutable token0;
+    address public immutable token1;
 
     constructor(
         address _uniV3Pool
@@ -18,25 +18,36 @@ contract UniswapV3Listener {
 
         // immutables
         uniV3Pool = _uniV3Pool;
+        token0 = IUniswapV3Pool(_uniV3Pool).token0();
+        token1 = IUniswapV3Pool(_uniV3Pool).token1();
 
     }
 
-    function listen () public view returns (uint, uint) {
+    function see_tick () public view returns (int24) {
+
+        return OracleLibrary.consult(uniV3Pool, 10 minutes);
+
+    }
+
+    function listen (
+        uint amountIn,
+        address base
+    ) public view returns (uint) {
 
         int24 tick = OracleLibrary.consult(
             uniV3Pool, 
-            120 minutes
+            10 minutes
         );
 
         uint gas = gasleft();
         uint quote = OracleLibrary.getQuoteAtTick(
             tick, 
-            1e18, 
-            weth,
-            dai
+            uint128(amountIn), 
+            base == token0 ? token0 : token1,
+            base != token0 ? token0 : token1
         );
 
-        return (quote, gas - gasleft());
+        return quote;
 
     }
 
