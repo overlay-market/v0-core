@@ -1,5 +1,7 @@
 import pytest
 import brownie
+import pandas as pd
+import os
 from brownie import ETH_ADDRESS, OverlayToken, chain, interface
 
 
@@ -77,24 +79,43 @@ def price_points_after(token):
         [(1 / i) * 10 ** decimals for i in price_range]
     )
 
+def get_uni_oracle_args ():
+    base = os.path.dirname(os.path.abspath(__file__))
+    print("BASE", base)
+    path = 'fixtures/uniswapv3_eth_dai.csv'
+    df = pd.read_csv(os.path.join(base, path))
+    prices = df[df['_field'] == 'tickCumulative']
+    prices = prices.sort_values(by='_time', ignore_index=True)
+    tc_now = [ int(x) for x in prices['_value'].to_list() ]
+    tc_then = tc_now.copy()
+    del tc_now[ len(tc_now) - 1 ]
+    del tc_then[ 0 ]
+    return [ 
+        "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+        "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+          [ list(x) for x in zip(tc_now, tc_then) ] 
+    ]
 
 @pytest.fixture(
     scope="module",
     params=[
-        ("OverlayV1MirinDeployer", [],
-         "OverlayV1MirinFactory", [15, 5000, 100, ETH_ADDRESS, 60, 50, 25],
-         "OverlayV1MirinMarket", [4, 100, 100, OI_CAP*10**TOKEN_DECIMALS, 3293944666953, 9007199254740992, True, 24, AMOUNT_IN*10**TOKEN_DECIMALS],
-         "MirinFactoryMock", [],
-         "IMirinOracle"),
+        ("OverlayV1UniswapV3Deployer", [],
+         "OverlayV1UniswapV3Factory", [15, 5000, 100, ETH_ADDRESS, 60, 50, 25], get_uni_oracle_args,
+         "OverlayV1UniswapV3Market", [ 4, 100, 100, OI_CAP*10**TOKEN_DECIMALS, 3293944666953, 9007199254740992, True, 600, AMOUNT_IN*10**TOKEN_DECIMALS ],
+         "UniswapV3FactoryMock", []
+        ),
+        # ("OverlayV1MirinDeployer", [],
+        #  "OverlayV1MirinFactory", [15, 5000, 100, ETH_ADDRESS, 60, 50, 25], "tests/fixtures/mirin.csv"
+        #  "OverlayV1MirinMarket", [4, 100, 100, OI_CAP*10**TOKEN_DECIMALS, 3293944666953, 9007199254740992, True, 24, AMOUNT_IN*10**TOKEN_DECIMALS],
+        #  "MirinFactoryMock", []
+        # ),
     ])
 def create_factory(token, gov, feed_owner, price_points, price_points_after, request):
-    ovlmd_name, _, ovlf_name, ovlf_args, __, ovlm_args, fdf_name, fdf_args, ifdp_name = request.param
+    ovlmd_name, _, ovlf_name, ovlf_args, ovlf_prices, __, ovlm_args, fdf_name, fdf_args = request.param
 
     ovlmd = getattr(brownie, ovlmd_name)
     ovlf = getattr(brownie, ovlf_name)
     fdf = getattr(brownie, fdf_name)
-
-    ifdp = getattr(interface, ifdp_name)
 
     def create_factory(
         tok=token,
@@ -103,35 +124,26 @@ def create_factory(token, gov, feed_owner, price_points, price_points_after, req
         ovlf_args=ovlf_args,
         ovlm_args=ovlm_args,
         fdf_type=fdf,
-        fdf_args=fdf_args,
-        ifdp_type=ifdp,
+        fdf_args=fdf_args
     ):
         feed = feed_owner.deploy(fdf_type, *fdf_args)
-        timestamps, p0cs, p1cs = price_points
-        feed.createPool(
-            timestamps,
-            p0cs,
-            p1cs,
-            {"from": feed_owner}
-        )
+
+        price_args = ovlf_prices()
+
+        feed.createPool( *price_args, { "from": feed_owner } )
+
+        # feed.createPool(
+        #     timestamps,
+        #     p0cs,
+        #     p1cs,
+        #     {"from": feed_owner}
+        # )
         pool_addr = feed.allPools(0)
-        pool = ifdp_type(pool_addr)
 
         deployer = gov.deploy(ovlmd_type)
         factory = gov.deploy(ovlf_type, tok, deployer, feed, *ovlf_args)
         tok.grantRole(tok.ADMIN_ROLE(), factory, {"from": gov})
-        factory.createMarket(pool, *ovlm_args, {"from": gov})
-
-        # add "after" price points after market creation so mock is preloaded
-        # with enough future data for price tests
-        timestamps_after, p0cs_after, p1cs_after = price_points_after
-        feed.addPricePoints(
-            pool_addr,
-            timestamps_after,
-            p0cs_after,
-            p1cs_after,
-            {"from": feed_owner}
-        )
+        factory.createMarket(pool_addr, *ovlm_args, {"from": gov})
 
         return factory
 

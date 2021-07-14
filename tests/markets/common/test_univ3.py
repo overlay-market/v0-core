@@ -46,80 +46,86 @@ def test_uniswap(gov):
     query_api = client.query_api()
 
     qid = "UniswapV3: WETH / DAI .3%"
-    points = 30
+    points = 90
     org = config['org']
 
     print(f'Fetching prices for {qid} ...')
     query = f'''
-        from(bucket:"{config['source']}") |> range(start: -{points}d)
+        from(bucket:"{config['source']}") 
+            |> range(start: -{points}d)
             |> filter(fn: (r) => r["id"] == "{qid}")
     '''
 
     df = query_api.query_data_frame(query=query, org=org)
+
+    print("df", df)
 
     # Filter then separate the df into p0c and p1c dataframes
     df_filtered = df.filter(items=['_time', '_field', '_value'])
 
     df_tc_now = df_filtered[df_filtered['_field'] == 'tickCumulative']
     df_tc_now = df_tc_now.sort_values(by='_time', ignore_index=True)
-
-    df_tc_then = df_filtered[df_filtered['_field'] == 'tickCumulativeMinusPeriod']
-    df_tc_then = df_tc_then.sort_values(by='_time', ignore_index=True)
-
     tick_cum_now = [ int(x) for x in df_tc_now['_value'].to_list() ]
-    tick_cum_then = [ int(x) for x in df_tc_then['_value'].to_list() ]
+    tick_cum_then = tick_cum_now.copy()
+
+    del tick_cum_now[len(tick_cum_now) - 1]
+    del tick_cum_then[0]
+
+    print("tick cum now ", tick_cum_now[1])
+    print("tick cum then ", tick_cum_then[0])
 
     observations = [ list(x) for x in zip(tick_cum_now, tick_cum_then) ]
 
-    print(observations)
+    print(observations[0])
+    print(observations[1])
 
-    UniswapV3OracleMock = getattr(brownie, 'UniswapV3OracleMock')
+    # UniswapV3OracleMock = getattr(brownie, 'UniswapV3OracleMock')
 
-    uv3mock = gov.deploy(UniswapV3OracleMock, 
-        "0x6B175474E89094C44Da98b954EedeAC495271d0F",
-        "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
-        observations
-    )
+    # uv3mock = gov.deploy(UniswapV3OracleMock, 
+    #     "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+    #     "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+    #     observations
+    # )
 
-    uv3mock.observeAndIncrement([])
-    (tick, liq) = uv3mock.observe([0,1])
-    index = uv3mock.index()
-    print(index, tick)
+    # uv3mock.observeAndIncrement([])
+    # (tick, liq) = uv3mock.observe([0,1])
+    # index = uv3mock.index()
+    # print(index, tick)
 
-    uv3mock.observeAndIncrement([])
-    (tick, liq) = uv3mock.observe([0,1])
-    index = uv3mock.index()
-    print(index, tick)
+    # uv3mock.observeAndIncrement([])
+    # (tick, liq) = uv3mock.observe([0,1])
+    # index = uv3mock.index()
+    # print(index, tick)
 
-    uv3mock.observeAndIncrement([])
-    (tick, liq) = uv3mock.observe([0,1])
-    index = uv3mock.index()
-    print(index, tick)
+    # uv3mock.observeAndIncrement([])
+    # (tick, liq) = uv3mock.observe([0,1])
+    # index = uv3mock.index()
+    # print(index, tick)
 
-    uv3mock.observeAndIncrement([])
-    (tick, liq) = uv3mock.observe([0,1])
-    index = uv3mock.index()
-    print(index, tick)
+    # uv3mock.observeAndIncrement([])
+    # (tick, liq) = uv3mock.observe([0,1])
+    # index = uv3mock.index()
+    # print(index, tick)
 
-    uv3l = gov.deploy(
-        getattr(brownie, 'UniswapV3Listener'),
-        uv3mock.address
-    )
+    # uv3l = gov.deploy(
+    #     getattr(brownie, 'UniswapV3Listener'),
+    #     uv3mock.address
+    # )
 
-    price = uv3l.listen(
-        1e18,
-        "0x6B175474E89094C44Da98b954EedeAC495271d0F"
-    )
+    # price = uv3l.listen(
+    #     1e18,
+    #     "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+    # )
 
-    uv3lmain = gov.deploy(
-        getattr(brownie, 'UniswapV3Listener'),
-        "0xc2e9f25be6257c210d7adf0d4cd6e3e881ba25f8"
-    )
+    # uv3lmain = gov.deploy(
+    #     getattr(brownie, 'UniswapV3Listener'),
+    #     "0xc2e9f25be6257c210d7adf0d4cd6e3e881ba25f8"
+    # )
 
-    pricemain = uv3lmain.listen(
-        1e18,
-        "0x6B175474E89094C44Da98b954EedeAC495271d0F"
-    )
+    # pricemain = uv3lmain.listen(
+    #     1e18,
+    #     "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+    # )
 
-    print(price)
-    print(pricemain)
+    # print(price)
+    # print(pricemain)
