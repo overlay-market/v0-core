@@ -39,7 +39,7 @@ contract UniswapV3OracleMock {
     }
 
     function observe (
-        uint32[] calldata _
+        uint32[] calldata __
     ) external view returns (
         int56[] memory, 
         uint160[] memory
