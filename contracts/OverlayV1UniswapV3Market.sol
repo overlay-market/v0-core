@@ -9,7 +9,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     using FixedPoint for FixedPoint.uq112x112;
     using FixedPoint for FixedPoint.uq144x112;
 
-    address public immutable uniV3Pool;
+    address public immutable feed;
     // whether using price0Cumulative or price1Cumulative for TWAP
     bool public immutable isPrice0;
     // window size for sliding window TWAP calc
@@ -43,7 +43,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         _fundingKDenominator
     ) {
         // immutables
-        uniV3Pool = _uniV3Pool;
+        feed = _uniV3Pool;
         isPrice0 = _isPrice0;
         windowSize = _windowSize;
         amountIn = _amountIn;
@@ -51,15 +51,11 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         token0 = IUniswapV3Pool(_uniV3Pool).token0();
         token1 = IUniswapV3Pool(_uniV3Pool).token1();
 
-        // price points init
-        // uint256 len = IMirinOracle(_uniV3Pool).pricePointsLength();
-        // require(len > _windowSize, "OverlayV1: !UniV3Initialized");
-        // uniV3PoolStartIndex = len - 1;
     }
 
     function lastPrice() public view returns (uint256 price_)   {
 
-        int24 tick = OracleLibrary.consult(uniV3Pool, uint32(windowSize));
+        int24 tick = OracleLibrary.consult(feed, uint32(windowSize));
 
         price_ = OracleLibrary.getQuoteAtTick(
             tick,

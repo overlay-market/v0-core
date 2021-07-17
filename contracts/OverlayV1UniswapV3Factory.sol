@@ -71,6 +71,8 @@ contract OverlayV1UniswapV3Factory is OverlayV1Factory {
         marketContract = abi.decode(result, (OverlayV1UniswapV3Market));
 
         initializeMarket(address(marketContract));
+
+        emit MarketDeployed(address(marketContract), uniV3Pool, isPrice0);
         
     }
 }
