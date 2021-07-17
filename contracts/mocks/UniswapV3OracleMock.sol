@@ -16,16 +16,13 @@ contract UniswapV3OracleMock {
     constructor(
         address _token0, 
         address _token1,
-        int56[][] memory _observations
+        uint _window;
     ) {
 
         token0 = _token0;
         token1 = _token1;
-        window = 600;
+        window = _window;
         deployed = block.timestamp;
-
-        uint len = _observations.length;
-        for (uint i = 0; i < len; i++) observations.push(_observations[i]);
 
     }
 
