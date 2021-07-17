@@ -7,6 +7,6 @@ interface IUniswapV3OracleMock {
     function window() external view returns (uint);
     function observations(uint256) external view returns (int56[] memory);
     function observationsLength() external view returns (uint);
-    function addObservations(int56[][] calldata observations) external;
-    function observe(uint32[] calldata secondsAgo) external view returns (int56[] memory, uint160[] memory);
+    function addObservations(int56[][] calldata) external;
+    function observe(uint32[] calldata) external view returns (int56[] memory, uint160[] memory);
 }
