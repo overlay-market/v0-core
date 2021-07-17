@@ -16,7 +16,7 @@ contract UniswapV3OracleMock {
     constructor(
         address _token0, 
         address _token1,
-        uint _window;
+        uint _window
     ) {
 
         token0 = _token0;
