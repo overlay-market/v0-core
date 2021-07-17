@@ -11,18 +11,18 @@ contract UniswapV3FactoryMock {
     function createPool(
         address token0,
         address token1,
-        int56[][] memory observations
+        uint window
     ) external returns (UniswapV3OracleMock pool) {
         pool = new UniswapV3OracleMock(
             token0,
             token1,
-            observations
+            window
         );
         isPool[address(pool)] = true;
         allPools.push(address(pool));
     }
 
-    function addObservationsPoints(
+    function addObservationPoints(
         address pool,
         int56[][] memory observations
     ) external {
