@@ -6,12 +6,6 @@ contract OverlayV1PricePoint {
     // mapping from price point index to realized historical prices
     uint[] public pricePoints;
 
-    constructor() {
-
-        pricePoints.push(0);
-
-    }
-
     /// @notice Get the current price point index
     function pricePointCurrentIndex() external view returns (uint) {
 
