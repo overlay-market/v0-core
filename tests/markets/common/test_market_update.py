@@ -39,7 +39,17 @@ def test_update(token,
 
     update_period = market.updatePeriod()
 
+    mubl = market.updateBlockLast()
+
     print(time.time(), "oi_long", oi_long, "oi_short", oi_short)
+
+    print("block",
+        "\n current", chain[-1].number,
+        "\n update block last", mubl
+    )
+
+    print("update period", update_period)
+
 
     # queue up bob's positions to be settled at next update (T+1)
     # 1x long w oi_long as collateral and 1x short with oi_short
@@ -51,21 +61,55 @@ def test_update(token,
 
     print("window size")
     # do an initial update before build so all oi is queued
-    p_update_ts = token.totalSupply()
-    print("before update #1 total supply", p_update_ts)
-    market.update(rewards, {"from": alice})
-    prior_total_supply = token.totalSupply()
-    print("after update #1 total supply", prior_total_supply)
+    tsbu1 = token.totalSupply()
+    mu1 = market.update(rewards, {"from": alice})
     print("update")
+
+    assert 'Update' in mu1.events
 
     # build so all oi is queued
     # TODO: check no issues when some queued, some settled
-    market.build(oi_long, True, 1, bob, {"from": bob})
+
+    tsbb = token.totalSupply()
+    mbbb = token.balanceOf(market)
+    txbl = market.build(oi_long, True, 1, bob, {"from": bob})
+    mbabl = token.balanceOf(market)
     tsabl = token.totalSupply()
-    market.build(oi_short, False, 1, bob, {"from": bob})
-    print("both build")
+    txbs = market.build(oi_short, False, 1, bob, {"from": bob})
+    mbabs = token.balanceOf(market)
     tsabs = token.totalSupply()
-    print("total supply after builds", tsabl, tsabs)
+
+    print("market update tx",
+        "\n timestamp", mu1.timestamp,
+        "\n block number", mu1.block_number)
+
+    print("market build long tx",
+        "\n timestamp", txbl.timestamp,
+        "\n block number", txbl.block_number)
+
+    print("market build short tx",
+        "\n timestamp", txbs.timestamp,
+        "\n block number", txbs.block_number)
+
+    if 'Update' in txbl.events:
+        print("update called in build long")
+    if 'Update' in txbs.events:
+        print("update called in build short")
+
+    print("oi", 
+        "\n oi long", oi_long, 
+        "\n oi short", oi_short
+    )
+    print("total supply",
+        "\n before build", tsbb,
+        "\n after build long", tsabl,
+        "\n after build short", tsabs
+    )
+    print("market balance",
+        "\n before building", mbbb,
+        "\n after build long", mbabl,
+        "\n after build short", mbabs
+    )
 
     # prior fee state
     _, fee_burn_rate, fee_reward_rate, fee_to = factory.getUpdateParams()
@@ -76,11 +120,12 @@ def test_update(token,
     prior_balance_market = token.balanceOf(market)
     prior_balance_fee_to = token.balanceOf(fee_to)
     prior_balance_rewards_to = token.balanceOf(rewards)
-    print(
-        "prior balance m", prior_balance_market,
-        "\n f2", prior_balance_fee_to,
-        "\n r2", prior_balance_rewards_to,
-        "\n ts", prior_total_supply
+    prior_total_supply = token.totalSupply()
+
+    print( "prior balance",
+        "\n market    ", prior_balance_market,
+        "\n fee to    ", prior_balance_fee_to,
+        "\n reward to ", prior_balance_rewards_to
     )
 
     # prior oi state
@@ -88,11 +133,11 @@ def test_update(token,
     prior_queued_oi_short = market.queuedOiShort()
     prior_oi_long = market.oiLong()
     prior_oi_short = market.oiShort()
-    print(
-        "prior oi \n qoil", prior_queued_oi_long,
-        "\n oil", prior_oi_long,
-        "\n oisq", prior_queued_oi_short,
-        "\n ois", prior_oi_short
+    print("prior oi", 
+        "\n qoil   ", prior_queued_oi_long,
+        "\n oil    ", prior_oi_long,
+        "\n qois   ", prior_queued_oi_short,
+        "\n ois    ", prior_oi_short
     )
 
     # prior price point state

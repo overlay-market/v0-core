@@ -117,6 +117,8 @@ contract OverlayV1Market is OverlayV1Position, OverlayV1Governance, OverlayV1Oi 
         }
     }
 
+    event thing(bytes32, uint);
+
     /// @notice Builds a new position
     function build(
         uint256 collateralAmount,

@@ -117,7 +117,7 @@ def get_uni_oracle (feed_owner):
     params=[
         ("OverlayV1UniswapV3Deployer", [],
          "OverlayV1UniswapV3Factory", [15, 5000, 100, ETH_ADDRESS, 60, 50, 25], 
-         "OverlayV1UniswapV3Market", [ 4, 100, 100, OI_CAP*10**TOKEN_DECIMALS, 3293944666953, 9007199254740992, True, 600, AMOUNT_IN*10**TOKEN_DECIMALS ],
+         "OverlayV1UniswapV3Market", [ 10, 100, 100, OI_CAP*10**TOKEN_DECIMALS, 3293944666953, 9007199254740992, True, 600, AMOUNT_IN*10**TOKEN_DECIMALS ],
          get_uni_oracle,
         ),
         # ("OverlayV1MirinDeployer", [],
@@ -148,6 +148,8 @@ def create_factory(token, gov, feed_owner, price_points, price_points_after, req
         factory = gov.deploy(ovlf_type, tok, deployer, feed_factory, *ovlf_args)
         tok.grantRole(tok.ADMIN_ROLE(), factory, {"from": gov})
         factory.createMarket(feed_addr, *ovlm_args, {"from": gov})
+
+        chain.mine(ovlm_args[0]) # mine the update period
 
         return factory
 
