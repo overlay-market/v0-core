@@ -67,9 +67,8 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     }
 
     /// @dev Override for Mirin market feed to compute and set TWAP for latest price point index
-    function fetchPricePoint() internal virtual override returns (bool success) {
-        uint256 price = lastPrice();
+    function fetchPricePoint() internal virtual override returns (uint price) {
+        price = lastPrice();
         setPricePointCurrent(price);
-        return true;
     }
 }

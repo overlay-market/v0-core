@@ -3,7 +3,7 @@ pragma solidity ^0.8.2;
 
 import "../libraries/Position.sol";
 
-contract OverlayV1Oi {
+contract OverlayV1OI {
     using FixedPoint for FixedPoint.uq112x112;
     using FixedPoint for FixedPoint.uq144x112;
     using Position for Position.Info;
