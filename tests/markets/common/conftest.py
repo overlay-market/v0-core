@@ -2,6 +2,7 @@ import pytest
 import brownie
 import pandas as pd
 import os
+import json
 from brownie import ETH_ADDRESS, OverlayToken, chain, interface
 
 
@@ -41,6 +42,7 @@ def create_token(gov, alice, bob):
     def create_token(supply=sup):
         tok = gov.deploy(OverlayToken)
         tok.mint(gov, supply * 10 ** tok.decimals(), {"from": gov})
+        ts = tok.totalSupply()
         tok.transfer(bob, supply * 10 ** tok.decimals(), {"from": gov})
         return tok
 
@@ -79,30 +81,44 @@ def price_points_after(token):
         [(1 / i) * 10 ** decimals for i in price_range]
     )
 
-def get_uni_oracle_args ():
+def get_uni_oracle (feed_owner):
+
     base = os.path.dirname(os.path.abspath(__file__))
-    print("BASE", base)
-    path = 'fixtures/uniswapv3_eth_dai.csv'
-    df = pd.read_csv(os.path.join(base, path))
-    prices = df[df['_field'] == 'tickCumulative']
-    prices = prices.sort_values(by='_time', ignore_index=True)
-    tc_now = [ int(x) for x in prices['_value'].to_list() ]
-    tc_then = tc_now.copy()
-    del tc_now[ len(tc_now) - 1 ]
-    del tc_then[ 0 ]
-    return [ 
+    path = 'fixtures/univ3_mock_feeds_1.json'
+
+    with open(os.path.join(base, path)) as f:
+        feeds = json.load(f)
+
+    obs =  feeds['UniswapV3: WETH / DAI .3%']['tick_cumulatives']
+
+    UniswapV3MockFactory = getattr(brownie, 'UniswapV3FactoryMock')
+    IUniswapV3OracleMock = getattr(interface, 'IUniswapV3OracleMock')
+
+    uniswapv3_mock_factory = feed_owner.deploy(UniswapV3MockFactory)
+
+    # TODO: place token0 and token1 into the json
+    uniswapv3_mock_factory.createPool(
         "0x6B175474E89094C44Da98b954EedeAC495271d0F",
         "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
-          [ list(x) for x in zip(tc_now, tc_then) ] 
-    ]
+        600
+    );
+
+    uniswapv3_mock = IUniswapV3OracleMock(
+        uniswapv3_mock_factory.allPools(0)
+    )
+
+    uniswapv3_mock.addObservations(obs, { 'from': feed_owner })
+
+    return uniswapv3_mock_factory.address, uniswapv3_mock.address
+
 
 @pytest.fixture(
     scope="module",
     params=[
         ("OverlayV1UniswapV3Deployer", [],
-         "OverlayV1UniswapV3Factory", [15, 5000, 100, ETH_ADDRESS, 60, 50, 25], get_uni_oracle_args,
+         "OverlayV1UniswapV3Factory", [15, 5000, 100, ETH_ADDRESS, 60, 50, 25], 
          "OverlayV1UniswapV3Market", [ 4, 100, 100, OI_CAP*10**TOKEN_DECIMALS, 3293944666953, 9007199254740992, True, 600, AMOUNT_IN*10**TOKEN_DECIMALS ],
-         "UniswapV3FactoryMock", []
+         get_uni_oracle,
         ),
         # ("OverlayV1MirinDeployer", [],
         #  "OverlayV1MirinFactory", [15, 5000, 100, ETH_ADDRESS, 60, 50, 25], "tests/fixtures/mirin.csv"
@@ -111,11 +127,10 @@ def get_uni_oracle_args ():
         # ),
     ])
 def create_factory(token, gov, feed_owner, price_points, price_points_after, request):
-    ovlmd_name, _, ovlf_name, ovlf_args, ovlf_prices, __, ovlm_args, fdf_name, fdf_args = request.param
+    ovlmd_name, _, ovlf_name, ovlf_args, __, ovlm_args, get_feed = request.param
 
     ovlmd = getattr(brownie, ovlmd_name)
     ovlf = getattr(brownie, ovlf_name)
-    fdf = getattr(brownie, fdf_name)
 
     def create_factory(
         tok=token,
@@ -123,27 +138,16 @@ def create_factory(token, gov, feed_owner, price_points, price_points_after, req
         ovlf_type=ovlf,
         ovlf_args=ovlf_args,
         ovlm_args=ovlm_args,
-        fdf_type=fdf,
-        fdf_args=fdf_args
+        fd_getter=get_feed
     ):
-        feed = feed_owner.deploy(fdf_type, *fdf_args)
+        print("create factory")
 
-        price_args = ovlf_prices()
-
-        feed.createPool( *price_args, { "from": feed_owner } )
-
-        # feed.createPool(
-        #     timestamps,
-        #     p0cs,
-        #     p1cs,
-        #     {"from": feed_owner}
-        # )
-        pool_addr = feed.allPools(0)
+        feed_factory, feed_addr = fd_getter(feed_owner)
 
         deployer = gov.deploy(ovlmd_type)
-        factory = gov.deploy(ovlf_type, tok, deployer, feed, *ovlf_args)
+        factory = gov.deploy(ovlf_type, tok, deployer, feed_factory, *ovlf_args)
         tok.grantRole(tok.ADMIN_ROLE(), factory, {"from": gov})
-        factory.createMarket(pool_addr, *ovlm_args, {"from": gov})
+        factory.createMarket(feed_addr, *ovlm_args, {"from": gov})
 
         return factory
 
