@@ -9,6 +9,16 @@ interface IOverlayV1Factory {
         bool
     );
 
+    function allMarkets(
+        uint marketIndex
+    ) external view returns (
+        address marketAddress
+    );
+
+    function totalMarkets () external view returns (
+            uint
+    );
+
     function getGlobalParams() external view returns (
         uint16 fee_, 
         uint16 feeBurnRate_, 

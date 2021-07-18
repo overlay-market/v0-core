@@ -21,6 +21,8 @@ interface IOverlayV1Market is IERC1155 {
     function ovl() external view returns (address);
     function factory() external view returns (address);
 
+    function feed() external view returns (address);
+    function windowSize() external view returns (uint256);
     function updatePeriod() external view returns (uint256);
     function leverageMax() external view returns (uint8);
     function marginAdjustment() external view returns (uint16);
@@ -47,6 +49,5 @@ interface IOverlayV1Market is IERC1155 {
     function liquidate(uint256, address) external;
 
     function pricePointCurrentIndex() external view returns (uint256);
-    function pricePointIndexes(uint256) external view returns (uint256);
     function pricePoints(uint256) external view returns (uint256);
 }

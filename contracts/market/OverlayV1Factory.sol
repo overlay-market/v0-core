@@ -41,6 +41,8 @@ contract OverlayV1Factory is Ownable {
     mapping(address => bool) public marketExists;
     address[] public allMarkets;
 
+    event MarketDeployed(address market, address feed, bool isPrice0);
+
     constructor(
         address _ovl,
         uint16 _fee,
@@ -62,6 +64,10 @@ contract OverlayV1Factory is Ownable {
         marginMaintenance = _marginMaintenance;
         marginBurnRate = _marginBurnRate;
         marginRewardRate = _marginRewardRate;
+    }
+
+    function totalMarkets () external view returns (uint) {
+        return allMarkets.length;
     }
 
     /// @notice Initializes an existing market contract after deployment

@@ -1,7 +1,6 @@
-from brownie import reverts
+from brownie import reverts, chain
 from brownie.test import given, strategy
 from collections import OrderedDict
-
 
 MIN_COLLATERAL_AMOUNT = 10**4  # min amount to build
 TOKEN_DECIMALS = 18
@@ -16,7 +15,9 @@ FEE_RESOLUTION = 1e4
                         max_value=0.00999*OI_CAP*10**TOKEN_DECIMALS),
     leverage=strategy('uint8', min_value=1, max_value=100),
     is_long=strategy('bool'))
-def test_build(token, factory, market, bob, collateral, leverage, is_long):
+def test_build(token, factory, market, bob, rewards, collateral, leverage, is_long):
+
+    market.update(rewards, { 'from': bob })
     oi = collateral * leverage
     fee = factory.fee()
     fee_perc = fee / FEE_RESOLUTION
@@ -36,6 +37,7 @@ def test_build(token, factory, market, bob, collateral, leverage, is_long):
 
     # prior price info
     prior_price_point_idx = market.pricePointCurrentIndex()
+    prior_price = market.pricePoints(prior_price_point_idx - 1)
 
     # adjust for build fees
     oi_adjusted = int(oi * (1 - fee_perc))
@@ -45,11 +47,16 @@ def test_build(token, factory, market, bob, collateral, leverage, is_long):
 
     # approve market to spend bob's ovl to build position
     token.approve(market, collateral, {"from": bob})
+
     # build the position
     tx = market.build(collateral, is_long, leverage, bob, {"from": bob})
+
     assert 'Build' in tx.events
     assert 'positionId' in tx.events['Build']
     pid = tx.events['Build']['positionId']
+
+    print("pid", pid)
+
     # TODO: Fix for precision and not with +1 in rounding ...
     assert (
         tx.events['Build']['oi'] == oi_adjusted
@@ -118,7 +125,7 @@ def test_build(token, factory, market, bob, collateral, leverage, is_long):
     with reverts(''):
         market.pricePoints(current_price_point_idx)
 
-    assert market.pricePoints(current_price_point_idx - 1) == 0
+    assert market.pricePoints(current_price_point_idx - 1) == prior_price
 
     # check fees assessed and accounted for in fee bucket
     # +1 with or rounding catch given fee_adjustment var definition

@@ -6,7 +6,7 @@ contract OverlayV1PricePoint {
     // mapping from price point index to realized historical prices
     uint[] public pricePoints;
 
-    constructor() {
+    constructor () {
 
         pricePoints.push(0);
 

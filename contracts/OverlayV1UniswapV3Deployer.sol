@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-import "./OverlayV1MirinMarket.sol";
+import "./OverlayV1UniswapV3Market.sol";
 
-contract OverlayV1MirinDeployer {
+contract OverlayV1UniswapV3Deployer {
 
     /// @notice Creates a new market contract for given mirin pool address
     function deployMarket(
         address ovl,
-        address mirinPool,
+        address uniPool,
         uint256 updatePeriod,
         uint8 leverageMax,
         uint16 marginAdjustment,
@@ -18,10 +18,10 @@ contract OverlayV1MirinDeployer {
         bool isPrice0,
         uint256 windowSize,
         uint256 amountIn
-    ) external returns (OverlayV1MirinMarket marketContract) {
-        marketContract = new OverlayV1MirinMarket(
+    ) external returns (OverlayV1UniswapV3Market marketContract) {
+        marketContract = new OverlayV1UniswapV3Market(
             ovl,
-            mirinPool,
+            uniPool,
             updatePeriod,
             leverageMax,
             marginAdjustment,
@@ -33,4 +33,5 @@ contract OverlayV1MirinDeployer {
             amountIn
         );
     }
+
 }

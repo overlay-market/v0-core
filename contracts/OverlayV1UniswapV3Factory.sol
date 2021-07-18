@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-import "./interfaces/IMirinFactory.sol";
+import "./interfaces/IUniV3Factory.sol";
 import "./market/OverlayV1Factory.sol";
-import "./OverlayV1MirinDeployer.sol";
+import "./OverlayV1UniswapV3Deployer.sol";
 
-contract OverlayV1MirinFactory is OverlayV1Factory {
+contract OverlayV1UniswapV3Factory is OverlayV1Factory {
 
     address public immutable deployer;
-    address public immutable mirinFactory;
+    address public immutable uniV3Factory;
 
     constructor(
         address _ovl,
         address _deployer,
-        address _mirinFactory,
+        address _uniV3Factory,
         uint16 _fee,
         uint16 _feeBurnRate,
         uint16 _feeUpdateRewardsRate,
@@ -34,13 +34,13 @@ contract OverlayV1MirinFactory is OverlayV1Factory {
     
         // immutables
         deployer = _deployer;
-        mirinFactory = _mirinFactory;
+        uniV3Factory = _uniV3Factory;
 
     }
 
-    /// @notice Creates a new market contract for given mirin pool address
+    /// @notice Creates a new market contract for given uniV3 pool address
     function createMarket(
-        address mirinPool,
+        address uniV3Pool,
         uint256 updatePeriod,
         uint8 leverageMax,
         uint16 marginAdjustment,
@@ -50,13 +50,13 @@ contract OverlayV1MirinFactory is OverlayV1Factory {
         bool isPrice0,
         uint256 windowSize,
         uint256 amountIn
-    ) external onlyOwner returns (OverlayV1MirinMarket marketContract) {
-        require(IMirinFactory(mirinFactory).isPool(mirinPool), "OverlayV1: !MirinPool");
+    ) external onlyOwner returns (OverlayV1UniswapV3Market marketContract) {
+        // require(IMirinFactory(uniV3Factory).isPool(uniV3Pool), "OverlayV1: !MirinPool");
 
         (bool success, bytes memory result) = deployer.delegatecall(
             abi.encodeWithSignature("deployMarket(address,address,uint256,uint8,uint16,uint144,uint112,uint112,bool,uint256,uint256)",
             ovl,
-            mirinPool,
+            uniV3Pool,
             updatePeriod,
             leverageMax,
             marginAdjustment,
@@ -68,9 +68,11 @@ contract OverlayV1MirinFactory is OverlayV1Factory {
             amountIn
         ));
         
-        marketContract = abi.decode(result, (OverlayV1MirinMarket));
+        marketContract = abi.decode(result, (OverlayV1UniswapV3Market));
 
         initializeMarket(address(marketContract));
+
+        emit MarketDeployed(address(marketContract), uniV3Pool, isPrice0);
         
     }
 }
