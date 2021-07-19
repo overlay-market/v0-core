@@ -19,7 +19,46 @@ interface IOverlayV1Market is IERC1155 {
     function fundingKNumerator() external view returns (uint256);
     function fundingKDenominator() external view returns (uint256);
 
-    function adjustParams(uint256, uint8, uint16, uint144, uint112, uint112) external view;
+    function entryData (
+        bool _isLong
+    ) external view returns (
+        uint256 freeOi_,
+        uint256 maxLev_,
+        uint256 pricePoint_
+    );
+
+    function enterOI(
+        bool _isLong,
+        uint _oi
+    ) external view returns (
+        uint pricePoint_
+    );
+
+    function exitData (
+        bool _isLong,
+        uint256 _pricePoint
+    ) external view returns (
+        uint oi_,
+        uint oiShares_,
+        uint totalOiShares_,
+        uint priceEntry_,
+        uint priceExit_
+    );
+
+    function exitOI(
+        bool _isLong,
+        uint _oi,
+        uint _oiShares
+    ) external;
+
+    function adjustParams(
+        uint256, 
+        uint8, 
+        uint16, 
+        uint144, 
+        uint112, 
+        uint112
+    ) external view;
 
     function MAX_FUNDING_COMPOUND() external view returns (uint16);
 
@@ -38,7 +77,8 @@ interface IOverlayV1Market is IERC1155 {
         uint256 oi,
         uint256 oiShares,
         uint256 freeOi,
-        uint256 maxLev
+        uint256 maxLev,
+        uint256 currentPricePoint
     );
 
 }

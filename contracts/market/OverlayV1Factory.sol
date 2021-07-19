@@ -103,18 +103,6 @@ contract OverlayV1Factory is Ownable {
         OverlayToken(ovl).grantRole(OverlayToken(ovl).BURNER_ROLE(), market);
     }
 
-    /// @notice Calls the update function on a market
-    function updateMarket(address market, address rewardsTo) external {
-        IOverlayV1Market(market).update(rewardsTo);
-    }
-
-    /// @notice Mass calls update functions on all markets
-    function massUpdateMarkets(address rewardsTo) external {
-        for (uint256 i=0; i < allMarkets.length; ++i) {
-            IOverlayV1Market(allMarkets[i]).update(rewardsTo);
-        }
-    }
-
     /// @notice Allows gov to adjust per market params
     function adjustPerMarketParams(
         address market,

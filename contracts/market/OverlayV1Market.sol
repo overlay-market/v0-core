@@ -8,7 +8,7 @@ import "./OverlayV1OI.sol";
 import "./OverlayV1Position.sol";
 import "../OverlayToken.sol";
 
-contract OverlayV1Market is OverlayV1PricePoint, OverlayV1OI, OverlayV1Governance {
+abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1PricePoint {
 
     mapping (address => bool) public isPositionContract;
 
@@ -17,10 +17,7 @@ contract OverlayV1Market is OverlayV1PricePoint, OverlayV1OI, OverlayV1Governanc
 
     uint constant RESOLUTION = 1e4;
 
-    event Update(
-        uint newPrice,
-        int256 fundingPaid
-    );
+    event Update(uint price, int256 fundingPaid);
     event Build(uint256 positionId, uint256 oi, uint256 debt);
     event Unwind(uint256 positionId, uint256 oi, uint256 debt);
     event Liquidate(address indexed rewarded, uint256 reward);
@@ -52,7 +49,7 @@ contract OverlayV1Market is OverlayV1PricePoint, OverlayV1OI, OverlayV1Governanc
         uint144 _oiCap,
         uint112 _fundingKNumerator,
         uint112 _fundingKDenominator
-    ) OverlayV1Position(_uri) OverlayV1Governance(
+    ) OverlayV1Governance(
         _ovl,
         _updatePeriod,
         _leverageMax,
@@ -93,29 +90,81 @@ contract OverlayV1Market is OverlayV1PricePoint, OverlayV1OI, OverlayV1Governanc
         }
     }
 
-
-    /// @notice Adds open interest to the market
-    /// @dev invoked by an overlay position contract
-    /// @returns pricePoint_ the index of the price for the position
-    function increaseOI (
-        bool _isLong,
-        uint _oiShares
-    ) external onlyApprovedPositionContract returns (
-        uint pricePoint_
+    function entryData (
+        bool _isLong
+    ) external view returns (
+        uint freeOi_,
+        uint maxLev_,
+        uint pricePointCurrent_
     ) {
 
-        queueOi(_isLong, _oiShares, oiCap);
+        if (_isLong) freeOi_ = ( oiLast / 2 ) - oiLong;
+        else freeOi_ = ( oiLast / 2 ) - oiShort;
 
-        return pricePoints.length;
+        maxLev_ = leverageMax;
+
+        pricePointCurrent_ = pricePoints.length;
 
     }
 
-    function decreaseOI (
+    function exitData (
         bool _isLong,
+        uint256 _pricePoint
+    ) public returns (
+        uint oi_,
+        uint oiShares_,
+        uint totalOiShares_,
+        uint priceEntry_,
+        uint priceExit_
+    ) {
+
+        priceEntry_ = pricePoints[_pricePoint];
+
+        require( (_pricePoint = pricePoints.length) < _pricePoint, "OVLV1:!settled");
+
+        priceExit_ = pricePoints[_pricePoint];
+
+        if (_isLong) ( 
+            totalOiShares_ = oiShares_ + oiShortShares, 
+            oiShares_ = oiLongShares,
+            oi_ = oiLong
+        );
+        else (
+            totalOiShares_ = oiShares_ + oiLongShares, 
+            oiShares_ = oiShortShares,
+            oi_ = oiLong
+        );
+
+        // TODO: fold in the update somewhere in here we could need 
+        // to simultaneously get the entry and exit prices
+
+    }
+
+    /// @notice Adds open interest to the market
+    /// @dev invoked by an overlay position contract
+    function enterOI (
+        bool _isLong,
+        uint _oi
+    ) external onlyApprovedPositionContract {
+
+        queueOi(_isLong, _oi, oiCap);
+
+    }
+
+    /// @notice Removes open interest from the market
+    /// @dev must update two prices if the pending update was from a long 
+    /// @dev time ago in that case, a previously entered position must be 
+    /// @dev settled, and the current exit price must be retrieved
+    /// @param _isLong is this from the short or the long side
+    /// @param _oiShares the amount of oi in shares to be removed
+    function exitOI (
+        bool _isLong,
+        uint _oi,
         uint _oiShares
     ) external onlyApprovedPositionContract {
 
-        uint oi_ = 
+        if (_isLong) ( oiLong -= _oi, oiLongShares -= _oiShares );
+        else ( oiShort -= _oi, oiShortShares -= _oiShares );
 
     }
 
