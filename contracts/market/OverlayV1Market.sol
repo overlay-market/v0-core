@@ -41,7 +41,6 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
     }
 
     constructor(
-        string memory _uri,
         address _ovl,
         uint256 _updatePeriod,
         uint8 _leverageMax,
@@ -92,11 +91,13 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
 
     function entryData (
         bool _isLong
-    ) external view returns (
+    ) external returns (
         uint freeOi_,
         uint maxLev_,
         uint pricePointCurrent_
     ) {
+
+        update();
 
         if (_isLong) freeOi_ = ( oiLast / 2 ) - oiLong;
         else freeOi_ = ( oiLast / 2 ) - oiShort;
@@ -113,9 +114,10 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
     ) public returns (
         uint oi_,
         uint oiShares_,
-        uint totalOiShares_,
         uint priceFrame_
     ) {
+
+        update();
         
         // TODO: fold in the update somewhere in here we could need 
         // to simultaneously get the entry and exit prices
@@ -129,17 +131,8 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
 
         priceFrame_ = _priceExit / _priceEntry;
 
-        if (_isLong) ( 
-            totalOiShares_ = oiShares_ + oiShortShares, 
-            oiShares_ = oiLongShares,
-            oi_ = oiLong
-        );
-        else (
-            totalOiShares_ = oiShares_ + oiLongShares, 
-            oiShares_ = oiShortShares,
-            oi_ = oiLong
-        );
-
+        if (_isLong) ( oiShares_ = oiLongShares, oi_ = oiLong );
+        else ( oiShares_ = oiShortShares, oi_ = oiLong );
 
     }
 

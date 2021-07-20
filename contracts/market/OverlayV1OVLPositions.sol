@@ -35,6 +35,7 @@ contract OverlayV1OVLPositions is ERC1155 {
     IOverlayV1Factory public factory;
 
     uint256 public fees;
+    uint256 public liquidations;
 
     event Build(uint256 positionId, uint256 oi, uint256 debt);
     event Unwind(uint256 positionId, uint256 oi, uint256 debt);
@@ -155,7 +156,7 @@ contract OverlayV1OVLPositions is ERC1155 {
 
         (   uint _oi,
             uint _oiShares,
-          , uint _priceFrame ) = IOverlayV1Market(pos.market).exitData(_isLong, pos.pricePoint);
+            uint _priceFrame ) = IOverlayV1Market(pos.market).exitData(_isLong, pos.pricePoint);
         
         uint _totalPosShares = totalPositionShares[_positionId];
 
@@ -183,14 +184,13 @@ contract OverlayV1OVLPositions is ERC1155 {
         // positions[_positionId].cost -= _userCost;
         // positions[_positionId].oiShares -= _userOiShares;
 
-        IOverlayV1Market(pos.market).exitOI(_isLong, _userOi, _userOiShares);
-
         emit Unwind(_positionId, _userOi, _userDebt);
 
         // mint/burn excess PnL = valueAdjusted - cost, accounting for need to also burn debt
         if (_userCost < _userValueAdjusted) ovl.mint(address(this), _userValueAdjusted - _userCost);
         else ovl.burn(address(this), _userCost - _userValueAdjusted);
         ovl.transfer(msg.sender, _userValueAdjusted);
+        IOverlayV1Market(pos.market).exitOI(_isLong, _userOi, _userOiShares);
 
         }
 
@@ -198,12 +198,48 @@ contract OverlayV1OVLPositions is ERC1155 {
  
     }
 
+    /// @notice Liquidates an existing position
     function liquidate(
-        uint256 positionId,
-        address rewardsTo
+        uint256 _positionId,
+        address _rewardsTo
     ) external {
 
+        PositionV2.Info storage pos = positions[_positionId];
+
+        bool _isLong = pos.isLong;
+
+        (   uint _oi,
+            uint _oiShares,
+            uint _priceFrame ) = IOverlayV1Market(pos.market).exitData(_isLong, pos.pricePoint);
+
+        (   uint _marginMaintenance,
+            uint _marginRewardRate   ) = factory.getMarginParams();
+
+        require(pos.isLiquidatable(
+            _priceFrame,
+            _oi,
+            _oiShares,
+            _marginMaintenance
+        ), "OverlayV1: position not liquidatable");
+
+        _oi -= pos.openInterest(_oi, _oiShares);
+        _oiShares -= pos.oiShares;
+
+        IOverlayV1Market(pos.market).exitOI(_isLong, _oi, _oiShares);
+
+        // TODO: which is better on gas
+        pos.oiShares = 0;
+        // positions[positionId].oiShares = 0;
+
+        uint _toForward = pos.cost;
+        uint _toReward = ( _toForward * _marginRewardRate ) / RESOLUTION;
+
+        liquidations += _toForward - _toReward;
+
+        ovl.transfer(_rewardsTo, _toReward);
+
     }
+
 
     /// @notice Mint overrides erc1155 _mint to track total shares issued for given position id
     function mint(address account, uint256 id, uint256 shares, bytes memory data) internal {

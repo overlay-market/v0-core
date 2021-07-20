@@ -40,9 +40,7 @@ interface IOverlayV1Market is IERC1155 {
     ) external view returns (
         uint oi_,
         uint oiShares_,
-        uint totalOiShares_,
-        uint priceEntry_,
-        uint priceExit_
+        uint priceFrame_
     );
 
     function exitOI(
