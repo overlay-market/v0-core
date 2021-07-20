@@ -45,7 +45,6 @@ contract OverlayV1UniswapV3Factory is OverlayV1Factory {
         uint144 oiCap,
         uint112 fundingKNumerator,
         uint112 fundingKDenominator,
-        uint16  marginAdjustment,
         uint8   leverageMax,
         uint256 windowSize,
         uint256 amountIn,
@@ -53,14 +52,13 @@ contract OverlayV1UniswapV3Factory is OverlayV1Factory {
     ) external onlyOwner returns (OverlayV1UniswapV3Market marketContract) {
 
         (bool success, bytes memory result) = deployer.delegatecall(
-            abi.encodeWithSignature("deployMarket(address,address,uint256,uint144,uint112,uint112,uint16,uint8,uint256,uint256,uint128,bool)",
+            abi.encodeWithSignature("deployMarket(address,address,uint256,uint144,uint112,uint112,uint8,uint256,uint256,uint128,bool)",
             ovl,
             uniV3Pool,
             updatePeriod,
             oiCap,
             fundingKNumerator,
             fundingKDenominator,
-            marginAdjustment,
             leverageMax,
             windowSize,
             amountIn,

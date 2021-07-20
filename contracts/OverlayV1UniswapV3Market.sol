@@ -26,7 +26,6 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         uint144 _oiCap,
         uint112 _fundingKNumerator,
         uint112 _fundingKDenominator,
-        uint16  _marginAdjustment,
         uint8   _leverageMax,
         uint256 _windowSize,
         uint128 _amountIn,
@@ -37,7 +36,6 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         _oiCap,
         _fundingKNumerator,
         _fundingKDenominator,
-        _marginAdjustment,
         _leverageMax
     ) {
         // immutables

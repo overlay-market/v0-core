@@ -46,7 +46,6 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
         uint144 _oiCap,
         uint112 _fundingKNumerator,
         uint112 _fundingKDenominator,
-        uint16  _marginAdjustment,
         uint8   _leverageMax
     ) OverlayV1Governance(
         _ovl,
@@ -54,7 +53,6 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
         _oiCap,
         _fundingKNumerator,
         _fundingKDenominator,
-        _marginAdjustment,
         _leverageMax
     ) {
 

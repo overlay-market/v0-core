@@ -12,8 +12,6 @@ contract OverlayV1Governance {
 
     // leverage max allowed for a position: leverages are assumed to be discrete increments of 1
     uint8 public leverageMax;
-    // percentage of factory maintenance margin requirement to adjust for due to risk of feed
-    uint16 public marginAdjustment;
     // open interest cap on each side long/short
     uint144 public oiCap;
     // period size for calls to update
@@ -40,7 +38,6 @@ contract OverlayV1Governance {
         uint144 _oiCap,
         uint112 _fundingKNumerator,
         uint112 _fundingKDenominator,
-        uint16 _marginAdjustment,
         uint8 _leverageMax
     ) {
         // immutables
@@ -51,7 +48,6 @@ contract OverlayV1Governance {
         require(_updatePeriod >= 1, "OVLV1: invalid update period");
         updatePeriod = _updatePeriod;
         leverageMax = _leverageMax;
-        marginAdjustment = _marginAdjustment;
         oiCap = _oiCap;
 
         require(_fundingKDenominator > 2 * _fundingKNumerator, "OVLV1: invalid k");
@@ -62,17 +58,15 @@ contract OverlayV1Governance {
     /// @notice Adjusts params associated with this market
     function adjustParams(
         uint256 _updatePeriod,
-        uint8 _leverageMax,
-        uint16 _marginAdjustment,
         uint144 _oiCap,
         uint112 _fundingKNumerator,
-        uint112 _fundingKDenominator
+        uint112 _fundingKDenominator,
+        uint8 _leverageMax
     ) external onlyFactory {
         // TODO: requires on params; particularly leverageMax wrt MAX_FEE and cap
         require(_updatePeriod >= 1, "OVLV1: invalid update period");
         updatePeriod = _updatePeriod;
         leverageMax = _leverageMax;
-        marginAdjustment = _marginAdjustment;
         oiCap = _oiCap;
 
         require(_fundingKDenominator > 2 * _fundingKNumerator, "OVLV1: invalid k");
