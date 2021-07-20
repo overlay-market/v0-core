@@ -135,7 +135,7 @@ contract OverlayV1OVLPositions is ERC1155 {
 
         IOverlayV1Market(_market).enterOI(_isLong, _oiAdjusted);
         ovl.transferFrom(msg.sender, address(this), _collateral);
-        mint(msg.sender, _positionId, _oiAdjusted, ""); // WARNING: must be last b/c erc1155 callback
+        mint(msg.sender, _positionId, _oiAdjusted, ""); // WARNING: last b/c erc1155 callback
 
         }
 
@@ -147,55 +147,54 @@ contract OverlayV1OVLPositions is ERC1155 {
 
         require( 0 < _shares && _shares <= balanceOf(msg.sender, _positionId), "OVLV1:!shares");
 
+        {
+
         PositionV2.Info storage pos = positions[_positionId];
 
         bool _isLong = pos.isLong;
 
         (   uint _oi,
             uint _oiShares,
-            uint _totalOiShares,
-            uint _priceEntry,
-            uint _priceExit ) = IOverlayV1Market(pos.market).exitData(_isLong, pos.pricePoint);
+          , uint _priceFrame ) = IOverlayV1Market(pos.market).exitData(_isLong, pos.pricePoint);
         
-        uint _valueAdjusted;
-        uint _cost;
+        uint _totalPosShares = totalPositionShares[_positionId];
 
-        {
-
-        _valueAdjusted = _shares * pos.notional(_priceEntry, _priceExit, _oi, _oiShares) / _totalOiShares;
-
-        uint _debt = _shares * pos.debt / _totalOiShares; // TODO: read from storage here
-        _cost = _shares * pos.cost / _totalOiShares; // TODO: read from storage here
+        uint _userOiShares = _shares * pos.oiShares / _totalPosShares;
+        uint _userNotional = _shares * pos.notional(_priceFrame, _oi, _oiShares) / _totalPosShares;
+        uint _userDebt = _shares * pos.debt / _totalPosShares;
+        uint _userCost = _shares * pos.cost / _totalPosShares;
+        uint _userOi = _shares * pos.openInterest(_oi, _oiShares) / _totalPosShares;
 
         // TODO: think through edge case of underwater position ... and fee adjustments ...
-        uint feeAmount = ( _valueAdjusted * factory.fee() ) / RESOLUTION;
-        _valueAdjusted = _valueAdjusted - feeAmount;
-        _valueAdjusted = _valueAdjusted > _debt ? _valueAdjusted - _debt : 0; // floor in case underwater, and protocol loses out on any maintenance margin
+        uint _feeAmount = ( _userNotional * factory.fee() ) / RESOLUTION;
 
-        // effects
-        fees += feeAmount; // adds to fee pot, which is transferred on update
+        uint _userValueAdjusted = _userNotional - _feeAmount;
+        if (_userValueAdjusted > _userDebt) _userValueAdjusted -= _userDebt;
+        else _userValueAdjusted = 0;
 
-        pos.debt -= _debt;
-        pos.cost -= _cost;
+        fees += _feeAmount; // adds to fee pot, which is transferred on update
 
-        uint _posOiShares = _shares * pos.oiShares / _totalOiShares;
-        uint _posOi = pos.openInterest(_oi, _oiShares);
-        _posOi = _shares * _posOi / _totalOiShares;
-        pos.oiShares -= _posOiShares;
+        // TODO: compare gas expenditure
+        pos.debt -= _userDebt;
+        pos.cost -= _userCost;
+        pos.oiShares -= _userOiShares;
+        // TODO: compare gas expenditure
+        // positions[_positionId].debt -= _userDebt;
+        // positions[_positionId].cost -= _userCost;
+        // positions[_positionId].oiShares -= _userOiShares;
 
-        IOverlayV1Market(pos.market).exitOI(_isLong, _posOi, _posOiShares);
-        emit Unwind(_positionId, _posOi, _debt);
+        IOverlayV1Market(pos.market).exitOI(_isLong, _userOi, _userOiShares);
+
+        emit Unwind(_positionId, _userOi, _userDebt);
+
+        // mint/burn excess PnL = valueAdjusted - cost, accounting for need to also burn debt
+        if (_userCost < _userValueAdjusted) ovl.mint(address(this), _userValueAdjusted - _userCost);
+        else ovl.burn(address(this), _userCost - _userValueAdjusted);
+        ovl.transfer(msg.sender, _userValueAdjusted);
+
         }
 
-        // events
-
-        // interactions
-        // mint/burn excess PnL = valueAdjusted - cost, accounting for need to also burn debt
-        if (_cost < _valueAdjusted) ovl.mint(address(this), _valueAdjusted - _cost);
-        else ovl.burn(address(this), _cost - _valueAdjusted);
-
         burn(msg.sender, _positionId, _shares);
-        ovl.transfer(msg.sender, _valueAdjusted);
  
     }
 
@@ -215,7 +214,7 @@ contract OverlayV1OVLPositions is ERC1155 {
     /// @notice Burn overrides erc1155 _burn to track total shares issued for given position id
     function burn(address account, uint256 id, uint256 shares) internal {
         uint256 totalShares = totalPositionShares[id];
-        require(totalShares >= shares, "OverlayV1: burn shares exceeds total");
+        require(totalShares >= shares, "OVLV1: burn shares exceeds total");
         totalPositionShares[id] = totalShares - shares;
         _burn(account, id, shares);
     }

@@ -29,14 +29,14 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
 
     uint256 private unlocked = 1;
     modifier lock() {
-        require(unlocked == 1, "OverlayV1: !unlocked");
+        require(unlocked == 1, "OVLV1: !unlocked");
         unlocked = 0;
         _;
         unlocked = 1;
     }
 
     modifier onlyApprovedPositionContract () {
-        require(isPositionContract[msg.sender], "OverlayV1: !position manager");
+        require(isPositionContract[msg.sender], "OVLV1: !position manager");
         _;
     }
 
@@ -114,15 +114,20 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
         uint oi_,
         uint oiShares_,
         uint totalOiShares_,
-        uint priceEntry_,
-        uint priceExit_
+        uint priceFrame_
     ) {
+        
+        // TODO: fold in the update somewhere in here we could need 
+        // to simultaneously get the entry and exit prices
+        // TODO: how to do price getting with uni style
 
-        priceEntry_ = pricePoints[_pricePoint];
+        uint _priceEntry = pricePoints[_pricePoint];
 
-        require( (_pricePoint = pricePoints.length) < _pricePoint, "OVLV1:!settled");
+        require( (_pricePoint = pricePoints.length - 1) < _pricePoint, "OVLV1:!settled");
 
-        priceExit_ = pricePoints[_pricePoint];
+        uint _priceExit = pricePoints[_pricePoint];
+
+        priceFrame_ = _priceExit / _priceEntry;
 
         if (_isLong) ( 
             totalOiShares_ = oiShares_ + oiShortShares, 
@@ -135,8 +140,6 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
             oi_ = oiLong
         );
 
-        // TODO: fold in the update somewhere in here we could need 
-        // to simultaneously get the entry and exit prices
 
     }
 
