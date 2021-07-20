@@ -43,19 +43,19 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
     constructor(
         address _ovl,
         uint256 _updatePeriod,
-        uint8 _leverageMax,
-        uint16 _marginAdjustment,
         uint144 _oiCap,
         uint112 _fundingKNumerator,
-        uint112 _fundingKDenominator
+        uint112 _fundingKDenominator,
+        uint16  _marginAdjustment,
+        uint8   _leverageMax
     ) OverlayV1Governance(
         _ovl,
         _updatePeriod,
-        _leverageMax,
-        _marginAdjustment,
         _oiCap,
         _fundingKNumerator,
-        _fundingKDenominator
+        _fundingKDenominator,
+        _marginAdjustment,
+        _leverageMax
     ) {
 
         updateBlockLast = block.number;
@@ -64,7 +64,7 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
 
 
     /// @notice Updates funding payments, cumulative fees, queued position builds, and price points
-    function update() public {
+    function update() public returns (bool updated_) {
         uint256 blockNumber = block.number;
         uint256 elapsed = (blockNumber - updateBlockLast) / updatePeriod;
         if (elapsed > 0) {
@@ -85,6 +85,8 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
                 newPrice,
                 fundingPaid
             );
+
+            updated_ = true;
 
         }
     }

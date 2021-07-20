@@ -134,10 +134,10 @@ contract OverlayV1OI {
     function queueOi(bool isLong, uint256 oi, uint256 oiCap) internal {
         if (isLong) {
             queuedOiLong += oi;
-            require(oiLong + queuedOiLong <= oiCap, "OverlayV1: breached oi cap");
+            require(oiLong + queuedOiLong <= oiCap, "OVLV1: breached oi cap");
         } else {
             queuedOiShort += oi;
-            require(oiShort + queuedOiShort <= oiCap, "OverlayV1: breached oi cap");
+            require(oiShort + queuedOiShort <= oiCap, "OVLV1: breached oi cap");
         }
     }
 

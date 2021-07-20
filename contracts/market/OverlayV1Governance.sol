@@ -25,36 +25,36 @@ contract OverlayV1Governance {
     uint112 public fundingKDenominator;
 
     modifier onlyFactory() {
-        require(msg.sender == address(factory), "OverlayV1: !factory");
+        require(msg.sender == address(factory), "OVLV1: !factory");
         _;
     }
 
     modifier enabled() {
-        require(factory.isMarket(address(this)), "OverlayV1: !enabled");
+        require(factory.isMarket(address(this)), "OVLV1: !enabled");
         _;
     }
 
     constructor(
         address _ovl,
         uint256 _updatePeriod,
-        uint8 _leverageMax,
-        uint16 _marginAdjustment,
         uint144 _oiCap,
         uint112 _fundingKNumerator,
-        uint112 _fundingKDenominator
+        uint112 _fundingKDenominator,
+        uint16 _marginAdjustment,
+        uint8 _leverageMax
     ) {
         // immutables
         factory = IOverlayV1Factory(msg.sender);
         ovl = IOverlayToken(_ovl);
 
         // per-market adjustable params
-        require(_updatePeriod >= 1, "OverlayV1: invalid update period");
+        require(_updatePeriod >= 1, "OVLV1: invalid update period");
         updatePeriod = _updatePeriod;
         leverageMax = _leverageMax;
         marginAdjustment = _marginAdjustment;
         oiCap = _oiCap;
 
-        require(_fundingKDenominator > 2 * _fundingKNumerator, "OverlayV1: invalid k");
+        require(_fundingKDenominator > 2 * _fundingKNumerator, "OVLV1: invalid k");
         fundingKNumerator = _fundingKNumerator;
         fundingKDenominator = _fundingKDenominator;
     }
@@ -69,13 +69,13 @@ contract OverlayV1Governance {
         uint112 _fundingKDenominator
     ) external onlyFactory {
         // TODO: requires on params; particularly leverageMax wrt MAX_FEE and cap
-        require(_updatePeriod >= 1, "OverlayV1: invalid update period");
+        require(_updatePeriod >= 1, "OVLV1: invalid update period");
         updatePeriod = _updatePeriod;
         leverageMax = _leverageMax;
         marginAdjustment = _marginAdjustment;
         oiCap = _oiCap;
 
-        require(_fundingKDenominator > 2 * _fundingKNumerator, "OverlayV1: invalid k");
+        require(_fundingKDenominator > 2 * _fundingKNumerator, "OVLV1: invalid k");
         fundingKNumerator = _fundingKNumerator;
         fundingKDenominator = _fundingKDenominator;
     }

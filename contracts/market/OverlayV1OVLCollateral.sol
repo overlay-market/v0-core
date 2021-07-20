@@ -10,7 +10,7 @@ import "../interfaces/IOverlayV1Market.sol";
 import "../interfaces/IOverlayV1Factory.sol";
 import "../interfaces/IOverlayToken.sol";
 
-contract OverlayV1OVLPositions is ERC1155 {
+contract OverlayV1OVLCollateral is ERC1155 {
 
     using PositionV2 for PositionV2.Info;
 
@@ -39,7 +39,15 @@ contract OverlayV1OVLPositions is ERC1155 {
 
     event Build(uint256 positionId, uint256 oi, uint256 debt);
     event Unwind(uint256 positionId, uint256 oi, uint256 debt);
-    event Liquidate(address indexed rewarded, uint256 reward);
+    event Liquidate(address rewarded, uint256 reward);
+    event Update(
+        address rewarded, 
+        uint rewardAmount, 
+        uint feesCollected, 
+        uint feesBurned, 
+        uint liquidationsCollected, 
+        uint liquidationsBurned 
+    );
     constructor (
         string memory _uri,
         address _ovl
@@ -55,6 +63,46 @@ contract OverlayV1OVLPositions is ERC1155 {
     ) external {
 
         marginAdjustments[_market] = _marginAdjustment;
+
+    }
+
+    /// @notice Updates funding payments, cumulative fees, queued position builds, and price points
+    function update(
+        address _market,
+        address _rewardsTo
+    ) public {
+
+        if (IOverlayV1Market(_market).update()) {
+
+            (   uint256 _marginBurnRate,
+                uint256 _feeBurnRate,
+                uint256 _feeRewardsRate,
+                address _feeTo ) = factory.getUpdateParams();
+
+            uint _feeForward = fees;
+            uint _feeBurn = ( _feeForward * _feeBurnRate ) / RESOLUTION;
+            uint _feeReward = ( _feeForward * _feeRewardsRate ) / RESOLUTION;
+            _feeForward = _feeForward - _feeBurn - _feeReward;
+
+            uint _liqForward = liquidations;
+            uint _liqBurn = ( _liqForward * _marginBurnRate ) / RESOLUTION;
+            _liqForward -= _liqBurn;
+
+            emit Update(
+                _rewardsTo,
+                _feeReward,
+                _feeForward,
+                _feeBurn,
+                _liqForward,
+                _liqBurn
+            );
+
+            ovl.burn(address(this), _feeBurn + _liqBurn);
+            ovl.transfer(_feeTo, _feeForward + _liqForward);
+            ovl.transfer(_rewardsTo, _feeReward);
+
+
+        }
 
     }
 

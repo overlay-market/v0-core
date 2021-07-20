@@ -79,4 +79,6 @@ interface IOverlayV1Market is IERC1155 {
         uint256 currentPricePoint
     );
 
+    function update () external returns (bool updated);
+
 }
