@@ -39,6 +39,18 @@ def test_test(
     token.approve(ovl_collateral, oi_long+oi_short, { 'from': bob })
     ovl_collateral.update(market, rewards, { 'from': bob })
 
+    txbl = ovl_collateral.build(market, oi_long, True, 1, bob, { 'from': bob })
+    txbs = ovl_collateral.build(market, oi_short, False, 1, bob, { 'from': bob })
+
+    q_oi_l = market.queuedOiLong()
+    q_oi_s = market.queuedOiShort()
+
+    print("queued oi", 
+        "\n long", q_oi_l,
+        "\n short", q_oi_s
+    )
+
+
 @given(
     oi_long=strategy('uint256',
                      min_value=MIN_COLLATERAL_AMOUNT,

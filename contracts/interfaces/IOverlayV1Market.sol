@@ -45,9 +45,7 @@ interface IOverlayV1Market is IERC1155 {
     function enterOI(
         bool _isLong,
         uint _oi
-    ) external view returns (
-        uint pricePoint_
-    );
+    ) external;
 
     function exitData (
         bool _isLong,

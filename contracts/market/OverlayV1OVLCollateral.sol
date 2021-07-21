@@ -24,9 +24,10 @@ contract OverlayV1OVLCollateral is ERC1155 {
     mapping (address => bool) supportedMarket;
     mapping (address => mapping(uint => uint)) internal queuedPositionLongs;
     mapping (address => mapping(uint => uint)) internal queuedPositionShorts;
+
     PositionV2.Info[] public positions;
 
-    uint16 public constant MIN_COLLAT = 10**4;
+    uint16 public constant MIN_COLLAT = 1e4;
     uint constant RESOLUTION = 1e4;
 
     uint nextPositionId;
@@ -56,6 +57,16 @@ contract OverlayV1OVLCollateral is ERC1155 {
 
         ovl = IOverlayToken(_ovl);
         factory = IOverlayV1Factory(_factory);
+
+        positions.push(PositionV2.Info({
+            market: address(0),
+            isLong: false,
+            leverage: 0,
+            pricePoint: 0,
+            oiShares: 0,
+            debt: 0,
+            cost: 0
+        }));
 
     }
 
@@ -135,13 +146,15 @@ contract OverlayV1OVLCollateral is ERC1155 {
                 cost: 0
             }));
 
-            positionId_ = positions.length;
+            positionId_ = positions.length - 1;
 
             _queuedPositions[_leverage] = positionId_;
 
         }
 
     }
+
+    event thing(string key, uint val);
 
     function build(
         address _market,
@@ -155,8 +168,8 @@ contract OverlayV1OVLCollateral is ERC1155 {
             uint _maxLev,
             uint _pricePointCurrent ) = IOverlayV1Market(_market).entryData(_isLong);
 
+        require(_collateral <= MIN_COLLAT, "OVLV1:collat<min");
         require(_leverage <= _maxLev, "OVLV1:max<lev");
-        require(_collateral < MIN_COLLAT, "OVLV1:collat<min");
 
         uint _positionId = getQueuedPositionId(
             _market, 
@@ -168,27 +181,33 @@ contract OverlayV1OVLCollateral is ERC1155 {
         PositionV2.Info storage position = positions[_positionId];
 
         uint _oiAdjusted;
+        uint _debtAdjusted;
 
         {
+
         uint _oi = _collateral * _leverage;
         uint _fee = ( _oi * factory.fee() ) / RESOLUTION;
+
         _oiAdjusted = _oi - _fee;
         uint _collateralAdjusted = _oiAdjusted / _leverage;
-        uint _debtAdjusted = _oiAdjusted - _collateralAdjusted;
+        _debtAdjusted = _oiAdjusted - _collateralAdjusted;
 
         fees += _fee;
 
         position.oiShares += _oiAdjusted;
-        position.debt += _debtAdjusted;
         position.cost += _collateralAdjusted;
+        position.debt += _debtAdjusted;
 
         }
 
         IOverlayV1Market(_market).enterOI(_isLong, _oiAdjusted);
+
+        emit Build(_positionId, _oiAdjusted, _debtAdjusted);
+
         ovl.transferFrom(msg.sender, address(this), _collateral);
         mint(msg.sender, _positionId, _oiAdjusted, ""); // WARNING: last b/c erc1155 callback
 
-        }
+    }
 
     /// @notice Unwinds shares of an existing position
     function unwind(

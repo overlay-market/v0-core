@@ -29,14 +29,14 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
 
     uint256 private unlocked = 1;
     modifier lock() {
-        require(unlocked == 1, "OVLV1: !unlocked");
+        require(unlocked == 1, "OVLV1:!unlocked");
         unlocked = 0;
         _;
         unlocked = 1;
     }
 
     modifier onlyCollateral () {
-        require(isCollateral[msg.sender], "OVLV1: !position manager");
+        require(isCollateral[msg.sender], "OVLV1:!collateral");
         _;
     }
 
