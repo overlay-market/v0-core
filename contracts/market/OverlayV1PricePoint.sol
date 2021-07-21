@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-contract OverlayV1PricePoint {
+abstract contract OverlayV1PricePoint {
 
     // mapping from price point index to realized historical prices
     uint[] public pricePoints;
@@ -30,13 +30,11 @@ contract OverlayV1PricePoint {
 
     /// @notice Fetches last price from oracle and sets in pricePoints
     /// @dev Override for each specific market feed to also fetch from oracle value for T+1
-    function fetchPricePoint() internal virtual returns (bool success) {
-        return true;
-    }
+    function fetchPricePoint() internal virtual returns (uint256 price);
 
     /// @notice Forwards price point index for next update period
     /// @dev Override fetchPricePoint for each specific market feed
-    function updatePricePoints() internal {
-        fetchPricePoint();
+    function updatePricePoints() internal returns (uint256) {
+        return fetchPricePoint();
     }
 }

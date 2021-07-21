@@ -84,7 +84,7 @@ contract OverlayV1Factory is Ownable {
 
     /// @notice Disables an existing market contract for a mirin market
     function disableMarket(address market) external onlyOwner {
-        require(isMarket[market], "OverlayV1: !enabled");
+        require(isMarket[market], "OVLV1: !enabled");
         isMarket[market] = false;
 
         // Revoke mint/burn roles for the market
@@ -94,25 +94,13 @@ contract OverlayV1Factory is Ownable {
 
     /// @notice Enables an existing market contract for a mirin market
     function enableMarket(address market) external onlyOwner {
-        require(marketExists[market], "OverlayV1: !exists");
-        require(!isMarket[market], "OverlayV1: !disabled");
+        require(marketExists[market], "OVLV1: !exists");
+        require(!isMarket[market], "OVLV1: !disabled");
         isMarket[market] = true;
 
         // Give market contract mint/burn priveleges for OVL token
         OverlayToken(ovl).grantRole(OverlayToken(ovl).MINTER_ROLE(), market);
         OverlayToken(ovl).grantRole(OverlayToken(ovl).BURNER_ROLE(), market);
-    }
-
-    /// @notice Calls the update function on a market
-    function updateMarket(address market, address rewardsTo) external {
-        IOverlayV1Market(market).update(rewardsTo);
-    }
-
-    /// @notice Mass calls update functions on all markets
-    function massUpdateMarkets(address rewardsTo) external {
-        for (uint256 i=0; i < allMarkets.length; ++i) {
-            IOverlayV1Market(allMarkets[i]).update(rewardsTo);
-        }
     }
 
     /// @notice Allows gov to adjust per market params

@@ -10,27 +10,25 @@ contract OverlayV1UniswapV3Deployer {
         address ovl,
         address uniPool,
         uint256 updatePeriod,
-        uint8 leverageMax,
-        uint16 marginAdjustment,
         uint144 oiCap,
         uint112 fundingKNumerator,
         uint112 fundingKDenominator,
-        bool isPrice0,
+        uint8   leverageMax,
         uint256 windowSize,
-        uint256 amountIn
+        uint128 amountIn,
+        bool    isPrice0
     ) external returns (OverlayV1UniswapV3Market marketContract) {
         marketContract = new OverlayV1UniswapV3Market(
             ovl,
             uniPool,
             updatePeriod,
-            leverageMax,
-            marginAdjustment,
             oiCap,
             fundingKNumerator,
             fundingKDenominator,
-            isPrice0,
+            leverageMax,
             windowSize,
-            amountIn
+            amountIn,
+            isPrice0
         );
     }
 

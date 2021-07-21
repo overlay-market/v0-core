@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "../libraries/Position.sol";
 import "./OverlayV1PricePoint.sol";
 
-contract OverlayV1Position is ERC1155, OverlayV1PricePoint {
+abstract contract OverlayV1Position is ERC1155, OverlayV1PricePoint {
     using Position for Position.Info;
 
     // array of pos attributes; id is index in array
@@ -32,19 +32,6 @@ contract OverlayV1Position is ERC1155, OverlayV1PricePoint {
 
     }
 
-    /// @notice Mint overrides erc1155 _mint to track total shares issued for given position id
-    function mint(address account, uint256 id, uint256 shares, bytes memory data) internal {
-        totalPositionShares[id] += shares;
-        _mint(account, id, shares, data);
-    }
-
-    /// @notice Burn overrides erc1155 _burn to track total shares issued for given position id
-    function burn(address account, uint256 id, uint256 shares) internal {
-        uint256 totalShares = totalPositionShares[id];
-        require(totalShares >= shares, "OverlayV1: burn shares exceeds total");
-        totalPositionShares[id] = totalShares - shares;
-        _burn(account, id, shares);
-    }
 
     /// @notice Updates position queue for T+1 price settlement
     function getQueuedPositionId(

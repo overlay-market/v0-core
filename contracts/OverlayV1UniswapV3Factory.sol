@@ -42,30 +42,27 @@ contract OverlayV1UniswapV3Factory is OverlayV1Factory {
     function createMarket(
         address uniV3Pool,
         uint256 updatePeriod,
-        uint8 leverageMax,
-        uint16 marginAdjustment,
         uint144 oiCap,
         uint112 fundingKNumerator,
         uint112 fundingKDenominator,
-        bool isPrice0,
+        uint8   leverageMax,
         uint256 windowSize,
-        uint256 amountIn
+        uint256 amountIn,
+        bool    isPrice0
     ) external onlyOwner returns (OverlayV1UniswapV3Market marketContract) {
-        // require(IMirinFactory(uniV3Factory).isPool(uniV3Pool), "OverlayV1: !MirinPool");
 
         (bool success, bytes memory result) = deployer.delegatecall(
-            abi.encodeWithSignature("deployMarket(address,address,uint256,uint8,uint16,uint144,uint112,uint112,bool,uint256,uint256)",
+            abi.encodeWithSignature("deployMarket(address,address,uint256,uint144,uint112,uint112,uint8,uint256,uint128,bool)",
             ovl,
             uniV3Pool,
             updatePeriod,
-            leverageMax,
-            marginAdjustment,
             oiCap,
             fundingKNumerator,
             fundingKDenominator,
-            isPrice0,
+            leverageMax,
             windowSize,
-            amountIn
+            amountIn,
+            isPrice0
         ));
         
         marketContract = abi.decode(result, (OverlayV1UniswapV3Market));
