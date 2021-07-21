@@ -50,10 +50,12 @@ contract OverlayV1OVLCollateral is ERC1155 {
     );
     constructor (
         string memory _uri,
-        address _ovl
+        address _ovl,
+        address _factory
     ) ERC1155(_uri) { 
 
         ovl = IOverlayToken(_ovl);
+        factory = IOverlayV1Factory(_factory);
 
     }
 

@@ -117,7 +117,7 @@ def get_uni_oracle (feed_owner):
     params=[
         ("OverlayV1UniswapV3Deployer", [],
          "OverlayV1UniswapV3Factory", [15, 5000, 100, ETH_ADDRESS, 60, 50, 25], 
-         "OverlayV1UniswapV3Market", [ 10, 100, 100, OI_CAP*10**TOKEN_DECIMALS, 3293944666953, 9007199254740992, True, 600, AMOUNT_IN*10**TOKEN_DECIMALS ],
+         "OverlayV1UniswapV3Market", [ 10, OI_CAP*10**TOKEN_DECIMALS, 3293944666953, 9007199254740992, 100, 600, AMOUNT_IN*10**TOKEN_DECIMALS, True ],
          get_uni_oracle,
         ),
         # ("OverlayV1MirinDeployer", [],
@@ -155,11 +155,23 @@ def create_factory(token, gov, feed_owner, price_points, price_points_after, req
 
     yield create_factory
 
+@pytest.fixture(scope="module")
+def ovl_collateral(factory, market, gov, token):
+    OvlCollateral = getattr(brownie, 'OverlayV1OVLCollateral')
+    collateral_man = OvlCollateral.deploy(
+        "", 
+        token, 
+        factory,
+        { 'from': gov }
+    )
+    market.addCollateral(collateral_man, { 'from': gov })
+    token.grantRole(token.MINTER_ROLE(), collateral_man, { 'from': gov })
+    token.grantRole(token.BURNER_ROLE(), collateral_man, { 'from': gov })
+    yield collateral_man
 
 @pytest.fixture(scope="module")
 def factory(create_factory):
     yield create_factory()
-
 
 @pytest.fixture(
     scope="module",
@@ -168,3 +180,4 @@ def market(factory, request):
     addr = factory.allMarkets(0)
     market = getattr(interface, request.param)(addr)
     yield market
+

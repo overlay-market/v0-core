@@ -16,6 +16,28 @@ TOKEN_TOTAL_SUPPLY = 8000000
 OI_CAP = 800000
 FEE_RESOLUTION = 1e4
 
+@given(
+    oi_long=strategy('uint256', min_value=MIN_COLLATERAL_AMOUNT, max_value=0.999*OI_CAP*10**TOKEN_DECIMALS),
+    oi_short=strategy('uint256', min_value=MIN_COLLATERAL_AMOUNT, max_value=0.999*OI_CAP*10**TOKEN_DECIMALS),
+    num_periods=strategy('uint16', min_value=1, max_value=144)
+)
+@settings(max_examples=1)
+def test_test(
+    token,
+    factory,
+    market,
+    ovl_collateral,
+    alice,
+    bob,
+    rewards,
+    oi_long,
+    oi_short,
+    num_periods
+):
+
+    update_period = market.updatePeriod()
+    token.approve(ovl_collateral, oi_long+oi_short, { 'from': bob })
+    ovl_collateral.update(market, rewards, { 'from': bob })
 
 @given(
     oi_long=strategy('uint256',
