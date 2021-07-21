@@ -10,7 +10,7 @@ import "../OverlayToken.sol";
 
 abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1PricePoint {
 
-    mapping (address => bool) public isPositionContract;
+    mapping (address => bool) public isCollateral;
 
     uint256 public fees;
     uint256 public liquidations;
@@ -35,8 +35,8 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
         unlocked = 1;
     }
 
-    modifier onlyApprovedPositionContract () {
-        require(isPositionContract[msg.sender], "OVLV1: !position manager");
+    modifier onlyCollateral () {
+        require(isCollateral[msg.sender], "OVLV1: !position manager");
         _;
     }
 
@@ -60,6 +60,17 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
 
     }
 
+    function addCollateral (address _collateral) public {
+
+        isCollateral[_collateral] = true;
+
+    }
+    
+    function removeCollateral (address _collateral) public {
+
+        isCollateral[_collateral] = false;
+
+    }
 
     /// @notice Updates funding payments, cumulative fees, queued position builds, and price points
     function update() public returns (bool updated_) {
@@ -79,10 +90,7 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
             // Increment update block
             updateBlockLast = blockNumber;
 
-            emit Update(
-                newPrice,
-                fundingPaid
-            );
+            emit Update(newPrice, fundingPaid);
 
             updated_ = true;
 
@@ -141,7 +149,7 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
     function enterOI (
         bool _isLong,
         uint _oi
-    ) external onlyApprovedPositionContract {
+    ) external onlyCollateral {
 
         queueOi(_isLong, _oi, oiCap);
 
@@ -157,7 +165,7 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
         bool _isLong,
         uint _oi,
         uint _oiShares
-    ) external onlyApprovedPositionContract {
+    ) external onlyCollateral {
 
         if (_isLong) ( oiLong -= _oi, oiLongShares -= _oiShares );
         else ( oiShort -= _oi, oiShortShares -= _oiShares );
