@@ -116,7 +116,6 @@ contract OverlayV1OVLCollateral is ERC1155 {
             ovl.transfer(_feeTo, _feeForward + _liqForward);
             ovl.transfer(_rewardsTo, _feeReward);
 
-
         }
 
     }

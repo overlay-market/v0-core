@@ -17,41 +17,6 @@ OI_CAP = 800000
 FEE_RESOLUTION = 1e4
 
 @given(
-    oi_long=strategy('uint256', min_value=MIN_COLLATERAL_AMOUNT, max_value=0.999*OI_CAP*10**TOKEN_DECIMALS),
-    oi_short=strategy('uint256', min_value=MIN_COLLATERAL_AMOUNT, max_value=0.999*OI_CAP*10**TOKEN_DECIMALS),
-    num_periods=strategy('uint16', min_value=1, max_value=144)
-)
-@settings(max_examples=1)
-def test_test(
-    token,
-    factory,
-    market,
-    ovl_collateral,
-    alice,
-    bob,
-    rewards,
-    oi_long,
-    oi_short,
-    num_periods
-):
-
-    update_period = market.updatePeriod()
-    token.approve(ovl_collateral, oi_long+oi_short, { 'from': bob })
-    ovl_collateral.update(market, rewards, { 'from': bob })
-
-    txbl = ovl_collateral.build(market, oi_long, True, 1, bob, { 'from': bob })
-    txbs = ovl_collateral.build(market, oi_short, False, 1, bob, { 'from': bob })
-
-    q_oi_l = market.queuedOiLong()
-    q_oi_s = market.queuedOiShort()
-
-    print("queued oi", 
-        "\n long", q_oi_l,
-        "\n short", q_oi_s
-    )
-
-
-@given(
     oi_long=strategy('uint256',
                      min_value=MIN_COLLATERAL_AMOUNT,
                      max_value=0.999*OI_CAP*10**TOKEN_DECIMALS),
@@ -83,54 +48,12 @@ def test_update(token,
     # do an initial update before build so all oi is queued
     mu1 = market.update({"from": alice})
 
-    # build so all oi is queued
-    # TODO: check no issues when some queued, some settled
-
-    tsbb = token.totalSupply()
-    mbbb = token.balanceOf(ovl_collateral)
-    txbl = ovl_collateral.build(market, oi_long, True, 1, bob, {"from": bob})
-    mbabl = token.balanceOf(ovl_collateral)
-    tsabl = token.totalSupply()
-    txbs = ovl_collateral.build(market, oi_short, False, 1, bob, {"from": bob})
-    mbabs = token.balanceOf(ovl_collateral)
-    tsabs = token.totalSupply()
-
-    print("market update tx",
-        "\n timestamp", mu1.timestamp,
-        "\n block number", mu1.block_number)
-
-    print("market build long tx",
-        "\n timestamp", txbl.timestamp,
-        "\n block number", txbl.block_number)
-
-    print("market build short tx",
-        "\n timestamp", txbs.timestamp,
-        "\n block number", txbs.block_number)
-
-    if 'Update' in txbl.events:
-        print("update called in build long")
-    if 'Update' in txbs.events:
-        print("update called in build short")
-
-    print("oi", 
-        "\n oi long", oi_long, 
-        "\n oi short", oi_short
-    )
-    print("total supply",
-        "\n before build", tsbb,
-        "\n after build long", tsabl,
-        "\n after build short", tsabs
-    )
-    print("market balance",
-        "\n before building", mbbb,
-        "\n after build long", mbabl,
-        "\n after build short", mbabs
-    )
+    ovl_collateral.build(market, oi_long, True, 1, bob, {"from": bob})
+    ovl_collateral.build(market, oi_short, False, 1, bob, {"from": bob})
 
     # prior fee state
     _, fee_burn_rate, fee_reward_rate, fee_to = factory.getUpdateParams()
     prior_fees = ovl_collateral.fees()
-    print("fees")
 
     # prior token balances
     prior_balance_ovl_collateral = token.balanceOf(ovl_collateral)
@@ -138,24 +61,11 @@ def test_update(token,
     prior_balance_rewards_to = token.balanceOf(rewards)
     prior_total_supply = token.totalSupply()
 
-    print( "prior balance",
-        "\n market    ", prior_balance_ovl_collateral,
-        "\n fee to    ", prior_balance_fee_to,
-        "\n reward to ", prior_balance_rewards_to
-    )
-
     # prior oi state
     prior_queued_oi_long = market.queuedOiLong()
     prior_queued_oi_short = market.queuedOiShort()
     prior_oi_long = market.oiLong()
     prior_oi_short = market.oiShort()
-
-    print("prior oi", 
-        "\n qoil   ", prior_queued_oi_long,
-        "\n oil    ", prior_oi_long,
-        "\n qois   ", prior_queued_oi_short,
-        "\n ois    ", prior_oi_short
-    )
 
     # prior price point state
     prior_price_point_idx = market.pricePointCurrentIndex()
@@ -169,7 +79,6 @@ def test_update(token,
     chain.mine(update_period+1, timestamp=chain[-1].timestamp + window_size)
 
     tx = ovl_collateral.update.transact(market, rewards, {"from": alice})
-    print("~~~~ update ~~~~~")
 
     curr_update_block = market.updateBlockLast()
 
@@ -183,15 +92,6 @@ def test_update(token,
     assert tx.events['Update']['rewarded'] == rewards.address
     assert abs(tx.events['Update']['rewardAmount'] - expected_fee_reward) <= 1
 
-    price_len = market.pricePointCurrentIndex()
-    prices = []
-    for i in range(price_len):
-        prices.append(market.pricePoints(i))
-
-    print("prices", prices)
-    print("p oi long", prior_oi_long, "q", prior_queued_oi_long)
-    print("p oi short", prior_oi_short, "q", prior_queued_oi_short)
-
     # Check queued OI settled
     expected_oi_long = prior_queued_oi_long + prior_oi_long
     expected_oi_short = prior_queued_oi_short + prior_oi_short
@@ -200,9 +100,6 @@ def test_update(token,
     curr_queued_oi_short = market.queuedOiShort()
     curr_oi_long = market.oiLong()
     curr_oi_short = market.oiShort()
-
-    print("c oi long", curr_oi_long, "q", curr_queued_oi_long)
-    print("c oi short", curr_oi_short, "q", curr_queued_oi_short)
 
     assert curr_queued_oi_long == 0
     assert curr_queued_oi_short == 0
@@ -228,10 +125,7 @@ def test_update(token,
     # ... and rewards sent to address to be rewarded
     expected_balance_rewards_to = prior_balance_rewards_to + expected_fee_reward
     curr_balance_rewards_to = token.balanceOf(rewards)
-    assert (
-        curr_balance_rewards_to == expected_balance_rewards_to
-        or curr_balance_rewards_to == expected_balance_rewards_to - 1
-    )
+    assert abs(curr_balance_rewards_to - expected_balance_rewards_to) <= 1
 
     # ... and fees forwarded
     expected_balance_ovl_collateral = prior_balance_ovl_collateral - prior_fees
