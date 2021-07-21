@@ -101,6 +101,8 @@ contract OverlayV1OVLCollateral is ERC1155 {
             uint _liqBurn = ( _liqForward * _marginBurnRate ) / RESOLUTION;
             _liqForward -= _liqBurn;
 
+            fees = 0;
+
             emit Update(
                 _rewardsTo,
                 _feeReward,

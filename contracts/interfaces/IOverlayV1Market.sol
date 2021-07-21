@@ -6,7 +6,7 @@ import "../libraries/Position.sol";
 
 interface IOverlayV1Market is IERC1155 {
 
-    event Update( uint256 price, int256 fundingPaid);
+    event CoreUpdate(uint256 price, int256 fundingPaid);
 
     function ovl() external view returns (address);
     function factory() external view returns (address);

@@ -64,6 +64,7 @@ def test_test(
 def test_update(token,
                 factory,
                 market,
+                ovl_collateral,
                 alice,
                 bob,
                 rewards,
@@ -73,44 +74,25 @@ def test_update(token,
 
     update_period = market.updatePeriod()
 
-    mubl = market.updateBlockLast()
-
-    print(time.time(), "oi_long", oi_long, "oi_short", oi_short)
-
-    print("block",
-        "\n current", chain[-1].number,
-        "\n update block last", mubl
-    )
-
-    print("update period", update_period)
-
-
     # queue up bob's positions to be settled at next update (T+1)
     # 1x long w oi_long as collateral and 1x short with oi_short
-    token.approve(market, oi_long+oi_short, {"from": bob})
-
-    print("approve")
+    token.approve(ovl_collateral, oi_long+oi_short, {"from": bob})
 
     window_size = market.windowSize()
 
-    print("window size")
     # do an initial update before build so all oi is queued
-    tsbu1 = token.totalSupply()
-    mu1 = market.update(rewards, {"from": alice})
-    print("update")
-
-    assert 'Update' in mu1.events
+    mu1 = market.update({"from": alice})
 
     # build so all oi is queued
     # TODO: check no issues when some queued, some settled
 
     tsbb = token.totalSupply()
-    mbbb = token.balanceOf(market)
-    txbl = market.build(oi_long, True, 1, bob, {"from": bob})
-    mbabl = token.balanceOf(market)
+    mbbb = token.balanceOf(ovl_collateral)
+    txbl = ovl_collateral.build(market, oi_long, True, 1, bob, {"from": bob})
+    mbabl = token.balanceOf(ovl_collateral)
     tsabl = token.totalSupply()
-    txbs = market.build(oi_short, False, 1, bob, {"from": bob})
-    mbabs = token.balanceOf(market)
+    txbs = ovl_collateral.build(market, oi_short, False, 1, bob, {"from": bob})
+    mbabs = token.balanceOf(ovl_collateral)
     tsabs = token.totalSupply()
 
     print("market update tx",
@@ -147,17 +129,17 @@ def test_update(token,
 
     # prior fee state
     _, fee_burn_rate, fee_reward_rate, fee_to = factory.getUpdateParams()
-    prior_fees = market.fees()
+    prior_fees = ovl_collateral.fees()
     print("fees")
 
     # prior token balances
-    prior_balance_market = token.balanceOf(market)
+    prior_balance_ovl_collateral = token.balanceOf(ovl_collateral)
     prior_balance_fee_to = token.balanceOf(fee_to)
     prior_balance_rewards_to = token.balanceOf(rewards)
     prior_total_supply = token.totalSupply()
 
     print( "prior balance",
-        "\n market    ", prior_balance_market,
+        "\n market    ", prior_balance_ovl_collateral,
         "\n fee to    ", prior_balance_fee_to,
         "\n reward to ", prior_balance_rewards_to
     )
@@ -167,6 +149,7 @@ def test_update(token,
     prior_queued_oi_short = market.queuedOiShort()
     prior_oi_long = market.oiLong()
     prior_oi_short = market.oiShort()
+
     print("prior oi", 
         "\n qoil   ", prior_queued_oi_long,
         "\n oil    ", prior_oi_long,
@@ -185,7 +168,7 @@ def test_update(token,
     start_block = chain[-1]['number']
     chain.mine(update_period+1, timestamp=chain[-1].timestamp + window_size)
 
-    tx = market.update.transact(rewards, {"from": alice})
+    tx = ovl_collateral.update.transact(market, rewards, {"from": alice})
     print("~~~~ update ~~~~~")
 
     curr_update_block = market.updateBlockLast()
@@ -195,12 +178,10 @@ def test_update(token,
     assert curr_update_block == prior_plus_updates
 
     # check update event attrs
+    assert 'CoreUpdate' in tx.events
     assert 'Update' in tx.events
     assert tx.events['Update']['rewarded'] == rewards.address
-    assert (
-        tx.events['Update']['reward'] == expected_fee_reward
-        or tx.events['Update']['reward'] == expected_fee_reward - 1
-    )
+    assert abs(tx.events['Update']['rewardAmount'] - expected_fee_reward) <= 1
 
     price_len = market.pricePointCurrentIndex()
     prices = []
@@ -233,8 +214,7 @@ def test_update(token,
 
     # Check price points updated ...
     expected_price_point_idx = prior_price_point_idx + 1
-    curr_price_point_idx = market.pricePointCurrentIndex()
-    assert curr_price_point_idx == expected_price_point_idx
+    assert market.pricePointCurrentIndex() == expected_price_point_idx
 
     # ... and price has settled
     assert market.pricePoints(prior_price_point_idx) > 0
@@ -243,10 +223,7 @@ def test_update(token,
     expected_fee_burn = int(prior_fees * fee_burn_rate / FEE_RESOLUTION)
     expected_total_supply = prior_total_supply - expected_fee_burn
     curr_total_supply = token.totalSupply()
-    assert (
-        curr_total_supply == expected_total_supply
-        or curr_total_supply == expected_total_supply + 1
-    )
+    assert abs(curr_total_supply - expected_total_supply) <= 1
 
     # ... and rewards sent to address to be rewarded
     expected_balance_rewards_to = prior_balance_rewards_to + expected_fee_reward
@@ -257,27 +234,24 @@ def test_update(token,
     )
 
     # ... and fees forwarded
-    expected_balance_market = prior_balance_market - prior_fees
+    expected_balance_ovl_collateral = prior_balance_ovl_collateral - prior_fees
     expected_fee_forward = prior_fees - expected_fee_burn - expected_fee_reward
     expected_balance_fee_to = prior_balance_fee_to + expected_fee_forward
 
     curr_balance_fee_to = token.balanceOf(fee_to)
-    curr_balance_market = token.balanceOf(market)
-    assert (
-        curr_balance_fee_to == expected_balance_fee_to
-        or curr_balance_fee_to == expected_balance_fee_to - 1
-    )
-    assert curr_balance_market == expected_balance_market
+    curr_balance_ovl_collateral = token.balanceOf(ovl_collateral)
+    assert abs(curr_balance_fee_to - expected_balance_fee_to) <= 1
+    assert curr_balance_ovl_collateral == expected_balance_ovl_collateral
 
     # Check cumulative fee pot zeroed
-    assert market.fees() == 0
+    assert ovl_collateral.fees() == 0
 
     # Now do a longer update ...
     curr_block = chain[-1]['number']
     update_blocks = num_periods * update_period
     chain.mine(update_blocks, timestamp=chain[-1].timestamp + window_size)
 
-    tx = market.update(rewards, {"from": alice})
+    tx = ovl_collateral.update(market, rewards, {"from": alice})
     next_update_block = market.updateBlockLast()
 
     # plus 1 since tx will mine a block
@@ -286,8 +260,9 @@ def test_update(token,
 
     # check update event attrs
     assert 'Update' in tx.events
+    assert 'CoreUpdate' in tx.events
     assert tx.events['Update']['rewarded'] == rewards.address
-    assert tx.events['Update']['reward'] == 0  # rewarded 0 since no positions built
+    assert tx.events['Update']['rewardAmount'] == 0  # rewarded 0 since no positions built
 
     # check funding payments over longer period
     k = market.fundingKNumerator() / market.fundingKDenominator()
@@ -298,14 +273,8 @@ def test_update(token,
     next_oi_long = market.oiLong()
     next_oi_short = market.oiShort()
 
-    assert (
-        next_oi_long == expected_oi_long
-        or next_oi_long == expected_oi_long - 1
-    )
-    assert (
-        next_oi_short == expected_oi_short
-        or next_oi_short == expected_oi_short + 1
-    )
+    assert abs(next_oi_long - expected_oi_long) <= 1
+    assert abs(next_oi_short - expected_oi_short) <= 1
 
 
 def test_update_funding_burn():
@@ -323,14 +292,14 @@ def test_update_early():
     pass
 
 
-def test_update_between_periods(token, factory, market, alice, rewards):
+def test_update_between_periods(token, factory, ovl_collateral, market, alice, rewards):
     update_period = market.updatePeriod()
     window_size = market.windowSize()
     prior_update_block = market.updateBlockLast()
 
     latest_block = chain[-1]['number']
     if int((latest_block - prior_update_block) / update_period) > 0:
-        market.update(rewards, {"from": alice})
+        ovl_collateral.update(market, rewards, {"from": alice})
         latest_block = chain[-1]['number']
         prior_update_block = market.updateBlockLast()
 
@@ -339,7 +308,7 @@ def test_update_between_periods(token, factory, market, alice, rewards):
     chain.mine(blocks_to_mine, timestamp=chain[-1].timestamp - window_size)
 
     # Should not update since update period hasn't passed yet
-    market.update(rewards, {"from": alice})
+    ovl_collateral.update(market, rewards, {"from": alice})
 
     curr_update_block = market.updateBlockLast()
     assert curr_update_block == prior_update_block

@@ -17,10 +17,7 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
 
     uint constant RESOLUTION = 1e4;
 
-    event Update(uint price, int256 fundingPaid);
-    event Build(uint256 positionId, uint256 oi, uint256 debt);
-    event Unwind(uint256 positionId, uint256 oi, uint256 debt);
-    event Liquidate(address indexed rewarded, uint256 reward);
+    event CoreUpdate(uint price, int256 fundingPaid);
 
     uint16 public constant MIN_COLLATERAL_AMOUNT = 10**4;
 
@@ -90,7 +87,7 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
             // Increment update block
             updateBlockLast = blockNumber;
 
-            emit Update(newPrice, fundingPaid);
+            emit CoreUpdate(newPrice, fundingPaid);
 
             updated_ = true;
 
