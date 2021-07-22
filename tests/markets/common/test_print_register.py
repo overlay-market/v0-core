@@ -1,4 +1,5 @@
 import pytest
+from functools import reduce
 
 from brownie import\
     chain,\
@@ -92,7 +93,7 @@ def test_one_window_rolling(print_shim):
 
     block_end = chain[-1].number
 
-    simmed = map(lambda x: x + x, vals[10:])
+    summed = reduce(lambda x,y: x + y, vals[10:])
 
     print("nums", nums)
     print("indexes", indexes)
@@ -103,12 +104,9 @@ def test_one_window_rolling(print_shim):
         "\n end", block_end
     )
 
-
-
     printed = print_shim.printedInWindow()
     
-    print("simmed", simmed)
-
+    print("simmed", summed)
     print("printed", printed)
 
 

@@ -74,28 +74,33 @@ contract OverlayV1OI {
 
             if (_index + 1 < _cardinality) {
 
-                _index = _index + 1;
+                _index += 1;
+
                 Print storage next = prints[_index];
-                next.block = uint32(block.number);
                 next.printed = _last.printed + printed;
+                next.block = uint32(block.number);
+
+                index = _index;
 
             } else if (_cardinality < cardinalityNext) {
 
-                prints[_index + 1] = Print({
-                    isinit: 1,
-                    printed: _last.printed + printed,
-                    block: uint32(block.number)
-                });
+                _index += 1;
 
-                index = _index + 1;
+                Print storage next = prints[_index];
+                next.printed = _last.printed + printed;
+                next.block = uint32(block.number);
+                next.isinit = 1;
+
+                index = _index;
                 cardinality += 1;
 
             } else {
 
-                index = 0;
                 Print storage next = prints[0];
                 next.block = uint32(block.number);
                 next.printed = _last.printed + printed;
+
+                index = 0;
 
             }
 
