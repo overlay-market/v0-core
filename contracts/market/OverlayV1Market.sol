@@ -52,9 +52,9 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
         _fundingKNumerator,
         _fundingKDenominator,
         _leverageMax
-    ) {
-
-        printWindow = _printWindow;
+    ) OverlayV1OI(
+        _printWindow
+    ){
 
         updateBlockLast = block.number;
 

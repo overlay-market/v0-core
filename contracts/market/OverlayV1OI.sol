@@ -26,23 +26,51 @@ contract OverlayV1OI {
     uint256 public printWindow;
     struct Print {
         uint8  isinit;
-        int216 printed;
         uint32 block;
+        int216 printed;
     }
 
     int216 public printed;
-    uint256 public index;
-    uint256 public cardinality;
-    uint256 public cardinalityNext;
+    uint24 public index;
+    uint24 public cardinality;
+    uint24 public cardinalityNext;
     Print[216000] public prints;
 
+    constructor (uint _printWindow) {
+
+        cardinality = 1;
+        cardinalityNext = 1;
+
+        prints[0] = Print({
+            isinit: 1,
+            printed: 0,
+            block: uint32(block.number)
+        });
+
+        printWindow = _printWindow;
+
+    }
+
+    function expand (
+        uint16 next
+    ) public {
+
+        require(cardinalityNext < next, 'OVLV1:next<curr');
+
+        // save write gas for the users
+        for (uint24 i = cardinalityNext; i < next; i++) prints[i].block = 1;
+
+        cardinalityNext = next;
+
+    }
+
     function recordPrint (int216 _print) internal {
-        uint _index = index;
+        uint24 _index = index;
 
         Print memory _last = prints[_index];
         if (_last.block != block.number) {
 
-            uint _cardinality = cardinality;
+            uint24 _cardinality = cardinality;
 
             if (_index + 1 < _cardinality) {
 
@@ -59,7 +87,7 @@ contract OverlayV1OI {
                     block: uint32(block.number)
                 });
 
-                index += 1;
+                index = _index + 1;
                 cardinality += 1;
 
             } else {
@@ -81,7 +109,9 @@ contract OverlayV1OI {
 
     }
 
-    function printedInWindow () internal view returns (int totalPrint_) {
+    function blocknumber () public view returns (uint ) { return block.number; }
+
+    function printedInWindow () public view returns (int totalPrint_) {
 
         uint _target = block.number - printWindow;
 
