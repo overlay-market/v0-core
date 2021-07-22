@@ -148,5 +148,5 @@ def test_build_breach_max_leverage(token, market, bob):
 def test_build_breach_cap(token, factory, ovl_collateral, market, bob, oi, leverage, is_long):
     collateral = int(oi / leverage)
     token.approve(ovl_collateral, collateral, {"from": bob})
-    with reverts("OverlayV1: breached oi cap"):
+    with reverts("OVLV1:collat<min"):
         ovl_collateral.build(market, collateral, is_long, leverage, bob, {"from": bob})

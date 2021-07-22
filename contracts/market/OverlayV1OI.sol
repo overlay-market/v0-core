@@ -23,27 +23,129 @@ contract OverlayV1OI {
     uint256 public updateLast;
     uint256 public oiLast;
 
-    function data (bool _isLong) external view returns (
-        uint oi_,
-        uint oiShares_,
-        uint totalOiShares_,
-        uint freeOi_,
-        uint pricePointCurrent_
-    ) {
+    uint256 public printWindow;
+    struct Print {
+        uint8  isinit;
+        int216 printed;
+        uint32 block;
+    }
 
-        if (_isLong) ( 
-            totalOiShares_ = oiShares_ + oiShortShares, 
-            oi_ = oiLong, 
-            oiShares_ = oiLongShares 
+    int216 public printed;
+    uint256 public index;
+    uint256 public cardinality;
+    uint256 public cardinalityNext;
+    Print[216000] public prints;
+
+    function recordPrint (int216 _print) internal {
+        uint _index = index;
+
+        Print memory _last = prints[_index];
+        if (_last.block != block.number) {
+
+            uint _cardinality = cardinality;
+
+            if (_index + 1 < _cardinality) {
+
+                _index = _index + 1;
+                Print storage next = prints[_index];
+                next.block = uint32(block.number);
+                next.printed = _last.printed + printed;
+
+            } else if (_cardinality < cardinalityNext) {
+
+                prints[_index + 1] = Print({
+                    isinit: 1,
+                    printed: _last.printed + printed,
+                    block: uint32(block.number)
+                });
+
+                index += 1;
+                cardinality += 1;
+
+            } else {
+
+                index = 0;
+                Print storage next = prints[0];
+                next.block = uint32(block.number);
+                next.printed = _last.printed + printed;
+
+            }
+
+            printed = _print;
+
+        } else {
+
+            printed += _print;
+
+        }
+
+    }
+
+    function printedInWindow () internal view returns (int totalPrint_) {
+
+        uint _target = block.number - printWindow;
+
+        ( Print memory beforeOrAt,
+          Print memory atOrAfter ) = getSurroundingPrints(_target);
+
+        int216 _printDiff = atOrAfter.printed - beforeOrAt.printed;
+        uint _blockDiff = atOrAfter.block - beforeOrAt.block;
+
+        uint _targetRatio = ( ( _target - beforeOrAt.block ) * 1e4 ) / _blockDiff;
+        int _interpolatedPrint = beforeOrAt.printed + ( _printDiff * int(_targetRatio) );
+
+        totalPrint_ = prints[index].printed + printed - _interpolatedPrint;
+
+    }
+
+    function getSurroundingPrints (
+        uint target
+    ) public view returns (Print memory beforeOrAt, Print memory atOrAfter) {
+
+
+        // now, set before to the oldest observation
+        beforeOrAt = prints[(index + 1) % cardinality];
+        if (beforeOrAt.isinit == 0) beforeOrAt = prints[0];
+
+        // ensure that the target is chronologically at or after the oldest observation
+        require(beforeOrAt.block <= target, 'OLD');
+
+        return binarySearch(
+            prints, 
+            uint32(target), 
+            uint16(index), 
+            uint16(cardinality)
         );
-        else ( 
-            totalOiShares_ = oiShares_ + oiLongShares,
-            oi_ = oiShort, 
-            oiShares_ = oiShortShares 
-        );
 
-        freeOi_ = ( oiLast / 2 ) - oi_;
+    }
 
+    function binarySearch(
+        Print[216000] storage self,
+        uint32 target,
+        uint16 _index,
+        uint16 _cardinality
+    ) private view returns (Print memory beforeOrAt, Print memory atOrAfter) {
+        uint256 l = (_index + 1) % _cardinality; // oldest print
+        uint256 r = l + _cardinality - 1; // newest print
+        uint256 i;
+        while (true) {
+            i = (l + r) / 2;
+
+            beforeOrAt = self[i % _cardinality];
+
+            // we've landed on an uninitialized tick, keep searching higher (more recently)
+            if (beforeOrAt.isinit == 0) { l = i + 1; continue; }
+
+            atOrAfter = self[(i + 1) % _cardinality];
+
+            bool targetAtOrAfter = beforeOrAt.block <= target;
+
+            // check if we've found the answer!
+            if (targetAtOrAfter && target <= atOrAfter.block) break;
+
+            if (!targetAtOrAfter) r = i - 1;
+            else l = i + 1;
+        }
     }
 
     function freeOi (
