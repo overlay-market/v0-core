@@ -58,6 +58,7 @@ def test_expand_cardinality_next(print_shim):
     assert current_cardinality_next == 2
     assert current_index == 1
 
+# test one window no rolling
 def test_one_window_no_rolling(print_shim):
 
     prior_cardinality_next = print_shim.cardinalityNext()
@@ -70,11 +71,12 @@ def test_one_window_no_rolling(print_shim):
     print_shim.simulatePrint(13e18)
     print_shim.simulatePrint(14e18)
 
-    chain.mine(window - 4)
+    chain.mine(window - 4) # for window movement
 
     assert print_shim.printedInWindow() == 60e18
 
 
+# rolling window with printing every block 1 more than the last block
 def test_one_window_rolling(print_shim):
 
     print_shim.expand(15)
