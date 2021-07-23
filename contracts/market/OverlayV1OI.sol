@@ -80,30 +80,27 @@ contract OverlayV1OI {
                 next.printed = _last.printed + printed;
                 next.block = uint32(block.number);
 
-                index = _index;
-
             } else if (_cardinality < cardinalityNext) {
 
                 _index += 1;
+                cardinality += 1;
 
                 Print storage next = prints[_index];
                 next.printed = _last.printed + printed;
                 next.block = uint32(block.number);
                 next.isinit = 1;
 
-                index = _index;
-                cardinality += 1;
 
             } else {
 
+                _index = 0;
                 Print storage next = prints[0];
-                next.block = uint32(block.number);
                 next.printed = _last.printed + printed;
-
-                index = 0;
+                next.block = uint32(block.number);
 
             }
 
+            index = _index;
             printed = _print;
 
         } else {
@@ -116,20 +113,42 @@ contract OverlayV1OI {
 
     function blocknumber () public view returns (uint ) { return block.number; }
 
-    function printedInWindow () public view returns (int totalPrint_) {
+    event log(string k, uint v);
+    event log(string k, int v);
+
+    function printedInWindow () public returns (int totalPrint_) {
 
         uint _target = block.number - printWindow;
 
         ( Print memory beforeOrAt,
           Print memory atOrAfter ) = getSurroundingPrints(_target);
 
-        int216 _printDiff = atOrAfter.printed - beforeOrAt.printed;
-        uint _blockDiff = atOrAfter.block - beforeOrAt.block;
+        emit log("b4at", beforeOrAt.block);
+        emit log("aftr", atOrAfter.block);
+        emit log("prnt", atOrAfter.printed - beforeOrAt.printed);
 
-        uint _targetRatio = ( ( _target - beforeOrAt.block ) * 1e4 ) / _blockDiff;
-        int _interpolatedPrint = beforeOrAt.printed + ( _printDiff * int(_targetRatio) );
+        if (beforeOrAt.block == _target) {
 
-        totalPrint_ = prints[index].printed + printed - _interpolatedPrint;
+            // totalPrint_ = ( prints[index].printed + printed ) - beforeOrAt.printed;
+            totalPrint_ = ( prints[index].printed ) - beforeOrAt.printed;
+
+        } else if (_target == atOrAfter.block) {
+
+            totalPrint_ = ( prints[index].printed ) - atOrAfter.printed;
+            // totalPrint_ = ( prints[index].printed + printed ) - atOrAfter.printed;
+
+        } else {
+
+            int216 _printDiff = atOrAfter.printed - beforeOrAt.printed;
+            uint _blockDiff = atOrAfter.block - beforeOrAt.block;
+
+            uint _targetRatio = ( ( _target - beforeOrAt.block ) * 1e4 ) / _blockDiff;
+            int _interpolatedPrint = beforeOrAt.printed + ( _printDiff * int(_targetRatio) );
+
+            totalPrint_ = ( prints[index].printed ) - _interpolatedPrint;
+            // totalPrint_ = ( prints[index].printed + printed ) - _interpolatedPrint;
+
+        }
 
     }
 

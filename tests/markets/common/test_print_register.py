@@ -79,35 +79,45 @@ def test_one_window_rolling(print_shim):
 
     print_shim.expand(15)
 
-    block_start = chain[-1].number
 
     cardinalities = []
     indexes = []
     nums = []
+    blocks = []
     vals = [ x * 1e18 for x in range(1,20) ]
     for v in vals:
         print_shim.simulatePrint(v)
         nums.append(print_shim.blocknumber())
         cardinalities.append(print_shim.cardinality())
         indexes.append(print_shim.index())
+        blocks.append(chain[-1].number)
 
+
+    block_start = chain[-1].number
+    summed = reduce(lambda x,y:x+y, vals[9:])
+
+
+    printed = print_shim.printedInWindow.call()
+    tx = print_shim.printedInWindow()
+    printed_waiting = print_shim.printed()
+    
     block_end = chain[-1].number
-
-    summed = reduce(lambda x,y: x + y, vals[10:])
 
     print("nums", nums)
     print("indexes", indexes)
     print("cardinalities", cardinalities)
-
+    print("vals", vals[9:])
+    print("blocks", blocks)
     print("block", 
         "\n start", block_start,
         "\n end", block_end
     )
 
-    printed = print_shim.printedInWindow()
-    
-    print("simmed", summed)
+    print("summed", summed)
     print("printed", printed)
+    print("printed waiting", printed_waiting)
+    print(tx.events)
+
 
 
 
