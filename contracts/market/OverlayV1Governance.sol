@@ -14,8 +14,6 @@ contract OverlayV1Governance {
     uint8 public leverageMax;
     // open interest cap on each side long/short
     uint144 public oiCap;
-    // period size for calls to update
-    uint256 public updatePeriod;
 
     // open interest funding constant factor, charged per updatePeriod
     // 1/d = 1 - 2k; 0 < k < 1/2, 1 < d < infty
@@ -23,12 +21,12 @@ contract OverlayV1Governance {
     uint112 public fundingKDenominator;
 
     modifier onlyFactory() {
-        require(msg.sender == address(factory), "OVLV1: !factory");
+        require(msg.sender == address(factory), "OVLV1:!factory");
         _;
     }
 
     modifier enabled() {
-        require(factory.isMarket(address(this)), "OVLV1: !enabled");
+        require(factory.isMarket(address(this)), "OVLV1:!enabled");
         _;
     }
 
