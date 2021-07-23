@@ -111,31 +111,31 @@ contract OverlayV1OI {
 
     }
 
+    function viewPrint (uint _ix) view public returns (Print memory _prints) {
+        return prints[_ix];
+    }
+
     function blocknumber () public view returns (uint ) { return block.number; }
 
     event log(string k, uint v);
     event log(string k, int v);
 
-    function printedInWindow () public returns (int totalPrint_) {
+
+    // TODO: should we include the current block?
+    function printedInWindow () public view returns (int totalPrint_) {
 
         uint _target = block.number - printWindow;
 
         ( Print memory beforeOrAt,
           Print memory atOrAfter ) = getSurroundingPrints(_target);
 
-        emit log("b4at", beforeOrAt.block);
-        emit log("aftr", atOrAfter.block);
-        emit log("prnt", atOrAfter.printed - beforeOrAt.printed);
-
         if (beforeOrAt.block == _target) {
 
-            // totalPrint_ = ( prints[index].printed + printed ) - beforeOrAt.printed;
-            totalPrint_ = ( prints[index].printed ) - beforeOrAt.printed;
+            totalPrint_ = ( prints[index].printed + printed ) - beforeOrAt.printed;
 
         } else if (_target == atOrAfter.block) {
 
-            totalPrint_ = ( prints[index].printed ) - atOrAfter.printed;
-            // totalPrint_ = ( prints[index].printed + printed ) - atOrAfter.printed;
+            totalPrint_ = ( prints[index].printed + printed ) - atOrAfter.printed;
 
         } else {
 
@@ -145,8 +145,7 @@ contract OverlayV1OI {
             uint _targetRatio = ( ( _target - beforeOrAt.block ) * 1e4 ) / _blockDiff;
             int _interpolatedPrint = beforeOrAt.printed + ( _printDiff * int(_targetRatio) );
 
-            totalPrint_ = ( prints[index].printed ) - _interpolatedPrint;
-            // totalPrint_ = ( prints[index].printed + printed ) - _interpolatedPrint;
+            totalPrint_ = ( prints[index].printed + printed ) - _interpolatedPrint;
 
         }
 
