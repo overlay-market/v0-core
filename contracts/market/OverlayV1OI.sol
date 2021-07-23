@@ -23,29 +23,6 @@ contract OverlayV1OI {
     uint256 public updateLast;
     uint256 public oiLast;
 
-    function data (bool _isLong) external view returns (
-        uint oi_,
-        uint oiShares_,
-        uint totalOiShares_,
-        uint freeOi_,
-        uint pricePointCurrent_
-    ) {
-
-        if (_isLong) ( 
-            totalOiShares_ = oiShares_ + oiShortShares, 
-            oi_ = oiLong, 
-            oiShares_ = oiLongShares 
-        );
-        else ( 
-            totalOiShares_ = oiShares_ + oiLongShares,
-            oi_ = oiShort, 
-            oiShares_ = oiShortShares 
-        );
-
-        freeOi_ = ( oiLast / 2 ) - oi_;
-
-    }
-
     function freeOi (
         bool _isLong
     ) public view returns (
