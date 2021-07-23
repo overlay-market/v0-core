@@ -57,9 +57,10 @@ interface IOverlayV1Market is IERC1155 {
     );
 
     function exitOI(
-        bool _isLong,
-        uint _oi,
-        uint _oiShares
+        bool   _isLong,
+        uint   _oi,
+        uint   _oiShares,
+        int216 _minted
     ) external;
 
     function adjustParams(

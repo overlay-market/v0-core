@@ -162,10 +162,13 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
     /// @param _isLong is this from the short or the long side
     /// @param _oiShares the amount of oi in shares to be removed
     function exitOI (
-        bool _isLong,
-        uint _oi,
-        uint _oiShares
+        bool   _isLong,
+        uint   _oi,
+        uint   _oiShares,
+        int216 _printed
     ) external onlyCollateral {
+
+        recordPrint(_printed);
 
         if (_isLong) ( oiLong -= _oi, oiLongShares -= _oiShares );
         else ( oiShort -= _oi, oiShortShares -= _oiShares );

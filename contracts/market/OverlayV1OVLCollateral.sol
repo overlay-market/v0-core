@@ -260,7 +260,13 @@ contract OverlayV1OVLCollateral is ERC1155 {
         if (_userCost < _userValueAdjusted) ovl.mint(address(this), _userValueAdjusted - _userCost);
         else ovl.burn(address(this), _userCost - _userValueAdjusted);
         ovl.transfer(msg.sender, _userValueAdjusted);
-        IOverlayV1Market(pos.market).exitOI(_isLong, _userOi, _userOiShares);
+
+        IOverlayV1Market(pos.market).exitOI(
+            _isLong, 
+            _userOi, 
+            _userOiShares,
+            int216(int(_userCost)) - int216(int(_userValueAdjusted))
+        );
 
         }
 
@@ -295,7 +301,7 @@ contract OverlayV1OVLCollateral is ERC1155 {
         _oi -= pos.openInterest(_oi, _oiShares);
         _oiShares -= pos.oiShares;
 
-        IOverlayV1Market(pos.market).exitOI(_isLong, _oi, _oiShares);
+        IOverlayV1Market(pos.market).exitOI(_isLong, _oi, _oiShares, 0);
 
         // TODO: which is better on gas
         pos.oiShares = 0;
