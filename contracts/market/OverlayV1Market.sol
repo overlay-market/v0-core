@@ -69,40 +69,54 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
 
     }
 
-    /// @notice Updates funding payments, cumulative fees, queued position builds, and price points
-    function update() public returns (bool updated_) {
-        uint256 blockNumber = block.number;
-        uint256 elapsed = (blockNumber - updateBlockLast) / updatePeriod;
-        if (elapsed > 0) {
+    // compounding period - funding compound
+    // update period - price update
+    // printing period - rolling printing window
 
-            // Funding payment changes at T+1
-            int fundingPaid = updateFunding(fundingKNumerator, fundingKDenominator, elapsed);
+    // price points are updated at epoch timeframes
+    // funding is paid and compounds by each epoch
 
-            // Settle T < t < T+1 built positions at T+1 update
-            // WARNING: Must come after funding to prevent funding harvesting w zero price risk
-            uint256 newPrice = updatePricePoints();
+    function staticUpdate () internal virtual returns (uint256 epochs_, uint256 price_);
+    function entryUpdate () internal virtual returns (uint256 epochs_, uint256 price_);
+    function exitUpdate () internal virtual returns (uint256 epochs_, uint256 price_);
 
-            updateOi();
+    function updateFunding (uint _epochs, uint _newPrice) public returns (bool updated_) {
 
-            // Increment update block
-            updateBlockLast = blockNumber;
+        if (_epochs > 0) {
 
-            emit CoreUpdate(newPrice, fundingPaid);
+            // WARNING: must pay funding before updating OI to avoid free rides
+            int _fundingPaid = updateFunding(
+                fundingKNumerator, 
+                fundingKDenominator, 
+                _epochs
+            );
+            
+            updateOi(); 
 
             updated_ = true;
+
+            emit CoreUpdate(_newPrice, _fundingPaid);
 
         }
     }
 
+    function update () external {
+
+        ( uint _epochs, uint _price ) = staticUpdate();
+        updateFunding(_epochs, _price);
+
+    }
+
     function entryData (
         bool _isLong
-    ) external returns (
+    ) external onlyCollateral returns (
         uint freeOi_,
         uint maxLev_,
         uint pricePointCurrent_
     ) {
 
-        update();
+        ( uint _epochs, uint _newPrice  )= entryUpdate();
+        updateFunding(_epochs, _newPrice);
 
         if (_isLong) freeOi_ = ( oiLast / 2 ) - oiLong;
         else freeOi_ = ( oiLast / 2 ) - oiShort;
@@ -116,18 +130,15 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
     function exitData (
         bool _isLong,
         uint256 _pricePoint
-    ) public returns (
+    ) public onlyCollateral returns (
         uint oi_,
         uint oiShares_,
         uint priceFrame_
     ) {
 
-        update();
+        ( uint _epochs, uint _newPrice ) = exitUpdate();
+        updateFunding(_epochs, _newPrice);
         
-        // TODO: fold in the update somewhere in here we could need 
-        // to simultaneously get the entry and exit prices
-        // TODO: how to do price getting with uni style
-
         uint _priceEntry = pricePoints[_pricePoint];
 
         require( (_pricePoint = pricePoints.length - 1) < _pricePoint, "OVLV1:!settled");

@@ -34,7 +34,43 @@ abstract contract OverlayV1PricePoint {
 
     /// @notice Forwards price point index for next update period
     /// @dev Override fetchPricePoint for each specific market feed
-    function updatePricePoints() internal returns (uint256) {
+    function updatePricePoints(
+        uint _updatePeriod,
+        uint _updateLast
+    ) internal returns (uint256) {
+
+        // we need to settle a prior price 
+        // potentially far after the fact
+        
+        // we need to get the current price on unwinding
+
+        // on build we need to settle prior price
+
+        // on unwind we need to settle prior price
+        // and if that price is not the unwind price
+        // then we need to get the unwind price
+
+        // so we need to know when an update shall be committed 
+
+        // so if we build then we know the next eligible update 
+        // is at the update period plus the last eligible update time
+
+        // at deployment the beginning is set to the block time
+
+        // we use this to draw update epoch times
+
+        // updateEpoch
+
+        // at build we record the next update time - queuedUpdate 
+
+        // at unwind we read the queuedUpdate 
+        // we see if that is also the just past period
+        // if so we update one price 
+        // if not we update two prices
+        // we set the queuedUpdate to an ignore value
+        // signifying future unwinds only need to get the
+        // just past period
+
         return fetchPricePoint();
     }
 }

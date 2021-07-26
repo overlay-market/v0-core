@@ -20,6 +20,8 @@ contract OverlayV1Governance {
     uint112 public fundingKNumerator;
     uint112 public fundingKDenominator;
 
+    uint public updatePeriod;
+
     modifier onlyFactory() {
         require(msg.sender == address(factory), "OVLV1:!factory");
         _;

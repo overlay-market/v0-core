@@ -15,13 +15,17 @@ library OracleLibrary {
     /// @param pool Address of Uniswap V3 pool that we want to observe
     /// @param period Number of seconds in the past to start calculating time-weighted average
     /// @return timeWeightedAverageTick The time-weighted average tick from (block.timestamp - period) to block.timestamp
-    function consult(address pool, uint32 secondsStart, uint32 secondsEnd) internal view returns (int24 timeWeightedAverageTick) {
+    function consult(
+        address pool, 
+        uint32 secondsAgoStart, 
+        uint32 secondsAgoEnd
+    ) internal view returns (int24 timeWeightedAverageTick) {
         require(period != 0, 'BP');
 
-        uint32 period = secondsStart - secondsEnd;
+        uint32 period = secondsAgoStart - secondsAgoEnd;
         uint32[] memory secondAgos = new uint32[](2);
-        secondAgos[0] = period;
-        secondAgos[1] = 0;
+        secondAgos[0] = secondsAgoStart;
+        secondAgos[1] = secondsAgoEnd;
 
         (int56[] memory tickCumulatives, ) = IUniswapV3Pool(pool).observe(secondAgos);
         int56 tickCumulativesDelta = tickCumulatives[1] - tickCumulatives[0];
