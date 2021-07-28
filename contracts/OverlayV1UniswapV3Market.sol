@@ -91,13 +91,12 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     function staticUpdate () internal override {
 
-        uint _time = block.timestamp;
         uint _toUpdate = toUpdate;
 
         (   uint epochs_,
-            uint _tEpoch,, ) = epochs(_time, updated);
+            uint _tEpoch,, ) = epochs(block.timestamp, updated);
 
-        if (_toUpdate < _time) {
+        if (_toUpdate < _tEpoch) {
             uint _price = lastPrice(_toUpdate - windowSize, _toUpdate);
             updateFunding(_epochs, _price);
             setPricePointCurrent(_price);
