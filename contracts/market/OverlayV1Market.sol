@@ -80,7 +80,7 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
     function entryUpdate () internal virtual returns (uint256 epochs_, uint256 price_);
     function exitUpdate () internal virtual returns (uint256 epochs_, uint256 price_);
 
-    function updateFunding (uint _epochs, uint _newPrice) public returns (bool updated_) {
+    function updateFunding (uint _epochs, uint _newPrice) internal returns (bool updated_) {
 
         if (_epochs > 0) {
 

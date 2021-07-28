@@ -89,7 +89,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
-    function staticUpdate () internal override returns (uint256 epochs_, uint256 price_) {
+    function staticUpdate () internal override {
 
         uint _time = block.timestamp;
         uint _toUpdate = toUpdate;
@@ -98,17 +98,16 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             uint _tEpoch,, ) = epochs(_time, updated);
 
         if (_toUpdate < _time) {
-            price_ = lstPrice(_toUpdate - windowSize, _toUpdate);
+            uint _price = lastPrice(_toUpdate - windowSize, _toUpdate);
+            updateFunding(_epochs, _price);
             setPricePointCurrent(_price);
             updated = _toUpdate;
             toUpdate = type(uint256).max;
         }
 
-        return ( epochs_, price_ );
-
     }
 
-    function entryUpdate () internal override returns (uint256 epochs_, uint256 price_) {
+    function entryUpdate () internal override {
 
         uint _time = block.timestamp;
         uint _toUpdate = toUpdate;
@@ -118,52 +117,45 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             uint _tp1Epoch ) = epochs(_time, updated);
 
         if (_toUpdate < _time) {
-            price_ = lastPrice(_toUpdate - windowSize, _toUpdate);
+            uint _price = lastPrice(_toUpdate - windowSize, _toUpdate);
+            updateFunding(_epochs, _price);
             setPricePointCurrent(_price);
             updated = _toUpdate;
         } 
 
         if (_toUpdate != _tp1Epoch) toUpdate = _tp1Epoch;
 
-        return ( epochs_, price_ );
-
     }
 
-    function exitUpdate () internal override returns (uint256 epochs_, uint price_){
+    function exitUpdate () internal override {
 
         uint _time = block.timestamp;
         uint _toUpdate = toUpdate;
 
         (   uint epochs_,
             uint _tEpoch,, ) = epochs(_time, updated);
+            
+        if (_toUpdate <= _time) {
 
-        if (_toUpdate < _time) {
-            price_ = lastPrice(_toUpdate - windowSize, _toUpdate);
+            uint _price = lastPrice(_toUpdate - windowSize, _toUpdate);
+            updateFunding(_epochs, _price);
             setPricePointCurrent(price_);
+
         }
 
-        if (_toUpdate != _tEpoch) {
-            price_ = lastPrice(_tEpoch - windowSize, _tEpoch);
-            setPricePointCurrent(price_);
+        // if toUpdate is for future epoch or set to max 
+        // we have either already built or already exited 
+        if (_toUpdate < _tEpoch) { 
+
+            uint _price = lastPrice(_tEpoch - windowSize, _tEpoch);
+            updateFunding(_epochs, _price);
+            setPricePointCurrent(_price);
+
+            updated = _tEpoch;
+            toUpdate = type(uint256).max;
+
         }
-
-        updated = _tEpoch;
-        toUpdate = type(uint256).max; // does not need updating now;
-
-        return ( epochs_, price_ );
 
     }
 
-
-    function update (bool maybeDouble) public returns (bool updated_) {
-
-
-        uint elapsed = ( update - block.timestamp ) / updated;
-
-        uint price = lastPrice();
-        setPricePointCurrent(lastPrice());
-        if (maybeDouble) {}
-        _update(elapsed);
-
-    }
 }
