@@ -75,13 +75,13 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         uint t1Epoch_
     ) { 
 
-        // uint _updatePeriod = updatePeriod;
+        uint _updatePeriod = updatePeriod;
         
-        epochs_ = ( _time - _from ) / updatePeriod;
+        epochs_ = ( _time - _from ) / _updatePeriod;
 
-        tEpoch_ = _from + ( epochs_ * updatePeriod );
+        tEpoch_ = _from + ( epochs_ * _updatePeriod );
 
-        t1Epoch_ = tEpoch_ + updatePeriod;
+        t1Epoch_ = tEpoch_ + _updatePeriod;
 
     }
 
