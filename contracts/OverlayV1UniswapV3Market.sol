@@ -50,9 +50,9 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
-    function lastPrice(uint32 secondsAgoStart, uint32 secondsAgoEnd) public view returns (uint256 price_)   {
+    function lastPrice(uint secondsAgoStart, uint secondsAgoEnd) public view returns (uint256 price_)   {
 
-        int24 tick = OracleLibraryV2.consult(feed, secondsAgoStart, secondsAgoEnd);
+        int24 tick = OracleLibraryV2.consult(feed, uint32(secondsAgoStart), uint32(secondsAgoEnd));
 
         price_ = OracleLibraryV2.getQuoteAtTick(
             tick,
@@ -61,12 +61,6 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             isPrice0 ? token1 : token0
         );
 
-    }
-
-    /// @dev Override for Mirin market feed to compute and set TWAP for latest price point index
-    function fetchPricePoint() internal virtual override returns (uint price) {
-        price = lastPrice();
-        setPricePointCurrent(price);
     }
 
     uint toUpdate;
