@@ -75,13 +75,13 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         uint t1Epoch_
     ) { 
 
-        uint _updatePeriod = updatePeriod;
+        // uint _updatePeriod = updatePeriod;
         
-        epochs_ = ( _time - _from ) / _updatePeriod;
+        epochs_ = ( _time - _from ) / updatePeriod;
 
-        tEpoch_ = _from + ( epochs_ * _updatePeriod );
+        tEpoch_ = _from + ( epochs_ * updatePeriod );
 
-        t1Epoch_ = tEpoch_ + _updatePeriod;
+        t1Epoch_ = tEpoch_ + updatePeriod;
 
     }
 
@@ -90,7 +90,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         uint _toUpdate = toUpdate;
 
         (   uint _epochs,
-            uint _tEpoch,, ) = epochs(block.timestamp, updated);
+            uint _tEpoch, ) = epochs(block.timestamp, updated);
 
         if (_toUpdate < _tEpoch) {
             uint _price = lastPrice(_toUpdate - windowSize, _toUpdate);
@@ -127,7 +127,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         uint _toUpdate = toUpdate;
 
         (   uint _epochs,
-            uint _tEpoch,, ) = epochs(block.timestamp, updated);
+            uint _tEpoch, ) = epochs(block.timestamp, updated);
             
         if (_toUpdate <= _tEpoch) {
 
