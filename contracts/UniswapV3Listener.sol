@@ -25,7 +25,7 @@ contract UniswapV3Listener {
 
     function see_tick () public view returns (int24) {
 
-        return OracleLibrary.consult(uniV3Pool, 10 minutes);
+        return OracleLibrary.consult(uniV3Pool, 10 minutes, 0);
 
     }
 
@@ -34,10 +34,7 @@ contract UniswapV3Listener {
         address base
     ) public view returns (uint) {
 
-        int24 tick = OracleLibrary.consult(
-            uniV3Pool, 
-            10 minutes
-        );
+        int24 tick = OracleLibrary.consult( uniV3Pool, 10 minutes, 0);
 
         uint gas = gasleft();
         uint quote = OracleLibrary.getQuoteAtTick(
