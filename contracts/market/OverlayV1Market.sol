@@ -76,9 +76,9 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
     // price points are updated at epoch timeframes
     // funding is paid and compounds by each epoch
 
-    function staticUpdate () internal virtual returns (uint256 epochs_, uint256 price_);
-    function entryUpdate () internal virtual returns (uint256 epochs_, uint256 price_);
-    function exitUpdate () internal virtual returns (uint256 epochs_, uint256 price_);
+    function staticUpdate () internal virtual returns (bool updated_);
+    function entryUpdate () internal virtual;
+    function exitUpdate () internal virtual;
 
     function updateFunding (uint _epochs, uint _newPrice) internal returns (bool updated_) {
 
@@ -102,8 +102,7 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
 
     function update () external {
 
-        ( uint _epochs, uint _price ) = staticUpdate();
-        updateFunding(_epochs, _price);
+        staticUpdate();
 
     }
 
@@ -115,8 +114,7 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
         uint pricePointCurrent_
     ) {
 
-        ( uint _epochs, uint _newPrice  )= entryUpdate();
-        updateFunding(_epochs, _newPrice);
+        entryUpdate();
 
         if (_isLong) freeOi_ = ( oiLast / 2 ) - oiLong;
         else freeOi_ = ( oiLast / 2 ) - oiShort;
@@ -136,8 +134,7 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
         uint priceFrame_
     ) {
 
-        ( uint _epochs, uint _newPrice ) = exitUpdate();
-        updateFunding(_epochs, _newPrice);
+        exitUpdate();
         
         uint _priceEntry = pricePoints[_pricePoint];
 

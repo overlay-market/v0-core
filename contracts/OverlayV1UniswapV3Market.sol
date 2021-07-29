@@ -89,7 +89,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
-    function staticUpdate () internal override {
+    function staticUpdate () internal override returns (bool updated_) {
 
         uint _toUpdate = toUpdate;
 
@@ -102,6 +102,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             setPricePointCurrent(_price);
             updated = _toUpdate;
             toUpdate = type(uint256).max;
+            updated_ = true;
         }
 
     }
