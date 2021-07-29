@@ -52,9 +52,9 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     function lastPrice(uint32 secondsAgoStart, uint32 secondsAgoEnd) public view returns (uint256 price_)   {
 
-        int24 tick = OracleLibrary.consult(feed, secondsAgoStart, secondsAgoEnd);
+        int24 tick = OracleLibraryV2.consult(feed, secondsAgoStart, secondsAgoEnd);
 
-        price_ = OracleLibrary.getQuoteAtTick(
+        price_ = OracleLibraryV2.getQuoteAtTick(
             tick,
             uint128(amountIn),
             isPrice0 ? token0 : token1,
@@ -80,10 +80,12 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         uint tEpoch_,
         uint t1Epoch_
     ) { 
-        
-        epochs_ = ( _time - _from ) / updatePeriod;
 
-        tEpoch_ = _from + ( epochs_ * updatePeriod );
+        uint _updatePeriod = updatePeriod;
+        
+        epochs_ = ( _time - _from ) / _updatePeriod;
+
+        tEpoch_ = _from + ( epochs_ * _updatePeriod );
 
         t1Epoch_ = tEpoch_ + _updatePeriod;
 
@@ -93,7 +95,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         uint _toUpdate = toUpdate;
 
-        (   uint epochs_,
+        (   uint _epochs,
             uint _tEpoch,, ) = epochs(block.timestamp, updated);
 
         if (_toUpdate < _tEpoch) {
@@ -111,7 +113,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         uint _toUpdate = toUpdate;
 
-        (   uint epochs_,
+        (   uint _epochs,
             uint _tEpoch,
             uint _tp1Epoch ) = epochs(block.timestamp, updated);
 
@@ -130,14 +132,14 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         uint _toUpdate = toUpdate;
 
-        (   uint epochs_,
+        (   uint _epochs,
             uint _tEpoch,, ) = epochs(block.timestamp, updated);
             
         if (_toUpdate <= _tEpoch) {
 
             uint _price = lastPrice(_toUpdate - windowSize, _toUpdate);
             updateFunding(_epochs, _price);
-            setPricePointCurrent(price_);
+            setPricePointCurrent(_price);
 
         }
 
