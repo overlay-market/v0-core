@@ -17,9 +17,7 @@ contract UniswapV3OracleMock {
     Shim[10000000] shims;
     OracleMock.Observation[65535] observations;
 
-    constructor (uint _delay) { 
-        delay = _delay;
-    }
+    constructor () { }
 
 
     function observe(uint32[] calldata secondsAgos)
@@ -28,7 +26,7 @@ contract UniswapV3OracleMock {
         returns (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s)
     {
 
-        uint target = block.timestamp - delay;
+        uint target = block.timestamp;
 
         ( Shim memory beforeOrAt, Shim memory atOrAfter ) = binarySearch(
             shims,
