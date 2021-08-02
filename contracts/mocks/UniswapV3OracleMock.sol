@@ -7,24 +7,33 @@ contract UniswapV3OracleMock {
     struct Shim {
         uint timestamp;
         uint128 liquidity;
-        int16 cardinality;
         int24 tick;
+        uint16 cardinality;
     }
 
-    uint16 cardinality;
-    uint256 immutable delay;
+    uint16 public cardinality;
 
-    Shim[10000000] shims;
+    address immutable public token0;
+    address immutable public token1;
+
+    Shim[65535] shims;
     OracleMock.Observation[65535] observations;
 
-    constructor () { }
+    constructor (address _token0, address _token1) { 
 
+        token0 = _token0;
+        token1 = _token1;
 
-    function observe(uint32[] calldata secondsAgos)
-        external
-        view
-        returns (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s)
-    {
+    }
+
+    event log(string k, uint256 v);
+
+    function observe(
+        uint32[] calldata secondsAgos
+    ) external view returns (
+        int56[] memory tickCumulatives, 
+        uint160[] memory secondsPerLiquidityCumulativeX128s
+    ) {
 
         uint target = block.timestamp;
 
@@ -36,24 +45,32 @@ contract UniswapV3OracleMock {
 
         int24 _tick;
         uint128 _liquidity;
+        uint16 _cardinality;
 
-        if (beforeOrAt.timestamp == target) {
-            _tick = beforeOrAt.tick;
-            _liquidity = beforeOrAt.liquidity;
-        } else {
+        if (atOrAfter.timestamp == target) {
+
             _tick = atOrAfter.tick;
             _liquidity = atOrAfter.liquidity;
-        }
+            _cardinality = atOrAfter.cardinality;
+
+        } else {
+
+            _tick = beforeOrAt.tick;
+            _liquidity = beforeOrAt.liquidity;
+            _cardinality = beforeOrAt.cardinality;
+
+        } 
 
         return
             observations.observe(
                 uint32(target),
                 secondsAgos,
                 _tick,
-                cardinality,
+                _cardinality - 1,
                 _liquidity,
-                cardinality
+                _cardinality
             );
+
     }
 
 
@@ -78,7 +95,7 @@ contract UniswapV3OracleMock {
     }
 
     function binarySearch(
-        Shim[10000000] storage self,
+        Shim[65535] storage self,
         uint target,
         uint16 _cardinality
     ) private view returns (Shim memory beforeOrAt, Shim memory atOrAfter) {
@@ -296,7 +313,10 @@ library OracleMock {
         uint16 index,
         uint128 liquidity,
         uint16 cardinality
-    ) internal view returns (int56 tickCumulative, uint160 secondsPerLiquidityCumulativeX128) {
+    )   internal view returns (
+        int56 tickCumulative, 
+        uint160 secondsPerLiquidityCumulativeX128
+    ) {
         if (secondsAgo == 0) {
             Observation memory last = self[index];
             if (last.blockTimestamp != time) last = transform(last, time, tick, liquidity);
@@ -307,6 +327,7 @@ library OracleMock {
 
         (Observation memory beforeOrAt, Observation memory atOrAfter) =
             getSurroundingObservations(self, time, target, tick, index, liquidity, cardinality);
+        
 
         if (target == beforeOrAt.blockTimestamp) {
             // we're at the left boundary
@@ -332,6 +353,8 @@ library OracleMock {
         }
     }
 
+    event log(string l, uint v);
+
     /// @notice Returns the accumulator values as of each time seconds ago from the given time in the array of `secondsAgos`
     /// @dev Reverts if `secondsAgos` > oldest observation
     /// @param self The stored oracle array
@@ -351,7 +374,10 @@ library OracleMock {
         uint16 index,
         uint128 liquidity,
         uint16 cardinality
-    ) internal view returns (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s) {
+    )   internal view returns (
+        int56[] memory tickCumulatives, 
+        uint160[] memory secondsPerLiquidityCumulativeX128s
+    ) {
         require(cardinality > 0, 'I');
 
         tickCumulatives = new int56[](secondsAgos.length);
