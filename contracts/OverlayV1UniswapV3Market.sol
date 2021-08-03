@@ -149,8 +149,6 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         }
 
-        // if toUpdate is for future epoch or set to max 
-        // we have either already built or already exited 
         if (0 < _epochsNow) { 
 
             uint _price = lastPrice(_tEpoch - windowSize, _tEpoch);
