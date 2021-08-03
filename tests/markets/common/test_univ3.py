@@ -25,7 +25,7 @@ def get_uni_oracle (feed_owner):
     diff = 0
 
     hist.reverse()
-    hist = hist[:15]
+    hist = hist[:100]
 
     for i in range(len(hist)):
         diff = hist[i]['shim'][0] - earliest
@@ -39,7 +39,7 @@ def get_uni_oracle (feed_owner):
     dai = "0x6b175474e89094c44da98b954eedeac495271d0f"
     uv3 = feed_owner.deploy(UniswapV3OracleMock, dai, weth)
 
-    uv3listener = feed_owner.deploy(UniswapV3Listener, uv3.address)
+    uv3l = feed_owner.deploy(UniswapV3Listener, uv3.address)
 
 
     uv3.loadObservations(obs, shims)
@@ -62,11 +62,13 @@ def get_uni_oracle (feed_owner):
     chain.mine(timestamp=now)
     uv3.observe([0, 600])
 
-    for d in diffs:
-        now += d
-        chain.mine(timestamp=now)
-        t,l = uv3.observe([0, 600])
+    for t in range(beginning, end, 600):
+        chain.mine(timestamp=t)
+        t,l = uv3.observe([0,600])
+        p = uv3l.listen(1e18, dai)
         print(t,l)
+        print(p)
+        pass
 
 def test_uniswap(gov):
 
