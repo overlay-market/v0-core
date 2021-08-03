@@ -68,18 +68,30 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     function epochs (
         uint _time,
-        uint _from
+        uint _from,
+        uint _between
     ) view internal returns (
-        uint epochs_,
+        uint epochsThen_,
+        uint epochsNow_,
         uint tEpoch_,
         uint t1Epoch_
     ) { 
 
         uint _updatePeriod = updatePeriod;
-        
-        epochs_ = ( _time - _from ) / _updatePeriod;
 
-        tEpoch_ = _from + ( epochs_ * _updatePeriod );
+        if (_between < _time) {
+
+            epochsThen_ = ( _between - _from ) / _updatePeriod;
+
+            epochsNow_ = ( _time - _between ) / _updatePeriod;
+
+        } else {
+
+            epochsNow_ = ( _time - _from ) / _updatePeriod;
+
+        }
+        
+        tEpoch_ = _from + ( ( epochsThen_ + epochsNow_ ) * _updatePeriod );
 
         t1Epoch_ = tEpoch_ + _updatePeriod;
 
@@ -89,12 +101,12 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         uint _toUpdate = toUpdate;
 
-        (   uint _epochs,
-            uint _tEpoch, ) = epochs(block.timestamp, updated);
+        (   uint _epochsThen,,, ) = epochs(block.timestamp, updated, _toUpdate);
 
-        if (_toUpdate < _tEpoch) {
+        // only update if there is a position to update
+        if (0 < _epochsThen) {
             uint _price = lastPrice(_toUpdate - windowSize, _toUpdate);
-            updateFunding(_epochs, _price);
+            updateFunding(_epochsThen, _price);
             setPricePointCurrent(_price);
             updated = _toUpdate;
             toUpdate = type(uint256).max;
@@ -107,16 +119,15 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         uint _toUpdate = toUpdate;
 
-        (   uint _epochs,
-            uint _tEpoch,
-            uint _tp1Epoch ) = epochs(block.timestamp, updated);
+        (   uint _epochsThen,,,
+            uint _tp1Epoch ) = epochs(block.timestamp, updated, _toUpdate);
 
-        if (_toUpdate <= _tEpoch) {
+        if (0 < _epochsThen) {
             uint _price = lastPrice(_toUpdate - windowSize, _toUpdate);
-            updateFunding(_epochs, _price);
+            updateFunding(_epochsNow, _price);
             setPricePointCurrent(_price);
             updated = _toUpdate;
-        } 
+        }
 
         if (_toUpdate != _tp1Epoch) toUpdate = _tp1Epoch;
 
@@ -126,23 +137,24 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         uint _toUpdate = toUpdate;
 
-        (   uint _epochs,
-            uint _tEpoch, ) = epochs(block.timestamp, updated);
+        (   uint _epochsThen,
+            uint _epochsNow,
+            uint _tEpoch, ) = epochs(block.timestamp, updated, _toUpdate);
             
-        if (_toUpdate <= _tEpoch) {
+        if (0 < _epochsThen) {
 
             uint _price = lastPrice(_toUpdate - windowSize, _toUpdate);
-            updateFunding(_epochs, _price);
+            updateFunding(_epochsThen, _price);
             setPricePointCurrent(_price);
 
         }
 
         // if toUpdate is for future epoch or set to max 
         // we have either already built or already exited 
-        if (_toUpdate < _tEpoch) { 
+        if (0 < _epochsNow) { 
 
             uint _price = lastPrice(_tEpoch - windowSize, _tEpoch);
-            updateFunding(_epochs, _price);
+            updateFunding(_epochsNow, _price);
             setPricePointCurrent(_price);
 
             updated = _tEpoch;
