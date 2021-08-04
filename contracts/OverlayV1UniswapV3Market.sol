@@ -124,7 +124,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         if (0 < _epochsThen) {
             uint _price = lastPrice(_toUpdate - windowSize, _toUpdate);
-            updateFunding(_epochsNow, _price);
+            updateFunding(_epochsThen, _price);
             setPricePointCurrent(_price);
             updated = _toUpdate;
         }
@@ -160,6 +160,53 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         }
 
+    }
+
+    function oi () public view returns (uint oiLong_, uint oiShort_) {
+
+        (   uint _epochsThen,
+            uint _epochsNow,, ) = epochs(block.timestamp, updated, toUpdate);
+
+        oiLong_ = __oiLong__;
+        oiShort_ = __oiShort__;
+        uint112 _kNumerator = fundingKNumerator;
+        uint112 _kDenominator = fundingKDenominator;
+
+        if (0 < _epochsThen) {
+
+            ( oiLong_, oiShort_, ) = computeFunding(
+                oiLong_,
+                oiShort_,
+                _epochsThen,
+                _kNumerator,
+                _kDenominator
+            );
+
+            oiLong_ += queuedOiLong;
+            oiShort_ += queuedOiShort;
+
+        }
+
+        if (0 < _epochsNow) {
+
+            ( oiLong_, oiShort_, ) = computeFunding(
+                oiLong_,
+                oiShort_,
+                _epochsNow,
+                _kNumerator,
+                _kDenominator
+            );
+
+        }
+
+    }
+
+    function oiLong () external returns (uint oiLong_) {
+        (   oiLong_, ) = oi();
+    }
+
+    function oiShort () external view returns (uint oiShort_) {
+        (  ,oiShort_ ) = oi();
     }
 
 }

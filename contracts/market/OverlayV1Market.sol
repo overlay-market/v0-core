@@ -116,8 +116,8 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
 
         entryUpdate();
 
-        if (_isLong) freeOi_ = ( oiLast / 2 ) - oiLong;
-        else freeOi_ = ( oiLast / 2 ) - oiShort;
+        if (_isLong) freeOi_ = ( oiLast / 2 ) - __oiLong__;
+        else freeOi_ = ( oiLast / 2 ) - __oiShort__;
 
         maxLev_ = leverageMax;
 
@@ -144,8 +144,8 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
 
         priceFrame_ = _priceExit / _priceEntry;
 
-        if (_isLong) ( oiShares_ = oiLongShares, oi_ = oiLong );
-        else ( oiShares_ = oiShortShares, oi_ = oiLong );
+        if (_isLong) ( oiShares_ = oiLongShares, oi_ = __oiLong__ );
+        else ( oiShares_ = oiShortShares, oi_ = __oiLong__ );
 
     }
 
@@ -172,8 +172,8 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
         uint _oiShares
     ) external onlyCollateral {
 
-        if (_isLong) ( oiLong -= _oi, oiLongShares -= _oiShares );
-        else ( oiShort -= _oi, oiShortShares -= _oiShares );
+        if (_isLong) ( __oiLong__ -= _oi, oiLongShares -= _oiShares );
+        else ( __oiShort__ -= _oi, oiShortShares -= _oiShares );
 
     }
 
