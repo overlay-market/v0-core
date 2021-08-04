@@ -9,81 +9,47 @@ from brownie import \
     UniswapV3OracleMock, \
     UniswapV3Listener
 
-def get_uni_oracle (feed_owner):
+def test_uniswap(gov):
 
     base = os.path.dirname(os.path.abspath(__file__))
-    path = '../../../historic_observations/univ3_dai_weth.json'
+    path = '../../../feeds/historic_observations/univ3_dai_weth.json'
     path = os.path.normpath(os.path.join(base, path))
     with open(os.path.join(base, path)) as f:
-        hist = json.load(f)
+        feed = json.load(f)
+
+    now = chain[-1].timestamp
+    earliest = feed[-1]['shim'][0]
+    diff = 0
+
+    feed = feed[:1000]
+    feed.reverse()
+
+    payloads = [ feed[i:i+200] for i in range(0,len(feed),200) ]
 
     obs = [ ] # blockTimestamp, tickCumulative, liquidityCumulative, initialized 
     shims = [ ] # timestamp, liquidity, tick, cardinality 
 
-    now = chain[-1].timestamp
-    earliest = hist[-1]['shim'][0]
-    diff = 0
-
-    hist.reverse()
-    hist = hist[:100]
-
-    for i in range(len(hist)):
-        diff = hist[i]['shim'][0] - earliest
-
-        hist[i]['shim'][0] = hist[i]['observation'][0] = now + diff
-
-        obs.append(hist[i]['observation'])
-        shims.append(hist[i]['shim'])
+    for p in payloads:
+        obs.append([])
+        shims.append([])
+        for f in p:
+            diff = f['shim'][0] - earliest
+            f['shim'][0] = f['observation'][0] = now + diff
+            obs[len(obs)-1].append(f['observation'])
+            shims[len(shims)-1].append(f['shim'])
 
     weth = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
     dai = "0x6b175474e89094c44da98b954eedeac495271d0f"
-    uv3 = feed_owner.deploy(UniswapV3OracleMock, dai, weth)
+    uv3 = gov.deploy(UniswapV3OracleMock, dai, weth)
 
-    uv3l = feed_owner.deploy(UniswapV3Listener, uv3.address)
+    for i in range(len(obs)):
+        uv3.loadObservations(obs[i], shims[i])
 
+    uv3l = gov.deploy(UniswapV3Listener, uv3.address)
 
-    uv3.loadObservations(obs, shims)
-    cardinality = uv3.cardinality()
-    print("cardinality", cardinality)
-
-    beginning = shims[0][0]
-    end = shims[-1][0]
-    span = end - beginning
-
-    middle = int( beginning + span / 2 )
-
-    diffs = [ shims[1:][i][0] - shims[:-1][i][0] for i in range(len(shims)-1)]
-
-    pprint(shims)
-    pprint(obs)
-    pprint(diffs)
-
-    now += 600
-    chain.mine(timestamp=now)
-    uv3.observe([0, 600])
-
-    for t in range(beginning, end, 600):
+    # beginning to end
+    for t in range(shims[0][0][0] + 601, shims[-1][-1][0], 600):
         chain.mine(timestamp=t)
-        t,l = uv3.observe([0,600])
-        p = uv3l.listen(1e18, dai)
-        print(t,l)
-        print(p)
-        pass
-
-def test_uniswap(gov):
-
-    uni_mock = get_uni_oracle(gov)
-
-    # for i in range(10):
-    #     try:
-    #         obs = uni_mock.observe.transact([], { 'from': gov })
-    #     except Exception as e:
-    #         print("e", e)
-    #         assert True == False
-    #     if obs.revert_msg:
-    #         print(obs.traceback())
-    #         print(obs.call_trace())
-    #         assert True == False
-
-    #     print(obs)
-    #     chain.mine(timedelta=600)
+        tk,l = uv3.observe([0,600])
+        p = uv3l.listen(1e18, weth)
+        print(t,p,tk,l)
