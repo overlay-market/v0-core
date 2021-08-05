@@ -61,6 +61,7 @@ contract OverlayV1Governance {
     /// @notice Adjusts params associated with this market
     function adjustParams(
         uint256 _updatePeriod,
+        uint256 _compoundingPeriod,
         uint144 _oiCap,
         uint112 _fundingKNumerator,
         uint112 _fundingKDenominator,
@@ -69,6 +70,7 @@ contract OverlayV1Governance {
         // TODO: requires on params; particularly leverageMax wrt MAX_FEE and cap
         require(_updatePeriod >= 1, "OVLV1: invalid update period");
         updatePeriod = _updatePeriod;
+        compoundingPeriod = _compoundingPeriod;
         leverageMax = _leverageMax;
         oiCap = _oiCap;
 

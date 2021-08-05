@@ -66,13 +66,13 @@ interface IOverlayV1Market is IERC1155 {
     ) external;
 
     function adjustParams(
-        uint256, 
-        uint8, 
-        uint16, 
-        uint144, 
-        uint112, 
-        uint112
-    ) external view;
+        uint256 _updatePeriod, 
+        uint256 _compoundingPeriod, 
+        uint144 _oiCap, 
+        uint112 _fundingKNumerator, 
+        uint112 _fundingKDenominator,
+        uint8 _leverageMax
+    ) external;
 
     function data(
         bool _isLong
