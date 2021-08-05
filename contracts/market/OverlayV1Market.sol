@@ -38,6 +38,7 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
     constructor(
         address _ovl,
         uint256 _updatePeriod,
+        uint256 _compoundingPeriod,
         uint144 _oiCap,
         uint112 _fundingKNumerator,
         uint112 _fundingKDenominator,
@@ -45,6 +46,7 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
     ) OverlayV1Governance(
         _ovl,
         _updatePeriod,
+        _compoundingPeriod,
         _oiCap,
         _fundingKNumerator,
         _fundingKDenominator,

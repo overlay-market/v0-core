@@ -36,6 +36,7 @@ contract OverlayV1Governance {
     constructor(
         address _ovl,
         uint256 _updatePeriod,
+        uint256 _compoundingPeriod,
         uint144 _oiCap,
         uint112 _fundingKNumerator,
         uint112 _fundingKDenominator,
@@ -48,6 +49,7 @@ contract OverlayV1Governance {
         // per-market adjustable params
         require(_updatePeriod >= 1, "OVLV1: invalid update period");
         updatePeriod = _updatePeriod;
+        compoundingPeriod = _compoundingPeriod;
         leverageMax = _leverageMax;
         oiCap = _oiCap;
 
