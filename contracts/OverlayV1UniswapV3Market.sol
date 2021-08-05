@@ -65,35 +65,47 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     uint toUpdate;
     uint updated;
+    uint compounded;
 
     function epochs (
         uint _time,
         uint _from,
         uint _between
     ) view internal returns (
-        uint epochsThen_,
-        uint epochsNow_,
-        uint tEpoch_,
-        uint t1Epoch_
+        uint updatesThen_,
+        uint updatesNow_,
+        uint tUpdate_,
+        uint t1Update_,
+        uint compoundings_,
+        uint tCompounding_,
+        uint t1Compounding_
     ) { 
 
         uint _updatePeriod = updatePeriod;
+        uint _compoundPeriod = compoundingPeriod;
+        uint _compounded = compounded;
 
         if (_between < _time) {
 
-            epochsThen_ = ( _between - _from ) / _updatePeriod;
+            updatesThen_ = ( _between - _from ) / _updatePeriod;
 
-            epochsNow_ = ( _time - _between ) / _updatePeriod;
+            updatesNow_ = ( _time - _between ) / _updatePeriod;
 
         } else {
 
-            epochsNow_ = ( _time - _from ) / _updatePeriod;
+            updatesNow_ = ( _time - _from ) / _updatePeriod;
 
         }
         
-        tEpoch_ = _from + ( ( epochsThen_ + epochsNow_ ) * _updatePeriod );
+        tUpdate_ = _from + ( ( updatesThen_ + updatesNow_ ) * _updatePeriod );
 
-        t1Epoch_ = tEpoch_ + _updatePeriod;
+        t1Update_ = tUpdate_ + _updatePeriod;
+
+        compoundings_ = ( _time - compounded ) / _compoundPeriod;
+
+        tCompounding_ = _compounded + ( compoundings_ * _compoundPeriod );
+
+        t1Compounding_ = tCompounding_ + _compoundPeriod;
 
     }
 
@@ -101,103 +113,122 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         uint _toUpdate = toUpdate;
 
-        (   uint _epochsThen,,, ) = epochs(block.timestamp, updated, _toUpdate);
+        (   uint _updatesThen,,,,
+            uint _compoundings,
+            uint _tCompounding, ) = epochs(block.timestamp, updated, _toUpdate);
 
         // only update if there is a position to update
-        if (0 < _epochsThen) {
+        if (0 < _updatesThen) {
             uint _price = lastPrice(_toUpdate - windowSize, _toUpdate);
-            updateFunding(_epochsThen, _price);
             setPricePointCurrent(_price);
             updated = _toUpdate;
             toUpdate = type(uint256).max;
             updated_ = true;
         }
 
+        if (0 < _compoundings) {
+            updateFunding(_compoundings);
+            compounded = _tCompounding;
+        }
+
     }
 
-    function entryUpdate () internal override {
+    function entryUpdate () internal override returns (uint256 t1Compounding_) {
 
         uint _toUpdate = toUpdate;
 
-        (   uint _epochsThen,,,
-            uint _tp1Epoch ) = epochs(block.timestamp, updated, _toUpdate);
+        (   uint _updatesThen,,,
+            uint _tp1Update,
+            uint _compoundings,
+            uint _tCompounding,
+            uint _t1Compounding ) = epochs(block.timestamp, updated, _toUpdate);
 
-        if (0 < _epochsThen) {
+        if (0 < _updatesThen) {
             uint _price = lastPrice(_toUpdate - windowSize, _toUpdate);
-            updateFunding(_epochsThen, _price);
             setPricePointCurrent(_price);
             updated = _toUpdate;
         }
 
-        if (_toUpdate != _tp1Epoch) toUpdate = _tp1Epoch;
+        if (0 < _compoundings) {
+            updateFunding(_compoundings);
+            compounded = _tCompounding;
+        }
+
+        if (_toUpdate != _tp1Update) toUpdate = _tp1Update;
+
+        t1Compounding_ = _t1Compounding;
 
     }
 
-    function exitUpdate () internal override {
+    function exitUpdate () internal override returns (uint tCompounding_) {
 
         uint _toUpdate = toUpdate;
 
-        (   uint _epochsThen,
-            uint _epochsNow,
-            uint _tEpoch, ) = epochs(block.timestamp, updated, _toUpdate);
-            
-        if (0 < _epochsThen) {
+        (   uint _updatesThen,
+            uint _updatesNow,
+            uint _tUpdate,,
+            uint _compoundings,
+            uint _tCompounding, ) = epochs(block.timestamp, updated, _toUpdate);
 
-            uint _price = lastPrice(_toUpdate - windowSize, _toUpdate);
-            updateFunding(_epochsThen, _price);
+        uint _price;
+            
+        if (0 < _updatesThen) {
+
+            _price = lastPrice(_toUpdate - windowSize, _toUpdate);
             setPricePointCurrent(_price);
 
         }
 
-        if (0 < _epochsNow) { 
+        if (0 < _updatesNow) { 
 
-            uint _price = lastPrice(_tEpoch - windowSize, _tEpoch);
-            updateFunding(_epochsNow, _price);
+            _price = lastPrice(_tUpdate - windowSize, _tUpdate);
             setPricePointCurrent(_price);
 
-            updated = _tEpoch;
+            updated = _tUpdate;
             toUpdate = type(uint256).max;
 
         }
+
+        if (0 < _compoundings) {
+
+            updateFunding(1);
+            updateFunding(_compoundings - 1);
+
+        }
+
+        tCompounding_ = _tCompounding;
 
     }
 
     function oi () public view returns (uint oiLong_, uint oiShort_) {
 
-        (   uint _epochsThen,
-            uint _epochsNow,, ) = epochs(block.timestamp, updated, toUpdate);
+        ( ,,,,uint _compoundings,, ) = epochs(block.timestamp, updated, toUpdate);
 
         oiLong_ = __oiLong__;
         oiShort_ = __oiShort__;
         uint112 _kNumerator = fundingKNumerator;
         uint112 _kDenominator = fundingKDenominator;
 
-        if (0 < _epochsThen) {
+        if (_compoundings < 0) {
 
             ( oiLong_, oiShort_, ) = computeFunding(
                 oiLong_,
                 oiShort_,
-                _epochsThen,
+                1,
                 _kNumerator,
                 _kDenominator
             );
 
-            oiLong_ += queuedOiLong;
-            oiShort_ += queuedOiShort;
-
-        }
-
-        if (0 < _epochsNow) {
-
             ( oiLong_, oiShort_, ) = computeFunding(
                 oiLong_,
                 oiShort_,
-                _epochsNow,
+                _compoundings - 1,
                 _kNumerator,
                 _kDenominator
             );
 
         }
+
 
     }
 

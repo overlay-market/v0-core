@@ -5,7 +5,7 @@ import "../libraries/Position.sol";
 import "../interfaces/IOverlayV1Factory.sol";
 import "./OverlayV1Governance.sol";
 import "./OverlayV1OI.sol";
-import "./OverlayV1Position.sol";
+import "./OverlayV1PricePoint.sol";
 import "../OverlayToken.sol";
 
 abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1PricePoint {
@@ -16,8 +16,6 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
     uint256 public liquidations;
 
     uint constant RESOLUTION = 1e4;
-
-    event CoreUpdate(uint price, int256 fundingPaid);
 
     uint16 public constant MIN_COLLATERAL_AMOUNT = 10**4;
 
@@ -77,15 +75,15 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
     // funding is paid and compounds by each epoch
 
     function staticUpdate () internal virtual returns (bool updated_);
-    function entryUpdate () internal virtual;
-    function exitUpdate () internal virtual;
+    function entryUpdate () internal virtual returns (uint256 t1Compounding_);
+    function exitUpdate () internal virtual returns (uint256 tCompounding_);
 
-    function updateFunding (uint _epochs, uint _newPrice) internal returns (bool updated_) {
+    function updateFunding (uint _epochs) internal returns (bool updated_) {
 
         if (_epochs > 0) {
 
             // WARNING: must pay funding before updating OI to avoid free rides
-            int _fundingPaid = updateFunding(
+            payFunding(
                 fundingKNumerator, 
                 fundingKDenominator, 
                 _epochs
@@ -95,7 +93,6 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
 
             updated_ = true;
 
-            emit CoreUpdate(_newPrice, _fundingPaid);
 
         }
     }
@@ -111,10 +108,11 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
     ) external onlyCollateral returns (
         uint freeOi_,
         uint maxLev_,
-        uint pricePointCurrent_
+        uint pricePointCurrent_,
+        uint compoundEpoch_
     ) {
 
-        entryUpdate();
+        compoundEpoch_ = entryUpdate();
 
         if (_isLong) freeOi_ = ( oiLast / 2 ) - __oiLong__;
         else freeOi_ = ( oiLast / 2 ) - __oiShort__;
@@ -131,10 +129,11 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
     ) public onlyCollateral returns (
         uint oi_,
         uint oiShares_,
-        uint priceFrame_
+        uint priceFrame_,
+        uint compoundedEpoch_
     ) {
 
-        exitUpdate();
+        compoundedEpoch_ = exitUpdate();
         
         uint _priceEntry = pricePoints[_pricePoint];
 
@@ -167,6 +166,7 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
     /// @param _isLong is this from the short or the long side
     /// @param _oiShares the amount of oi in shares to be removed
     function exitOI (
+        bool _fromQueued,
         bool _isLong,
         uint _oi,
         uint _oiShares

@@ -39,7 +39,8 @@ interface IOverlayV1Market is IERC1155 {
     ) external view returns (
         uint256 freeOi_,
         uint256 maxLev_,
-        uint256 pricePoint_
+        uint256 pricePoint_,
+        uint256 t1Compounding_
     );
 
     function enterOI(
@@ -53,10 +54,12 @@ interface IOverlayV1Market is IERC1155 {
     ) external view returns (
         uint oi_,
         uint oiShares_,
-        uint priceFrame_
+        uint priceFrame_,
+        uint tCompounding_
     );
 
     function exitOI(
+        bool _compounded,
         bool _isLong,
         uint _oi,
         uint _oiShares

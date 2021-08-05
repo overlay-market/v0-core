@@ -23,6 +23,8 @@ contract OverlayV1OI {
     uint256 public updateLast;
     uint256 public oiLast;
 
+    event FundingPaid(uint oiLong, uint oiShort, int fundingPaid);
+
     function freeOi (
         bool _isLong
     ) public view returns (
@@ -105,19 +107,27 @@ contract OverlayV1OI {
 
     /// @notice Transfers funding payments
     /// @dev oiImbalance(m) = oiImbalance(0) * (1 - 2k)**m
-    function updateFunding(
+    function payFunding(
         uint112 _kNumerator,
         uint112 _kDenominator,
         uint256 _epochs
     ) internal returns (int256 fundingPaid_) {
 
-        ( __oiLong__, __oiShort__, fundingPaid_ ) = computeFunding(
+        uint _oiLong;
+        uint _oiShort;
+
+        ( _oiLong, _oiShort, fundingPaid_ ) = computeFunding(
             __oiLong__,
             __oiShort__,
             _epochs,
             _kNumerator,
             _kDenominator
         );
+
+        __oiLong__ = _oiLong;
+        __oiShort__ = _oiShort;
+
+        emit FundingPaid(_oiLong, _oiShort, fundingPaid_);
 
     }
 
