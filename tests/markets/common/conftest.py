@@ -134,16 +134,11 @@ def get_uni_oracle (feed_owner):
     params=[
         ("OverlayV1UniswapV3Deployer", [],
          "OverlayV1UniswapV3Factory", [15, 5000, 100, ETH_ADDRESS, 60, 50, 25], 
-         "OverlayV1UniswapV3Market", [ 10, OI_CAP*10**TOKEN_DECIMALS, 3293944666953, 9007199254740992, 100, 600, AMOUNT_IN*10**TOKEN_DECIMALS, True ],
+         "OverlayV1UniswapV3Market", [ 10, 10, OI_CAP*10**TOKEN_DECIMALS, 3293944666953, 9007199254740992, 100, 600, AMOUNT_IN*10**TOKEN_DECIMALS, True ],
          get_uni_oracle,
         ),
-        # ("OverlayV1MirinDeployer", [],
-        #  "OverlayV1MirinFactory", [15, 5000, 100, ETH_ADDRESS, 60, 50, 25], "tests/fixtures/mirin.csv"
-        #  "OverlayV1MirinMarket", [4, 100, 100, OI_CAP*10**TOKEN_DECIMALS, 3293944666953, 9007199254740992, True, 24, AMOUNT_IN*10**TOKEN_DECIMALS],
-        #  "MirinFactoryMock", []
-        # ),
     ])
-def create_factory(token, gov, feed_owner, price_points, price_points_after, request):
+def create_factory(token, gov, feed_owner, request):
     ovlmd_name, _, ovlf_name, ovlf_args, __, ovlm_args, get_feed = request.param
 
     ovlmd = getattr(brownie, ovlmd_name)
