@@ -34,7 +34,7 @@ contract UniswapV3Listener {
         address base
     ) public view returns (uint) {
 
-        int24 tick = OracleLibraryV2.consult( uniV3Pool, 10 minutes, 0);
+        int24 tick = OracleLibraryV2.consult(uniV3Pool, 10 minutes, 0);
 
         uint gas = gasleft();
         uint quote = OracleLibraryV2.getQuoteAtTick(

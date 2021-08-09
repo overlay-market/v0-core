@@ -84,7 +84,7 @@ def price_points_after(token):
 def get_uni_oracle (feed_owner):
 
     base = os.path.dirname(os.path.abspath(__file__))
-    path = '../../feeds/historic_observations/univ3_da_weth.json'
+    path = '../../../feeds/historic_observations/univ3_dai_weth.json'
 
     with open(os.path.normpath(os.path.join(base, path))) as f:
         feed = json.load(f)
@@ -97,6 +97,8 @@ def get_uni_oracle (feed_owner):
 
     obs = [ ] # blockTimestamp, tickCumulative, liquidityCumulative, initialized 
     shims = [ ] # timestamp, liquidity, tick, cardinality 
+
+    feed = feed[:300]
 
     feed = [ feed[i:i+300] for i in range(0,len(feed),300) ]
 
@@ -117,14 +119,15 @@ def get_uni_oracle (feed_owner):
     # TODO: place token0 and token1 into the json
     uniswapv3_factory.createPool(
         "0x6B175474E89094C44Da98b954EedeAC495271d0F",
-        "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
-        600
+        "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
     );
 
     uniswapv3_mock = IUniswapV3OracleMock( uniswapv3_factory.allPools(0) )
 
     for i in range(len(obs)):
         uniswapv3_mock.loadObservations(obs[i], shims[i], { 'from': feed_owner })
+
+    chain.mine(1, timestamp=chain[-1].timestamp + 1200)
 
     return uniswapv3_factory.address, uniswapv3_mock.address
 

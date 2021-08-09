@@ -6,9 +6,7 @@ abstract contract OverlayV1PricePoint {
     // mapping from price point index to realized historical prices
     uint[] public pricePoints;
 
-    constructor () {
-        pricePoints.push(0);
-    }
+    event NewPrice(uint _price);
 
     /// @notice Get the current price point index
     function pricePointCurrentIndex() external view returns (uint) {
@@ -20,6 +18,7 @@ abstract contract OverlayV1PricePoint {
     /// @notice Allows inheriting contracts to add the latest realized price
     function setPricePointCurrent(uint256 price) internal {
         pricePoints.push(price);
+        emit NewPrice(price);
     }
 
 }

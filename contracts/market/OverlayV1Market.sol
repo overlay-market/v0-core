@@ -99,9 +99,9 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
         }
     }
 
-    function update () external {
+    function update () external returns (bool updated_) {
 
-        staticUpdate();
+        return staticUpdate();
 
     }
 
@@ -115,9 +115,6 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
     ) {
 
         compoundEpoch_ = entryUpdate();
-
-        if (_isLong) freeOi_ = ( oiLast / 2 ) - __oiLong__;
-        else freeOi_ = ( oiLast / 2 ) - __oiShort__;
 
         maxLev_ = leverageMax;
 

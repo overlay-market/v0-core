@@ -157,7 +157,7 @@ contract OverlayV1OVLCollateral is ERC1155 {
 
     }
 
-    event thing(string key, uint val);
+    event log(string k, uint v);
 
     function build(
         address _market,
@@ -171,6 +171,13 @@ contract OverlayV1OVLCollateral is ERC1155 {
             uint _maxLev,
             uint _pricePointCurrent,
             uint _t1Compounding ) = IOverlayV1Market(_market).entryData(_isLong);
+
+        emit log("min collat", MIN_COLLAT);
+        emit log("collat", _collateral);
+        emit log("max lev", _maxLev);
+        emit log("lev", _leverage);
+        emit log("price point", _pricePointCurrent);
+        emit log("t1 componding", _t1Compounding);
 
         require(_collateral <= MIN_COLLAT, "OVLV1:collat<min");
         require(_leverage <= _maxLev, "OVLV1:max<lev");

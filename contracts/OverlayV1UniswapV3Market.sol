@@ -41,20 +41,48 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         _fundingKDenominator,
         _leverageMax
     ) {
+
         // immutables
         feed = _uniV3Pool;
         isPrice0 = _isPrice0;
         windowSize = _windowSize;
 
+
         amountIn = _amountIn;
-        token0 = IUniswapV3Pool(_uniV3Pool).token0();
-        token1 = IUniswapV3Pool(_uniV3Pool).token1();
+        address _token0 = IUniswapV3Pool(_uniV3Pool).token0();
+        address _token1 = IUniswapV3Pool(_uniV3Pool).token1();
+
+        token0 = _token0;
+        token1 = _token1;
+
+        int24 tick = OracleLibraryV2.consult(
+            _uniV3Pool, 
+            uint32(_windowSize),
+            uint32(0)
+        );
+
+        uint _price = OracleLibraryV2.getQuoteAtTick(
+            tick,
+            uint128(_amountIn),
+            _isPrice0 ? _token0 : _token1,
+            _isPrice0 ? _token1 : _token0
+        );
+
+        setPricePointCurrent(_price);
+
+        updated = block.timestamp;
+        toUpdate = type(uint256).max;
+        compounded = block.timestamp;
 
     }
 
     function lastPrice(uint secondsAgoStart, uint secondsAgoEnd) public view returns (uint256 price_)   {
 
-        int24 tick = OracleLibraryV2.consult(feed, uint32(secondsAgoStart), uint32(secondsAgoEnd));
+        int24 tick = OracleLibraryV2.consult(
+            feed, 
+            uint32(secondsAgoStart), 
+            uint32(secondsAgoEnd)
+        );
 
         price_ = OracleLibraryV2.getQuoteAtTick(
             tick,
@@ -65,15 +93,17 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
-    uint toUpdate;
-    uint updated;
-    uint compounded;
+    uint public toUpdate;
+    uint public updated;
+    uint public compounded;
+
+    function NOW () external view returns (uint) { return block.timestamp; }
 
     function epochs (
         uint _time,
         uint _from,
         uint _between
-    ) view internal returns (
+    ) public view returns (
         uint updatesThen_,
         uint updatesNow_,
         uint tUpdate_,
@@ -114,6 +144,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     function staticUpdate () internal override returns (bool updated_) {
 
         uint _toUpdate = toUpdate;
+        uint _updated = updated;
 
         (   uint _updatesThen,,,,
             uint _compoundings,
@@ -121,7 +152,8 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         // only update if there is a position to update
         if (0 < _updatesThen) {
-            uint _price = lastPrice(_toUpdate - windowSize, _toUpdate);
+            uint _then = block.timestamp - _toUpdate;
+            uint _price = lastPrice(_then + windowSize, _then);
             setPricePointCurrent(_price);
             updated = _toUpdate;
             toUpdate = type(uint256).max;
@@ -135,7 +167,11 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
-    function entryUpdate () internal override returns (uint256 t1Compounding_) {
+    event log(string k, uint v);
+
+    function entryUpdate () internal override returns (
+        uint256 t1Compounding_
+    ) {
 
         uint _toUpdate = toUpdate;
 
@@ -146,7 +182,8 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             uint _t1Compounding ) = epochs(block.timestamp, updated, _toUpdate);
 
         if (0 < _updatesThen) {
-            uint _price = lastPrice(_toUpdate - windowSize, _toUpdate);
+            uint _then = block.timestamp - _toUpdate;
+            uint _price = lastPrice(_then + windowSize, _then);
             setPricePointCurrent(_price);
             updated = _toUpdate;
         }
@@ -172,18 +209,19 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             uint _compoundings,
             uint _tCompounding, ) = epochs(block.timestamp, updated, _toUpdate);
 
-        uint _price;
             
         if (0 < _updatesThen) {
 
-            _price = lastPrice(_toUpdate - windowSize, _toUpdate);
+            uint _then = block.timestamp - _toUpdate;
+            uint _price = lastPrice(_then + windowSize, _then);
             setPricePointCurrent(_price);
 
         }
 
         if (0 < _updatesNow) { 
 
-            _price = lastPrice(_tUpdate - windowSize, _tUpdate);
+            uint _then = block.timestamp - _tUpdate;
+            uint _price = lastPrice(_then + windowSize, _then);
             setPricePointCurrent(_price);
 
             updated = _tUpdate;

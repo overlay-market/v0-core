@@ -8,26 +8,6 @@ TOKEN_TOTAL_SUPPLY = 8000000
 OI_CAP = 800000
 FEE_RESOLUTION = 1e4
 
-def set_compound(sender, factory, market, compound):
-    args = market_params(market)
-    args[1] = compound
-    factory.adjustParamsPerMarket(args, { 'from': sender })
-
-def set_update(sender, factory, market, update):
-    args = market_params(market)
-    args[0] = update
-    factory.adjustParamsPerMarket(args, { 'from': sender })
-
-def market_params(market):
-    return (
-        market.address,
-        market.updatePeriod(),
-        market.compoundingPeriod(),
-        market.oiCap(),
-        market.fundingKNumerator(),
-        market.fundingKDenominator(),
-        market.leverageMax()
-    )
 
 @given(
     collateral=strategy('uint256',
