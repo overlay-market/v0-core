@@ -270,7 +270,6 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
                 _kDenominator
             );
 
-
         } else {
 
             oiLong_ += _queuedOiLong;
