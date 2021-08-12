@@ -65,10 +65,12 @@ contract OverlayV1OI {
         uint112 _kNumerator,
         uint112 _kDenominator
     ) internal pure returns (
-      uint256 oiLong_,
+        uint256 oiLong_,
         uint256 oiShort_,
         int256  fundingPaid_
     ) {
+
+        if (0 == _epochs) return ( _oiLong, _oiShort, 0 );
 
         FixedPoint.uq144x112 memory fundingFactor = computeFundingFactor(
             _kDenominator - 2 * _kNumerator,

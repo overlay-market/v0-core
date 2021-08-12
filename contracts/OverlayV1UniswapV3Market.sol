@@ -248,7 +248,6 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         oiShort_ = __oiShort__;
         uint112 _kNumerator = fundingKNumerator;
         uint112 _kDenominator = fundingKDenominator;
-
         uint _queuedOiLong = queuedOiLong;
         uint _queuedOiShort = queuedOiShort;
 
