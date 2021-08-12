@@ -249,7 +249,10 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         uint112 _kNumerator = fundingKNumerator;
         uint112 _kDenominator = fundingKDenominator;
 
-        if (_compoundings < 0) {
+        uint _queuedOiLong = queuedOiLong;
+        uint _queuedOiShort = queuedOiShort;
+
+        if (0 < _compoundings) {
 
             ( oiLong_, oiShort_, ) = computeFunding(
                 oiLong_,
@@ -260,15 +263,20 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             );
 
             ( oiLong_, oiShort_, ) = computeFunding(
-                oiLong_,
-                oiShort_,
+                oiLong_ += _queuedOiLong,
+                oiShort_ += _queuedOiShort,
                 _compoundings - 1,
                 _kNumerator,
                 _kDenominator
             );
 
-        }
 
+        } else {
+
+            oiLong_ += _queuedOiLong;
+            oiShort_ += _queuedOiShort;
+
+        }
 
     }
 
