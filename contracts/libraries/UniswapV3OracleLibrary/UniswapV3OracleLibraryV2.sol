@@ -10,17 +10,24 @@ import './PoolAddress.sol';
 
 /// @title Oracle library
 /// @notice Provides functions to integrate with V3 pool oracle
-library OracleLibrary {
+library OracleLibraryV2 {
     /// @notice Fetches time-weighted average tick using Uniswap V3 oracle
     /// @param pool Address of Uniswap V3 pool that we want to observe
-    /// @param period Number of seconds in the past to start calculating time-weighted average
+    /// @param secondsAgoStart end of twap time
+    /// @param secondsAgoEnd start of twap time
     /// @return timeWeightedAverageTick The time-weighted average tick from (block.timestamp - period) to block.timestamp
-    function consult(address pool, uint32 period, uint32 end) internal view returns (int24 timeWeightedAverageTick) {
+    function consult(
+        address pool, 
+        uint32 secondsAgoStart, 
+        uint32 secondsAgoEnd
+    ) internal view returns (int24 timeWeightedAverageTick) {
+        uint32 period = secondsAgoStart - secondsAgoEnd;
+
         require(period != 0, 'BP');
 
         uint32[] memory secondAgos = new uint32[](2);
-        secondAgos[0] = period;
-        secondAgos[1] = 0;
+        secondAgos[0] = secondsAgoStart;
+        secondAgos[1] = secondsAgoEnd;
 
         (int56[] memory tickCumulatives, ) = IUniswapV3Pool(pool).observe(secondAgos);
         int56 tickCumulativesDelta = tickCumulatives[1] - tickCumulatives[0];

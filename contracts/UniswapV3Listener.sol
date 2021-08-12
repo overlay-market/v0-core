@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-import "./libraries/UniswapV3OracleLibrary/UniswapV3OracleLibrary.sol";
+import "./libraries/UniswapV3OracleLibrary/UniswapV3OracleLibraryV2.sol";
 import "./interfaces/IUniV3Oracle.sol";
 import "./interfaces/IUniswapV3Pool.sol";
 import "./market/OverlayV1Market.sol";
@@ -25,7 +25,7 @@ contract UniswapV3Listener {
 
     function see_tick () public view returns (int24) {
 
-        return OracleLibrary.consult(uniV3Pool, 10 minutes);
+        return OracleLibraryV2.consult(uniV3Pool, 10 minutes, 0);
 
     }
 
@@ -34,13 +34,10 @@ contract UniswapV3Listener {
         address base
     ) public view returns (uint) {
 
-        int24 tick = OracleLibrary.consult(
-            uniV3Pool, 
-            10 minutes
-        );
+        int24 tick = OracleLibraryV2.consult(uniV3Pool, 10 minutes, 0);
 
         uint gas = gasleft();
-        uint quote = OracleLibrary.getQuoteAtTick(
+        uint quote = OracleLibraryV2.getQuoteAtTick(
             tick, 
             uint128(amountIn), 
             base == token0 ? token0 : token1,

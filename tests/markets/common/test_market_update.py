@@ -16,6 +16,34 @@ TOKEN_TOTAL_SUPPLY = 8000000
 OI_CAP = 800000
 FEE_RESOLUTION = 1e4
 
+def set_compound(sender, factory, market, compound):
+    args = market_params(market)
+    args[1] = compound
+    factory.adjustParamsPerMarket(args, { 'from': sender })
+
+def set_update(sender, factory, market, update):
+    args = market_params(market)
+    args[0] = update
+    factory.adjustParamsPerMarket(args, { 'from': sender })
+
+def market_params(market):
+    return (
+        market.address,
+        market.updatePeriod(),
+        market.compoundingPeriod(),
+        market.oiCap(),
+        market.fundingKNumerator(),
+        market.fundingKDenominator(),
+        market.leverageMax()
+    )
+
+def print_events(events):
+    for i in range(len(events['log'])):
+        print(
+            events['log'][i]['k'] + ": " 
+            + str(events['log'][i]['v'])
+        )
+
 @given(
     oi_long=strategy('uint256',
                      min_value=MIN_COLLATERAL_AMOUNT,
@@ -39,14 +67,12 @@ def test_update(token,
 
     update_period = market.updatePeriod()
 
-    # queue up bob's positions to be settled at next update (T+1)
-    # 1x long w oi_long as collateral and 1x short with oi_short
-    token.approve(ovl_collateral, oi_long+oi_short, {"from": bob})
+    feed = market.feed()
 
-    window_size = market.windowSize()
+    token.approve(ovl_collateral, 1e70, {"from": bob})
 
     # do an initial update before build so all oi is queued
-    mu1 = market.update({"from": alice})
+    market.update({"from": alice})
 
     ovl_collateral.build(market, oi_long, True, 1, bob, {"from": bob})
     ovl_collateral.build(market, oi_short, False, 1, bob, {"from": bob})
@@ -69,26 +95,26 @@ def test_update(token,
 
     # prior price point state
     prior_price_point_idx = market.pricePointCurrentIndex()
-    print("price pp ix")
+
+    # prior epochs
+    prior_updated = market.updated()
+    prior_compounded = market.compounded()
 
     # Calc reward rate before update
     reward_perc = fee_reward_rate / FEE_RESOLUTION
+
     expected_fee_reward = int(reward_perc * prior_fees)
 
-    start_block = chain[-1]['number']
-    chain.mine(update_period+1, timestamp=chain[-1].timestamp + window_size)
+    chain.mine(timestamp=chain[-1].timestamp + update_period)
 
-    tx = ovl_collateral.update.transact(market, rewards, {"from": alice})
+    tx = ovl_collateral.update(market, rewards, {"from": alice})
 
-    curr_update_block = market.updateBlockLast()
-
-    # plus another 1 since tx will mine a block
-    prior_plus_updates = start_block + update_period + 2
-    assert curr_update_block == prior_plus_updates
+    curr_updated = market.updated()
+    assert  curr_updated == prior_updated + update_period
 
     # check update event attrs
-    assert 'CoreUpdate' in tx.events
-    assert 'Update' in tx.events
+    assert 'FundingPaid' in tx.events
+    assert 'NewPrice' in tx.events
     assert tx.events['Update']['rewarded'] == rewards.address
     assert abs(tx.events['Update']['rewardAmount'] - expected_fee_reward) <= 1
 
@@ -105,9 +131,6 @@ def test_update(token,
     assert curr_queued_oi_short == 0
     assert curr_oi_long == expected_oi_long
     assert curr_oi_short == expected_oi_short
-
-    curr_oi_imb = curr_oi_long - curr_oi_short
-    curr_oi_tot = curr_oi_long + curr_oi_short
 
     # Check price points updated ...
     expected_price_point_idx = prior_price_point_idx + 1
@@ -141,28 +164,33 @@ def test_update(token,
     assert ovl_collateral.fees() == 0
 
     # Now do a longer update ...
-    curr_block = chain[-1]['number']
-    update_blocks = num_periods * update_period
-    chain.mine(update_blocks, timestamp=chain[-1].timestamp + window_size)
+    update_delta = num_periods * update_period
+
+    ovl_collateral.build(market, oi_long, True, 1, bob, {"from": bob})
+    ovl_collateral.build(market, oi_short, False, 1, bob, {"from": bob})
+
+    chain.mine(1, timestamp=chain[-1].timestamp + update_delta)
 
     tx = ovl_collateral.update(market, rewards, {"from": alice})
-    next_update_block = market.updateBlockLast()
+
+    curr_oi_imb = curr_oi_long - curr_oi_short
+    curr_oi_tot = curr_oi_long + curr_oi_short
 
     # plus 1 since tx will mine a block
-    curr_plus_updates = curr_block + update_blocks + 1
-    assert next_update_block == curr_plus_updates
+    assert curr_updated == prior_updated + update_delta
 
     # check update event attrs
     assert 'Update' in tx.events
-    assert 'CoreUpdate' in tx.events
+    assert 'FundingPaid' in tx.events
+    assert 'NewPrice' in tx.events
     assert tx.events['Update']['rewarded'] == rewards.address
     assert tx.events['Update']['rewardAmount'] == 0  # rewarded 0 since no positions built
 
     # check funding payments over longer period
     k = market.fundingKNumerator() / market.fundingKDenominator()
     expected_oi_imb = curr_oi_imb * (1 - 2*k)**num_periods
-    expected_oi_long = int((curr_oi_tot + expected_oi_imb) / 2)
-    expected_oi_short = int((curr_oi_tot - expected_oi_imb) / 2)
+    expected_oi_long = int((curr_oi_tot + expected_oi_imb) / 2) * 2
+    expected_oi_short = int((curr_oi_tot - expected_oi_imb) / 2) * 2
 
     next_oi_long = market.oiLong()
     next_oi_short = market.oiShort()

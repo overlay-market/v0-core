@@ -65,7 +65,8 @@ contract OverlayV1OVLCollateral is ERC1155 {
             pricePoint: 0,
             oiShares: 0,
             debt: 0,
-            cost: 0
+            cost: 0,
+            compounding: 0
         }));
 
     }
@@ -144,7 +145,8 @@ contract OverlayV1OVLCollateral is ERC1155 {
                 pricePoint: _pricePointCurrent,
                 oiShares: 0,
                 debt: 0,
-                cost: 0
+                cost: 0,
+                compounding: 0
             }));
 
             positionId_ = positions.length - 1;
@@ -155,7 +157,7 @@ contract OverlayV1OVLCollateral is ERC1155 {
 
     }
 
-    event thing(string key, uint val);
+    event log(string k, uint v);
 
     function build(
         address _market,
@@ -167,7 +169,15 @@ contract OverlayV1OVLCollateral is ERC1155 {
 
         (   uint _freeOi,
             uint _maxLev,
-            uint _pricePointCurrent ) = IOverlayV1Market(_market).entryData(_isLong);
+            uint _pricePointCurrent,
+            uint _t1Compounding ) = IOverlayV1Market(_market).entryData(_isLong);
+
+        emit log("min collat", MIN_COLLAT);
+        emit log("collat", _collateral);
+        emit log("max lev", _maxLev);
+        emit log("lev", _leverage);
+        emit log("price point", _pricePointCurrent);
+        emit log("t1 componding", _t1Compounding);
 
         require(_collateral <= MIN_COLLAT, "OVLV1:collat<min");
         require(_leverage <= _maxLev, "OVLV1:max<lev");
@@ -179,7 +189,8 @@ contract OverlayV1OVLCollateral is ERC1155 {
             _pricePointCurrent
         );
 
-        PositionV2.Info storage position = positions[_positionId];
+        PositionV2.Info storage pos = positions[_positionId];
+        pos.compounding = _t1Compounding;
 
         uint _oiAdjusted;
         uint _debtAdjusted;
@@ -195,9 +206,9 @@ contract OverlayV1OVLCollateral is ERC1155 {
 
         fees += _fee;
 
-        position.oiShares += _oiAdjusted;
-        position.cost += _collateralAdjusted;
-        position.debt += _debtAdjusted;
+        pos.oiShares += _oiAdjusted;
+        pos.cost += _collateralAdjusted;
+        pos.debt += _debtAdjusted;
 
         }
 
@@ -218,15 +229,14 @@ contract OverlayV1OVLCollateral is ERC1155 {
 
         require( 0 < _shares && _shares <= balanceOf(msg.sender, _positionId), "OVLV1:!shares");
 
-        {
-
         PositionV2.Info storage pos = positions[_positionId];
 
-        bool _isLong = pos.isLong;
+        {
 
         (   uint _oi,
             uint _oiShares,
-            uint _priceFrame ) = IOverlayV1Market(pos.market).exitData(_isLong, pos.pricePoint);
+            uint _priceFrame,
+            uint _tCompounding ) = IOverlayV1Market(pos.market).exitData(pos.isLong, pos.pricePoint);
         
         uint _totalPosShares = totalPositionShares[_positionId];
 
@@ -259,8 +269,15 @@ contract OverlayV1OVLCollateral is ERC1155 {
         // mint/burn excess PnL = valueAdjusted - cost, accounting for need to also burn debt
         if (_userCost < _userValueAdjusted) ovl.mint(address(this), _userValueAdjusted - _userCost);
         else ovl.burn(address(this), _userCost - _userValueAdjusted);
+
         ovl.transfer(msg.sender, _userValueAdjusted);
-        IOverlayV1Market(pos.market).exitOI(_isLong, _userOi, _userOiShares);
+
+        IOverlayV1Market(pos.market).exitOI(
+            pos.compounding <= _tCompounding, 
+            pos.isLong, 
+            _userOi, 
+            _userOiShares
+        );
 
         }
 
@@ -280,7 +297,8 @@ contract OverlayV1OVLCollateral is ERC1155 {
 
         (   uint _oi,
             uint _oiShares,
-            uint _priceFrame ) = IOverlayV1Market(pos.market).exitData(_isLong, pos.pricePoint);
+            uint _priceFrame,
+            uint _tCompounding ) = IOverlayV1Market(pos.market).exitData(_isLong, pos.pricePoint);
 
         (   uint _marginMaintenance,
             uint _marginRewardRate   ) = factory.getMarginParams();
@@ -295,7 +313,12 @@ contract OverlayV1OVLCollateral is ERC1155 {
         _oi -= pos.openInterest(_oi, _oiShares);
         _oiShares -= pos.oiShares;
 
-        IOverlayV1Market(pos.market).exitOI(_isLong, _oi, _oiShares);
+        IOverlayV1Market(pos.market).exitOI(
+            pos.compounding <= _tCompounding, 
+            _isLong, 
+            _oi, 
+            _oiShares
+        );
 
         // TODO: which is better on gas
         pos.oiShares = 0;

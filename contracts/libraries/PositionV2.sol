@@ -19,6 +19,7 @@ library PositionV2 {
         uint256 oiShares; // shares of total open interest on long/short side, depending on isLong value
         uint256 debt; // total debt associated with this position
         uint256 cost; // total amount of collateral initially locked; effectively, cost to enter position
+        uint256 compounding; // timestamp when position is eligible for compound funding
     }
 
     function _openInterest(

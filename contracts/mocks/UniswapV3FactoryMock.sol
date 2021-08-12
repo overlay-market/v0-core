@@ -8,25 +8,25 @@ contract UniswapV3FactoryMock {
     mapping(address => bool) public isPool;
     address[] public allPools;
 
-    function createPool(
-        address token0,
-        address token1,
-        uint window
-    ) external returns (UniswapV3OracleMock pool) {
-        pool = new UniswapV3OracleMock(
-            token0,
-            token1,
-            window
-        );
+    function createPool (
+        address _token0, 
+        address _token1
+    ) external returns (
+        UniswapV3OracleMock pool
+    ) {
+
+        pool = new UniswapV3OracleMock(_token0, _token1);
         isPool[address(pool)] = true;
         allPools.push(address(pool));
+
     }
 
-    function addObservationPoints(
+    function loadObservations(
         address pool,
-        int56[][] memory observations
+        OracleMock.Observation[] calldata _observations,
+        UniswapV3OracleMock.Shim[] calldata _shims
     ) external {
         require(isPool[pool], "!pool");
-        UniswapV3OracleMock(pool).addObservations(observations);
+        UniswapV3OracleMock(pool).loadObservations(_observations, _shims);
     }
 }

@@ -84,32 +84,52 @@ def price_points_after(token):
 def get_uni_oracle (feed_owner):
 
     base = os.path.dirname(os.path.abspath(__file__))
-    path = 'fixtures/univ3_mock_feeds_1.json'
+    path = '../../../feeds/historic_observations/univ3_dai_weth.json'
 
-    with open(os.path.join(base, path)) as f:
-        feeds = json.load(f)
+    with open(os.path.normpath(os.path.join(base, path))) as f:
+        feed = json.load(f)
+    
+    now = chain[-1].timestamp
+    earliest = feed[-1]['shim'][0]
+    diff = 0
 
-    obs =  feeds['UniswapV3: WETH / DAI .3%']['tick_cumulatives']
+    feed.reverse()
+
+    obs = [ ] # blockTimestamp, tickCumulative, liquidityCumulative, initialized 
+    shims = [ ] # timestamp, liquidity, tick, cardinality 
+
+    feed = feed[:300]
+
+    feed = [ feed[i:i+300] for i in range(0,len(feed),300) ]
+
+    for fd in feed:
+        obs.append([])
+        shims.append([])
+        for f in fd:
+            diff = f['shim'][0] - earliest
+            f['observation'][0] = f['shim'][0] = now + diff
+            obs[len(obs)-1].append(f['observation'])
+            shims[len(shims)-1].append(f['shim'])
 
     UniswapV3MockFactory = getattr(brownie, 'UniswapV3FactoryMock')
     IUniswapV3OracleMock = getattr(interface, 'IUniswapV3OracleMock')
 
-    uniswapv3_mock_factory = feed_owner.deploy(UniswapV3MockFactory)
+    uniswapv3_factory = feed_owner.deploy(UniswapV3MockFactory)
 
     # TODO: place token0 and token1 into the json
-    uniswapv3_mock_factory.createPool(
+    uniswapv3_factory.createPool(
         "0x6B175474E89094C44Da98b954EedeAC495271d0F",
-        "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
-        600
+        "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
     );
 
-    uniswapv3_mock = IUniswapV3OracleMock(
-        uniswapv3_mock_factory.allPools(0)
-    )
+    uniswapv3_mock = IUniswapV3OracleMock( uniswapv3_factory.allPools(0) )
 
-    uniswapv3_mock.addObservations(obs, { 'from': feed_owner })
+    for i in range(len(obs)):
+        uniswapv3_mock.loadObservations(obs[i], shims[i], { 'from': feed_owner })
 
-    return uniswapv3_mock_factory.address, uniswapv3_mock.address
+    chain.mine(1, timestamp=chain[-1].timestamp + 1200)
+
+    return uniswapv3_factory.address, uniswapv3_mock.address
 
 
 @pytest.fixture(
@@ -117,16 +137,11 @@ def get_uni_oracle (feed_owner):
     params=[
         ("OverlayV1UniswapV3Deployer", [],
          "OverlayV1UniswapV3Factory", [15, 5000, 100, ETH_ADDRESS, 60, 50, 25], 
-         "OverlayV1UniswapV3Market", [ 10, OI_CAP*10**TOKEN_DECIMALS, 3293944666953, 9007199254740992, 100, 600, AMOUNT_IN*10**TOKEN_DECIMALS, True ],
+         "OverlayV1UniswapV3Market", [ 10, 10, OI_CAP*10**TOKEN_DECIMALS, 3293944666953, 9007199254740992, 100, 600, AMOUNT_IN*10**TOKEN_DECIMALS, True ],
          get_uni_oracle,
         ),
-        # ("OverlayV1MirinDeployer", [],
-        #  "OverlayV1MirinFactory", [15, 5000, 100, ETH_ADDRESS, 60, 50, 25], "tests/fixtures/mirin.csv"
-        #  "OverlayV1MirinMarket", [4, 100, 100, OI_CAP*10**TOKEN_DECIMALS, 3293944666953, 9007199254740992, True, 24, AMOUNT_IN*10**TOKEN_DECIMALS],
-        #  "MirinFactoryMock", []
-        # ),
     ])
-def create_factory(token, gov, feed_owner, price_points, price_points_after, request):
+def create_factory(token, gov, feed_owner, request):
     ovlmd_name, _, ovlf_name, ovlf_args, __, ovlm_args, get_feed = request.param
 
     ovlmd = getattr(brownie, ovlmd_name)
