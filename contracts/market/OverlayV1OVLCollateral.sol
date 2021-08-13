@@ -3,22 +3,17 @@
 pragma solidity ^0.8.2;
 
 import "../libraries/PositionV2.sol";
-
-import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-
+import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import "../interfaces/IOverlayV1Market.sol";
 import "../interfaces/IOverlayV1Factory.sol";
 import "../interfaces/IOverlayToken.sol";
 
-contract OverlayV1OVLCollateral is ERC1155 {
+contract OverlayV1OVLCollateral is ERC1155Supply {
 
     using PositionV2 for PositionV2.Info;
 
     // TODO: do we have a struct for markets?
     struct Market { uint _marginAdjustment; }
-
-    // mapping from position (erc1155) id to total shares issued of position
-    mapping(uint256 => uint256) public totalPositionShares;
 
     mapping (address => uint) marginAdjustments;
     mapping (address => bool) supportedMarket;
@@ -172,13 +167,6 @@ contract OverlayV1OVLCollateral is ERC1155 {
             uint _pricePointCurrent,
             uint _t1Compounding ) = IOverlayV1Market(_market).entryData(_isLong);
 
-        emit log("min collat", MIN_COLLAT);
-        emit log("collat", _collateral);
-        emit log("max lev", _maxLev);
-        emit log("lev", _leverage);
-        emit log("price point", _pricePointCurrent);
-        emit log("t1 componding", _t1Compounding);
-
         require(_collateral <= MIN_COLLAT, "OVLV1:collat<min");
         require(_leverage <= _maxLev, "OVLV1:max<lev");
 
@@ -217,7 +205,7 @@ contract OverlayV1OVLCollateral is ERC1155 {
         emit Build(_positionId, _oiAdjusted, _debtAdjusted);
 
         ovl.transferFrom(msg.sender, address(this), _collateral);
-        mint(msg.sender, _positionId, _oiAdjusted, ""); // WARNING: last b/c erc1155 callback
+        _mint(msg.sender, _positionId, _oiAdjusted, ""); // WARNING: last b/c erc1155 callback
 
     }
 
@@ -238,7 +226,7 @@ contract OverlayV1OVLCollateral is ERC1155 {
             uint _priceFrame,
             uint _tCompounding ) = IOverlayV1Market(pos.market).exitData(pos.isLong, pos.pricePoint);
         
-        uint _totalPosShares = totalPositionShares[_positionId];
+        uint _totalPosShares = totalSupply[_positionId];
 
         uint _userOiShares = _shares * pos.oiShares / _totalPosShares;
         uint _userNotional = _shares * pos.notional(_priceFrame, _oi, _oiShares) / _totalPosShares;
@@ -281,7 +269,7 @@ contract OverlayV1OVLCollateral is ERC1155 {
 
         }
 
-        burn(msg.sender, _positionId, _shares);
+        _burn(msg.sender, _positionId, _shares);
  
     }
 
@@ -332,21 +320,5 @@ contract OverlayV1OVLCollateral is ERC1155 {
         ovl.transfer(_rewardsTo, _toReward);
 
     }
-
-
-    /// @notice Mint overrides erc1155 _mint to track total shares issued for given position id
-    function mint(address account, uint256 id, uint256 shares, bytes memory data) internal {
-        totalPositionShares[id] += shares;
-        _mint(account, id, shares, data);
-    }
-
-    /// @notice Burn overrides erc1155 _burn to track total shares issued for given position id
-    function burn(address account, uint256 id, uint256 shares) internal {
-        uint256 totalShares = totalPositionShares[id];
-        require(totalShares >= shares, "OVLV1: burn shares exceeds total");
-        totalPositionShares[id] = totalShares - shares;
-        _burn(account, id, shares);
-    }
-
 
 }

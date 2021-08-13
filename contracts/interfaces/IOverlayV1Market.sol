@@ -79,16 +79,6 @@ interface IOverlayV1Market is IERC1155 {
         uint8 _leverageMax
     ) external;
 
-    function data(
-        bool _isLong
-    ) external view returns (
-        uint256 oi,
-        uint256 oiShares,
-        uint256 freeOi,
-        uint256 maxLev,
-        uint256 currentPricePoint
-    );
-
     function update () external returns (bool);
 
     function NOW () external view returns (uint);
