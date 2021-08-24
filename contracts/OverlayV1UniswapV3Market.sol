@@ -14,7 +14,8 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     // whether using price0Cumulative or price1Cumulative for TWAP
     bool public immutable isPrice0;
     // window size for sliding window TWAP calc
-    uint256 public immutable windowSize;
+    uint256 public immutable twapWindowSize;
+    uint256 public immutable spreadWindowSize;
 
     uint128 internal immutable amountIn;
     address private immutable token0;
@@ -29,7 +30,8 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         uint112 _fundingKNumerator,
         uint112 _fundingKDenominator,
         uint8   _leverageMax,
-        uint256 _windowSize,
+        uint256 _twapWindowSize,
+        uint256 _spreadWindowSize,
         uint128 _amountIn,
         bool    _isPrice0
     ) OverlayV1Market(
@@ -45,7 +47,8 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         // immutables
         feed = _uniV3Pool;
         isPrice0 = _isPrice0;
-        windowSize = _windowSize;
+        twapWindowSize = _twapWindowSize;
+        spreadWindowSize = _spreadWindowSize;
 
 
         amountIn = _amountIn;
@@ -57,7 +60,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         int24 tick = OracleLibraryV2.consult(
             _uniV3Pool, 
-            uint32(_windowSize),
+            uint32(_twapWindowSize),
             uint32(0)
         );
 
@@ -76,7 +79,10 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
-    function lastPrice(uint secondsAgoStart, uint secondsAgoEnd) public view returns (uint256 price_)   {
+    function twapPrice(
+        uint secondsAgoStart, 
+        uint secondsAgoEnd
+    ) public view returns (uint256 price_)   {
 
         int24 tick = OracleLibraryV2.consult(
             feed, 
@@ -97,7 +103,43 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     uint public updated;
     uint public compounded;
 
+    uint public staticSpreadAsk; // this is going to be some amount of basis points
+    uint public staticSpreadBid; // this is going to be some amount of basis points
+
     function NOW () external view returns (uint) { return block.timestamp; }
+
+    function price (uint _at) public view returns (PricePoint memory) { 
+
+        uint twapPrice_ = twapPrice(_at - twapWindowSize, _at);
+        uint _spreadPrice = twapPrice(_at - spreadWindowSize, _at);
+
+        uint ask_ = max(_twapPrice, _spreadPrice);
+        uint bid_ = min(_twapPrice, _spreadPrice);
+
+        // formula for ask
+        // bid = min(twap,spread) * e ^ -(staticSpread + (impactParam * impactShort))
+        // ask = max(twap,spread) * e ^ (staticSpread + (impactParam * impactLong))
+
+        ask_ = ask_ * staticSpreadAsk / RESOLUTION;
+        bid_ = bid_ * staticSpreadBid / RESOLUTION;
+
+        ( uint _longImpact, uint _shortImpact ) = senseImpact();
+
+        ask_ = e ** _longImpact
+        
+        kkimpact
+
+        return PricePoint(
+            bid_,
+            ask_,
+            twapPrice_
+        );
+
+    }
+
+    function marketImpact () internal view returns (uint) {
+
+    }
 
     function epochs (
         uint _time,
@@ -153,7 +195,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         // only update if there is a position to update
         if (0 < _updatesThen) {
             uint _then = block.timestamp - _toUpdate;
-            uint _price = lastPrice(_then + windowSize, _then);
+            uint _price = twapPrice(_then + twapWindowSize, _then);
             setPricePointCurrent(_price);
             updated = _toUpdate;
             toUpdate = type(uint256).max;
@@ -166,8 +208,6 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         }
 
     }
-
-    event log(string k, uint v);
 
     function entryUpdate () internal override returns (
         uint256 t1Compounding_
@@ -183,7 +223,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         if (0 < _updatesThen) {
             uint _then = block.timestamp - _toUpdate;
-            uint _price = lastPrice(_then + windowSize, _then);
+            uint _price = twapPrice(_then + twapWindowSize, _then);
             setPricePointCurrent(_price);
             updated = _toUpdate;
         }
@@ -213,7 +253,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         if (0 < _updatesThen) {
 
             uint _then = block.timestamp - _toUpdate;
-            uint _price = lastPrice(_then + windowSize, _then);
+            uint _price = twapPrice(_then + twapWindowSize, _then);
             setPricePointCurrent(_price);
 
         }
@@ -221,7 +261,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         if (0 < _updatesNow) { 
 
             uint _then = block.timestamp - _tUpdate;
-            uint _price = lastPrice(_then + windowSize, _then);
+            uint _price = twapPrice(_then + twapWindowSize, _then);
             setPricePointCurrent(_price);
 
             updated = _tUpdate;

@@ -136,13 +136,46 @@ contract OverlayV1OI {
     /// @notice Adds to queued open interest to prep for T+1 price settlement
     function queueOi(bool isLong, uint256 oi, uint256 oiCap) internal {
         if (isLong) {
+            registerImpact(isLong, oi);
             queuedOiLong += oi;
             require(__oiLong__ + queuedOiLong <= oiCap, "OVLV1: breached oi cap");
         } else {
+            registerImpact(isLong, oi);
             queuedOiShort += oi;
             require(__oiShort__ + queuedOiShort <= oiCap, "OVLV1: breached oi cap");
         }
     }
+
+        // TODO: should we include the current block?
+    function impact (uint _from, uint _to) public view returns (int totalPrint_) {
+
+        uint _target = block.number - printWindow;
+
+        ( Print memory beforeOrAt,
+          Print memory atOrAfter ) = getSurroundingPrints(_target);
+
+        if (beforeOrAt.block == _target) {
+
+            totalPrint_ = ( prints[index].printed - beforeOrAt.printed;
+
+        } else if (_target == atOrAfter.block) {
+
+            totalPrint_ = ( prints[index].printed - atOrAfter.printed;
+
+        } else {
+
+            int216 _printDiff = atOrAfter.printed - beforeOrAt.printed;
+            uint _blockDiff = atOrAfter.block - beforeOrAt.block;
+
+            uint _targetRatio = ( ( _target - beforeOrAt.block ) * 1e4 ) / _blockDiff;
+            int _interpolatedPrint = beforeOrAt.printed + ( _printDiff * int(_targetRatio) );
+
+            totalPrint_ = ( prints[index].printed + printed ) - _interpolatedPrint;
+
+        }
+
+    }
+
 
     /// @notice Updates open interest at T+1 price settlement
     /// @dev Execute at market update() to prevent funding payment harvest without price risk

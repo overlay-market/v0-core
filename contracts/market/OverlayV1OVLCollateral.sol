@@ -152,8 +152,6 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     }
 
-    event log(string k, uint v);
-
     function build(
         address _market,
         uint256 _collateral,
@@ -226,7 +224,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             uint _priceFrame,
             uint _tCompounding ) = IOverlayV1Market(pos.market).exitData(pos.isLong, pos.pricePoint);
         
-        uint _totalPosShares = totalSupply[_positionId];
+        uint _totalPosShares = totalSupply(_positionId);
 
         uint _userOiShares = _shares * pos.oiShares / _totalPosShares;
         uint _userNotional = _shares * pos.notional(_priceFrame, _oi, _oiShares) / _totalPosShares;
