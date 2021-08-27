@@ -12,9 +12,6 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
 
     mapping (address => bool) public isCollateral;
 
-    uint256 public fees;
-    uint256 public liquidations;
-
     uint constant RESOLUTION = 1e4;
 
     uint16 public constant MIN_COLLATERAL_AMOUNT = 10**4;

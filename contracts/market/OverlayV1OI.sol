@@ -146,7 +146,7 @@ contract OverlayV1OI {
         }
     }
 
-        // TODO: should we include the current block?
+    // TODO: should we include the current block?
     function impact (uint _from, uint _to) public view returns (int totalPrint_) {
 
         uint _target = block.number - printWindow;
