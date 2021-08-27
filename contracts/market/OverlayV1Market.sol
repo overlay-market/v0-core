@@ -35,6 +35,7 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
     constructor(
         address _ovl,
         uint256 _updatePeriod,
+        uint256 _printWindow,
         uint256 _compoundingPeriod,
         uint144 _oiCap,
         uint112 _fundingKNumerator,
@@ -48,7 +49,9 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
         _fundingKNumerator,
         _fundingKDenominator,
         _leverageMax
-    ) {
+    ) OverlayV1OI(
+        _printWindow
+    ){
 
         updateBlockLast = block.number;
 
@@ -165,11 +168,21 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
         bool _fromQueued,
         bool _isLong,
         uint _oi,
-        uint _oiShares
+        uint _oiShares,
+        int216 _printed
     ) external onlyCollateral {
 
-        if (_isLong) ( __oiLong__ -= _oi, oiLongShares -= _oiShares );
-        else ( __oiShort__ -= _oi, oiShortShares -= _oiShares );
+        if (_fromQueued) {
+
+            if (_isLong) queuedOiLong -= _oi;
+            else queuedOiShort -= _oi;
+
+        } else {
+
+            if (_isLong) ( __oiLong__ -= _oi, oiLongShares -= _oiShares );
+            else ( __oiShort__ -= _oi, oiShortShares -= _oiShares );
+
+        }
 
     }
 

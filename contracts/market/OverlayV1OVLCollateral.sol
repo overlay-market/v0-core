@@ -262,7 +262,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             pos.compounding <= _tCompounding, 
             pos.isLong, 
             _userOi, 
-            _userOiShares
+            _userOiShares,
+            int216(int(_userCost)) - int216(int(_userValueAdjusted))
         );
 
         }
@@ -303,7 +304,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             pos.compounding <= _tCompounding, 
             _isLong, 
             _oi, 
-            _oiShares
+            _oiShares,
+            0
         );
 
         // TODO: which is better on gas

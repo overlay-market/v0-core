@@ -42,6 +42,7 @@ contract OverlayV1UniswapV3Factory is OverlayV1Factory {
     function createMarket(
         address uniV3Pool,
         uint256 updatePeriod,
+        uint256 printWindow,
         uint256 compoundingPeriod,
         uint144 oiCap,
         uint112 fundingKNumerator,
@@ -57,6 +58,7 @@ contract OverlayV1UniswapV3Factory is OverlayV1Factory {
             ovl,
             uniV3Pool,
             updatePeriod,
+            printWindow,
             compoundingPeriod,
             oiCap,
             fundingKNumerator,

@@ -3,7 +3,12 @@ import brownie
 import pandas as pd
 import os
 import json
-from brownie import ETH_ADDRESS, OverlayToken, chain, interface
+from brownie import \
+    ETH_ADDRESS,\
+    PrintingShim,\
+    OverlayToken,\
+    chain,\
+    interface
 
 
 TOKEN_DECIMALS = 18
@@ -131,6 +136,10 @@ def get_uni_oracle (feed_owner):
 
     return uniswapv3_factory.address, uniswapv3_mock.address
 
+@pytest.fixture( scope="module")
+def print_shim(gov):
+    print_shim = PrintingShim.deploy(10, { 'from': gov })
+    yield print_shim
 
 @pytest.fixture(
     scope="module",

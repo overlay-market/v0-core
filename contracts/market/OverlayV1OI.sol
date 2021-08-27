@@ -23,6 +23,181 @@ contract OverlayV1OI {
     uint256 public updateLast;
     uint256 public oiLast;
 
+    uint256 public printWindow;
+    struct Print {
+        uint8  isinit;
+        uint32 block;
+        int216 printed;
+    }
+
+    int216 public printed;
+    uint24 public index;
+    uint24 public cardinality;
+    uint24 public cardinalityNext;
+    Print[216000] public prints;
+
+    constructor (uint _printWindow) {
+
+        cardinality = 1;
+        cardinalityNext = 1;
+
+        prints[0] = Print({
+            isinit: 1,
+            printed: 0,
+            block: uint32(block.number)
+        });
+
+        printWindow = _printWindow;
+
+    }
+
+    function expand (
+        uint16 next
+    ) public {
+
+        require(cardinalityNext < next, 'OVLV1:next<curr');
+
+        // save write gas for the users
+        for (uint24 i = cardinalityNext; i < next; i++) prints[i].block = 1;
+
+        cardinalityNext = next;
+
+    }
+
+    function recordPrint (int216 _print) internal {
+        uint24 _index = index;
+
+        Print memory _last = prints[_index];
+        if (_last.block != block.number) {
+
+            uint24 _cardinality = cardinality;
+
+            if (_index + 1 < _cardinality) {
+
+                _index += 1;
+
+                Print storage next = prints[_index];
+                next.printed = _last.printed + printed;
+                next.block = uint32(block.number);
+
+            } else if (_cardinality < cardinalityNext) {
+
+                _index += 1;
+                cardinality += 1;
+
+                Print storage next = prints[_index];
+                next.printed = _last.printed + printed;
+                next.block = uint32(block.number);
+                next.isinit = 1;
+
+
+            } else {
+
+                _index = 0;
+                Print storage next = prints[0];
+                next.printed = _last.printed + printed;
+                next.block = uint32(block.number);
+
+            }
+
+            index = _index;
+            printed = _print;
+
+        } else {
+
+            printed += _print;
+
+        }
+
+    }
+
+    function viewPrint (uint _ix) view public returns (Print memory _prints) {
+        return prints[_ix];
+    }
+
+    function blocknumber () public view returns (uint ) { return block.number; }
+
+
+    // TODO: should we include the current block?
+    function printedInWindow () public view returns (int totalPrint_) {
+
+        uint _target = block.number - printWindow;
+
+        ( Print memory beforeOrAt,
+          Print memory atOrAfter ) = getSurroundingPrints(_target);
+
+        if (beforeOrAt.block == _target) {
+
+            totalPrint_ = ( prints[index].printed + printed ) - beforeOrAt.printed;
+
+        } else if (_target == atOrAfter.block) {
+
+            totalPrint_ = ( prints[index].printed + printed ) - atOrAfter.printed;
+
+        } else {
+
+            int216 _printDiff = atOrAfter.printed - beforeOrAt.printed;
+            uint _blockDiff = atOrAfter.block - beforeOrAt.block;
+
+            uint _targetRatio = ( ( _target - beforeOrAt.block ) * 1e4 ) / _blockDiff;
+            int _interpolatedPrint = beforeOrAt.printed + ( _printDiff * int(_targetRatio) );
+
+            totalPrint_ = ( prints[index].printed + printed ) - _interpolatedPrint;
+
+        }
+
+    }
+
+    function getSurroundingPrints (
+        uint target
+    ) public view returns (Print memory beforeOrAt, Print memory atOrAfter) {
+
+
+        // now, set before to the oldest observation
+        beforeOrAt = prints[(index + 1) % cardinality];
+        if (beforeOrAt.isinit == 0) beforeOrAt = prints[0];
+
+        // ensure that the target is chronologically at or after the oldest observation
+        require(beforeOrAt.block <= target, 'OLD');
+
+        return binarySearch(
+            prints, 
+            uint32(target), 
+            uint16(index), 
+            uint16(cardinality)
+        );
+
+    }
+
+    function binarySearch(
+        Print[216000] storage self,
+        uint32 target,
+        uint16 _index,
+        uint16 _cardinality
+    ) private view returns (Print memory beforeOrAt, Print memory atOrAfter) {
+        uint256 l = (_index + 1) % _cardinality; // oldest print
+        uint256 r = l + _cardinality - 1; // newest print
+        uint256 i;
+        while (true) {
+            i = (l + r) / 2;
+
+            beforeOrAt = self[i % _cardinality];
+
+            // we've landed on an uninitialized tick, keep searching higher (more recently)
+            if (beforeOrAt.isinit == 0) { l = i + 1; continue; }
+
+            atOrAfter = self[(i + 1) % _cardinality];
+
+            bool targetAtOrAfter = beforeOrAt.block <= target;
+
+            // check if we've found the answer!
+            if (targetAtOrAfter && target <= atOrAfter.block) break;
+
+            if (!targetAtOrAfter) r = i - 1;
+            else l = i + 1;
+        }
+    }
+
     event FundingPaid(uint oiLong, uint oiShort, int fundingPaid);
 
     function freeOi (
@@ -180,6 +355,7 @@ contract OverlayV1OI {
     /// @notice Updates open interest at T+1 price settlement
     /// @dev Execute at market update() to prevent funding payment harvest without price risk
     function updateOi() internal {
+
         __oiLong__ += queuedOiLong;
         __oiShort__ += queuedOiShort;
         oiLongShares += queuedOiLong;
@@ -187,5 +363,6 @@ contract OverlayV1OI {
 
         queuedOiLong = 0;
         queuedOiShort = 0;
+        
     }
 }

@@ -63,14 +63,15 @@ interface IOverlayV1Market is IERC1155 {
         uint tCompounding_
     );
 
-    function exitOI(
+    function exitOI (
         bool _compounded,
         bool _isLong,
         uint _oi,
-        uint _oiShares
+        uint _oiShares,
+        int216 _printed
     ) external;
 
-    function adjustParams(
+    function adjustParams (
         uint256 _updatePeriod, 
         uint256 _compoundingPeriod, 
         uint144 _oiCap, 

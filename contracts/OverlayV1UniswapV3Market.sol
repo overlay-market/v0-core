@@ -25,6 +25,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         address _ovl,
         address _uniV3Pool,
         uint256 _updatePeriod,
+        uint256 _printWindow,
         uint256 _compoundingPeriod,
         uint144 _oiCap,
         uint112 _fundingKNumerator,
@@ -37,6 +38,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     ) OverlayV1Market(
         _ovl,
         _updatePeriod,
+        _printWindow,
         _compoundingPeriod,
         _oiCap,
         _fundingKNumerator,
