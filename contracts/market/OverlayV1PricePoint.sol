@@ -6,11 +6,7 @@ abstract contract OverlayV1PricePoint {
     // mapping from price point index to realized historical prices
     uint[] public pricePoints;
 
-    constructor () {
-
-        pricePoints.push(0);
-
-    }
+    event NewPrice(uint _price);
 
     /// @notice Get the current price point index
     function pricePointCurrentIndex() external view returns (uint) {
@@ -22,19 +18,7 @@ abstract contract OverlayV1PricePoint {
     /// @notice Allows inheriting contracts to add the latest realized price
     function setPricePointCurrent(uint256 price) internal {
         pricePoints.push(price);
+        emit NewPrice(price);
     }
 
-    // TODO: collapse updatePricePoints and fetchPricePoints into one function 
-    // where inherited function uses super. Check that SOLC 0.8.2 still uses
-    // super as such.
-
-    /// @notice Fetches last price from oracle and sets in pricePoints
-    /// @dev Override for each specific market feed to also fetch from oracle value for T+1
-    function fetchPricePoint() internal virtual returns (uint256 price);
-
-    /// @notice Forwards price point index for next update period
-    /// @dev Override fetchPricePoint for each specific market feed
-    function updatePricePoints() internal returns (uint256) {
-        return fetchPricePoint();
-    }
 }

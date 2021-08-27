@@ -11,8 +11,8 @@ contract OverlayV1OI {
     // max number of periodSize periods before treat funding as completely rebalanced: done for gas savings on compute funding factor
     uint16 public constant MAX_FUNDING_COMPOUND = 4320; // 30d at 10m for updatePeriod
 
-    uint256 public oiLong; // total long open interest
-    uint256 public oiShort; // total short open interest
+    uint256 internal __oiLong__; // total long open interest
+    uint256 internal __oiShort__; // total short open interest
 
     uint256 public oiLongShares; // total shares of long open interest outstanding
     uint256 public oiShortShares; // total shares of short open interest outstanding
@@ -117,9 +117,6 @@ contract OverlayV1OI {
 
     function blocknumber () public view returns (uint ) { return block.number; }
 
-    event log(string k, uint v);
-    event log(string k, int v);
-
 
     // TODO: should we include the current block?
     function printedInWindow () public view returns (int totalPrint_) {
@@ -201,6 +198,7 @@ contract OverlayV1OI {
         }
     }
 
+    event FundingPaid(uint oiLong, uint oiShort, int fundingPaid);
 
     function freeOi (
         bool _isLong
@@ -210,8 +208,8 @@ contract OverlayV1OI {
 
         freeOi_ = oiLast / 2;
 
-        if (_isLong) freeOi_ -= oiLong;
-        else freeOi_ -= oiShort;
+        if (_isLong) freeOi_ -= __oiLong__;
+        else freeOi_ -= __oiShort__;
 
     }
 
@@ -235,54 +233,78 @@ contract OverlayV1OI {
         }
     }
 
-    /// @notice Transfers funding payments
-    /// @dev oiImbalance(m) = oiImbalance(0) * (1 - 2k)**m
-    function updateFunding(
-        uint112 fundingKNumerator,
-        uint112 fundingKDenominator,
-        uint256 elapsed
-    ) internal returns (int256 fundingPaid) {
+    function computeFunding (
+        uint256 _oiLong,
+        uint256 _oiShort,
+        uint256 _epochs,
+        uint112 _kNumerator,
+        uint112 _kDenominator
+    ) internal pure returns (
+        uint256 oiLong_,
+        uint256 oiShort_,
+        int256  fundingPaid_
+    ) {
 
-        // TODO: can we remove safemath in this call - would need another library function
+        if (0 == _epochs) return ( _oiLong, _oiShort, 0 );
+
         FixedPoint.uq144x112 memory fundingFactor = computeFundingFactor(
-            fundingKDenominator - 2 * fundingKNumerator,
-            fundingKDenominator,
-            elapsed
+            _kDenominator - 2 * _kNumerator,
+            _kDenominator,
+            _epochs
         );
 
-        uint256 funding = oiLong;
-        uint256 funded = oiShort;
+        uint _funder = _oiLong;
+        uint _funded = _oiShort;
+        bool payingLongs = _funder <= _funded;
+        if (payingLongs) (_funder, _funded) = (_funded, _funder);
 
-        bool paidByShorts = funding <= funded;
-        if (paidByShorts) (funding, funded) = (funded, funding);
+        if (_funded == 0) {
 
-        unchecked {
+            uint _oiNow = fundingFactor.mul(_funder).decode144();
+            fundingPaid_ = int(_funder - _oiNow);
+            _funder = _oiNow;
 
-            if (funded == 0) {
-                
-                // TODO: we can make an unsafe mul function here
-                uint256 oiNow = fundingFactor.mul(funding).decode144();
-                fundingPaid = int(funding - oiNow);
+        } else {
 
-                if (paidByShorts) oiShort = oiNow;
-                else ( oiLong = oiNow, fundingPaid = -fundingPaid );
+            // TODO: we can make an unsafe mul function here
+            uint256 _oiImbNow = fundingFactor.mul(_funder - _funded).decode144();
+            uint256 _total = _funder + _funded;
 
-            } else {
-
-                // TODO: we can make an unsafe mul function here
-                uint256 oiImbNow = fundingFactor.mul(funding - funded).decode144();
-                uint256 total = funding + funded;
-
-                funding = ( total + oiImbNow ) / 2;
-                funded = ( total - oiImbNow ) / 2;
-                fundingPaid = int( oiImbNow / 2 );
-
-                if (paidByShorts) ( oiShort = funding, oiLong = funded );
-                else ( oiLong = funding, oiShort = funded, fundingPaid = -fundingPaid );
-
-            }
+            _funder = ( _total + _oiImbNow ) / 2;
+            _funded = ( _total - _oiImbNow ) / 2;
+            fundingPaid_ = int( _oiImbNow / 2 );
 
         }
+
+        ( oiLong_, oiShort_, fundingPaid_) = payingLongs
+            ? ( _funded, _funder, fundingPaid_ )
+            : ( _funder, _funded, -fundingPaid_ );
+
+    }
+
+    /// @notice Transfers funding payments
+    /// @dev oiImbalance(m) = oiImbalance(0) * (1 - 2k)**m
+    function payFunding(
+        uint112 _kNumerator,
+        uint112 _kDenominator,
+        uint256 _epochs
+    ) internal returns (int256 fundingPaid_) {
+
+        uint _oiLong;
+        uint _oiShort;
+
+        ( _oiLong, _oiShort, fundingPaid_ ) = computeFunding(
+            __oiLong__,
+            __oiShort__,
+            _epochs,
+            _kNumerator,
+            _kDenominator
+        );
+
+        __oiLong__ = _oiLong;
+        __oiShort__ = _oiShort;
+
+        emit FundingPaid(_oiLong, _oiShort, fundingPaid_);
 
     }
 
@@ -290,22 +312,24 @@ contract OverlayV1OI {
     function queueOi(bool isLong, uint256 oi, uint256 oiCap) internal {
         if (isLong) {
             queuedOiLong += oi;
-            require(oiLong + queuedOiLong <= oiCap, "OVLV1: breached oi cap");
+            require(__oiLong__ + queuedOiLong <= oiCap, "OVLV1: breached oi cap");
         } else {
             queuedOiShort += oi;
-            require(oiShort + queuedOiShort <= oiCap, "OVLV1: breached oi cap");
+            require(__oiShort__ + queuedOiShort <= oiCap, "OVLV1: breached oi cap");
         }
     }
 
     /// @notice Updates open interest at T+1 price settlement
     /// @dev Execute at market update() to prevent funding payment harvest without price risk
     function updateOi() internal {
-        oiLong += queuedOiLong;
-        oiShort += queuedOiShort;
+
+        __oiLong__ += queuedOiLong;
+        __oiShort__ += queuedOiShort;
         oiLongShares += queuedOiLong;
         oiShortShares += queuedOiShort;
 
         queuedOiLong = 0;
         queuedOiShort = 0;
+        
     }
 }

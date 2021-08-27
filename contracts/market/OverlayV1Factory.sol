@@ -107,19 +107,19 @@ contract OverlayV1Factory is Ownable {
     function adjustPerMarketParams(
         address market,
         uint256 updatePeriod,
-        uint8 leverageMax,
-        uint16 marginAdjustment,
+        uint256 compoundingPeriod,
         uint144 oiCap,
         uint112 fundingKNumerator,
-        uint112 fundingKDenominator
+        uint112 fundingKDenominator,
+        uint8 leverageMax
     ) external onlyOwner {
         IOverlayV1Market(market).adjustParams(
             updatePeriod,
-            leverageMax,
-            marginAdjustment,
+            compoundingPeriod,
             oiCap,
             fundingKNumerator,
-            fundingKDenominator
+            fundingKDenominator,
+            leverageMax
         );
     }
 

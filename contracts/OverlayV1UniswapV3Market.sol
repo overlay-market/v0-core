@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-import "./libraries/UniswapV3OracleLibrary/UniswapV3OracleLibrary.sol";
+import "./libraries/UniswapV3OracleLibrary/UniswapV3OracleLibraryV2.sol";
+// import "./libraries/UniswapV3OracleLibrary/UniswapV3OracleLibrary.sol";
 import "./interfaces/IUniswapV3Pool.sol";
 import "./market/OverlayV1Market.sol";
 
@@ -24,6 +25,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         address _uniV3Pool,
         uint256 _updatePeriod,
         uint256 _printWindow,
+        uint256 _compoundingPeriod,
         uint144 _oiCap,
         uint112 _fundingKNumerator,
         uint112 _fundingKDenominator,
@@ -35,27 +37,56 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         _ovl,
         _updatePeriod,
         _printWindow,
+        _compoundingPeriod,
         _oiCap,
         _fundingKNumerator,
         _fundingKDenominator,
         _leverageMax
     ) {
+
         // immutables
         feed = _uniV3Pool;
         isPrice0 = _isPrice0;
         windowSize = _windowSize;
 
+
         amountIn = _amountIn;
-        token0 = IUniswapV3Pool(_uniV3Pool).token0();
-        token1 = IUniswapV3Pool(_uniV3Pool).token1();
+        address _token0 = IUniswapV3Pool(_uniV3Pool).token0();
+        address _token1 = IUniswapV3Pool(_uniV3Pool).token1();
+
+        token0 = _token0;
+        token1 = _token1;
+
+        int24 tick = OracleLibraryV2.consult(
+            _uniV3Pool, 
+            uint32(_windowSize),
+            uint32(0)
+        );
+
+        uint _price = OracleLibraryV2.getQuoteAtTick(
+            tick,
+            uint128(_amountIn),
+            _isPrice0 ? _token0 : _token1,
+            _isPrice0 ? _token1 : _token0
+        );
+
+        setPricePointCurrent(_price);
+
+        updated = block.timestamp;
+        toUpdate = type(uint256).max;
+        compounded = block.timestamp;
 
     }
 
-    function lastPrice() public view returns (uint256 price_)   {
+    function lastPrice(uint secondsAgoStart, uint secondsAgoEnd) public view returns (uint256 price_)   {
 
-        int24 tick = OracleLibrary.consult(feed, uint32(windowSize));
+        int24 tick = OracleLibraryV2.consult(
+            feed, 
+            uint32(secondsAgoStart), 
+            uint32(secondsAgoEnd)
+        );
 
-        price_ = OracleLibrary.getQuoteAtTick(
+        price_ = OracleLibraryV2.getQuoteAtTick(
             tick,
             uint128(amountIn),
             isPrice0 ? token0 : token1,
@@ -64,9 +95,195 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
-    /// @dev Override for Mirin market feed to compute and set TWAP for latest price point index
-    function fetchPricePoint() internal virtual override returns (uint price) {
-        price = lastPrice();
-        setPricePointCurrent(price);
+    uint public toUpdate;
+    uint public updated;
+    uint public compounded;
+
+    function NOW () external view returns (uint) { return block.timestamp; }
+
+    function epochs (
+        uint _time,
+        uint _from,
+        uint _between
+    ) public view returns (
+        uint updatesThen_,
+        uint updatesNow_,
+        uint tUpdate_,
+        uint t1Update_,
+        uint compoundings_,
+        uint tCompounding_,
+        uint t1Compounding_
+    ) { 
+
+        uint _updatePeriod = updatePeriod;
+        uint _compoundPeriod = compoundingPeriod;
+        uint _compounded = compounded;
+
+        if (_between < _time) {
+
+            updatesThen_ = ( _between - _from ) / _updatePeriod;
+
+            updatesNow_ = ( _time - _between ) / _updatePeriod;
+
+        } else {
+
+            updatesNow_ = ( _time - _from ) / _updatePeriod;
+
+        }
+        
+        tUpdate_ = _from + ( ( updatesThen_ + updatesNow_ ) * _updatePeriod );
+
+        t1Update_ = tUpdate_ + _updatePeriod;
+
+        compoundings_ = ( _time - compounded ) / _compoundPeriod;
+
+        tCompounding_ = _compounded + ( compoundings_ * _compoundPeriod );
+
+        t1Compounding_ = tCompounding_ + _compoundPeriod;
+
     }
+
+    function staticUpdate () internal override returns (bool updated_) {
+
+        uint _toUpdate = toUpdate;
+        uint _updated = updated;
+
+        (   uint _updatesThen,,,,
+            uint _compoundings,
+            uint _tCompounding, ) = epochs(block.timestamp, updated, _toUpdate);
+
+        // only update if there is a position to update
+        if (0 < _updatesThen) {
+            uint _then = block.timestamp - _toUpdate;
+            uint _price = lastPrice(_then + windowSize, _then);
+            setPricePointCurrent(_price);
+            updated = _toUpdate;
+            toUpdate = type(uint256).max;
+            updated_ = true;
+        }
+
+        if (0 < _compoundings) {
+            updateFunding(_compoundings);
+            compounded = _tCompounding;
+        }
+
+    }
+
+    function entryUpdate () internal override returns (
+        uint256 t1Compounding_
+    ) {
+
+        uint _toUpdate = toUpdate;
+
+        (   uint _updatesThen,,,
+            uint _tp1Update,
+            uint _compoundings,
+            uint _tCompounding,
+            uint _t1Compounding ) = epochs(block.timestamp, updated, _toUpdate);
+
+        if (0 < _updatesThen) {
+            uint _then = block.timestamp - _toUpdate;
+            uint _price = lastPrice(_then + windowSize, _then);
+            setPricePointCurrent(_price);
+            updated = _toUpdate;
+        }
+
+        if (0 < _compoundings) {
+            updateFunding(_compoundings);
+            compounded = _tCompounding;
+        }
+
+        if (_toUpdate != _tp1Update) toUpdate = _tp1Update;
+
+        t1Compounding_ = _t1Compounding;
+
+    }
+
+    function exitUpdate () internal override returns (uint tCompounding_) {
+
+        uint _toUpdate = toUpdate;
+
+        (   uint _updatesThen,
+            uint _updatesNow,
+            uint _tUpdate,,
+            uint _compoundings,
+            uint _tCompounding, ) = epochs(block.timestamp, updated, _toUpdate);
+
+            
+        if (0 < _updatesThen) {
+
+            uint _then = block.timestamp - _toUpdate;
+            uint _price = lastPrice(_then + windowSize, _then);
+            setPricePointCurrent(_price);
+
+        }
+
+        if (0 < _updatesNow) { 
+
+            uint _then = block.timestamp - _tUpdate;
+            uint _price = lastPrice(_then + windowSize, _then);
+            setPricePointCurrent(_price);
+
+            updated = _tUpdate;
+            toUpdate = type(uint256).max;
+
+        }
+
+        if (0 < _compoundings) {
+
+            updateFunding(1);
+            updateFunding(_compoundings - 1);
+
+        }
+
+        tCompounding_ = _tCompounding;
+
+    }
+
+    function oi () public view returns (uint oiLong_, uint oiShort_) {
+
+        ( ,,,,uint _compoundings,, ) = epochs(block.timestamp, updated, toUpdate);
+
+        oiLong_ = __oiLong__;
+        oiShort_ = __oiShort__;
+        uint112 _kNumerator = fundingKNumerator;
+        uint112 _kDenominator = fundingKDenominator;
+        uint _queuedOiLong = queuedOiLong;
+        uint _queuedOiShort = queuedOiShort;
+
+        if (0 < _compoundings) {
+
+            ( oiLong_, oiShort_, ) = computeFunding(
+                oiLong_,
+                oiShort_,
+                1,
+                _kNumerator,
+                _kDenominator
+            );
+
+            ( oiLong_, oiShort_, ) = computeFunding(
+                oiLong_ += _queuedOiLong,
+                oiShort_ += _queuedOiShort,
+                _compoundings - 1,
+                _kNumerator,
+                _kDenominator
+            );
+
+        } else {
+
+            oiLong_ += _queuedOiLong;
+            oiShort_ += _queuedOiShort;
+
+        }
+
+    }
+
+    function oiLong () external returns (uint oiLong_) {
+        (   oiLong_, ) = oi();
+    }
+
+    function oiShort () external view returns (uint oiShort_) {
+        (  ,oiShort_ ) = oi();
+    }
+
 }

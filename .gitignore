@@ -13,3 +13,4 @@ hhtests
 artifacts
 cache
 hardhat.config.js
+.DS_Store
