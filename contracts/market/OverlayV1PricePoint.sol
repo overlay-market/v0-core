@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.2;
+pragma solidity ^0.8.7;
 
 abstract contract OverlayV1PricePoint {
 
@@ -22,11 +22,15 @@ abstract contract OverlayV1PricePoint {
     }
 
     /// @notice Allows inheriting contracts to add the latest realized price
-    function setPricePointCurrent(uint256 bid, uint256 ask, uint256 price) internal {
+    function setPricePointCurrent(PricePoint memory _pricePoint) internal {
 
-        pricePoints.push(PricePoint( bid, ask, price));
+        pricePoints.push(_pricePoint);
 
-        emit NewPrice(bid, ask, price);
+        emit NewPrice(
+            _pricePoint.bid, 
+            _pricePoint.ask, 
+            _pricePoint.price
+        );
 
     }
 

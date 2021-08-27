@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.2;
+pragma solidity ^0.8.7;
 
 import "../interfaces/IOverlayV1Factory.sol";
 import "../interfaces/IOverlayToken.sol";
@@ -17,8 +17,7 @@ contract OverlayV1Governance {
 
     // open interest funding constant factor, charged per updatePeriod
     // 1/d = 1 - 2k; 0 < k < 1/2, 1 < d < infty
-    uint112 public fundingKNumerator;
-    uint112 public fundingKDenominator;
+    uint112 public fundingK;
 
     uint public updatePeriod;
     uint public compoundingPeriod;
@@ -38,8 +37,7 @@ contract OverlayV1Governance {
         uint256 _updatePeriod,
         uint256 _compoundingPeriod,
         uint144 _oiCap,
-        uint112 _fundingKNumerator,
-        uint112 _fundingKDenominator,
+        uint112 _fundingK,
         uint8 _leverageMax
     ) {
         // immutables
@@ -53,9 +51,7 @@ contract OverlayV1Governance {
         leverageMax = _leverageMax;
         oiCap = _oiCap;
 
-        require(_fundingKDenominator > 2 * _fundingKNumerator, "OVLV1: invalid k");
-        fundingKNumerator = _fundingKNumerator;
-        fundingKDenominator = _fundingKDenominator;
+        fundingK = _fundingK;
     }
 
     /// @notice Adjusts params associated with this market
@@ -63,8 +59,7 @@ contract OverlayV1Governance {
         uint256 _updatePeriod,
         uint256 _compoundingPeriod,
         uint144 _oiCap,
-        uint112 _fundingKNumerator,
-        uint112 _fundingKDenominator,
+        uint112 _fundingK,
         uint8 _leverageMax
     ) external onlyFactory {
         // TODO: requires on params; particularly leverageMax wrt MAX_FEE and cap
@@ -74,8 +69,6 @@ contract OverlayV1Governance {
         leverageMax = _leverageMax;
         oiCap = _oiCap;
 
-        require(_fundingKDenominator > 2 * _fundingKNumerator, "OVLV1: invalid k");
-        fundingKNumerator = _fundingKNumerator;
-        fundingKDenominator = _fundingKDenominator;
+        fundingK = _fundingK;
     }
 }

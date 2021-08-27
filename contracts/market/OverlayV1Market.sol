@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.2;
+pragma solidity ^0.8.7;
 
 import "../libraries/Position.sol";
 import "../interfaces/IOverlayV1Factory.sol";
@@ -15,9 +15,6 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
     uint constant RESOLUTION = 1e4;
 
     uint16 public constant MIN_COLLATERAL_AMOUNT = 10**4;
-
-    // block at which market update was last called: includes funding payment, fees, price fetching
-    uint256 public updateBlockLast;
 
     uint256 private unlocked = 1;
     modifier lock() {
@@ -35,27 +32,19 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
     constructor(
         address _ovl,
         uint256 _updatePeriod,
-        uint256 _printWindow,
         uint256 _compoundingPeriod,
+        uint256 _printWindow,
         uint144 _oiCap,
-        uint112 _fundingKNumerator,
-        uint112 _fundingKDenominator,
+        uint112 _fundingK,
         uint8   _leverageMax
     ) OverlayV1Governance(
         _ovl,
         _updatePeriod,
         _compoundingPeriod,
         _oiCap,
-        _fundingKNumerator,
-        _fundingKDenominator,
+        _fundingK,
         _leverageMax
-    ) OverlayV1OI(
-        _printWindow
-    ){
-
-        updateBlockLast = block.number;
-
-    }
+    ) OverlayV1OI(_printWindow) { }
 
     function addCollateral (address _collateral) public {
 
@@ -85,11 +74,7 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
         if (_epochs > 0) {
 
             // WARNING: must pay funding before updating OI to avoid free rides
-            payFunding(
-                fundingKNumerator, 
-                fundingKDenominator, 
-                _epochs
-            );
+            payFunding(fundingK, _epochs);
             
             updateOi(); 
 
@@ -133,14 +118,16 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
     ) {
 
         compoundedEpoch_ = exitUpdate();
-        
-        uint _priceEntry = pricePoints[_pricePoint];
+
+        PricePoint storage priceEntry = pricePoints[_pricePoint];
 
         require( (_pricePoint = pricePoints.length - 1) < _pricePoint, "OVLV1:!settled");
 
-        uint _priceExit = pricePoints[_pricePoint];
+        PricePoint storage priceExit = pricePoints[_pricePoint];
 
-        priceFrame_ = _priceExit / _priceEntry;
+        priceFrame_ = _isLong
+            ? priceExit.bid / priceEntry.ask
+            : priceExit.ask / priceEntry.bid;
 
         if (_isLong) ( oiShares_ = oiLongShares, oi_ = __oiLong__ );
         else ( oiShares_ = oiShortShares, oi_ = __oiLong__ );

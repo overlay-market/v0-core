@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.2;
+pragma solidity ^0.8.7;
 
 import "./libraries/UniswapV3OracleLibrary/UniswapV3OracleLibraryV2.sol";
 // import "./libraries/UniswapV3OracleLibrary/UniswapV3OracleLibrary.sol";
@@ -14,8 +14,8 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     // whether using price0Cumulative or price1Cumulative for TWAP
     bool public immutable isPrice0;
     // window size for sliding window TWAP calc
-    uint256 public immutable twapWindowSize;
-    uint256 public immutable spreadWindowSize;
+    uint256 public immutable macroWindow;
+    uint256 public immutable microWindow;
 
     uint128 internal immutable amountIn;
     address private immutable token0;
@@ -25,32 +25,30 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         address _ovl,
         address _uniV3Pool,
         uint256 _updatePeriod,
-        uint256 _printWindow,
         uint256 _compoundingPeriod,
+        uint256 _printWindow,
+        uint256 _macroWindow,
+        uint256 _microWindow,
         uint144 _oiCap,
-        uint112 _fundingKNumerator,
-        uint112 _fundingKDenominator,
+        uint112 _fundingK,
         uint8   _leverageMax,
-        uint256 _twapWindowSize,
-        uint256 _spreadWindowSize,
         uint128 _amountIn,
         bool    _isPrice0
     ) OverlayV1Market(
         _ovl,
         _updatePeriod,
-        _printWindow,
         _compoundingPeriod,
+        _printWindow,
         _oiCap,
-        _fundingKNumerator,
-        _fundingKDenominator,
+        _fundingK,
         _leverageMax
     ) {
 
         // immutables
         feed = _uniV3Pool;
         isPrice0 = _isPrice0;
-        twapWindowSize = _twapWindowSize;
-        spreadWindowSize = _spreadWindowSize;
+        macroWindow = _macroWindow;
+        microWindow = _microWindow;
 
 
         amountIn = _amountIn;
@@ -62,7 +60,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         int24 tick = OracleLibraryV2.consult(
             _uniV3Pool, 
-            uint32(_twapWindowSize),
+            uint32(_macroWindow),
             uint32(0)
         );
 
@@ -73,7 +71,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             _isPrice0 ? _token1 : _token0
         );
 
-        setPricePointCurrent(_price);
+        setPricePointCurrent(PricePoint(_price, _price, _price));
 
         updated = block.timestamp;
         toUpdate = type(uint256).max;
@@ -112,11 +110,13 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     function price (uint _at) public view returns (PricePoint memory) { 
 
-        uint twapPrice_ = twapPrice(_at - twapWindowSize, _at);
-        uint _spreadPrice = twapPrice(_at - spreadWindowSize, _at);
+        uint twapPrice_ = twapPrice(_at - macroWindow, _at);
+        uint _spreadPrice = twapPrice(_at - microWindow, _at);
 
-        uint ask_ = max(_twapPrice, _spreadPrice);
-        uint bid_ = min(_twapPrice, _spreadPrice);
+        // uint ask_ = max(twapPrice_, _spreadPrice);
+        // uint bid_ = min(twapPrice_, _spreadPrice);
+        uint ask_ = twapPrice_;
+        uint bid_ = twapPrice_;
 
         // formula for ask
         // bid = min(twap,spread) * e ^ -(staticSpread + (impactParam * impactShort))
@@ -127,9 +127,9 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         ( uint _longImpact, uint _shortImpact ) = senseImpact();
 
-        ask_ = e ** _longImpact
+        // ask_ = e ** _longImpact
         
-        kkimpact
+        // kkimpact
 
         return PricePoint(
             bid_,
@@ -197,7 +197,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         // only update if there is a position to update
         if (0 < _updatesThen) {
             uint _then = block.timestamp - _toUpdate;
-            uint _price = twapPrice(_then + twapWindowSize, _then);
+            PricePoint memory _price = price(_then);
             setPricePointCurrent(_price);
             updated = _toUpdate;
             toUpdate = type(uint256).max;
@@ -225,7 +225,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         if (0 < _updatesThen) {
             uint _then = block.timestamp - _toUpdate;
-            uint _price = twapPrice(_then + twapWindowSize, _then);
+            PricePoint memory _price = price(_then);
             setPricePointCurrent(_price);
             updated = _toUpdate;
         }
@@ -255,7 +255,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         if (0 < _updatesThen) {
 
             uint _then = block.timestamp - _toUpdate;
-            uint _price = twapPrice(_then + twapWindowSize, _then);
+            PricePoint memory _price = price(_then);
             setPricePointCurrent(_price);
 
         }
@@ -263,7 +263,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         if (0 < _updatesNow) { 
 
             uint _then = block.timestamp - _tUpdate;
-            uint _price = twapPrice(_then + twapWindowSize, _then);
+            PricePoint memory _price = price(_then);
             setPricePointCurrent(_price);
 
             updated = _tUpdate;
@@ -288,8 +288,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         oiLong_ = __oiLong__;
         oiShort_ = __oiShort__;
-        uint112 _kNumerator = fundingKNumerator;
-        uint112 _kDenominator = fundingKDenominator;
+        uint112 _k = fundingK;
         uint _queuedOiLong = queuedOiLong;
         uint _queuedOiShort = queuedOiShort;
 
@@ -299,16 +298,14 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
                 oiLong_,
                 oiShort_,
                 1,
-                _kNumerator,
-                _kDenominator
+                _k
             );
 
             ( oiLong_, oiShort_, ) = computeFunding(
                 oiLong_ += _queuedOiLong,
                 oiShort_ += _queuedOiShort,
                 _compoundings - 1,
-                _kNumerator,
-                _kDenominator
+                _k
             );
 
         } else {

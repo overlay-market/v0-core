@@ -146,7 +146,7 @@ def print_shim(gov):
     params=[
         ("OverlayV1UniswapV3Deployer", [],
          "OverlayV1UniswapV3Factory", [15, 5000, 100, ETH_ADDRESS, 60, 50, 25], 
-         "OverlayV1UniswapV3Market", [ 10, 10, OI_CAP*10**TOKEN_DECIMALS, 3293944666953, 9007199254740992, 100, 600, AMOUNT_IN*10**TOKEN_DECIMALS, True ],
+         "OverlayV1UniswapV3Market", [ 10, 10, 10, 600, 60, OI_CAP*10**TOKEN_DECIMALS, 3293944666953, 9007199254740992, 100, AMOUNT_IN*10**TOKEN_DECIMALS, True ],
          get_uni_oracle,
         ),
     ])

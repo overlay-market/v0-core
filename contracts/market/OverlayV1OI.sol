@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.2;
+pragma solidity ^0.8.7;
 
 import "../libraries/Position.sol";
 
@@ -153,19 +153,19 @@ contract OverlayV1OI {
     ) public view returns (Print memory beforeOrAt, Print memory atOrAfter) {
 
 
-        // now, set before to the oldest observation
-        beforeOrAt = prints[(index + 1) % cardinality];
-        if (beforeOrAt.isinit == 0) beforeOrAt = prints[0];
+        // // now, set before to the oldest observation
+        // beforeOrAt = prints[(index + 1) % cardinality];
+        // if (beforeOrAt.isinit == 0) beforeOrAt = prints[0];
 
-        // ensure that the target is chronologically at or after the oldest observation
-        require(beforeOrAt.block <= target, 'OLD');
+        // // ensure that the target is chronologically at or after the oldest observation
+        // require(beforeOrAt.block <= target, 'OLD');
 
-        return binarySearch(
-            prints, 
-            uint32(target), 
-            uint16(index), 
-            uint16(cardinality)
-        );
+        // return binarySearch(
+        //     prints, 
+        //     uint32(target), 
+        //     uint16(index), 
+        //     uint16(cardinality)
+        // );
 
     }
 
@@ -216,20 +216,15 @@ contract OverlayV1OI {
     /// @notice Computes f**m
     /// @dev Works properly only when fundingKNumerator < fundingKDenominator
     function computeFundingFactor(
-        uint112 fundingKNumerator,
-        uint112 fundingKDenominator,
+        uint112 fundingK,
         uint256 m
     ) private pure returns (FixedPoint.uq144x112 memory factor) {
         if (m > MAX_FUNDING_COMPOUND) {
             // cut off the recursion if power too large
             factor = FixedPoint.encode144(0);
         } else {
-            FixedPoint.uq144x112 memory f = FixedPoint.fraction144(
-                fundingKNumerator,
-                fundingKDenominator
-            );
             // TODO: decide if we want to change to unsafe math inside pow
-            factor = FixedPoint.pow(f, m);
+            // factor = FixedPoint.pow(fundingK, m);
         }
     }
 
@@ -237,8 +232,7 @@ contract OverlayV1OI {
         uint256 _oiLong,
         uint256 _oiShort,
         uint256 _epochs,
-        uint112 _kNumerator,
-        uint112 _kDenominator
+        uint112 _k
     ) internal pure returns (
         uint256 oiLong_,
         uint256 oiShort_,
@@ -247,11 +241,7 @@ contract OverlayV1OI {
 
         if (0 == _epochs) return ( _oiLong, _oiShort, 0 );
 
-        FixedPoint.uq144x112 memory fundingFactor = computeFundingFactor(
-            _kDenominator - 2 * _kNumerator,
-            _kDenominator,
-            _epochs
-        );
+        FixedPoint.uq144x112 memory fundingFactor = computeFundingFactor( _k, _epochs);
 
         uint _funder = _oiLong;
         uint _funded = _oiShort;
@@ -285,8 +275,7 @@ contract OverlayV1OI {
     /// @notice Transfers funding payments
     /// @dev oiImbalance(m) = oiImbalance(0) * (1 - 2k)**m
     function payFunding(
-        uint112 _kNumerator,
-        uint112 _kDenominator,
+        uint112 _k,
         uint256 _epochs
     ) internal returns (int256 fundingPaid_) {
 
@@ -297,8 +286,7 @@ contract OverlayV1OI {
             __oiLong__,
             __oiShort__,
             _epochs,
-            _kNumerator,
-            _kDenominator
+            _k
         );
 
         __oiLong__ = _oiLong;
@@ -321,6 +309,14 @@ contract OverlayV1OI {
         }
     }
 
+    function senseImpact() public view returns (uint longImpact_, uint shortImpact_) {
+
+    }
+
+    function registerImpact(bool _isLong, uint _oi) public {
+
+    }
+
     // TODO: should we include the current block?
     function impact (uint _from, uint _to) public view returns (int totalPrint_) {
 
@@ -331,11 +327,11 @@ contract OverlayV1OI {
 
         if (beforeOrAt.block == _target) {
 
-            totalPrint_ = ( prints[index].printed - beforeOrAt.printed;
+            totalPrint_ = prints[index].printed - beforeOrAt.printed;
 
         } else if (_target == atOrAfter.block) {
 
-            totalPrint_ = ( prints[index].printed - atOrAfter.printed;
+            totalPrint_ = prints[index].printed - atOrAfter.printed;
 
         } else {
 
