@@ -39,6 +39,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         _updatePeriod,
         _compoundingPeriod,
         _printWindow,
+        _microWindow,
         _oiCap,
         _fundingK,
         _leverageMax

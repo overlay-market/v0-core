@@ -34,6 +34,7 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
         uint256 _updatePeriod,
         uint256 _compoundingPeriod,
         uint256 _printWindow,
+        uint256 _impactWindow,
         uint144 _oiCap,
         uint112 _fundingK,
         uint8   _leverageMax
@@ -44,7 +45,10 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
         _oiCap,
         _fundingK,
         _leverageMax
-    ) OverlayV1OI(_printWindow) { }
+    ) OverlayV1OI(
+        _printWindow,
+        _impactWindow
+    ) { }
 
     function addCollateral (address _collateral) public {
 

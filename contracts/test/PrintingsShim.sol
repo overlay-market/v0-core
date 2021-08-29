@@ -1,15 +1,15 @@
-// // SPDX-License-Identifier: MIT
-// pragma solidity ^0.8.7;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.7;
 
-// import "../market/OverlayV1OI.sol";
+import "../market/OverlayV1OI.sol";
 
-// contract PrintingShim is OverlayV1OI {
-// //     constructor (uint _printWindow) OverlayV1OI(_printWindow) {
+contract PrintingShim is OverlayV1OI {
+    constructor (
+        uint _printWindow, 
+        uint _impactWindow
+    ) OverlayV1OI(
+        _printWindow,
+        _impactWindow
+    ) { }
 
-// //     }
-
-// //     function simulatePrint (int216 amount) public {
-// //         recordPrint(amount);
-// //     }
-
-// }
+}

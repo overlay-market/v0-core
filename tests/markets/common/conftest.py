@@ -1,12 +1,12 @@
 import pytest
 import brownie
-import pandas as pd
 import os
 import json
 from brownie import \
     ETH_ADDRESS,\
     PrintingShim,\
     OverlayToken,\
+    OverlayV1OI,\
     chain,\
     interface
 
@@ -140,6 +140,11 @@ def get_uni_oracle (feed_owner):
 def print_shim(gov):
     print_shim = PrintingShim.deploy(10, { 'from': gov })
     yield print_shim
+
+@pytest.fixture( scope="module" )
+def overlay_oi(gov):
+    oi = gov.deploy(OverlayV1OI, 600, 60)
+    yield oi
 
 @pytest.fixture(
     scope="module",

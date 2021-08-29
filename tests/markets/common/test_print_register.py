@@ -27,7 +27,6 @@ def test_sanity(print_shim):
     assert cardinality_next == 1
     assert index == 0
 
-
 def test_expand_cardinality_next(print_shim):
 
     prior_index = print_shim.index()
