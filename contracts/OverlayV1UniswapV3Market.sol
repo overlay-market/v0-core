@@ -7,8 +7,6 @@ import "./interfaces/IUniswapV3Pool.sol";
 import "./market/OverlayV1Market.sol";
 
 contract OverlayV1UniswapV3Market is OverlayV1Market {
-    using FixedPoint for FixedPoint.uq112x112;
-    using FixedPoint for FixedPoint.uq144x112;
 
     address public immutable feed;
     // whether using price0Cumulative or price1Cumulative for TWAP
@@ -126,7 +124,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         ask_ = ask_ * staticSpreadAsk / RESOLUTION;
         bid_ = bid_ * staticSpreadBid / RESOLUTION;
 
-        ( uint _longImpact, uint _shortImpact ) = senseImpact();
+        // ( uint _longImpact, uint _shortImpact ) = senseImpact();
 
         // ask_ = e ** _longImpact
         

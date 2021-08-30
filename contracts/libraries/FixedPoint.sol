@@ -1,126 +1,135 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0-or-later
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 
-// COPIED AND MODIFIED from SushiSwap
-// https://github.com/sushiswap/mirin/blob/master/contracts/libraries/FixedPoint.sol
-// commit hash 82ad73f6ac7e38f0ff8fcdf0e526118f537011e6
-// XXX for changes
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 pragma solidity ^0.8.7;
+import "./LogExpMath.sol";
+import "../utils/Errors.sol";
 
-/**
- * @dev a library for handling binary fixed point numbers (https://en.wikipedia.org/wiki/Q_(number_format))
- * @author Andre Cronje
- */
+/* solhint-disable private-vars-leading-underscore */
+
 library FixedPoint {
-    // range: [0, 2**112 - 1]
-    // resolution: 1 / 2**112
-    struct uq112x112 {
-        uint224 _x;
+    uint256 internal constant ONE = 1e18; // 18 decimal places
+    uint256 internal constant MAX_POW_RELATIVE_ERROR = 10000; // 10^(-14)
+
+    // Minimum base for the power function when the exponent is 'free' (larger than ONE).
+    uint256 internal constant MIN_POW_BASE_FREE_EXPONENT = 0.7e18;
+
+    function add(uint256 a, uint256 b) internal pure returns (uint256) {
+        // Fixed Point addition is the same as regular checked addition
+
+        uint256 c = a + b;
+        _require(c >= a, Errors.ADD_OVERFLOW);
+        return c;
     }
 
-    // range: [0, 2**144 - 1]
-    // resolution: 1 / 2**112
-    struct uq144x112 {
-        uint256 _x;
+    function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+        // Fixed Point addition is the same as regular checked addition
+
+        _require(b <= a, Errors.SUB_OVERFLOW);
+        uint256 c = a - b;
+        return c;
     }
 
-    uint8 private constant RESOLUTION = 112;
+    function mulDown(uint256 a, uint256 b) internal pure returns (uint256) {
+        uint256 product = a * b;
+        _require(a == 0 || product / a == b, Errors.MUL_OVERFLOW);
 
-    // encode a uint112 as a UQ112x112
-    function encode(uint112 x) internal pure returns (uq112x112 memory) {
-        return uq112x112(uint224(x) << RESOLUTION);
+        return product / ONE;
     }
 
-    // encodes a uint144 as a UQ144x112
-    function encode144(uint144 x) internal pure returns (uq144x112 memory) {
-        return uq144x112(uint256(x) << RESOLUTION);
-    }
+    function mulUp(uint256 a, uint256 b) internal pure returns (uint256) {
+        uint256 product = a * b;
+        _require(a == 0 || product / a == b, Errors.MUL_OVERFLOW);
 
-    // divide a UQ112x112 by a uint112, returning a UQ112x112
-    function div(uq112x112 memory self, uint112 x) internal pure returns (uq112x112 memory) {
-        require(x != 0, "FixedPoint: DIV_BY_ZERO");
-        return uq112x112(self._x / uint224(x));
-    }
-
-    // multiply a UQ112x112 by a uint, returning a UQ144x112
-    // reverts on overflow
-    function mul(uq112x112 memory self, uint256 y) internal pure returns (uq144x112 memory) {
-        return uq144x112(uint256(self._x) * y);
-    }
-
-    // divide a UQ144x112 by a uint112, returning a UQ144x112
-    function div(uq144x112 memory self, uint112 x) internal pure returns (uq144x112 memory) {
-        require(x != 0, "FixedPoint: DIV_BY_ZERO");
-        return uq144x112(self._x / uint256(x));
-    }
-
-    // multiply a UQ144x112 by a uint, returning a UQ144x112
-    // reverts on overflow
-    function mul(uq144x112 memory self, uint256 y) internal pure returns (uq144x112 memory) {
-        return uq144x112(self._x * y);
-    }
-
-    // XXX: divide a UQ144x112 by another UQ144x112, returning a UQ144x112
-    function div(uq144x112 memory self, uq144x112 memory x) internal pure returns (uq144x112 memory) {
-        require(x._x != 0, "FixedPoint: DIV_BY_ZERO");
-        // TODO: Fix! ... looks off
-        return uq144x112((self._x / x._x) << RESOLUTION);
-    }
-
-    // XXX: multiply a UQ144x112 by another UQ144x112, returning a UQ144x112
-    // reverts on overflow
-    function mul(uq144x112 memory self, uq144x112 memory y) internal pure returns (uq144x112 memory) {
-        return uq144x112((self._x * y._x) >> RESOLUTION);
-    }
-
-    // returns a UQ112x112 which represents the ratio of the numerator to the denominator
-    // equivalent to encode(numerator).div(denominator)
-    function fraction(uint112 numerator, uint112 denominator) internal pure returns (uq112x112 memory) {
-        require(denominator > 0, "FixedPoint: DIV_BY_ZERO");
-        return uq112x112((uint224(numerator) << RESOLUTION) / denominator);
-    }
-
-    // XXX: returns a UQ144x112 which represents the ratio of the numerator to the denominator
-    // equivalent to encode144(numerator).div(denominator)
-    function fraction144(uint144 numerator, uint112 denominator) internal pure returns (uq144x112 memory) {
-        require(denominator > 0, "FixedPoint: DIV_BY_ZERO");
-        return uq144x112((uint256(numerator) << RESOLUTION) / denominator);
-    }
-
-    // XXX: returns a UQ144x112 which represents the ratio of numerator to denominator taken to the power of n (https://en.wikipedia.org/wiki/Exponentiation_by_squaring)
-    // reverts on overflow
-    function pow(FixedPoint.uq144x112 memory self, uint256 n) internal pure returns (uq144x112 memory) {
-        if (n == 0) {
-            return FixedPoint.encode144(1);
-        } else if (n == 1) {
-            return self;
+        if (product == 0) {
+            return 0;
         } else {
-            uq144x112 memory sqrd = mul(self, self);
-            if (n % 2 == 0) {
-                return pow(sqrd, n/2);
-            } else {
-                return mul(pow(sqrd, (n-1)/2), self);
-            }
+            // The traditional divUp formula is:
+            // divUp(x, y) := (x + y - 1) / y
+            // To avoid intermediate overflow in the addition, we distribute the division and get:
+            // divUp(x, y) := (x - 1) / y + 1
+            // Note that this requires x != 0, which we already tested for.
+
+            return ((product - 1) / ONE) + 1;
         }
     }
 
-    // XXX: compares whether UQ144x112 is greater than another UQ144x112
-    function gt(uq144x112 memory self, uq144x112 memory y) internal pure returns (bool) {
-        return self._x > y._x;
+    function divDown(uint256 a, uint256 b) internal pure returns (uint256) {
+        _require(b != 0, Errors.ZERO_DIVISION);
+
+        if (a == 0) {
+            return 0;
+        } else {
+            uint256 aInflated = a * ONE;
+            _require(aInflated / a == ONE, Errors.DIV_INTERNAL); // mul overflow
+
+            return aInflated / b;
+        }
     }
 
-    // XXX: compares whether UQ144x112 is less than another UQ144x112
-    function lt(uq144x112 memory self, uq144x112 memory y) internal pure returns (bool) {
-        return self._x < y._x;
+    function divUp(uint256 a, uint256 b) internal pure returns (uint256) {
+        _require(b != 0, Errors.ZERO_DIVISION);
+
+        if (a == 0) {
+            return 0;
+        } else {
+            uint256 aInflated = a * ONE;
+            _require(aInflated / a == ONE, Errors.DIV_INTERNAL); // mul overflow
+
+            // The traditional divUp formula is:
+            // divUp(x, y) := (x + y - 1) / y
+            // To avoid intermediate overflow in the addition, we distribute the division and get:
+            // divUp(x, y) := (x - 1) / y + 1
+            // Note that this requires x != 0, which we already tested for.
+
+            return ((aInflated - 1) / b) + 1;
+        }
     }
 
-    // decode a UQ112x112 into a uint112 by truncating after the radix point
-    function decode(uq112x112 memory self) internal pure returns (uint112) {
-        return uint112(self._x >> RESOLUTION);
+    /**
+     * @dev Returns x^y, assuming both are fixed point numbers, rounding down. The result is guaranteed to not be above
+     * the true value (that is, the error function expected - actual is always positive).
+     */
+    function powDown(uint256 x, uint256 y) internal pure returns (uint256) {
+        uint256 raw = LogExpMath.pow(x, y);
+        uint256 maxError = add(mulUp(raw, MAX_POW_RELATIVE_ERROR), 1);
+
+        if (raw < maxError) {
+            return 0;
+        } else {
+            return sub(raw, maxError);
+        }
     }
 
-    // decode a UQ144x112 into a uint144 by truncating after the radix point
-    function decode144(uq144x112 memory self) internal pure returns (uint144) {
-        return uint144(self._x >> RESOLUTION);
+    /**
+     * @dev Returns x^y, assuming both are fixed point numbers, rounding up. The result is guaranteed to not be below
+     * the true value (that is, the error function expected - actual is always negative).
+     */
+    function powUp(uint256 x, uint256 y) internal pure returns (uint256) {
+        uint256 raw = LogExpMath.pow(x, y);
+        uint256 maxError = add(mulUp(raw, MAX_POW_RELATIVE_ERROR), 1);
+
+        return add(raw, maxError);
+    }
+
+    /**
+     * @dev Returns the complement of a value (1 - x), capped to 0 if x is larger than 1.
+     *
+     * Useful when computing the complement for values with some level of relative error, as it strips this error and
+     * prevents intermediate negative values.
+     */
+    function complement(uint256 x) internal pure returns (uint256) {
+        return (x < ONE) ? (ONE - x) : 0;
     }
 }

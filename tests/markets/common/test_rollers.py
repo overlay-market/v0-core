@@ -29,12 +29,6 @@ def test_expand_cardinality_next(overlay_oi):
     assert next_cardinality == prior_cardinality
     assert next_cardinality_next == prior_cardinality_next + 1
 
-    overlay_oi.recordBrrrr(1e18);
-
-    brrrr = overlay_oi.brrrr()
-
-
-
 def test_roller(overlay_oi):
 
     print(overlay_oi)

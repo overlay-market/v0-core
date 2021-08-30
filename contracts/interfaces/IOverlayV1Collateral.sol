@@ -3,10 +3,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import "../libraries/PositionV2.sol";
-
+import "../libraries/Position.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-
 import "./IOverlayV1Market.sol";
 import "./IOverlayV1Factory.sol";
 import "./IOverlayToken.sol";
@@ -18,7 +16,7 @@ interface IOverlayV1OVLCollateral is IERC1155 {
     function supportedMarket (address market) external view returns (bool supported);
     function queuedPositionLongs (address market, uint leverage) external view returns (uint queuedPositionId);
     function queuedPositionShorts (address market, uint leverage) external view returns (uint queuedPositionId);
-    function positions (uint positionId) external view returns (PositionV2.Info memory);
+    function positions (uint positionId) external view returns (Position.Info memory);
     function ovl () external view returns (IOverlayToken);
     function factory () external view returns (IOverlayV1Factory);
     function fees () external view returns (uint);

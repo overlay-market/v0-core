@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import "../libraries/PositionV2.sol";
+import "../libraries/Position.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import "../interfaces/IOverlayV1Market.sol";
 import "../interfaces/IOverlayV1Factory.sol";
@@ -10,7 +10,7 @@ import "../interfaces/IOverlayToken.sol";
 
 contract OverlayV1OVLCollateral is ERC1155Supply {
 
-    using PositionV2 for PositionV2.Info;
+    using Position for Position.Info;
 
     // TODO: do we have a struct for markets?
     struct Market { uint _marginAdjustment; }
@@ -20,7 +20,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     mapping (address => mapping(uint => uint)) internal queuedPositionLongs;
     mapping (address => mapping(uint => uint)) internal queuedPositionShorts;
 
-    PositionV2.Info[] public positions;
+    Position.Info[] public positions;
 
     uint16 public constant MIN_COLLAT = 1e4;
     uint constant RESOLUTION = 1e4;
@@ -53,7 +53,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         ovl = IOverlayToken(_ovl);
         factory = IOverlayV1Factory(_factory);
 
-        positions.push(PositionV2.Info({
+        positions.push(Position.Info({
             market: address(0),
             isLong: false,
             leverage: 0,
@@ -129,11 +129,11 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         positionId_ = _queuedPositions[_leverage];
 
-        PositionV2.Info storage position = positions[positionId_];
+        Position.Info storage position = positions[positionId_];
 
         if (position.pricePoint < _pricePointCurrent) {
 
-            positions.push(PositionV2.Info({
+            positions.push(Position.Info({
                 market: _market,
                 isLong: _isLong,
                 leverage: _leverage,
@@ -175,7 +175,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             _pricePointCurrent
         );
 
-        PositionV2.Info storage pos = positions[_positionId];
+        Position.Info storage pos = positions[_positionId];
         pos.compounding = _t1Compounding;
 
         uint _oiAdjusted;
@@ -215,7 +215,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         require( 0 < _shares && _shares <= balanceOf(msg.sender, _positionId), "OVLV1:!shares");
 
-        PositionV2.Info storage pos = positions[_positionId];
+        Position.Info storage pos = positions[_positionId];
 
         {
 
@@ -278,7 +278,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         address _rewardsTo
     ) external {
 
-        PositionV2.Info storage pos = positions[_positionId];
+        Position.Info storage pos = positions[_positionId];
 
         bool _isLong = pos.isLong;
 

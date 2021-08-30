@@ -7,8 +7,13 @@ import "./OverlayV1Governance.sol";
 import "./OverlayV1OI.sol";
 import "./OverlayV1PricePoint.sol";
 import "../OverlayToken.sol";
+import "./OverlayV1Comptroller.sol";
 
-abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1PricePoint {
+abstract contract OverlayV1Market is 
+    OverlayV1Governance, 
+    OverlayV1OI, 
+    OverlayV1Comptroller,
+    OverlayV1PricePoint {
 
     mapping (address => bool) public isCollateral;
 
@@ -38,14 +43,14 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
         uint144 _oiCap,
         uint112 _fundingK,
         uint8   _leverageMax
-    ) OverlayV1Governance(
+    ) OverlayV1Governance (
         _ovl,
         _updatePeriod,
         _compoundingPeriod,
         _oiCap,
         _fundingK,
         _leverageMax
-    ) OverlayV1OI(
+    ) OverlayV1Comptroller (
         _printWindow,
         _impactWindow
     ) { }
@@ -95,9 +100,11 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
     }
 
     function entryData (
-        bool _isLong
+        bool _isLong,
+        uint _oi
     ) external onlyCollateral returns (
         uint freeOi_,
+        uint impact_,
         uint maxLev_,
         uint pricePointCurrent_,
         uint compoundEpoch_
@@ -160,8 +167,10 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
         bool _isLong,
         uint _oi,
         uint _oiShares,
-        int216 _printed
+        uint112 _brrrr
     ) external onlyCollateral {
+
+        noteBrrrr(_brrrr);
 
         if (_fromQueued) {
 
