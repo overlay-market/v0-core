@@ -17,22 +17,11 @@ abstract contract OverlayV1Market is
 
     mapping (address => bool) public isCollateral;
 
-    uint constant RESOLUTION = 1e4;
-
-    uint16 public constant MIN_COLLATERAL_AMOUNT = 10**4;
-
     uint256 private unlocked = 1;
-    modifier lock() {
-        require(unlocked == 1, "OVLV1:!unlocked");
-        unlocked = 0;
-        _;
-        unlocked = 1;
-    }
 
-    modifier onlyCollateral () {
-        require(isCollateral[msg.sender], "OVLV1:!collateral");
-        _;
-    }
+    modifier lock() { require(unlocked == 1, "OVLV1:!unlocked"); unlocked = 0; _; unlocked = 1; }
+
+    modifier onlyCollateral () { require(isCollateral[msg.sender], "OVLV1:!collateral"); _; }
 
     constructor(
         address _ovl,
@@ -88,7 +77,6 @@ abstract contract OverlayV1Market is
             updateOi(); 
 
             updated_ = true;
-
 
         }
     }
@@ -149,10 +137,35 @@ abstract contract OverlayV1Market is
     /// @dev invoked by an overlay position contract
     function enterOI (
         bool _isLong,
-        uint _oi
-    ) external onlyCollateral {
+        uint _collateral,
+        uint _leverage
+    ) external onlyCollateral returns (
+        uint oiAdjusted_,
+        uint collateralAdjusted_,
+        uint debtAdjusted_,
+        uint fee_,
+        uint pricePointCurrent_,
+        uint t1Compounding_
+    ) {
 
-        queueOi(_isLong, _oi, oiCap);
+        require(_leverage <= leverageMax, "OVLV1:lev>max");
+
+        pricePointCurrent_ = pricePoints.length;
+
+        uint _oi = _collateral * _leverage;
+
+        uint _impact = impact(_oi);
+
+        uint _freeOi = brrrr();
+
+        fee_ = ( _oi * factory.fee() ) / RESOLUTION;
+
+        oiAdjusted_ = _oi - fee_;
+
+        collateralAdjusted_ = oiAdjusted_ / _leverage;
+        debtAdjusted_ = oiAdjusted_ - collateralAdjusted_;
+
+        queueOi(_isLong, oiAdjusted_, oiCap);
 
     }
 

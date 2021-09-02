@@ -160,13 +160,15 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         address _rewardsTo
     ) external {
 
-        (   uint _freeOi,
-            uint _maxLev,
-            uint _pricePointCurrent,
-            uint _t1Compounding ) = IOverlayV1Market(_market).entryData(_isLong);
-
         require(_collateral <= MIN_COLLAT, "OVLV1:collat<min");
-        require(_leverage <= _maxLev, "OVLV1:max<lev");
+
+        (   uint _oi,
+            uint _oiAdjusted,
+            uint _costAdjusted,
+            uint _debtAdjusted,
+            uint _fees,
+            uint _pricePoint,
+            uint _t1Compounding ) = IOverlayV1Market(_market).enterOI(_isLong, _collateral, _leverage);
 
         uint _positionId = getQueuedPositionId(
             _market, 
@@ -178,25 +180,11 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         Position.Info storage pos = positions[_positionId];
         pos.compounding = _t1Compounding;
 
-        uint _oiAdjusted;
-        uint _debtAdjusted;
-
-        {
-
-        uint _oi = _collateral * _leverage;
-        uint _fee = ( _oi * factory.fee() ) / RESOLUTION;
-
-        _oiAdjusted = _oi - _fee;
-        uint _collateralAdjusted = _oiAdjusted / _leverage;
-        _debtAdjusted = _oiAdjusted - _collateralAdjusted;
-
-        fees += _fee;
-
         pos.oiShares += _oiAdjusted;
-        pos.cost += _collateralAdjusted;
-        pos.debt += _debtAdjusted;
+        pos.cost = _costAdjusted;
+        pos.debt = _debtAdjusted;
 
-        }
+        fees += _fees;
 
         IOverlayV1Market(_market).enterOI(_isLong, _oiAdjusted);
 
