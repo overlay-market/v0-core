@@ -4,9 +4,8 @@ import os
 import json
 from brownie import \
     ETH_ADDRESS,\
-    PrintingShim,\
     OverlayToken,\
-    OverlayV1OI,\
+    ComptrollerShim,\
     chain,\
     interface
 
@@ -136,15 +135,11 @@ def get_uni_oracle (feed_owner):
 
     return uniswapv3_factory.address, uniswapv3_mock.address
 
-@pytest.fixture( scope="module")
-def print_shim(gov):
-    print_shim = PrintingShim.deploy(10, { 'from': gov })
-    yield print_shim
 
 @pytest.fixture( scope="module" )
-def overlay_oi(gov):
-    oi = gov.deploy(OverlayV1OI, 600, 60)
-    yield oi
+def comptroller(gov):
+    comptroller = gov.deploy(ComptrollerShim, 600, 60)
+    yield comptroller
 
 @pytest.fixture(
     scope="module",

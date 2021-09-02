@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
+import "../libraries/FixedPoint.sol";
 
 contract OverlayV1Comptroller {
 
+    using FixedPoint for uint256;
     struct Roller {
-        uint32 time;
-        uint112 brrrr;
-        uint112 longPressure;
-        uint112 shortPressure;
+        uint time;
+        uint brrrr;
+        uint longPressure;
+        uint shortPressure;
     }
 
     uint256 public brrrrWindow;
@@ -19,23 +21,26 @@ contract OverlayV1Comptroller {
     uint24 public cardinalityNext;
     Roller[216000] public rollers;
 
+    event log(string k, uint v);
+
     constructor (
-        uint _impactWindow,
-        uint _brrrrWindow
+        uint _brrrrWindow,
+        uint _impactWindow
     ) {
 
         cardinality = 1;
         cardinalityNext = 1;
 
         rollers[0] = Roller({
-            time: uint32(block.timestamp),
+            time: block.timestamp,
             brrrr: 0,
             longPressure: 0,
             shortPressure: 0
         });
 
-        impactWindow = _impactWindow;
         brrrrWindow = _brrrrWindow;
+        impactWindow = _impactWindow;
+
     }
     
     function expand (
@@ -56,94 +61,86 @@ contract OverlayV1Comptroller {
 
     }
 
-    function intakePressure (
+    function impactIntake (
         bool _isLong,
-        uint112 _oi
+        uint _oi
     ) internal returns (
-        uint pressure_
+        uint impact_
     ){
+
+        uint _lastMoment;
+        Roller memory _rollerNow;
+
+        (   _lastMoment,
+            _rollerNow,
+            impact_ ) = _impact(_isLong, _oi);
+
+        roll(_rollerNow, _lastMoment);
+
+    }
+
+    function _impact (
+        bool _isLong,
+        uint _oi
+    ) internal view returns (
+        uint lastMoment_,
+        Roller memory rollerNow_,
+        uint impact_
+    ) {
 
         (   uint _lastMoment,
             Roller memory _rollerNow, 
             Roller memory _rollerThen ) = scry(impactWindow);
-
+        
         if (_isLong) _rollerNow.longPressure += _oi;
         else _rollerNow.shortPressure += _oi;
 
-        roll(_rollerNow, _lastMoment);
-
-        pressure_ = _isLong
+        lastMoment_ = _lastMoment;
+        rollerNow_ = _rollerNow;
+        impact_ = _isLong
             ? _rollerNow.longPressure - _rollerThen.longPressure
             : _rollerNow.shortPressure - _rollerThen.shortPressure;
 
     }
 
     function noteBrrrr (
-        uint112 _brrrr
+        uint __brrrr
     ) internal returns (
-        uint112 brrrr_
-    ){
+        uint brrrr_
+    ) {
+
+        uint _lastMoment;
+        Roller memory _rollerNow;
+
+        (   _lastMoment,
+            _rollerNow, 
+            brrrr_ ) = _brrrr(__brrrr);
+
+        roll(_rollerNow, _lastMoment);
+
+    }
+
+    function _brrrr (
+        uint __brrrr
+    ) internal view returns (
+        uint lastMoment_,
+        Roller memory rollerNow_,
+        uint brrrr_
+    ) {
 
         (   uint _lastMoment,
             Roller memory _rollerNow, 
             Roller memory _rollerThen ) = scry(brrrrWindow);
+        
+        _rollerNow.brrrr += __brrrr;
 
-        _rollerNow.brrrr += _brrrr;
-
-        roll(_rollerNow, _lastMoment);
+        lastMoment_ = _lastMoment;
+        rollerNow_ = _rollerNow;
 
         brrrr_ = _rollerNow.brrrr - _rollerThen.brrrr;
 
     }
 
-    function scry (
-        uint _ago
-    ) internal returns (
-        uint lastMoment_,
-        Roller memory rollerNow_, 
-        Roller memory rollerThen_
-    ) {
-
-        uint _time = block.timestamp;
-
-        rollerNow_ = rollers[index];
-
-        lastMoment_ = rollerNow_.time;
-
-        if (block.timestamp != rollerNow_.time) rollerNow_.time = uint32(_time);
-
-        uint _target = _time - _ago;
-
-        (   Roller memory _beforeOrAt, 
-            Roller memory _atOrAfter ) = scryRollers(_ago);
-
-        if (_beforeOrAt.time == _target) {
-
-            rollerThen_ = _beforeOrAt;
-
-        } else if (_target == _atOrAfter.time) {
-
-            rollerThen_ = _atOrAfter;
-
-        } else {
-
-            uint112 _brrrrDiff = _atOrAfter.brrrr - _beforeOrAt.brrrr * 1e10;
-            uint112 _longPressureDiff = _atOrAfter.longPressure - _beforeOrAt.longPressure * 1e10;
-            uint112 _shortPressureDiff = _atOrAfter.shortPressure - _beforeOrAt.shortPressure * 1e10;
-
-            uint _timeDiff = _atOrAfter.time - _beforeOrAt.time * 1e10;
-
-            uint112 _targetRatio = uint112( ( _target - _beforeOrAt.time ) / _timeDiff );
-
-            rollerThen_.brrrr = _beforeOrAt.brrrr + ( _brrrrDiff * _targetRatio / 1e10 );
-            rollerThen_.longPressure = _beforeOrAt.longPressure + ( _longPressureDiff * _targetRatio / 1e18 );
-            rollerThen_.shortPressure = _beforeOrAt.shortPressure + ( _shortPressureDiff * _targetRatio / 1e18 );
-            rollerThen_.time = uint32(_target);
-
-        }
-
-
-    }
 
     function roll (
         Roller memory _roller,
@@ -183,24 +180,102 @@ contract OverlayV1Comptroller {
 
         }
 
+    }
+
+    function scry (
+        uint _ago
+    ) internal view returns (
+        uint lastMoment_,
+        Roller memory rollerNow_, 
+        Roller memory rollerThen_
+    ) {
+
+        uint _time = block.timestamp;
+
+        rollerNow_ = rollers[index];
+
+        lastMoment_ = rollerNow_.time;
+
+        if (_time != rollerNow_.time) rollerNow_.time = _time;
+
+        uint _target = _time - _ago;
+
+        (   Roller memory _beforeOrAt, 
+            Roller memory _atOrAfter ) = scryRollers(_target);
+
+        if (_beforeOrAt.time == _target) {
+
+            rollerThen_ = _beforeOrAt;
+
+        } else if (_target == _atOrAfter.time) {
+
+            rollerThen_ = _atOrAfter;
+
+        } else if (_atOrAfter.time == _beforeOrAt.time) {
+
+            rollerThen_ = _beforeOrAt;
+        
+        } else {
+
+            uint _brrrrDiff = _atOrAfter.brrrr - _beforeOrAt.brrrr;
+            uint _longPressureDiff = _atOrAfter.longPressure - _beforeOrAt.longPressure;
+            uint _shortPressureDiff = _atOrAfter.shortPressure - _beforeOrAt.shortPressure;
+
+            uint _timeDiff = ( _atOrAfter.time - _beforeOrAt.time ) * 1e18;
+
+            uint _targetRatio = ( ( _target - _beforeOrAt.time ) * 1e18 ).divUp(_timeDiff);
+
+            rollerThen_.brrrr = _beforeOrAt.brrrr.add(_brrrrDiff.mulDown(_targetRatio));
+            rollerThen_.longPressure = _beforeOrAt.longPressure.add(_longPressureDiff.mulDown(_targetRatio));
+            rollerThen_.shortPressure = _beforeOrAt.shortPressure.add(_shortPressureDiff.mulDown(_targetRatio));
+            rollerThen_.time = _target;
+
+        }
+
 
     }
 
+
     function scryRollers (
         uint target
-    ) public view returns (
+    ) internal view returns (
         Roller memory beforeOrAt, 
         Roller memory atOrAfter
     ) {
 
-        // now, set before to the oldest observation
-        beforeOrAt = rollers[(index + 1) % cardinality];
-        if ( beforeOrAt.time == 0 || beforeOrAt.time == 1 ) beforeOrAt = rollers[0];
+        beforeOrAt = rollers[index];
 
-        // ensure that the target is chronologically at or after the oldest observation
-        require(beforeOrAt.time <= target, 'OLD');
+        // if the target is at or after the newest roller, we can return early 
+        if (beforeOrAt.time <= target) {
 
-        return binarySearch(
+            if (beforeOrAt.time == target) {
+
+                // if newest roller equals target, we're in the same block, so we can ignore atOrAfter
+                return (beforeOrAt, atOrAfter);
+
+            } else {
+
+                atOrAfter.time = block.timestamp;
+                atOrAfter.brrrr = beforeOrAt.brrrr;
+                atOrAfter.longPressure = beforeOrAt.longPressure;
+                atOrAfter.shortPressure = beforeOrAt.shortPressure;
+
+                return (beforeOrAt, atOrAfter);
+
+            }
+        }
+
+        // now, set before to the oldest roller
+        uint _index = ( index + 1 ) % cardinality;
+        beforeOrAt = rollers[_index];
+        if ( beforeOrAt.time <= 1 ) {
+
+            beforeOrAt = rollers[0];
+
+        }
+
+        if (target <= beforeOrAt.time) return ( beforeOrAt, beforeOrAt);
+        else return binarySearch(
             rollers, 
             uint32(target), 
             uint16(index), 
@@ -229,7 +304,7 @@ contract OverlayV1Comptroller {
             beforeOrAt = self[i % _cardinality];
 
             // we've landed on an uninitialized roller, keep searching 
-            if (beforeOrAt.time == 0 || beforeOrAt.time == 1) { l = i + 1; continue; }
+            if (beforeOrAt.time <= 1) { l = i + 1; continue; }
 
             atOrAfter = self[(i + 1) % _cardinality];
 
@@ -240,50 +315,6 @@ contract OverlayV1Comptroller {
             if (!targetAtOrAfter) r = i - 1;
             else l = i + 1;
         }
-    }
-
-}
-
-library RollerBytes {
-
-    uint256 internal constant TIMESTAMP_OFFSET = 0;
-    uint256 internal constant BRRRR_OFFSET = 32;
-    uint256 internal constant LONG_PRESSURE_OFFSET = 107;
-    uint256 internal constant SHORT_PRESSURE_OFFSET = 182;
-
-    uint256 internal constant MASK_32 = 2**(32) - 1;
-    uint256 internal constant MASK_75 = 2**(75) - 1;
-
-    function decodeUint32(
-        bytes32 word, 
-        uint256 offset
-    ) internal pure returns (uint256) {
-        return uint256(word >> offset) & MASK_32;
-    }
-
-    function decodeUint75(
-        bytes32 word, 
-        uint256 offset
-    ) internal pure returns (uint256) {
-        return uint256(word >> offset) & MASK_75;
-    }
-
-    function insertUint32(
-        bytes32 word,
-        uint256 value,
-        uint256 offset
-    ) internal pure returns (bytes32) {
-        bytes32 clearedWord = bytes32(uint256(word) & ~(MASK_32 << offset));
-        return clearedWord | bytes32(value << offset);
-    }
-
-    function insertUint75(
-        bytes32 word,
-        uint256 value,
-        uint256 offset
-    ) internal pure returns (bytes32) {
-        bytes32 clearedWord = bytes32(uint256(word) & ~(MASK_75 << offset));
-        return clearedWord | bytes32(value << offset);
     }
 
 }
