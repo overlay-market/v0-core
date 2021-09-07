@@ -14,9 +14,9 @@ contract OverlayV1UniswapV3Deployer {
         uint256 printWindow,
         uint256 macroWindow,
         uint256 microWindow,
-        uint144 oiCap,
-        uint112 fundingK,
-        uint8   leverageMax,
+        uint256 oiCap,
+        uint256 fundingK,
+        uint256 leverageMax,
         uint128 amountIn,
         bool    isPrice0
     ) external returns (OverlayV1UniswapV3Market marketContract) {

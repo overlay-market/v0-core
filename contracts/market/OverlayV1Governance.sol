@@ -5,22 +5,23 @@ import "../interfaces/IOverlayV1Factory.sol";
 import "../interfaces/IOverlayToken.sol";
 
 contract OverlayV1Governance {
+
     // ovl erc20 token
     IOverlayToken public immutable ovl;
     // OverlayFactory address
     IOverlayV1Factory public immutable factory;
 
     // leverage max allowed for a position: leverages are assumed to be discrete increments of 1
-    uint8 public leverageMax;
+    uint256 public leverageMax;
     // open interest cap on each side long/short
-    uint144 public oiCap;
+    uint256 public oiCap;
 
     // open interest funding constant factor, charged per updatePeriod
     // 1/d = 1 - 2k; 0 < k < 1/2, 1 < d < infty
-    uint112 public fundingK;
+    uint256 public fundingK;
 
-    uint public updatePeriod;
-    uint public compoundingPeriod;
+    uint256 public updatePeriod;
+    uint256 public compoundingPeriod;
 
     modifier onlyFactory() {
         require(msg.sender == address(factory), "OVLV1:!factory");
@@ -36,9 +37,9 @@ contract OverlayV1Governance {
         address _ovl,
         uint256 _updatePeriod,
         uint256 _compoundingPeriod,
-        uint144 _oiCap,
-        uint112 _fundingK,
-        uint8 _leverageMax
+        uint256 _oiCap,
+        uint256 _fundingK,
+        uint256 _leverageMax
     ) {
         // immutables
         factory = IOverlayV1Factory(msg.sender);

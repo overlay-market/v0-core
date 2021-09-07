@@ -2,6 +2,7 @@
 pragma solidity ^0.8.7;
 
 import "../libraries/Position.sol";
+import "../libraries/FixedPoint.sol";
 import "../interfaces/IOverlayV1Factory.sol";
 import "./OverlayV1Governance.sol";
 import "./OverlayV1OI.sol";
@@ -14,6 +15,8 @@ abstract contract OverlayV1Market is
     OverlayV1OI, 
     OverlayV1Comptroller,
     OverlayV1PricePoint {
+
+    using FixedPoint for uint256;
 
     mapping (address => bool) public isCollateral;
 
@@ -29,9 +32,9 @@ abstract contract OverlayV1Market is
         uint256 _compoundingPeriod,
         uint256 _printWindow,
         uint256 _impactWindow,
-        uint144 _oiCap,
-        uint112 _fundingK,
-        uint8   _leverageMax
+        uint256 _oiCap,
+        uint256 _fundingK,
+        uint256 _leverageMax
     ) OverlayV1Governance (
         _ovl,
         _updatePeriod,
@@ -43,6 +46,10 @@ abstract contract OverlayV1Market is
         _printWindow,
         _impactWindow
     ) { }
+
+    function init (uint _lambda) public {
+        lambda = _lambda;
+    }
 
     function addCollateral (address _collateral) public {
 
@@ -87,22 +94,42 @@ abstract contract OverlayV1Market is
 
     }
 
-    function entryData (
+
+    /// @notice Adds open interest to the market
+    /// @dev invoked by an overlay position contract
+    function enterOI (
         bool _isLong,
-        uint _oi
+        uint _collateral,
+        uint _leverage
     ) external onlyCollateral returns (
-        uint freeOi_,
-        uint impact_,
-        uint maxLev_,
+        uint oiAdjusted_,
+        uint collateralAdjusted_,
+        uint debtAdjusted_,
+        uint fee_,
         uint pricePointCurrent_,
-        uint compoundEpoch_
+        uint t1Compounding_
     ) {
 
-        compoundEpoch_ = entryUpdate();
+        require(_leverage <= leverageMax, "OVLV1:lev>max");
 
-        maxLev_ = leverageMax;
+        t1Compounding_ = entryUpdate();
 
         pricePointCurrent_ = pricePoints.length;
+
+        uint _oi = _collateral * _leverage;
+
+        ( uint _impact, uint _cap ) = intake(_isLong, _oi);
+
+        fee_ = _oi.mulUp(factory.fee());
+
+        collateralAdjusted_ = _collateral - _impact;
+        oiAdjusted_ = collateralAdjusted_ * _leverage;
+
+        fee_ = oiAdjusted_.mulDown(factory.fee());
+
+        debtAdjusted_ = oiAdjusted_ - collateralAdjusted_;
+
+        queueOi(_isLong, oiAdjusted_, _cap);
 
     }
 
@@ -133,42 +160,6 @@ abstract contract OverlayV1Market is
 
     }
 
-    /// @notice Adds open interest to the market
-    /// @dev invoked by an overlay position contract
-    function enterOI (
-        bool _isLong,
-        uint _collateral,
-        uint _leverage
-    ) external onlyCollateral returns (
-        uint oiAdjusted_,
-        uint collateralAdjusted_,
-        uint debtAdjusted_,
-        uint fee_,
-        uint pricePointCurrent_,
-        uint t1Compounding_
-    ) {
-
-        require(_leverage <= leverageMax, "OVLV1:lev>max");
-
-        pricePointCurrent_ = pricePoints.length;
-
-        uint _oi = _collateral * _leverage;
-
-        uint _impact = impact(_oi);
-
-        uint _freeOi = brrrr();
-
-        fee_ = ( _oi * factory.fee() ) / RESOLUTION;
-
-        oiAdjusted_ = _oi - fee_;
-
-        collateralAdjusted_ = oiAdjusted_ / _leverage;
-        debtAdjusted_ = oiAdjusted_ - collateralAdjusted_;
-
-        queueOi(_isLong, oiAdjusted_, oiCap);
-
-    }
-
     /// @notice Removes open interest from the market
     /// @dev must update two prices if the pending update was from a long 
     /// @dev time ago in that case, a previously entered position must be 
@@ -184,6 +175,8 @@ abstract contract OverlayV1Market is
     ) external onlyCollateral {
 
         noteBrrrr(_brrrr);
+
+        __oi__ -= _oi;
 
         if (_fromQueued) {
 

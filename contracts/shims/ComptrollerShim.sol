@@ -7,11 +7,14 @@ contract ComptrollerShim is OverlayV1Comptroller {
 
     constructor (
         uint impactWindow,
-        uint brrrrWindow
+        uint brrrrWindow,
+        uint _lambda
     ) OverlayV1Comptroller (
         impactWindow,
         brrrrWindow
-    ) {}
+    ) {
+        lambda = _lambda;
+    }
 
     function setRoller (
         uint index,
@@ -67,7 +70,7 @@ contract ComptrollerShim is OverlayV1Comptroller {
 
         for (uint i = 0; i < len; i++) {
 
-            impact_ = impactIntake(_isLong[i], _oi[i]);
+            ( impact_, ) = intake(_isLong[i], _oi[i]);
 
             emit log("impact_", impact_);
 
@@ -85,7 +88,7 @@ contract ComptrollerShim is OverlayV1Comptroller {
         uint impact_
     ) {
 
-        ( ,,impact_ ) = _impact(_isLong, _oi);
+        ( ,,impact_, ) = _intake(_isLong, _oi);
 
     }
 

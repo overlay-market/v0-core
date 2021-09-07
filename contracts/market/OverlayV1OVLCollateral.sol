@@ -120,7 +120,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         address _market,
         bool _isLong,
         uint _leverage,
-        uint _pricePointCurrent
+        uint _pricePointCurrent,
+        uint _t1Compounding
     ) internal returns (uint positionId_) {
 
         mapping(uint=>uint) storage _queuedPositions = _isLong 
@@ -141,7 +142,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
                 oiShares: 0,
                 debt: 0,
                 cost: 0,
-                compounding: 0
+                compounding: _t1Compounding
             }));
 
             positionId_ = positions.length - 1;
@@ -162,31 +163,28 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         require(_collateral <= MIN_COLLAT, "OVLV1:collat<min");
 
-        (   uint _oi,
-            uint _oiAdjusted,
+        (   uint _oiAdjusted,
             uint _costAdjusted,
             uint _debtAdjusted,
             uint _fees,
-            uint _pricePoint,
+            uint _pricePointCurrent,
             uint _t1Compounding ) = IOverlayV1Market(_market).enterOI(_isLong, _collateral, _leverage);
 
         uint _positionId = getQueuedPositionId(
             _market, 
             _isLong, 
             _leverage, 
-            _pricePointCurrent
+            _pricePointCurrent,
+            _t1Compounding
         );
 
         Position.Info storage pos = positions[_positionId];
-        pos.compounding = _t1Compounding;
 
         pos.oiShares += _oiAdjusted;
         pos.cost = _costAdjusted;
         pos.debt = _debtAdjusted;
 
         fees += _fees;
-
-        IOverlayV1Market(_market).enterOI(_isLong, _oiAdjusted);
 
         emit Build(_positionId, _oiAdjusted, _debtAdjusted);
 

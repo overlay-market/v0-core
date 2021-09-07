@@ -12,6 +12,7 @@ contract OverlayV1OI {
 
     uint256 internal __oiLong__; // total long open interest
     uint256 internal __oiShort__; // total short open interest
+    uint256 internal __oi__;
 
     uint256 public oiLongShares; // total shares of long open interest outstanding
     uint256 public oiShortShares; // total shares of short open interest outstanding
@@ -81,7 +82,7 @@ contract OverlayV1OI {
     /// @notice Transfers funding payments
     /// @dev oiImbalance(m) = oiImbalance(0) * (1 - 2k)**m
     function payFunding(
-        uint112 _k,
+        uint256 _k,
         uint256 _epochs
     ) internal returns (int256 fundingPaid_) {
 
@@ -103,15 +104,25 @@ contract OverlayV1OI {
     }
 
     /// @notice Adds to queued open interest to prep for T+1 price settlement
-    function queueOi(bool isLong, uint256 oi, uint256 oiCap) internal {
+    function queueOi(bool _isLong, uint256 _oi, uint256 _oiCap) internal {
 
-        if (isLong) {
-            queuedOiLong += oi;
-            require(__oiLong__ + queuedOiLong <= oiCap, "OVLV1: breached oi cap");
+        if (_isLong) {
+
+            uint _queuedOiLong = queuedOiLong;
+            _queuedOiLong += _oi;
+            queuedOiLong = _queuedOiLong;
+
         } else {
-            queuedOiShort += oi;
-            require(__oiShort__ + queuedOiShort <= oiCap, "OVLV1: breached oi cap");
+
+            uint _queuedOiShort = queuedOiShort;
+            _queuedOiShort += _oi;
+            queuedOiShort = _queuedOiShort;
+
         }
+
+        uint _totalOI = __oiShort__ + __oiLong__ + queuedOiShort + queuedOiLong;
+
+        require(_totalOI <= _oiCap, "OVLV1:cap<");
 
     }
 

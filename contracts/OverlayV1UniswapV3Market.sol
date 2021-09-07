@@ -1,19 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
+import "./libraries/FixedPoint.sol";
 import "./libraries/UniswapV3OracleLibrary/UniswapV3OracleLibraryV2.sol";
-// import "./libraries/UniswapV3OracleLibrary/UniswapV3OracleLibrary.sol";
 import "./interfaces/IUniswapV3Pool.sol";
 import "./market/OverlayV1Market.sol";
 
 contract OverlayV1UniswapV3Market is OverlayV1Market {
 
+    using FixedPoint for uint256;
+
     address public immutable feed;
-    // whether using price0Cumulative or price1Cumulative for TWAP
     bool public immutable isPrice0;
-    // window size for sliding window TWAP calc
-    uint256 public immutable macroWindow;
-    uint256 public immutable microWindow;
+
+    uint256 public immutable macroWindow; // window size for main TWAP
+    uint256 public immutable microWindow; // window size for bid/ask TWAP
 
     uint128 internal immutable amountIn;
     address private immutable token0;
@@ -27,9 +28,9 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         uint256 _printWindow,
         uint256 _macroWindow,
         uint256 _microWindow,
-        uint144 _oiCap,
-        uint112 _fundingK,
-        uint8   _leverageMax,
+        uint256 _oiCap,
+        uint256 _fundingK,
+        uint256 _leverageMax,
         uint128 _amountIn,
         bool    _isPrice0
     ) OverlayV1Market(
@@ -121,8 +122,8 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         // bid = min(twap,spread) * e ^ -(staticSpread + (impactParam * impactShort))
         // ask = max(twap,spread) * e ^ (staticSpread + (impactParam * impactLong))
 
-        ask_ = ask_ * staticSpreadAsk / RESOLUTION;
-        bid_ = bid_ * staticSpreadBid / RESOLUTION;
+        ask_ = ask_.mulDown(staticSpreadAsk);
+        bid_ = bid_.mulDown(staticSpreadBid);
 
         // ( uint _longImpact, uint _shortImpact ) = senseImpact();
 
@@ -287,7 +288,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         oiLong_ = __oiLong__;
         oiShort_ = __oiShort__;
-        uint112 _k = fundingK;
+        uint _k = fundingK;
         uint _queuedOiLong = queuedOiLong;
         uint _queuedOiShort = queuedOiShort;
 

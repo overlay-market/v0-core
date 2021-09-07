@@ -13,8 +13,11 @@ contract OverlayV1Comptroller {
         uint shortPressure;
     }
 
+    uint256 internal constant INVERSE_EULER = 0x51AF86713316A9A;
+
     uint256 public brrrrWindow;
     uint256 public impactWindow;
+    uint256 public lambda;
 
     uint24 public index;
     uint24 public cardinality;
@@ -55,51 +58,64 @@ contract OverlayV1Comptroller {
 
     }
 
-    function impactPressure (
-        uint _oi
-    ) internal view returns (uint _pressure) {
-
+    function cap (
+        uint _brrrrd
+    ) internal view returns (
+        uint cap_
+    ) {
+        cap_ = _brrrrd.mulUp(1);
     }
 
-    function impactIntake (
+    function intake (
         bool _isLong,
         uint _oi
     ) internal returns (
-        uint impact_
+        uint adjustment_,
+        uint cap_
     ){
 
-        uint _lastMoment;
-        Roller memory _rollerNow;
+        (   Roller memory _rollerImpact,
+            uint _lastMoment,
+            uint _impact,
+            uint _cap ) = _intake(_isLong, _oi);
 
-        (   _lastMoment,
-            _rollerNow,
-            impact_ ) = _impact(_isLong, _oi);
+        roll(_rollerImpact, _lastMoment);
 
-        roll(_rollerNow, _lastMoment);
+        adjustment_ = _oi.mulUp(_impact);
+        cap_ = _cap;
 
     }
 
-    function _impact (
+    function _intake (
         bool _isLong,
         uint _oi
     ) internal view returns (
-        uint lastMoment_,
         Roller memory rollerNow_,
-        uint impact_
+        uint lastMoment_,
+        uint impact_,
+        uint cap_
     ) {
 
         (   uint _lastMoment,
             Roller memory _rollerNow, 
-            Roller memory _rollerThen ) = scry(impactWindow);
+            Roller memory _rollerImpact ) = scry(impactWindow);
         
-        if (_isLong) _rollerNow.longPressure += _oi;
-        else _rollerNow.shortPressure += _oi;
+        ( ,,Roller memory _rollerCap ) = scry(brrrrWindow);
+
+        cap_ = cap(_rollerNow.brrrr - _rollerCap.brrrr);
+
+        uint _pressure = _oi.divUp(cap_);
+
+        if (_isLong) _rollerNow.longPressure += _pressure;
+        else _rollerNow.shortPressure += _pressure;
+
+        uint _rollingPressure = _isLong
+            ? _rollerNow.longPressure - _rollerImpact.longPressure
+            : _rollerNow.shortPressure - _rollerImpact.shortPressure;
 
         lastMoment_ = _lastMoment;
         rollerNow_ = _rollerNow;
-        impact_ = _isLong
-            ? _rollerNow.longPressure - _rollerThen.longPressure
-            : _rollerNow.shortPressure - _rollerThen.shortPressure;
+        impact_ = INVERSE_EULER.powDown(lambda.mulUp(_rollingPressure));
 
     }
 
