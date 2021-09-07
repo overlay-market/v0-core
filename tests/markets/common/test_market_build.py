@@ -8,11 +8,10 @@ TOKEN_TOTAL_SUPPLY = 8000000
 OI_CAP = 800000
 FEE_RESOLUTION = 1e4
 
-
 @given(
     collateral=strategy('uint256',
-                        min_value=MIN_COLLATERAL_AMOUNT,
-                        max_value=0.00999*OI_CAP*10**TOKEN_DECIMALS),
+        min_value=MIN_COLLATERAL_AMOUNT,
+        max_value=0.00999*OI_CAP*10**TOKEN_DECIMALS),
     leverage=strategy('uint8', min_value=1, max_value=100),
     is_long=strategy('bool'))
 def test_build(ovl_collateral, token, factory, market, bob, rewards, collateral, leverage, is_long):
@@ -53,7 +52,8 @@ def test_build(ovl_collateral, token, factory, market, bob, rewards, collateral,
         market,
         collateral, 
         is_long, 
-        leverage, bob, 
+        leverage, 
+        bob, 
         {"from": bob}
     )
 

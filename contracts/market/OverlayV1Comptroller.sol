@@ -26,6 +26,8 @@ contract OverlayV1Comptroller {
 
     event log(string k, uint v);
 
+    uint256 public TEST_CAP;
+
     constructor (
         uint _brrrrWindow,
         uint _impactWindow
@@ -43,6 +45,18 @@ contract OverlayV1Comptroller {
 
         brrrrWindow = _brrrrWindow;
         impactWindow = _impactWindow;
+
+    }
+
+    function viewLambda () public view returns (uint) { 
+
+        return lambda; 
+
+    }
+
+    function set_TEST_CAP (uint _cap) public {
+
+        TEST_CAP = _cap;
 
     }
     
@@ -63,14 +77,16 @@ contract OverlayV1Comptroller {
     ) internal view returns (
         uint cap_
     ) {
-        cap_ = _brrrrd.mulUp(1);
+
+        cap_ = TEST_CAP;
+
     }
 
     function intake (
         bool _isLong,
         uint _oi
     ) internal returns (
-        uint adjustment_,
+        uint impact_,
         uint cap_
     ){
 
@@ -81,7 +97,13 @@ contract OverlayV1Comptroller {
 
         roll(_rollerImpact, _lastMoment);
 
-        adjustment_ = _oi.mulUp(_impact);
+        impact_ = _oi.mulUp(_impact);
+
+        emit log("oi", _oi);
+        emit log("_impact", _impact);
+
+        emit log("impact_", impact_);
+
         cap_ = _cap;
 
     }
@@ -102,9 +124,9 @@ contract OverlayV1Comptroller {
         
         ( ,,Roller memory _rollerCap ) = scry(brrrrWindow);
 
-        cap_ = cap(_rollerNow.brrrr - _rollerCap.brrrr);
+        uint _cap = cap(_rollerNow.brrrr - _rollerCap.brrrr);
 
-        uint _pressure = _oi.divUp(cap_);
+        uint _pressure = _oi.divUp(_cap);
 
         if (_isLong) _rollerNow.longPressure += _pressure;
         else _rollerNow.shortPressure += _pressure;
@@ -116,6 +138,7 @@ contract OverlayV1Comptroller {
         lastMoment_ = _lastMoment;
         rollerNow_ = _rollerNow;
         impact_ = INVERSE_EULER.powDown(lambda.mulUp(_rollingPressure));
+        cap_ = _cap;
 
     }
 

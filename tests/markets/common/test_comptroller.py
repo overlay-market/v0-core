@@ -1,8 +1,10 @@
+import math 
+import random
+
 from brownie import reverts, chain
-from brownie.test import given, strategy
-
+from brownie.test import given, strategy 
+from hypothesis import settings
 from decimal import *
-
 
 def print_events(tx):
     for i in range(len(tx.events['log'])):
@@ -296,9 +298,8 @@ def test_brrrr_interpolated_roller(comptroller):
     remove = brrrrDiff * ratio
     extra = roller2[1] - roller1[1]
 
+    # assert discrepancy is very small, 100 wei
     assert brrrrd - (extra + (roller1[1] - (remove))) <= 100
-
-
 
 def test_brrrr_and_impact(comptroller):
 
@@ -333,6 +334,54 @@ def test_brrrr_one_time_one_block(comptroller):
     brrrr = comptroller.viewBrrrr(0)
     assert brrrr == 1e18
 
+
+@given(
+    entry=strategy('uint256', min_value=1, max_value=1e6),
+    rand=strategy('int', min_value=100, max_value=1000))
+@settings(max_examples=50)
+def test_impact_pressure(comptroller, entry, rand):
+
+    rand = float(rand) / 100
+    entry *= 1e18
+    cap = entry * rand
+
+    comptroller.set_TEST_CAP(cap)
+
+    cap = comptroller.TEST_CAP()
+
+    _lambda = comptroller.viewLambda()
+
+    comptroller.expand(10)
+
+    comptroller.impact([True], [entry])
+
+    impact = comptroller.viewImpact(True, 0)
+
+    inverse_euler = Decimal(1) / Decimal(math.e)
+
+    pressure = Decimal(entry / 1e18) / Decimal(cap / 1e18)
+
+    impact_factor = Decimal(_lambda / 1e18) * pressure
+
+    expected = ( inverse_euler ** impact_factor ) * Decimal(1e18)
+
+    assert abs(impact - expected) <= 10000
+
+def test_impact_fifty_precent_pressure_full_cooldown (comptroller):
+
+    comptroller.set_TEST_CAP(1000e18)
+
+    comptroller.expand(10)
+
+    tx = comptroller.impact([True], [500e18])
+
+    impact_window = comptroller.impactWindow()
+
+    chain.mine(timedelta=impact_window)
+
+    impact = comptroller.viewImpact(True, 0)
+
+    print("impact")
 
 def test_brrrr_when_before_roller_must_interpolate_over_long_timeframe(comptroller):
     pass

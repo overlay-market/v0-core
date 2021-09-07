@@ -106,11 +106,15 @@ contract OverlayV1OI {
     /// @notice Adds to queued open interest to prep for T+1 price settlement
     function queueOi(bool _isLong, uint256 _oi, uint256 _oiCap) internal {
 
+        uint _totalOI = __oiShort__ + __oiLong__;
+
         if (_isLong) {
 
             uint _queuedOiLong = queuedOiLong;
             _queuedOiLong += _oi;
             queuedOiLong = _queuedOiLong;
+
+            _totalOI += _queuedOiLong + queuedOiShort;
 
         } else {
 
@@ -118,9 +122,9 @@ contract OverlayV1OI {
             _queuedOiShort += _oi;
             queuedOiShort = _queuedOiShort;
 
-        }
+            _totalOI += queuedOiLong + _queuedOiShort;
 
-        uint _totalOI = __oiShort__ + __oiLong__ + queuedOiShort + queuedOiLong;
+        }
 
         require(_totalOI <= _oiCap, "OVLV1:cap<");
 

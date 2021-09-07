@@ -135,10 +135,9 @@ def get_uni_oracle (feed_owner):
 
     return uniswapv3_factory.address, uniswapv3_mock.address
 
-
 @pytest.fixture( scope="module" )
 def comptroller(gov):
-    comptroller = gov.deploy(ComptrollerShim, 600, 60)
+    comptroller = gov.deploy(ComptrollerShim, 600, 60, 1e18)
     yield comptroller
 
 @pytest.fixture(
