@@ -45,7 +45,6 @@ contract ComptrollerShim is OverlayV1Comptroller {
 
         }
 
-
     }
 
     function viewBrrrr (

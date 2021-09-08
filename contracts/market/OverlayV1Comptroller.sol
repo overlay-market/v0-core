@@ -19,6 +19,8 @@ contract OverlayV1Comptroller {
     uint256 public impactWindow;
     uint256 public lambda;
 
+    uint256 internal constant ONE = 1e18;
+
     uint24 public index;
     uint24 public cardinality;
     uint24 public cardinalityNext;
@@ -88,7 +90,7 @@ contract OverlayV1Comptroller {
     ) internal returns (
         uint impact_,
         uint cap_
-    ){
+    ) {
 
         (   Roller memory _rollerImpact,
             uint _lastMoment,
@@ -97,12 +99,7 @@ contract OverlayV1Comptroller {
 
         roll(_rollerImpact, _lastMoment);
 
-        impact_ = _oi.mulUp(_impact);
-
-        emit log("oi", _oi);
-        emit log("_impact", _impact);
-
-        emit log("impact_", impact_);
+        impact_ = _oi.sub(_oi.mulUp(_impact));
 
         cap_ = _cap;
 
@@ -137,7 +134,8 @@ contract OverlayV1Comptroller {
 
         lastMoment_ = _lastMoment;
         rollerNow_ = _rollerNow;
-        impact_ = INVERSE_EULER.powDown(lambda.mulUp(_rollingPressure));
+        impact_ = _rollingPressure == 0 ? 0
+            : ONE.sub(INVERSE_EULER.powUp(lambda.mulUp(_rollingPressure)));
         cap_ = _cap;
 
     }
@@ -235,14 +233,30 @@ contract OverlayV1Comptroller {
 
         lastMoment_ = rollerNow_.time;
 
-        if (_time != rollerNow_.time) rollerNow_.time = _time;
-
         uint _target = _time - _ago;
+        if (rollerNow_.time < _target) {
+
+            rollerNow_.time = _time;
+            rollerThen_.longPressure = rollerNow_.longPressure;
+            rollerThen_.shortPressure = rollerNow_.shortPressure;
+            rollerThen_.brrrr = rollerNow_.brrrr;
+
+            return ( lastMoment_, rollerNow_, rollerThen_ );
+
+        } else if (_time != rollerNow_.time) {
+
+            rollerNow_.time = _time;
+
+        }
 
         (   Roller memory _beforeOrAt, 
             Roller memory _atOrAfter ) = scryRollers(_target);
 
-        if (_beforeOrAt.time == _target) {
+        if (_atOrAfter.time - _beforeOrAt.time > _ago) {
+
+            rollerThen_.time = _target;
+
+        } else if (_beforeOrAt.time == _target) {
 
             rollerThen_ = _beforeOrAt;
 
@@ -322,7 +336,6 @@ contract OverlayV1Comptroller {
         );
 
     }
-
 
     function binarySearch(
         Roller[216000] storage self,

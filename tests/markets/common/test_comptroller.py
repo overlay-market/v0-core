@@ -338,11 +338,14 @@ def test_brrrr_one_time_one_block(comptroller):
 @given(
     entry=strategy('uint256', min_value=1, max_value=1e6),
     rand=strategy('int', min_value=100, max_value=1000))
-@settings(max_examples=50)
+@settings(max_examples=20)
 def test_impact_pressure(comptroller, entry, rand):
 
-    rand = float(rand) / 100
+    comptroller.expand(10)
+    chain.mine(timedelta=10)
+
     entry *= 1e18
+    rand = float(rand) / 100
     cap = entry * rand
 
     comptroller.set_TEST_CAP(cap)
@@ -351,37 +354,58 @@ def test_impact_pressure(comptroller, entry, rand):
 
     _lambda = comptroller.viewLambda()
 
-    comptroller.expand(10)
-
     comptroller.impact([True], [entry])
 
-    impact = comptroller.viewImpact(True, 0)
+    impact = comptroller.viewImpact(True, 1e18)
 
     inverse_euler = Decimal(1) / Decimal(math.e)
 
-    pressure = Decimal(entry / 1e18) / Decimal(cap / 1e18)
+    pressure = Decimal( (entry + 1e18) / 1e18) / Decimal(cap / 1e18)
 
     impact_factor = Decimal(_lambda / 1e18) * pressure
 
-    expected = ( inverse_euler ** impact_factor ) * Decimal(1e18)
+    expected = ( Decimal(1) - ( inverse_euler ** impact_factor ) ) * Decimal(1e18)
 
-    assert abs(impact - expected) <= 10000
+    assert int(expected / Decimal(1e6)) == int(impact / Decimal(1e6))
 
-def test_impact_fifty_precent_pressure_full_cooldown (comptroller):
+@given(
+    entry=strategy('uint256', min_value=1, max_value=1e6),
+    rand=strategy('int', min_value=100, max_value=1000))
+@settings(max_examples=1)
+def test_impact_pressure_full_cooldown (comptroller, entry, rand):
 
-    comptroller.set_TEST_CAP(1000e18)
+    entry *= 1e18
+    rand = float(rand) / 100
+    cap = entry * rand
+
+    print("entry", entry)
+    print("rand", rand)
+    print("cap", cap)
+
+    comptroller.set_TEST_CAP(cap)
 
     comptroller.expand(10)
 
-    tx = comptroller.impact([True], [500e18])
+    tx = comptroller.impact([True], [entry])
+
+    print_events(tx)
 
     impact_window = comptroller.impactWindow()
 
-    chain.mine(timedelta=impact_window)
+    chain.mine(timedelta=impact_window+1)
+    print("impact window", impact_window)
+    print("time", chain[-1].timestamp)
+
+    # comptroller.impact([True], [0])
 
     impact = comptroller.viewImpact(True, 0)
 
-    print("impact")
+    print_events(impact)
+
+    print(comptroller.rollers(0))
+    print(comptroller.rollers(1))
+    print(comptroller.rollers(2))
+    print(comptroller.rollers(3))
 
 def test_brrrr_when_before_roller_must_interpolate_over_long_timeframe(comptroller):
     pass
