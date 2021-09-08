@@ -22,6 +22,10 @@ library PositionV2 {
         uint256 compounding; // timestamp when position is eligible for compound funding
     }
 
+    function _initialOi(Info memory _self) private pure returns (uint256 oi) {
+        return _self.cost + _self.debt;
+    }
+
     function _openInterest(
         Info memory _self,
         uint256 totalOi,
@@ -108,32 +112,6 @@ library PositionV2 {
         }
     }
 
-    /// @dev floors zero if position value <= 0; equiv to 1 / open leverage
-    function _openMargin(
-        Info memory _self,
-        uint256 totalOi,
-        uint256 totalOiShares,
-        uint256 priceFrame
-    ) private pure returns (FixedPoint.uq144x112 memory margin) {
-        // cast to uint112 given FixedPoint division by notion
-        uint112 notion = uint112(_notional(
-            _self,
-            totalOi,
-            totalOiShares,
-            priceFrame
-        ));
-        if (notion == 0) margin = FixedPoint.uq144x112(0);
-        else {
-            uint256 val = _value(
-                _self,
-                totalOi,
-                totalOiShares,
-                priceFrame
-            );
-            margin = FixedPoint.uq144x112(val).div(notion);
-        }
-    }
-
     /// @dev is true when open margin < maintenance margin
     function _isLiquidatable(
         Info memory _self,
@@ -149,14 +127,21 @@ library PositionV2 {
             totalOiShares,
             priceFrame
         );
+        uint256 initialOi = _initialOi(_self);
 
-        FixedPoint.uq144x112 memory maintenance = FixedPoint
-            .encode144(uint144(marginMaintenance))
-            .div(uint112(RESOLUTION))
-            .div(uint112(_self.leverage));
+        // marginMaintenance is a percentage % (fraction)
+        uint256 maintenance = initialOi * marginMaintenance / RESOLUTION;
 
-        can = FixedPoint.encode144(uint144(positionValue)).lt(maintenance);
+        can = (positionValue < maintenance);
 
+    }
+
+    /// @notice Returns the initial open interest of a position at build
+    function initialOi(Info storage self) private pure returns (uint256) {
+
+        Info memory _self = self;
+
+        return _initialOi(_self);
     }
 
     /// @notice Computes the open interest of a position
@@ -244,26 +229,6 @@ library PositionV2 {
         Info memory _self = self;
 
         return _openLeverage(
-            _self,
-            totalOi,
-            totalOiShares,
-            priceFrame
-        );
-
-    }
-
-    /// @notice Computes the open margin of a position
-    /// @dev floors zero if position value <= 0; equiv to 1 / open leverage
-    function openMargin(
-        Info storage self,
-        uint256 priceFrame,
-        uint256 totalOi,
-        uint256 totalOiShares
-    ) internal view returns (FixedPoint.uq144x112 memory) {
-
-        Info memory _self = self;
-
-        return _openMargin(
             _self,
             totalOi,
             totalOiShares,
