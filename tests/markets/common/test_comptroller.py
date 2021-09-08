@@ -270,21 +270,36 @@ def test_brrrr_cardinality_two_index_rolls_over(comptroller):
     assert comptroller.rollers(0)[0] == chain[-1].timestamp
     assert comptroller.rollers(0)[1] == 20e18
 
-def test_brrrr_interpolated_roller(comptroller):
+
+@given(timediff=strategy('uint', min_value=1, max_value=100))
+@settings(max_examples=100)
+def test_brrrr_interpolated_roller(comptroller, timediff):
 
     comptroller.expand(3)
 
     window = comptroller.brrrrWindow()
 
-    chain.mine(timedelta=window)
+    chain.mine(timedelta=window+timediff)
+    time0 = chain[-1].timestamp
+    print("TIME 0", time0)
 
-    comptroller.brrrr([1e18])
+    tx = comptroller.brrrr([1e18])
+
+    print_events(tx)
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
     chain.mine(timedelta=(window/4))
+    time1 = chain[-1].timestamp
+    print("TIME 1", time1)
 
-    comptroller.brrrr([1e18])
+    tx = comptroller.brrrr([1e18])
+    print_events(tx)
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
     brrrrd = comptroller.viewBrrrr(0)
+
+    print_events(brrrrd)
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
     roller0 = comptroller.rollers(0)
     roller1 = comptroller.rollers(1)
@@ -297,9 +312,19 @@ def test_brrrr_interpolated_roller(comptroller):
     ratio = ( target - roller0[0]) / timeDiff
     remove = brrrrDiff * ratio
     extra = roller2[1] - roller1[1]
+    expected = (extra + (roller1[1] - (remove)))
 
-    # assert discrepancy is very small, 100 wei
-    assert brrrrd - (extra + (roller1[1] - (remove))) <= 100
+    print("roller0", roller0)
+    print("roller1", roller1)
+    print("roller2", roller2)
+    print("time0", time0)
+    print("time1", time1)
+    print("ratio", ratio)
+    print("remove", remove)
+    print("extra", extra)
+    print("expected", expected)
+
+
 
 def test_brrrr_and_impact(comptroller):
 
@@ -333,7 +358,6 @@ def test_brrrr_one_time_one_block(comptroller):
     tx = comptroller.brrrr([1e18])
     brrrr = comptroller.viewBrrrr(0)
     assert brrrr == 1e18
-
 
 @given(
     entry=strategy('uint256', min_value=1, max_value=1e6),
@@ -403,7 +427,6 @@ def test_brrrr_when_before_roller_must_interpolate_over_small_timeframe(comptrol
 
 def test_brrrr_when_earliest_roller_is_much_older_than_brrrr_window(comptroller):
     pass
-
 
 def test_roller(comptroller):
 

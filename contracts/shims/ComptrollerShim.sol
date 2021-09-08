@@ -49,11 +49,13 @@ contract ComptrollerShim is OverlayV1Comptroller {
 
     function viewBrrrr (
         uint __brrrr
-    ) public view returns (
+    ) public returns (
         uint brrrr_
     ) {
 
         ( ,,brrrr_ ) = _brrrr(__brrrr);
+
+        emit log("brrrr_",brrrr_);
 
     }
 
@@ -83,7 +85,7 @@ contract ComptrollerShim is OverlayV1Comptroller {
     function viewImpact (
         bool _isLong,
         uint _oi
-    ) public view returns (
+    ) public returns (
         uint impact_
     ) {
 

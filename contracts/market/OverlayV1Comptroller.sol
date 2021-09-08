@@ -108,7 +108,7 @@ contract OverlayV1Comptroller {
     function _intake (
         bool _isLong,
         uint _oi
-    ) internal view returns (
+    ) internal returns (
         Roller memory rollerNow_,
         uint lastMoment_,
         uint impact_,
@@ -146,28 +146,32 @@ contract OverlayV1Comptroller {
         uint brrrr_
     ) {
 
-        uint _lastMoment;
-        Roller memory _rollerNow;
-
-        (   _lastMoment,
-            _rollerNow, 
-            brrrr_ ) = _brrrr(__brrrr);
+        (   Roller memory _rollerNow, 
+            uint _lastMoment,
+            uint ___brrrr ) = _brrrr(__brrrr);
 
         roll(_rollerNow, _lastMoment);
+
+        brrrr_ = ___brrrr;
 
     }
 
     function _brrrr (
         uint __brrrr
-    ) internal view returns (
-        uint lastMoment_,
+    ) internal returns (
         Roller memory rollerNow_,
+        uint lastMoment_,
         uint brrrr_
     ) {
 
         (   uint _lastMoment,
             Roller memory _rollerNow, 
             Roller memory _rollerThen ) = scry(brrrrWindow);
+
+        emit log("roller  now.time", _rollerNow.time);
+        emit log("roller  now.brrr", _rollerNow.brrrr);
+        emit log("roller then.time", _rollerThen.time);
+        emit log("roller then.brrr", _rollerThen.brrrr);
         
         _rollerNow.brrrr += __brrrr;
 
@@ -175,6 +179,8 @@ contract OverlayV1Comptroller {
         rollerNow_ = _rollerNow;
 
         brrrr_ = _rollerNow.brrrr - _rollerThen.brrrr;
+
+        emit log("brrrr_", brrrr_);
 
     }
 
@@ -221,7 +227,7 @@ contract OverlayV1Comptroller {
 
     function scry (
         uint _ago
-    ) internal view returns (
+    ) internal returns (
         uint lastMoment_,
         Roller memory rollerNow_, 
         Roller memory rollerThen_
@@ -234,6 +240,10 @@ contract OverlayV1Comptroller {
         lastMoment_ = rollerNow_.time;
 
         uint _target = _time - _ago;
+
+        emit log("_target", _target);
+        emit log("rollerNow_.time", rollerNow_.time);
+
         if (rollerNow_.time < _target) {
 
             rollerNow_.time = _time;
@@ -251,6 +261,15 @@ contract OverlayV1Comptroller {
 
         (   Roller memory _beforeOrAt, 
             Roller memory _atOrAfter ) = scryRollers(_target);
+
+        emit log("_beforeOrAt.time", _beforeOrAt.time);
+        emit log("_atOrAfter.time ", _atOrAfter.time);
+        emit log("overflow?", _atOrAfter.time < _beforeOrAt.time
+            ? 1111111111111
+            : 1000000000000
+        );
+
+        emit log("_diff_", _atOrAfter.time - _beforeOrAt.time);
 
         if (_atOrAfter.time - _beforeOrAt.time > _ago) {
 
