@@ -37,18 +37,18 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     event Unwind(uint256 positionId, uint256 oi, uint256 debt);
     event Liquidate(address rewarded, uint256 reward);
     event Update(
-        address rewarded, 
-        uint rewardAmount, 
-        uint feesCollected, 
-        uint feesBurned, 
-        uint liquidationsCollected, 
-        uint liquidationsBurned 
+        address rewarded,
+        uint rewardAmount,
+        uint feesCollected,
+        uint feesBurned,
+        uint liquidationsCollected,
+        uint liquidationsBurned
     );
     constructor (
         string memory _uri,
         address _ovl,
         address _factory
-    ) ERC1155(_uri) { 
+    ) ERC1155(_uri) {
 
         ovl = IOverlayToken(_ovl);
         factory = IOverlayV1Factory(_factory);
@@ -123,7 +123,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         uint _pricePointCurrent
     ) internal returns (uint positionId_) {
 
-        mapping(uint=>uint) storage _queuedPositions = _isLong 
+        mapping(uint=>uint) storage _queuedPositions = _isLong
             ? queuedPositionLongs[_market]
             : queuedPositionShorts[_market];
 
@@ -171,9 +171,9 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         require(_leverage <= _maxLev, "OVLV1:max<lev");
 
         uint _positionId = getQueuedPositionId(
-            _market, 
-            _isLong, 
-            _leverage, 
+            _market,
+            _isLong,
+            _leverage,
             _pricePointCurrent
         );
 
@@ -225,8 +225,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             uint _oiShares,
             uint _priceFrame,
             uint _tCompounding ) = IOverlayV1Market(pos.market).exitData(pos.isLong, pos.pricePoint);
-        
-        uint _totalPosShares = totalSupply[_positionId];
+
+        uint _totalPosShares = totalSupply(_positionId);
 
         uint _userOiShares = _shares * pos.oiShares / _totalPosShares;
         uint _userNotional = _shares * pos.notional(_priceFrame, _oi, _oiShares) / _totalPosShares;
@@ -261,16 +261,16 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         ovl.transfer(msg.sender, _userValueAdjusted);
 
         IOverlayV1Market(pos.market).exitOI(
-            pos.compounding <= _tCompounding, 
-            pos.isLong, 
-            _userOi, 
+            pos.compounding <= _tCompounding,
+            pos.isLong,
+            _userOi,
             _userOiShares
         );
 
         }
 
         _burn(msg.sender, _positionId, _shares);
- 
+
     }
 
     /// @notice Liquidates an existing position
@@ -302,9 +302,9 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         _oiShares -= pos.oiShares;
 
         IOverlayV1Market(pos.market).exitOI(
-            pos.compounding <= _tCompounding, 
-            _isLong, 
-            _oi, 
+            pos.compounding <= _tCompounding,
+            _isLong,
+            _oi,
             _oiShares
         );
 
