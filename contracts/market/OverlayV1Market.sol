@@ -122,10 +122,8 @@ abstract contract OverlayV1Market is
 
         fee_ = _oi.mulUp(factory.fee());
 
-        collateralAdjusted_ = _collateral - _impact;
+        collateralAdjusted_ = _collateral - _impact - fee_;
         oiAdjusted_ = collateralAdjusted_ * _leverage;
-
-        fee_ = oiAdjusted_.mulDown(factory.fee());
 
         debtAdjusted_ = oiAdjusted_ - collateralAdjusted_;
 
@@ -155,8 +153,8 @@ abstract contract OverlayV1Market is
             ? priceExit.bid / priceEntry.ask
             : priceExit.ask / priceEntry.bid;
 
-        if (_isLong) ( oiShares_ = oiLongShares, oi_ = __oiLong__ );
-        else ( oiShares_ = oiShortShares, oi_ = __oiLong__ );
+        if (_isLong) ( oiShares_ = oiLongShares, oi_ = __oiLong__ + queuedOiLong );
+        else ( oiShares_ = oiShortShares, oi_ = __oiShort__ + queuedOiShort );
 
     }
 

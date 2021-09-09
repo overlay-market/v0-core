@@ -3,6 +3,7 @@
 pragma solidity ^0.8.7;
 
 import "../libraries/Position.sol";
+import "../libraries/FixedPoint.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import "../interfaces/IOverlayV1Market.sol";
 import "../interfaces/IOverlayV1Factory.sol";
@@ -11,6 +12,7 @@ import "../interfaces/IOverlayToken.sol";
 contract OverlayV1OVLCollateral is ERC1155Supply {
 
     using Position for Position.Info;
+    using FixedPoint for uint256;
 
     // TODO: do we have a struct for markets?
     struct Market { uint _marginAdjustment; }
@@ -216,7 +218,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         uint _userNotional = _shares * pos.notional(_priceFrame, _oi, _oiShares) / _totalPosShares;
         uint _userDebt = _shares * pos.debt / _totalPosShares;
         uint _userCost = _shares * pos.cost / _totalPosShares;
-        uint _userOi = _shares * pos.openInterest(_oi, _oiShares) / _totalPosShares;
+        uint _userOi = _shares * pos.oi(_oi, _oiShares) / _totalPosShares;
 
         // TODO: think through edge case of underwater position ... and fee adjustments ...
         uint _feeAmount = ( _userNotional * factory.fee() ) / RESOLUTION;
@@ -283,14 +285,13 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             _marginMaintenance
         ), "OverlayV1: position not liquidatable");
 
-        _oi -= pos.openInterest(_oi, _oiShares);
-        _oiShares -= pos.oiShares;
+        uint _value = pos.value(_priceFrame, _oi, _oiShares);
 
         IOverlayV1Market(pos.market).exitOI(
             pos.compounding <= _tCompounding, 
             _isLong, 
-            _oi, 
-            _oiShares,
+            pos.oi(_oi, _oiShares), 
+            pos.oiShares,
             0
         );
 
@@ -298,11 +299,12 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         pos.oiShares = 0;
         // positions[positionId].oiShares = 0;
 
-        uint _toForward = pos.cost;
-        uint _toReward = ( _toForward * _marginRewardRate ) / RESOLUTION;
+        uint _toForward = _value;
+        uint _toReward = _toForward.mulUp(_marginRewardRate );
 
         liquidations += _toForward - _toReward;
 
+        ovl.burn(address(this), pos.cost - _value);
         ovl.transfer(_rewardsTo, _toReward);
 
     }
