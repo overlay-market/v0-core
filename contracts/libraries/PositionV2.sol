@@ -22,7 +22,9 @@ library PositionV2 {
         uint256 compounding; // timestamp when position is eligible for compound funding
     }
 
-    function _initialOi(Info memory _self) private pure returns (uint256 oi) {
+    function _initialOpenInterest(
+        Info memory _self
+    ) private pure returns (uint256 oi) {
         return _self.cost + _self.debt;
     }
 
@@ -127,7 +129,7 @@ library PositionV2 {
             totalOiShares,
             priceFrame
         );
-        uint256 initialOi = _initialOi(_self);
+        uint256 initialOi = _initialOpenInterest(_self);
 
         // marginMaintenance is a percentage % (fraction)
         uint256 maintenance = initialOi * marginMaintenance / RESOLUTION;
@@ -136,12 +138,34 @@ library PositionV2 {
 
     }
 
+    /// @dev reverts if underwater
+    /// TODO: handle edge case of underwater position
+    function _liquidationPrice(
+        Info memory _self,
+        uint256 totalOi,
+        uint256 totalOiShares,
+        uint256 priceEntry,
+        uint256 marginMaintenance
+    ) private pure returns (uint256 liqPrice) {
+        uint256 oi = _openInterest(_self, totalOi, totalOiShares);
+        uint256 initialOi = _initialOpenInterest(_self);
+
+        uint256 oiFrame = (initialOi * marginMaintenance + _self.debt) / oi;
+        if (_self.isLong) {
+            liqPrice = priceEntry * oiFrame;
+        } else {
+            liqPrice = priceEntry * (2 - oiFrame);
+        }
+    }
+
     /// @notice Returns the initial open interest of a position at build
-    function initialOi(Info storage self) private pure returns (uint256) {
+    function initialOpenInterest(
+        Info storage self
+    ) private pure returns (uint256) {
 
         Info memory _self = self;
 
-        return _initialOi(_self);
+        return _initialOpenInterest(_self);
     }
 
     /// @notice Computes the open interest of a position
@@ -259,6 +283,24 @@ library PositionV2 {
 
     }
 
-    /// @notice Computes the liquidation price of a position
-    /// @dev TODO: ... function liquidationPrice()
+    /// @notice Computes the current estimated liquidation price of a position
+    function liquidationPrice(
+        Info storage self,
+        uint256 priceEntry,
+        uint256 totalOi,
+        uint256 totalOiShares,
+        uint256 marginMaintenance
+    ) internal view returns (uint256) {
+
+        Info memory _self = self;
+
+        return _liquidationPrice(
+            _self,
+            totalOi,
+            totalOiShares,
+            priceEntry,
+            marginMaintenance
+        );
+
+    }
 }
