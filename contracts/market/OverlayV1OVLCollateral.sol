@@ -298,6 +298,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             _marginMaintenance
         ), "OverlayV1: position not liquidatable");
 
+        uint _value = pos.value(_priceFrame, _oi, _oiShares);
+
         _oi -= pos.openInterest(_oi, _oiShares);
         _oiShares -= pos.oiShares;
 
@@ -312,7 +314,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         pos.oiShares = 0;
         // positions[positionId].oiShares = 0;
 
-        uint _toForward = pos.cost;
+        // toForward is the current value of the position
+        uint _toForward = _value;
         uint _toReward = ( _toForward * _marginRewardRate ) / RESOLUTION;
 
         liquidations += _toForward - _toReward;
