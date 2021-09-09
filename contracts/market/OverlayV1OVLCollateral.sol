@@ -288,6 +288,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             uint _priceFrame,
             uint _tCompounding ) = IOverlayV1Market(pos.market).exitData(_isLong, pos.pricePoint);
 
+        // TODO: Have marginMaintenance as per market param in gov; require MM < 1/Lmax
         (   uint _marginMaintenance,
             uint _marginRewardRate   ) = factory.getMarginParams();
 
@@ -320,6 +321,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         liquidations += _toForward - _toReward;
 
+        // burn initial collateral locked - maintenance forwarded
+        ovl.burn(address(this), pos.cost - _value);
         ovl.transfer(_rewardsTo, _toReward);
 
     }
