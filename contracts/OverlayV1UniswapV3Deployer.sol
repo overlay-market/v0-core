@@ -11,11 +11,12 @@ contract OverlayV1UniswapV3Deployer {
         address uniPool,
         uint256 updatePeriod,
         uint256 compoundPeriod,
-        uint144 oiCap,
-        uint112 fundingKNumerator,
-        uint112 fundingKDenominator,
-        uint8   leverageMax,
-        uint256 windowSize,
+        uint256 printWindow,
+        uint256 macroWindow,
+        uint256 microWindow,
+        uint256 oiCap,
+        uint256 fundingK,
+        uint256 leverageMax,
         uint128 amountIn,
         bool    isPrice0
     ) external returns (OverlayV1UniswapV3Market marketContract) {
@@ -24,11 +25,12 @@ contract OverlayV1UniswapV3Deployer {
             uniPool,
             updatePeriod,
             compoundPeriod,
+            printWindow,
+            macroWindow,
+            microWindow,
             oiCap,
-            fundingKNumerator,
-            fundingKDenominator,
+            fundingK,
             leverageMax,
-            windowSize,
             amountIn,
             isPrice0
         );

@@ -1,12 +1,18 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.2;
+pragma solidity ^0.8.7;
 
 abstract contract OverlayV1PricePoint {
 
-    // mapping from price point index to realized historical prices
-    uint[] public pricePoints;
+    struct PricePoint {
+        uint256 bid;
+        uint256 ask;
+        uint256 price;
+    }
 
-    event NewPrice(uint _price);
+    // mapping from price point index to realized historical prices
+    PricePoint[] public pricePoints;
+
+    event NewPrice(uint bid, uint ask, uint price);
 
     /// @notice Get the current price point index
     function pricePointCurrentIndex() external view returns (uint) {
@@ -16,9 +22,16 @@ abstract contract OverlayV1PricePoint {
     }
 
     /// @notice Allows inheriting contracts to add the latest realized price
-    function setPricePointCurrent(uint256 price) internal {
-        pricePoints.push(price);
-        emit NewPrice(price);
+    function setPricePointCurrent(PricePoint memory _pricePoint) internal {
+
+        pricePoints.push(_pricePoint);
+
+        emit NewPrice(
+            _pricePoint.bid, 
+            _pricePoint.ask, 
+            _pricePoint.price
+        );
+
     }
 
 }

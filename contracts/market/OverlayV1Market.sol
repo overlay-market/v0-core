@@ -1,60 +1,54 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.2;
+pragma solidity ^0.8.7;
 
 import "../libraries/Position.sol";
+import "../libraries/FixedPoint.sol";
 import "../interfaces/IOverlayV1Factory.sol";
 import "./OverlayV1Governance.sol";
 import "./OverlayV1OI.sol";
 import "./OverlayV1PricePoint.sol";
 import "../OverlayToken.sol";
+import "./OverlayV1Comptroller.sol";
 
-abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1PricePoint {
+abstract contract OverlayV1Market is 
+    OverlayV1Governance, 
+    OverlayV1OI, 
+    OverlayV1Comptroller,
+    OverlayV1PricePoint {
+
+    using FixedPoint for uint256;
 
     mapping (address => bool) public isCollateral;
 
-    uint256 public fees;
-    uint256 public liquidations;
-
-    uint constant RESOLUTION = 1e4;
-
-    uint16 public constant MIN_COLLATERAL_AMOUNT = 10**4;
-
-    // block at which market update was last called: includes funding payment, fees, price fetching
-    uint256 public updateBlockLast;
-
     uint256 private unlocked = 1;
-    modifier lock() {
-        require(unlocked == 1, "OVLV1:!unlocked");
-        unlocked = 0;
-        _;
-        unlocked = 1;
-    }
 
-    modifier onlyCollateral () {
-        require(isCollateral[msg.sender], "OVLV1:!collateral");
-        _;
-    }
+    modifier lock() { require(unlocked == 1, "OVLV1:!unlocked"); unlocked = 0; _; unlocked = 1; }
+
+    modifier onlyCollateral () { require(isCollateral[msg.sender], "OVLV1:!collateral"); _; }
 
     constructor(
         address _ovl,
         uint256 _updatePeriod,
         uint256 _compoundingPeriod,
-        uint144 _oiCap,
-        uint112 _fundingKNumerator,
-        uint112 _fundingKDenominator,
-        uint8   _leverageMax
-    ) OverlayV1Governance(
+        uint256 _printWindow,
+        uint256 _impactWindow,
+        uint256 _oiCap,
+        uint256 _fundingK,
+        uint256 _leverageMax
+    ) OverlayV1Governance (
         _ovl,
         _updatePeriod,
         _compoundingPeriod,
         _oiCap,
-        _fundingKNumerator,
-        _fundingKDenominator,
+        _fundingK,
         _leverageMax
-    ) {
+    ) OverlayV1Comptroller (
+        _printWindow,
+        _impactWindow
+    ) { }
 
-        updateBlockLast = block.number;
-
+    function init (uint _lambda) public {
+        lambda = _lambda;
     }
 
     function addCollateral (address _collateral) public {
@@ -85,16 +79,11 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
         if (_epochs > 0) {
 
             // WARNING: must pay funding before updating OI to avoid free rides
-            payFunding(
-                fundingKNumerator, 
-                fundingKDenominator, 
-                _epochs
-            );
+            payFunding(fundingK, _epochs);
             
             updateOi(); 
 
             updated_ = true;
-
 
         }
     }
@@ -105,20 +94,40 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
 
     }
 
-    function entryData (
-        bool _isLong
+
+    /// @notice Adds open interest to the market
+    /// @dev invoked by an overlay position contract
+    function enterOI (
+        bool _isLong,
+        uint _collateral,
+        uint _leverage
     ) external onlyCollateral returns (
-        uint freeOi_,
-        uint maxLev_,
+        uint oiAdjusted_,
+        uint collateralAdjusted_,
+        uint debtAdjusted_,
+        uint fee_,
         uint pricePointCurrent_,
-        uint compoundEpoch_
+        uint t1Compounding_
     ) {
 
-        compoundEpoch_ = entryUpdate();
+        require(_leverage <= leverageMax, "OVLV1:lev>max");
 
-        maxLev_ = leverageMax;
+        t1Compounding_ = entryUpdate();
 
         pricePointCurrent_ = pricePoints.length;
+
+        uint _oi = _collateral * _leverage;
+
+        ( uint _impact, uint _cap ) = intake(_isLong, _oi);
+
+        fee_ = _oi.mulUp(factory.fee());
+
+        collateralAdjusted_ = _collateral - _impact - fee_;
+        oiAdjusted_ = collateralAdjusted_ * _leverage;
+
+        debtAdjusted_ = oiAdjusted_ - collateralAdjusted_;
+
+        queueOi(_isLong, oiAdjusted_, _cap);
 
     }
 
@@ -133,28 +142,19 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
     ) {
 
         compoundedEpoch_ = exitUpdate();
-        
-        uint _priceEntry = pricePoints[_pricePoint];
+
+        PricePoint storage priceEntry = pricePoints[_pricePoint];
 
         require( (_pricePoint = pricePoints.length - 1) < _pricePoint, "OVLV1:!settled");
 
-        uint _priceExit = pricePoints[_pricePoint];
+        PricePoint storage priceExit = pricePoints[_pricePoint];
 
-        priceFrame_ = _priceExit / _priceEntry;
+        priceFrame_ = _isLong
+            ? priceExit.bid / priceEntry.ask
+            : priceExit.ask / priceEntry.bid;
 
-        if (_isLong) ( oiShares_ = oiLongShares, oi_ = __oiLong__ );
-        else ( oiShares_ = oiShortShares, oi_ = __oiLong__ );
-
-    }
-
-    /// @notice Adds open interest to the market
-    /// @dev invoked by an overlay position contract
-    function enterOI (
-        bool _isLong,
-        uint _oi
-    ) external onlyCollateral {
-
-        queueOi(_isLong, _oi, oiCap);
+        if (_isLong) ( oiShares_ = oiLongShares, oi_ = __oiLong__ + queuedOiLong );
+        else ( oiShares_ = oiShortShares, oi_ = __oiShort__ + queuedOiShort );
 
     }
 
@@ -168,11 +168,25 @@ abstract contract OverlayV1Market is OverlayV1Governance, OverlayV1OI, OverlayV1
         bool _fromQueued,
         bool _isLong,
         uint _oi,
-        uint _oiShares
+        uint _oiShares,
+        uint112 _brrrr
     ) external onlyCollateral {
 
-        if (_isLong) ( __oiLong__ -= _oi, oiLongShares -= _oiShares );
-        else ( __oiShort__ -= _oi, oiShortShares -= _oiShares );
+        noteBrrrr(_brrrr);
+
+        __oi__ -= _oi;
+
+        if (_fromQueued) {
+
+            if (_isLong) queuedOiLong -= _oi;
+            else queuedOiShort -= _oi;
+
+        } else {
+
+            if (_isLong) ( __oiLong__ -= _oi, oiLongShares -= _oiShares );
+            else ( __oiShort__ -= _oi, oiShortShares -= _oiShares );
+
+        }
 
     }
 

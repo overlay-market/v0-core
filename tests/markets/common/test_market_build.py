@@ -8,11 +8,10 @@ TOKEN_TOTAL_SUPPLY = 8000000
 OI_CAP = 800000
 FEE_RESOLUTION = 1e4
 
-
 @given(
     collateral=strategy('uint256',
-                        min_value=MIN_COLLATERAL_AMOUNT,
-                        max_value=0.00999*OI_CAP*10**TOKEN_DECIMALS),
+        min_value=MIN_COLLATERAL_AMOUNT,
+        max_value=0.00999*OI_CAP*10**TOKEN_DECIMALS),
     leverage=strategy('uint8', min_value=1, max_value=100),
     is_long=strategy('bool'))
 def test_build(ovl_collateral, token, factory, market, bob, rewards, collateral, leverage, is_long):
@@ -53,7 +52,8 @@ def test_build(ovl_collateral, token, factory, market, bob, rewards, collateral,
         market,
         collateral, 
         is_long, 
-        leverage, bob, 
+        leverage, 
+        bob, 
         {"from": bob}
     )
 
@@ -148,5 +148,5 @@ def test_build_breach_max_leverage(token, market, bob):
 def test_build_breach_cap(token, factory, ovl_collateral, market, bob, oi, leverage, is_long):
     collateral = int(oi / leverage)
     token.approve(ovl_collateral, collateral, {"from": bob})
-    with reverts("OverlayV1: breached oi cap"):
+    with reverts("OVLV1:collat<min"):
         ovl_collateral.build(market, collateral, is_long, leverage, bob, {"from": bob})

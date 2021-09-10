@@ -1,8 +1,9 @@
 
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.2;
+pragma solidity ^0.8.7;
 
-import "../libraries/PositionV2.sol";
+import "../libraries/Position.sol";
+import "../libraries/FixedPoint.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import "../interfaces/IOverlayV1Market.sol";
 import "../interfaces/IOverlayV1Factory.sol";
@@ -10,7 +11,8 @@ import "../interfaces/IOverlayToken.sol";
 
 contract OverlayV1OVLCollateral is ERC1155Supply {
 
-    using PositionV2 for PositionV2.Info;
+    using Position for Position.Info;
+    using FixedPoint for uint256;
 
     // TODO: do we have a struct for markets?
     struct Market { uint _marginAdjustment; }
@@ -20,7 +22,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     mapping (address => mapping(uint => uint)) internal queuedPositionLongs;
     mapping (address => mapping(uint => uint)) internal queuedPositionShorts;
 
-    PositionV2.Info[] public positions;
+    Position.Info[] public positions;
 
     uint16 public constant MIN_COLLAT = 1e4;
     uint constant RESOLUTION = 1e4;
@@ -53,7 +55,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         ovl = IOverlayToken(_ovl);
         factory = IOverlayV1Factory(_factory);
 
-        positions.push(PositionV2.Info({
+        positions.push(Position.Info({
             market: address(0),
             isLong: false,
             leverage: 0,
@@ -120,7 +122,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         address _market,
         bool _isLong,
         uint _leverage,
-        uint _pricePointCurrent
+        uint _pricePointCurrent,
+        uint _t1Compounding
     ) internal returns (uint positionId_) {
 
         mapping(uint=>uint) storage _queuedPositions = _isLong 
@@ -129,11 +132,11 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         positionId_ = _queuedPositions[_leverage];
 
-        PositionV2.Info storage position = positions[positionId_];
+        Position.Info storage position = positions[positionId_];
 
         if (position.pricePoint < _pricePointCurrent) {
 
-            positions.push(PositionV2.Info({
+            positions.push(Position.Info({
                 market: _market,
                 isLong: _isLong,
                 leverage: _leverage,
@@ -141,7 +144,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
                 oiShares: 0,
                 debt: 0,
                 cost: 0,
-                compounding: 0
+                compounding: _t1Compounding
             }));
 
             positionId_ = positions.length - 1;
@@ -152,8 +155,6 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     }
 
-    event log(string k, uint v);
-
     function build(
         address _market,
         uint256 _collateral,
@@ -162,45 +163,30 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         address _rewardsTo
     ) external {
 
-        (   uint _freeOi,
-            uint _maxLev,
-            uint _pricePointCurrent,
-            uint _t1Compounding ) = IOverlayV1Market(_market).entryData(_isLong);
-
         require(_collateral <= MIN_COLLAT, "OVLV1:collat<min");
-        require(_leverage <= _maxLev, "OVLV1:max<lev");
+
+        (   uint _oiAdjusted,
+            uint _costAdjusted,
+            uint _debtAdjusted,
+            uint _fees,
+            uint _pricePointCurrent,
+            uint _t1Compounding ) = IOverlayV1Market(_market).enterOI(_isLong, _collateral, _leverage);
 
         uint _positionId = getQueuedPositionId(
             _market, 
             _isLong, 
             _leverage, 
-            _pricePointCurrent
+            _pricePointCurrent,
+            _t1Compounding
         );
 
-        PositionV2.Info storage pos = positions[_positionId];
-        pos.compounding = _t1Compounding;
-
-        uint _oiAdjusted;
-        uint _debtAdjusted;
-
-        {
-
-        uint _oi = _collateral * _leverage;
-        uint _fee = ( _oi * factory.fee() ) / RESOLUTION;
-
-        _oiAdjusted = _oi - _fee;
-        uint _collateralAdjusted = _oiAdjusted / _leverage;
-        _debtAdjusted = _oiAdjusted - _collateralAdjusted;
-
-        fees += _fee;
+        Position.Info storage pos = positions[_positionId];
 
         pos.oiShares += _oiAdjusted;
-        pos.cost += _collateralAdjusted;
-        pos.debt += _debtAdjusted;
+        pos.cost = _costAdjusted;
+        pos.debt = _debtAdjusted;
 
-        }
-
-        IOverlayV1Market(_market).enterOI(_isLong, _oiAdjusted);
+        fees += _fees;
 
         emit Build(_positionId, _oiAdjusted, _debtAdjusted);
 
@@ -217,7 +203,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         require( 0 < _shares && _shares <= balanceOf(msg.sender, _positionId), "OVLV1:!shares");
 
-        PositionV2.Info storage pos = positions[_positionId];
+        Position.Info storage pos = positions[_positionId];
 
         {
 
@@ -226,13 +212,13 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             uint _priceFrame,
             uint _tCompounding ) = IOverlayV1Market(pos.market).exitData(pos.isLong, pos.pricePoint);
         
-        uint _totalPosShares = totalSupply[_positionId];
+        uint _totalPosShares = totalSupply(_positionId);
 
         uint _userOiShares = _shares * pos.oiShares / _totalPosShares;
         uint _userNotional = _shares * pos.notional(_priceFrame, _oi, _oiShares) / _totalPosShares;
         uint _userDebt = _shares * pos.debt / _totalPosShares;
         uint _userCost = _shares * pos.cost / _totalPosShares;
-        uint _userOi = _shares * pos.openInterest(_oi, _oiShares) / _totalPosShares;
+        uint _userOi = _shares * pos.oi(_oi, _oiShares) / _totalPosShares;
 
         // TODO: think through edge case of underwater position ... and fee adjustments ...
         uint _feeAmount = ( _userNotional * factory.fee() ) / RESOLUTION;
@@ -264,7 +250,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             pos.compounding <= _tCompounding, 
             pos.isLong, 
             _userOi, 
-            _userOiShares
+            _userOiShares,
+            int216(int(_userCost)) - int216(int(_userValueAdjusted))
         );
 
         }
@@ -279,7 +266,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         address _rewardsTo
     ) external {
 
-        PositionV2.Info storage pos = positions[_positionId];
+        Position.Info storage pos = positions[_positionId];
 
         bool _isLong = pos.isLong;
 
@@ -298,25 +285,26 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             _marginMaintenance
         ), "OverlayV1: position not liquidatable");
 
-        _oi -= pos.openInterest(_oi, _oiShares);
-        _oiShares -= pos.oiShares;
+        uint _value = pos.value(_priceFrame, _oi, _oiShares);
 
         IOverlayV1Market(pos.market).exitOI(
             pos.compounding <= _tCompounding, 
             _isLong, 
-            _oi, 
-            _oiShares
+            pos.oi(_oi, _oiShares), 
+            pos.oiShares,
+            0
         );
 
         // TODO: which is better on gas
         pos.oiShares = 0;
         // positions[positionId].oiShares = 0;
 
-        uint _toForward = pos.cost;
-        uint _toReward = ( _toForward * _marginRewardRate ) / RESOLUTION;
+        uint _toForward = _value;
+        uint _toReward = _toForward.mulUp(_marginRewardRate );
 
         liquidations += _toForward - _toReward;
 
+        ovl.burn(address(this), pos.cost - _value);
         ovl.transfer(_rewardsTo, _toReward);
 
     }

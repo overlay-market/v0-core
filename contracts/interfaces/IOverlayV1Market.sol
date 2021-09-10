@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.2;
+pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "../libraries/Position.sol";
@@ -39,19 +39,18 @@ interface IOverlayV1Market is IERC1155 {
         address _collateral
     ) external;
 
-    function entryData (
-        bool _isLong
-    ) external returns (
-        uint256 freeOi_,
-        uint256 maxLev_,
-        uint256 pricePoint_,
-        uint256 t1Compounding_
-    );
-
-    function enterOI(
+    function enterOI (
         bool _isLong,
-        uint _oi
-    ) external;
+        uint _collateral,
+        uint _leverage
+    ) external returns (
+        uint oiAdjusted_,
+        uint collateralAdjusted_,
+        uint debtAdjusted_,
+        uint fee_,
+        uint pricePointCurrent_,
+        uint t1Compounding_
+    );
 
     function exitData (
         bool _isLong,
@@ -63,20 +62,21 @@ interface IOverlayV1Market is IERC1155 {
         uint tCompounding_
     );
 
-    function exitOI(
-        bool _compounded,
-        bool _isLong,
-        uint _oi,
-        uint _oiShares
-    ) external;
-
-    function adjustParams(
+    function adjustParams (
         uint256 _updatePeriod, 
         uint256 _compoundingPeriod, 
         uint144 _oiCap, 
         uint112 _fundingKNumerator, 
         uint112 _fundingKDenominator,
         uint8 _leverageMax
+    ) external;
+
+    function exitOI (
+        bool _compounded,
+        bool _isLong,
+        uint _oi,
+        uint _oiShares,
+        int216 _printed
     ) external;
 
     function update () external returns (bool);

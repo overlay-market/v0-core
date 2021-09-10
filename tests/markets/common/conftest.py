@@ -1,9 +1,13 @@
 import pytest
 import brownie
-import pandas as pd
 import os
 import json
-from brownie import ETH_ADDRESS, OverlayToken, chain, interface
+from brownie import \
+    ETH_ADDRESS,\
+    OverlayToken,\
+    ComptrollerShim,\
+    chain,\
+    interface
 
 
 TOKEN_DECIMALS = 18
@@ -131,13 +135,17 @@ def get_uni_oracle (feed_owner):
 
     return uniswapv3_factory.address, uniswapv3_mock.address
 
+@pytest.fixture( scope="module" )
+def comptroller(gov):
+    comptroller = gov.deploy(ComptrollerShim, 600, 60, 1e18)
+    yield comptroller
 
 @pytest.fixture(
     scope="module",
     params=[
         ("OverlayV1UniswapV3Deployer", [],
          "OverlayV1UniswapV3Factory", [15, 5000, 100, ETH_ADDRESS, 60, 50, 25], 
-         "OverlayV1UniswapV3Market", [ 10, 10, OI_CAP*10**TOKEN_DECIMALS, 3293944666953, 9007199254740992, 100, 600, AMOUNT_IN*10**TOKEN_DECIMALS, True ],
+         "OverlayV1UniswapV3Market", [ 10, 10, 10, 600, 60, OI_CAP*10**TOKEN_DECIMALS, 3293944666953, 9007199254740992, 100, AMOUNT_IN*10**TOKEN_DECIMALS, True ],
          get_uni_oracle,
         ),
     ])

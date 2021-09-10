@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.2;
+pragma solidity ^0.8.7;
 
 import "./interfaces/IUniV3Factory.sol";
 import "./market/OverlayV1Factory.sol";
@@ -43,26 +43,28 @@ contract OverlayV1UniswapV3Factory is OverlayV1Factory {
         address uniV3Pool,
         uint256 updatePeriod,
         uint256 compoundingPeriod,
-        uint144 oiCap,
-        uint112 fundingKNumerator,
-        uint112 fundingKDenominator,
-        uint8   leverageMax,
-        uint256 windowSize,
+        uint256 printWindow,
+        uint256 macroWindow,
+        uint256 microWindow,
+        uint256 oiCap,
+        uint256 fundingK,
+        uint256 leverageMax,
         uint256 amountIn,
         bool    isPrice0
     ) external onlyOwner returns (OverlayV1UniswapV3Market marketContract) {
 
-        (bool success, bytes memory result) = deployer.delegatecall(
-            abi.encodeWithSignature("deployMarket(address,address,uint256,uint256,uint144,uint112,uint112,uint8,uint256,uint128,bool)",
+        (  ,bytes memory result) = deployer.delegatecall(
+            abi.encodeWithSignature("deployMarket(address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint128,bool)",
             ovl,
             uniV3Pool,
             updatePeriod,
             compoundingPeriod,
+            printWindow,
+            macroWindow,
+            microWindow,
             oiCap,
-            fundingKNumerator,
-            fundingKDenominator,
+            fundingK,
             leverageMax,
-            windowSize,
             amountIn,
             isPrice0
         ));
