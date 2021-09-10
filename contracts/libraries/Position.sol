@@ -50,17 +50,17 @@ library Position {
         uint256 priceFrame
     ) private pure returns (uint256 val_) {
 
-        uint256 oi = _oi(_self, totalOi, totalOiShares);
+        uint256 __oi = _oi(_self, totalOi, totalOiShares);
 
         if (_self.isLong) { // oi * priceFrame - debt
 
-            val_ = oi.mulDown(priceFrame);
+            val_ = __oi.mulDown(priceFrame);
             val_ -= Math.min(val_, _self.debt); // floor to 0
 
         } else { // oi * (2 - priceFrame) - debt
 
-            val_ = oi * 2;
-            val_ -= Math.min(val_, _self.debt + oi.mulDown(priceFrame)); // floor to 0
+            val_ = __oi * 2;
+            val_ -= Math.min(val_, _self.debt + __oi.mulDown(priceFrame)); // floor to 0
 
         }
 
