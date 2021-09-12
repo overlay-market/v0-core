@@ -8,14 +8,12 @@ contract OverlayV1Comptroller {
     using FixedPoint for uint256;
     struct Roller {
         uint time;
-        uint brrrr;
         uint longPressure;
         uint shortPressure;
     }
 
     uint256 internal constant INVERSE_EULER = 0x51AF86713316A9A;
 
-    uint256 public brrrrWindow;
     uint256 public impactWindow;
     uint256 public lambda;
 
@@ -26,13 +24,17 @@ contract OverlayV1Comptroller {
     uint24 public cardinalityNext;
     Roller[216000] public rollers;
 
+    uint256 brrrrd;
+    uint256 brrrrdWhen;
+    uint256 brrrrdFade;
+
     event log(string k, uint v);
 
     uint256 public TEST_CAP;
 
     constructor (
-        uint _brrrrWindow,
-        uint _impactWindow
+        uint _impactWindow,
+        uint _brrrrdFade
     ) {
 
         cardinality = 1;
@@ -40,12 +42,10 @@ contract OverlayV1Comptroller {
 
         rollers[0] = Roller({
             time: block.timestamp,
-            brrrr: 0,
             longPressure: 0,
             shortPressure: 0
         });
 
-        brrrrWindow = _brrrrWindow;
         impactWindow = _impactWindow;
 
     }
@@ -74,13 +74,9 @@ contract OverlayV1Comptroller {
 
     }
 
-    function cap (
-        uint _brrrrd
-    ) internal view returns (
-        uint cap_
-    ) {
+    function cap () internal view returns ( uint cap_) {
 
-        cap_ = TEST_CAP;
+        cap_ = TEST_CAP - brrrrd;
 
     }
 
@@ -119,68 +115,43 @@ contract OverlayV1Comptroller {
             Roller memory _rollerNow, 
             Roller memory _rollerImpact ) = scry(impactWindow);
         
-        ( ,,Roller memory _rollerCap ) = scry(brrrrWindow);
-
-        uint _cap = cap(_rollerNow.brrrr - _rollerCap.brrrr);
+        uint _cap = cap();
 
         uint _pressure = _oi.divUp(_cap);
 
         if (_isLong) _rollerNow.longPressure += _pressure;
         else _rollerNow.shortPressure += _pressure;
 
-        uint _rollingPressure = _isLong
+        uint _power = lambda.mulUp(_isLong
             ? _rollerNow.longPressure - _rollerImpact.longPressure
-            : _rollerNow.shortPressure - _rollerImpact.shortPressure;
+            : _rollerNow.shortPressure - _rollerImpact.shortPressure
+        );
 
         lastMoment_ = _lastMoment;
         rollerNow_ = _rollerNow;
-        impact_ = _rollingPressure == 0 ? 0
-            : ONE.sub(INVERSE_EULER.powUp(lambda.mulUp(_rollingPressure)));
+        impact_ = _pressure != 0 
+            ? ONE.sub(INVERSE_EULER.powUp(_power)) 
+            : 0;
         cap_ = _cap;
 
     }
 
-    function noteBrrrr (
-        uint __brrrr
-    ) internal returns (
-        uint brrrr_
-    ) {
+    function brrrr (
+        int _brrrr
+    ) internal {
 
-        (   Roller memory _rollerNow, 
-            uint _lastMoment,
-            uint ___brrrr ) = _brrrr(__brrrr);
+        uint _brrrrd = brrrrd;
 
-        roll(_rollerNow, _lastMoment);
+        if (_brrrr >= 0) _brrrrd += uint(_brrrr);
+        else _brrrrd -= uint(-_brrrr);
 
-        brrrr_ = ___brrrr;
+        uint _now = block.timestamp;
+        uint _brrrrdThen = brrrrdWhen;
+        brrrrdWhen = _now;
 
-    }
+        uint _fadeFactor = brrrrdFade.mulUp(_now - _brrrrdThen);
 
-    function _brrrr (
-        uint __brrrr
-    ) internal returns (
-        Roller memory rollerNow_,
-        uint lastMoment_,
-        uint brrrr_
-    ) {
-
-        (   uint _lastMoment,
-            Roller memory _rollerNow, 
-            Roller memory _rollerThen ) = scry(brrrrWindow);
-
-        emit log("roller  now.time", _rollerNow.time);
-        emit log("roller  now.brrr", _rollerNow.brrrr);
-        emit log("roller then.time", _rollerThen.time);
-        emit log("roller then.brrr", _rollerThen.brrrr);
-        
-        _rollerNow.brrrr += __brrrr;
-
-        lastMoment_ = _lastMoment;
-        rollerNow_ = _rollerNow;
-
-        brrrr_ = _rollerNow.brrrr - _rollerThen.brrrr;
-
-        emit log("brrrr_", brrrr_);
+        brrrrd = _brrrrd.mulUp(_fadeFactor);
 
     }
 
@@ -249,7 +220,6 @@ contract OverlayV1Comptroller {
             rollerNow_.time = _time;
             rollerThen_.longPressure = rollerNow_.longPressure;
             rollerThen_.shortPressure = rollerNow_.shortPressure;
-            rollerThen_.brrrr = rollerNow_.brrrr;
 
             return ( lastMoment_, rollerNow_, rollerThen_ );
 
@@ -289,7 +259,6 @@ contract OverlayV1Comptroller {
         
         } else {
 
-            uint _brrrrDiff = _atOrAfter.brrrr - _beforeOrAt.brrrr;
             uint _longPressureDiff = _atOrAfter.longPressure - _beforeOrAt.longPressure;
             uint _shortPressureDiff = _atOrAfter.shortPressure - _beforeOrAt.shortPressure;
 
@@ -297,7 +266,6 @@ contract OverlayV1Comptroller {
 
             uint _targetRatio = ( ( _target - _beforeOrAt.time ) * 1e18 ).divUp(_timeDiff);
 
-            rollerThen_.brrrr = _beforeOrAt.brrrr.add(_brrrrDiff.mulDown(_targetRatio));
             rollerThen_.longPressure = _beforeOrAt.longPressure.add(_longPressureDiff.mulDown(_targetRatio));
             rollerThen_.shortPressure = _beforeOrAt.shortPressure.add(_shortPressureDiff.mulDown(_targetRatio));
             rollerThen_.time = _target;
@@ -328,7 +296,6 @@ contract OverlayV1Comptroller {
             } else {
 
                 atOrAfter.time = block.timestamp;
-                atOrAfter.brrrr = beforeOrAt.brrrr;
                 atOrAfter.longPressure = beforeOrAt.longPressure;
                 atOrAfter.shortPressure = beforeOrAt.shortPressure;
 

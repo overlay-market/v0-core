@@ -169,12 +169,10 @@ abstract contract OverlayV1Market is
         bool _isLong,
         uint _oi,
         uint _oiShares,
-        uint112 _brrrr
+        int  _brrrr
     ) external onlyCollateral {
 
-        noteBrrrr(_brrrr);
-
-        __oi__ -= _oi;
+        brrrr(_brrrr);
 
         if (_fromQueued) {
 

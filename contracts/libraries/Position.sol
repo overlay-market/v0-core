@@ -77,15 +77,11 @@ library Position {
 
         uint256 __oi = _oi(_self, totalOi, totalOiShares);
 
-        if (_self.isLong) {
+        bool _long = _self.isLong;
 
-            isUnder = __oi.mulDown(priceFrame) < _self.debt;
+        if (_long) isUnder = __oi.mulDown(priceFrame) < _self.debt;
+        else isUnder = __oi.mulDown(priceFrame) + _self.debt < ( __oi * 2 );
 
-        } else {
-
-            isUnder = __oi.mulDown(priceFrame) + _self.debt < oi * 2;
-
-        }
     }
 
     /// @dev Floors to _self.debt, so won't properly compute if _self is underwater
