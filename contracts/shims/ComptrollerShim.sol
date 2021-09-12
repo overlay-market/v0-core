@@ -29,6 +29,21 @@ contract ComptrollerShim is OverlayV1Comptroller {
 
     }
 
+    function viewScry(
+        uint _ago
+    ) internal view returns (
+        Roller memory rollerNow_,
+        Roller memory rollerThen_
+    ) {
+
+        uint lastMoment;
+
+        (   lastMoment,
+            rollerNow_,
+            rollerThen_ ) = scry(_ago);
+
+    }
+
     function brrrr (
         int[] memory __brrrr
     ) public {

@@ -47,6 +47,7 @@ contract OverlayV1Comptroller {
         });
 
         impactWindow = _impactWindow;
+        brrrrdFade = _brrrrdFade;
 
     }
 
