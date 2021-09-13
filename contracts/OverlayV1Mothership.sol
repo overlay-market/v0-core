@@ -3,10 +3,10 @@ pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "../interfaces/IOverlayV1Market.sol";
-import "../OverlayToken.sol";
+import "./interfaces/IOverlayV1Market.sol";
+import "./OverlayToken.sol";
 
-contract OverlayV1Factory is Ownable {
+contract OverlayV1Mothership is Ownable {
 
     uint16 public constant MIN_FEE = 1; // 0.01%
     uint16 public constant MAX_FEE = 100; // 1.00%
@@ -40,8 +40,6 @@ contract OverlayV1Factory is Ownable {
     // whether is an already created market: for easy access instead of looping through allMarkets
     mapping(address => bool) public marketExists;
     address[] public allMarkets;
-
-    event MarketDeployed(address market, address feed, bool isPrice0);
 
     constructor(
         address _ovl,
