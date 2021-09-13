@@ -20,6 +20,9 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     address private immutable token0;
     address private immutable token1;
 
+    uint256 internal constant EULER = 0x25B946EBC0B36351;
+    uint256 internal constant INVERSE_EULER = 0x51AF86713316A9A;
+
     constructor(
         address _ovl,
         address _uniV3Pool,
@@ -79,26 +82,6 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
-    function twapPrice(
-        uint secondsAgoStart, 
-        uint secondsAgoEnd
-    ) public view returns (uint256 price_)   {
-
-        int24 tick = OracleLibraryV2.consult(
-            feed, 
-            uint32(secondsAgoStart), 
-            uint32(secondsAgoEnd)
-        );
-
-        price_ = OracleLibraryV2.getQuoteAtTick(
-            tick,
-            uint128(amountIn),
-            isPrice0 ? token0 : token1,
-            isPrice0 ? token1 : token0
-        );
-
-    }
-
     uint public toUpdate;
     uint public updated;
     uint public compounded;
@@ -106,40 +89,40 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     uint public staticSpreadAsk; // this is going to be some amount of basis points
     uint public staticSpreadBid; // this is going to be some amount of basis points
 
-    function NOW () external view returns (uint) { return block.timestamp; }
-
     function price (uint _at) public view returns (PricePoint memory) { 
 
-        uint twapPrice_ = twapPrice(_at - macroWindow, _at);
-        uint _spreadPrice = twapPrice(_at - microWindow, _at);
+        uint32[] memory _secondsAgo = new uint32[](3);
+        _secondsAgo[0] = _at - macroWindow;
+        _secondsAgo[1] = _at - microWindow;
+        _secondsAgo[2] = _at;
 
-        // uint ask_ = max(twapPrice_, _spreadPrice);
-        // uint bid_ = min(twapPrice_, _spreadPrice);
-        uint ask_ = twapPrice_;
-        uint bid_ = twapPrice_;
+        int56[] memory ticks = IUniswapV3Pool(feed).observe(_secondsAgo);
 
-        // formula for ask
-        // bid = min(twap,spread) * e ^ -(staticSpread + (impactParam * impactShort))
-        // ask = max(twap,spread) * e ^ (staticSpread + (impactParam * impactLong))
+        int24 _macroTick = int24((_ticks[2] - _ticks[0]) / int56(int32(macroWindow)));
+        int24 _macroTick = int24((_ticks[2] - _ticks[1]) / int56(int32(microWindow)));
 
-        ask_ = ask_.mulDown(staticSpreadAsk);
-        bid_ = bid_.mulDown(staticSpreadBid);
+        uint _macroPrice = OracleLibraryV2.getQuoteAtTick(
+            _macroTick,
+            uint128(amountIn),
+            isPrice0 ? token0 : token1,
+            isPrice0 ? token1 : token0
+        );
 
-        // ( uint _longImpact, uint _shortImpact ) = senseImpact();
+        uint _microPrice = OracleLibraryV2.getQuoteAtTick(
+            _macroTick,
+            uint128(amountIn),
+            isPrice0 ? token0 : token1,
+            isPrice0 ? token1 : token0
+        );
 
-        // ask_ = e ** _longImpact
-        
-        // kkimpact
+        uint _ask = Math.max(_macroPrice, _microPrice).mulUp(INVERSE_EULER.powUp(squiggly));
+        uint _bid = Math.min(_macroPrice, _microPrice).mulDown(EULER.powUp(squiggly));
 
         return PricePoint(
             bid_,
             ask_,
-            twapPrice_
+            _macroPrice
         );
-
-    }
-
-    function marketImpact () internal view returns (uint) {
 
     }
 
