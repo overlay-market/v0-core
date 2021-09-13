@@ -7,6 +7,7 @@ import "./FixedPoint.sol";
 library Position {
 
     using FixedPoint for uint256;
+
     struct Info {
         address market; // the market for the position
         bool isLong; // whether long or short
@@ -43,7 +44,7 @@ library Position {
     }
 
     /// @dev Floors to zero, so won't properly compute if self is underwater
-    function _value(
+    function _value (
         Info memory _self,
         uint256 totalOi,
         uint256 totalOiShares,
@@ -74,21 +75,17 @@ library Position {
         uint256 priceFrame
     ) private pure returns (bool isUnder) {
 
-        uint256 oi = _oi(_self, totalOi, totalOiShares);
+        uint256 __oi = _oi(_self, totalOi, totalOiShares);
 
-        if (_self.isLong) {
+        bool _long = _self.isLong;
 
-            isUnder = oi.mulDown(priceFrame) < _self.debt;
+        if (_long) isUnder = __oi.mulDown(priceFrame) < _self.debt;
+        else isUnder = __oi.mulDown(priceFrame) + _self.debt < ( __oi * 2 );
 
-        } else {
-
-            isUnder = oi.mulDown(priceFrame) + _self.debt < oi * 2;
-
-        }
     }
 
     /// @dev Floors to _self.debt, so won't properly compute if _self is underwater
-    function _notional(
+    function _notional (
         Info memory _self,
         uint256 totalOi,
         uint256 totalOiShares,
@@ -107,7 +104,7 @@ library Position {
     }
 
     /// @dev ceils uint256.max if position value <= 0
-    function _openLeverage(
+    function _openLeverage (
         Info memory _self,
         uint256 totalOi,
         uint256 totalOiShares,
@@ -137,7 +134,7 @@ library Position {
     }
 
     /// @dev floors zero if position value <= 0; equiv to 1 / open leverage
-    function _openMargin(
+    function _openMargin (
         Info memory _self,
         uint256 totalOi,
         uint256 totalOiShares,
@@ -167,7 +164,7 @@ library Position {
     }
 
     /// @dev is true when open margin < maintenance margin
-    function _isLiquidatable(
+    function _isLiquidatable (
         Info memory _self,
         uint256 _totalOi,
         uint256 _totalOiShares,
@@ -192,7 +189,7 @@ library Position {
 
     }
 
-    function _liquidationPrice(
+    function _liquidationPrice (
         Info memory _self,
         uint256 _totalOi,
         uint256 _totalOiShares,
@@ -225,7 +222,7 @@ library Position {
     }
 
     /// @notice Computes the open interest of a position
-    function oi(
+    function oi (
         Info storage self,
         uint256 totalOi,
         uint256 totalOiShares

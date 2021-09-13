@@ -12,7 +12,6 @@ contract OverlayV1OI {
 
     uint256 internal __oiLong__; // total long open interest
     uint256 internal __oiShort__; // total short open interest
-    uint256 internal __oi__;
 
     uint256 public oiLongShares; // total shares of long open interest outstanding
     uint256 public oiShortShares; // total shares of short open interest outstanding
@@ -106,15 +105,13 @@ contract OverlayV1OI {
     /// @notice Adds to queued open interest to prep for T+1 price settlement
     function queueOi(bool _isLong, uint256 _oi, uint256 _oiCap) internal {
 
-        uint _totalOI = __oiShort__ + __oiLong__;
-
         if (_isLong) {
 
             uint _queuedOiLong = queuedOiLong;
             _queuedOiLong += _oi;
             queuedOiLong = _queuedOiLong;
 
-            _totalOI += _queuedOiLong + queuedOiShort;
+            require(__oiLong__ + _queuedOiLong <= _oiCap, "OVLV1:>cap");
 
         } else {
 
@@ -122,11 +119,9 @@ contract OverlayV1OI {
             _queuedOiShort += _oi;
             queuedOiShort = _queuedOiShort;
 
-            _totalOI += queuedOiLong + _queuedOiShort;
+            require(__oiShort__ + _queuedOiShort <= _oiCap, "OVLV1:>cap");
 
         }
-
-        require(_totalOI <= _oiCap, "OVLV1:cap<");
 
     }
 

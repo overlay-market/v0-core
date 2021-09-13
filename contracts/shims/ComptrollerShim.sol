@@ -19,43 +19,38 @@ contract ComptrollerShim is OverlayV1Comptroller {
     function setRoller (
         uint index,
         uint __timestamp,
-        uint __brrrr,
         uint __longPressure,
         uint __shortPressure
     ) public {
 
         rollers[index].time = __timestamp;
-        rollers[index].brrrr = __brrrr;
         rollers[index].longPressure = __longPressure;
         rollers[index].shortPressure = __shortPressure;
 
     }
 
-    function brrrr (
-        uint[] memory __brrrr
-    ) public returns (
-        uint brrrr_ 
+    function viewScry(
+        uint _ago
+    ) internal view returns (
+        Roller memory rollerNow_,
+        Roller memory rollerThen_
     ) {
 
-        uint len = __brrrr.length;
+        uint lastMoment;
 
-        for (uint i = 0; i < len; i++) {
-
-            brrrr_ = noteBrrrr(__brrrr[i]);
-
-        }
+        (   lastMoment,
+            rollerNow_,
+            rollerThen_ ) = scry(_ago);
 
     }
 
-    function viewBrrrr (
-        uint __brrrr
-    ) public returns (
-        uint brrrr_
-    ) {
+    function brrrr (
+        int[] memory __brrrr
+    ) public {
 
-        ( ,,brrrr_ ) = _brrrr(__brrrr);
+        uint len = __brrrr.length;
 
-        emit log("brrrr_",brrrr_);
+        for (uint i = 0; i < len; i++) brrrr(__brrrr[i]);
 
     }
 

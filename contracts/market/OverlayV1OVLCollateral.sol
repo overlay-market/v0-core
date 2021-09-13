@@ -221,7 +221,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         uint _userOi = _shares * pos.oi(_oi, _oiShares) / _totalPosShares;
 
         // TODO: think through edge case of underwater position ... and fee adjustments ...
-        uint _feeAmount = ( _userNotional * factory.fee() ) / RESOLUTION;
+        uint _feeAmount = _userNotional.mulUp(factory.fee());
 
         uint _userValueAdjusted = _userNotional - _feeAmount;
         if (_userValueAdjusted > _userDebt) _userValueAdjusted -= _userDebt;
@@ -251,7 +251,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             pos.isLong, 
             _userOi, 
             _userOiShares,
-            int216(int(_userCost)) - int216(int(_userValueAdjusted))
+            int(_userValueAdjusted) - int(_userCost)
         );
 
         }

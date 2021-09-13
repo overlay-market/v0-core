@@ -30,8 +30,8 @@ abstract contract OverlayV1Market is
         address _ovl,
         uint256 _updatePeriod,
         uint256 _compoundingPeriod,
-        uint256 _printWindow,
         uint256 _impactWindow,
+        uint256 _brrrrFade,
         uint256 _oiCap,
         uint256 _fundingK,
         uint256 _leverageMax
@@ -43,8 +43,8 @@ abstract contract OverlayV1Market is
         _fundingK,
         _leverageMax
     ) OverlayV1Comptroller (
-        _printWindow,
         _impactWindow
+        _brrrrFade,
     ) { }
 
     function init (uint _lambda) public {
@@ -145,7 +145,7 @@ abstract contract OverlayV1Market is
 
         PricePoint storage priceEntry = pricePoints[_pricePoint];
 
-        require( (_pricePoint = pricePoints.length - 1) < _pricePoint, "OVLV1:!settled");
+        require( (_pricePoint = pricePoints.length - 1) > _pricePoint, "OVLV1:!settled");
 
         PricePoint storage priceExit = pricePoints[_pricePoint];
 
@@ -169,12 +169,10 @@ abstract contract OverlayV1Market is
         bool _isLong,
         uint _oi,
         uint _oiShares,
-        uint112 _brrrr
+        int  _brrrr
     ) external onlyCollateral {
 
-        noteBrrrr(_brrrr);
-
-        __oi__ -= _oi;
+        brrrr(_brrrr);
 
         if (_fromQueued) {
 
