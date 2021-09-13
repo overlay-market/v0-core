@@ -37,7 +37,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     event Build(uint256 positionId, uint256 oi, uint256 debt);
     event Unwind(uint256 positionId, uint256 oi, uint256 debt);
-    event Liquidate(address rewarded, uint256 reward);
+    event Liquidate(uint256 positionId, address rewarded, uint256 reward);
     event Update(
         address rewarded, 
         uint rewardAmount, 
@@ -166,9 +166,9 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         require(_collateral <= MIN_COLLAT, "OVLV1:collat<min");
 
         (   uint _oiAdjusted,
-            uint _costAdjusted,
+            uint _collateralAdjusted,
             uint _debtAdjusted,
-            uint _fees,
+            uint _fee,
             uint _pricePointCurrent,
             uint _t1Compounding ) = IOverlayV1Market(_market).enterOI(_isLong, _collateral, _leverage);
 
@@ -183,14 +183,17 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         Position.Info storage pos = positions[_positionId];
 
         pos.oiShares += _oiAdjusted;
-        pos.cost = _costAdjusted;
-        pos.debt = _debtAdjusted;
+        pos.cost += _collateralAdjusted;
+        pos.debt += _debtAdjusted;
 
-        fees += _fees;
+        fees += _fee;
 
         emit Build(_positionId, _oiAdjusted, _debtAdjusted);
 
         ovl.transferFrom(msg.sender, address(this), _collateral);
+
+        ovl.burn(address(this), _collateral - _collateralAdjusted - _fee);
+
         _mint(msg.sender, _positionId, _oiAdjusted, ""); // WARNING: last b/c erc1155 callback
 
     }
@@ -204,6 +207,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         require( 0 < _shares && _shares <= balanceOf(msg.sender, _positionId), "OVLV1:!shares");
 
         Position.Info storage pos = positions[_positionId];
+
+        require(0 < pos.oiShares, "OVLV1:liquidated");
 
         {
 
@@ -268,6 +273,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         Position.Info storage pos = positions[_positionId];
 
+        require(0 < pos.oiShares, "OVLV1:liquidated");
+
         bool _isLong = pos.isLong;
 
         (   uint _oi,
@@ -296,7 +303,9 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         );
 
         // TODO: which is better on gas
+        pos.oi = 0;
         pos.oiShares = 0;
+        pos.debt = 0;
         // positions[positionId].oiShares = 0;
 
         uint _toForward = _value;

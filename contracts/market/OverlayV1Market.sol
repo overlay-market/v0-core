@@ -123,6 +123,7 @@ abstract contract OverlayV1Market is
         fee_ = _oi.mulUp(factory.fee());
 
         collateralAdjusted_ = _collateral - _impact - fee_;
+
         oiAdjusted_ = collateralAdjusted_ * _leverage;
 
         debtAdjusted_ = oiAdjusted_ - collateralAdjusted_;
