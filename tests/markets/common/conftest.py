@@ -147,15 +147,18 @@ def comptroller(gov):
     scope="module",
     params=[
         ("OverlayV1UniswapV3Mothership", [15, 5000, 100, ETH_ADDRESS, 60, 50, 25], 
-         "OverlayV1UniswapV3Market", [ 600, 60, 
-         5725031958894104, # k
-         100, # levmax
-         10, # update period
-         10, # compound period
-         600, # impact window
-         OI_CAP*10**TOKEN_DECIMALS, # oi cap
-         365701321109246, # lambda
-         1e18, # brrrr fade
+         "OverlayV1UniswapV3Market", [ 
+            600,                    # macro window
+            60,                     # micro window
+            5725031958894104,       # k
+            100,                    # levmax
+            1e18,                   # spread
+            600,                    # update period
+            600,                    # compound period
+            600,                    # impact window
+            OI_CAP*1e18,            # oi cap
+            365701321109246,        # lambda
+            1e18,                   # brrrr fade
          ],
          get_uni_oracle,
         ),

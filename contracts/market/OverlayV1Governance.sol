@@ -3,7 +3,6 @@ pragma solidity ^0.8.7;
 
 import "../interfaces/IOverlayV1Mothership.sol";
 import "../interfaces/IOverlayToken.sol";
-
 import "./OverlayV1Comptroller.sol";
 import "./OverlayV1OI.sol";
 import "./OverlayV1PricePoint.sol";
@@ -22,6 +21,7 @@ abstract contract OverlayV1Governance is
 
     // leverage max allowed for a position: leverages are assumed to be discrete increments of 1
     uint256 public leverageMax;
+
     // open interest cap on each side long/short
 
     uint256 public updatePeriod;
@@ -77,6 +77,7 @@ abstract contract OverlayV1Governance is
     function setEverything (
         uint256 _k,
         uint256 _leverageMax,
+        uint256 _pbnj,
         uint256 _updatePeriod,
         uint256 _compoundPeriod,
         uint256 _impactWindow,
@@ -89,6 +90,8 @@ abstract contract OverlayV1Governance is
 
         setLeverageMax(_leverageMax);
 
+        setSpread(_pbnj);
+
         setPeriods(
             _updatePeriod, 
             _compoundPeriod
@@ -100,6 +103,15 @@ abstract contract OverlayV1Governance is
             _lambda,
             _brrrrFade
         );
+
+
+    }
+
+    function setSpread(
+        uint256 _pbnj
+    ) public onlyGovernor {
+
+        pbnj = _pbnj;
 
     }
 

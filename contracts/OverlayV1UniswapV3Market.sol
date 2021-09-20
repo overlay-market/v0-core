@@ -13,20 +13,15 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     uint256 public immutable macroWindow; // window size for main TWAP
     uint256 public immutable microWindow; // window size for bid/ask TWAP
 
-    uint128 internal immutable amountIn;
-    uint256 internal spread;
-
-    address private immutable base;
-    address private immutable quote;
-
     address public immutable feed;
-
-    uint256 internal constant EULER = 0x25B946EBC0B36351;
+    address public immutable base;
+    address public immutable quote;
+    uint128 internal immutable amountIn;
 
     constructor(
         address _mothership,
         address _uniV3Pool,
-        address _base,
+        address _quote,
         uint128 _amountIn,
         uint256 _macroWindow,
         uint256 _microWindow
@@ -43,8 +38,8 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         address _token0 = IUniswapV3Pool(_uniV3Pool).token0();
         address _token1 = IUniswapV3Pool(_uniV3Pool).token1();
 
-        base = _token0 == _base ? _token0 : _token1;
-        quote = _token0 != _base ? _token1 : _token0;
+        base = _token0 != _quote ? _token0 : _token1;
+        quote = _token0 == _quote ? _token1 : _token0;
 
         int24 _tick = OracleLibraryV2.consult(
             _uniV3Pool, 
@@ -55,8 +50,8 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         uint _price = OracleLibraryV2.getQuoteAtTick(
             _tick,
             uint128(_amountIn),
-            _token0 == _base ? _token0 : _token1,
-            _token0 != _base ? _token1 : _token0
+            _token0 != _quote ? _token0 : _token1,
+            _token0 == _quote ? _token1 : _token0
         );
 
         setPricePointCurrent(PricePoint(_price, _price, _price));
@@ -71,7 +66,11 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     uint public updated;
     uint public compounded;
 
-    function price (uint _at) public view returns (PricePoint memory) { 
+    function price (
+        uint _at
+    ) public view returns (
+        PricePoint memory
+    ) { 
 
         uint32[] memory _secondsAgo = new uint32[](3);
         _secondsAgo[0] = uint32(_at - macroWindow);
@@ -97,14 +96,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             quote
         );
 
-        uint _ask = Math.max(_macroPrice, _microPrice).mulUp(INVERSE_EULER.powUp(spread));
-        uint _bid = Math.min(_macroPrice, _microPrice).mulDown(EULER.powUp(spread));
-
-        return PricePoint(
-            _bid,
-            _ask,
-            _macroPrice
-        );
+        return insertSpread(_microPrice, _macroPrice);
 
     }
 
