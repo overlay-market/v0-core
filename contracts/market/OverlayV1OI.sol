@@ -19,6 +19,8 @@ contract OverlayV1OI {
     uint256 public queuedOiLong; // queued long open interest to be settled at T+1
     uint256 public queuedOiShort; // queued short open interest to be settled at T+1
 
+    uint256 public k;
+
     event FundingPaid(uint oiLong, uint oiShort, int fundingPaid);
 
     function freeOi (

@@ -3,39 +3,36 @@ pragma solidity ^0.8.7;
 
 import "../libraries/FixedPoint.sol";
 
+import "./OverlayV1Governance.sol";
+
 contract OverlayV1Comptroller {
 
     using FixedPoint for uint256;
+
+    uint256 internal constant INVERSE_EULER = 0x51AF86713316A9A;
+    uint256 internal constant ONE = 1e18;
     struct Roller {
         uint time;
         uint longPressure;
         uint shortPressure;
     }
 
-    uint256 internal constant INVERSE_EULER = 0x51AF86713316A9A;
-
-    uint256 public impactWindow;
-    uint256 public lambda;
-
-    uint256 internal constant ONE = 1e18;
-
     uint24 public index;
     uint24 public cardinality;
     uint24 public cardinalityNext;
     Roller[216000] public rollers;
 
-    uint256 brrrrd;
-    uint256 brrrrdWhen;
-    uint256 brrrrdFade;
+    uint256 public oiCap;
+    uint256 public impactWindow;
+    uint256 public lambda;
 
-    event log(string k, uint v);
+    uint256 public brrrrd;
+    uint256 public brrrrdWhen;
+    uint256 public brrrrFade;
 
     uint256 public TEST_CAP;
 
-    constructor (
-        uint _impactWindow,
-        uint _brrrrdFade
-    ) {
+    constructor () {
 
         cardinality = 1;
         cardinalityNext = 1;
@@ -46,23 +43,10 @@ contract OverlayV1Comptroller {
             shortPressure: 0
         });
 
-        impactWindow = _impactWindow;
-        brrrrdFade = _brrrrdFade;
+        brrrrdWhen = block.timestamp;
 
     }
 
-    function viewLambda () public view returns (uint) { 
-
-        return lambda; 
-
-    }
-
-    function set_TEST_CAP (uint _cap) public {
-
-        TEST_CAP = _cap;
-
-    }
-    
     function expand (
         uint16 next
     ) public {
@@ -150,7 +134,7 @@ contract OverlayV1Comptroller {
         uint _brrrrdThen = brrrrdWhen;
         brrrrdWhen = _now;
 
-        uint _fadeFactor = brrrrdFade.mulUp(_now - _brrrrdThen);
+        uint _fadeFactor = brrrrFade.mulUp(_now - _brrrrdThen);
 
         brrrrd = _brrrrd.mulUp(_fadeFactor);
 
@@ -199,7 +183,7 @@ contract OverlayV1Comptroller {
 
     function scry (
         uint _ago
-    ) internal returns (
+    ) internal view returns (
         uint lastMoment_,
         Roller memory rollerNow_, 
         Roller memory rollerThen_
@@ -212,9 +196,6 @@ contract OverlayV1Comptroller {
         lastMoment_ = rollerNow_.time;
 
         uint _target = _time - _ago;
-
-        emit log("_target", _target);
-        emit log("rollerNow_.time", rollerNow_.time);
 
         if (rollerNow_.time < _target) {
 
@@ -232,15 +213,6 @@ contract OverlayV1Comptroller {
 
         (   Roller memory _beforeOrAt, 
             Roller memory _atOrAfter ) = scryRollers(_target);
-
-        emit log("_beforeOrAt.time", _beforeOrAt.time);
-        emit log("_atOrAfter.time ", _atOrAfter.time);
-        emit log("overflow?", _atOrAfter.time < _beforeOrAt.time
-            ? 1111111111111
-            : 1000000000000
-        );
-
-        emit log("_diff_", _atOrAfter.time - _beforeOrAt.time);
 
         if (_atOrAfter.time - _beforeOrAt.time > _ago) {
 

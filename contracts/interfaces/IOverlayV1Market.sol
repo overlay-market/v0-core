@@ -76,7 +76,7 @@ interface IOverlayV1Market is IERC1155 {
         bool _isLong,
         uint _oi,
         uint _oiShares,
-        int216 _printed
+        int  _printed
     ) external;
 
     function update () external returns (bool);

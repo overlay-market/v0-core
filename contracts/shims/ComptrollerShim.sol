@@ -5,15 +5,18 @@ import "../market/OverlayV1Comptroller.sol";
 
 contract ComptrollerShim is OverlayV1Comptroller {
 
+    event log(string k, uint v);
+
     constructor (
-        uint impactWindow,
-        uint brrrrWindow,
+        uint _oiCap,
+        uint _impactWindow,
+        uint _brrrrFade,
         uint _lambda
-    ) OverlayV1Comptroller (
-        impactWindow,
-        brrrrWindow
     ) {
+        oiCap = _oiCap;
         lambda = _lambda;
+        impactWindow = _impactWindow;
+        brrrrFade = _brrrrFade;
     }
 
     function setRoller (

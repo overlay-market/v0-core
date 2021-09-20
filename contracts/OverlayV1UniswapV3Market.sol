@@ -10,74 +10,59 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     using FixedPoint for uint256;
 
-    address public immutable feed;
-    bool public immutable isPrice0;
-
     uint256 public immutable macroWindow; // window size for main TWAP
     uint256 public immutable microWindow; // window size for bid/ask TWAP
 
     uint128 internal immutable amountIn;
-    address private immutable token0;
-    address private immutable token1;
+    uint256 internal spread;
+
+    address private immutable base;
+    address private immutable quote;
+
+    address public immutable feed;
 
     uint256 internal constant EULER = 0x25B946EBC0B36351;
-    uint256 internal constant INVERSE_EULER = 0x51AF86713316A9A;
 
     constructor(
-        address _ovl,
+        address _mothership,
         address _uniV3Pool,
-        uint256 _updatePeriod,
-        uint256 _compoundingPeriod,
-        uint256 _brrrrFade,
-        uint256 _macroWindow,
-        uint256 _microWindow,
-        uint256 _oiCap,
-        uint256 _fundingK,
-        uint256 _leverageMax,
+        address _base,
         uint128 _amountIn,
-        bool    _isPrice0
+        uint256 _macroWindow,
+        uint256 _microWindow
     ) OverlayV1Market(
-        _ovl,
-        _updatePeriod,
-        _compoundingPeriod,
-        _brrrrFade,
-        _microWindow,
-        _oiCap,
-        _fundingK,
-        _leverageMax
+        _mothership
     ) {
 
         // immutables
         feed = _uniV3Pool;
-        isPrice0 = _isPrice0;
+        amountIn = _amountIn;
         macroWindow = _macroWindow;
         microWindow = _microWindow;
 
-
-        amountIn = _amountIn;
         address _token0 = IUniswapV3Pool(_uniV3Pool).token0();
         address _token1 = IUniswapV3Pool(_uniV3Pool).token1();
 
-        token0 = _token0;
-        token1 = _token1;
+        base = _token0 == _base ? _token0 : _token1;
+        quote = _token0 != _base ? _token1 : _token0;
 
-        int24 tick = OracleLibraryV2.consult(
+        int24 _tick = OracleLibraryV2.consult(
             _uniV3Pool, 
             uint32(_macroWindow),
             uint32(0)
         );
 
         uint _price = OracleLibraryV2.getQuoteAtTick(
-            tick,
+            _tick,
             uint128(_amountIn),
-            _isPrice0 ? _token0 : _token1,
-            _isPrice0 ? _token1 : _token0
+            _token0 == _base ? _token0 : _token1,
+            _token0 != _base ? _token1 : _token0
         );
 
         setPricePointCurrent(PricePoint(_price, _price, _price));
 
-        updated = block.timestamp;
         toUpdate = type(uint256).max;
+        updated = block.timestamp;
         compounded = block.timestamp;
 
     }
@@ -86,41 +71,38 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     uint public updated;
     uint public compounded;
 
-    uint public staticSpreadAsk; // this is going to be some amount of basis points
-    uint public staticSpreadBid; // this is going to be some amount of basis points
-
     function price (uint _at) public view returns (PricePoint memory) { 
 
         uint32[] memory _secondsAgo = new uint32[](3);
-        _secondsAgo[0] = _at - macroWindow;
-        _secondsAgo[1] = _at - microWindow;
-        _secondsAgo[2] = _at;
+        _secondsAgo[0] = uint32(_at - macroWindow);
+        _secondsAgo[1] = uint32(_at - microWindow);
+        _secondsAgo[2] = uint32(_at);
 
-        int56[] memory ticks = IUniswapV3Pool(feed).observe(_secondsAgo);
+        ( int56[] memory _ticks, ) = IUniswapV3Pool(feed).observe(_secondsAgo);
 
-        int24 _macroTick = int24((_ticks[2] - _ticks[0]) / int56(int32(macroWindow)));
-        int24 _macroTick = int24((_ticks[2] - _ticks[1]) / int56(int32(microWindow)));
+        int24 _macroTick = int24((_ticks[2] - _ticks[0]) / int56(int32(int(macroWindow))));
+        int24 _microTick = int24((_ticks[2] - _ticks[1]) / int56(int32(int(microWindow))));
 
         uint _macroPrice = OracleLibraryV2.getQuoteAtTick(
             _macroTick,
-            uint128(amountIn),
-            isPrice0 ? token0 : token1,
-            isPrice0 ? token1 : token0
+            amountIn,
+            base,
+            quote
         );
 
         uint _microPrice = OracleLibraryV2.getQuoteAtTick(
-            _macroTick,
-            uint128(amountIn),
-            isPrice0 ? token0 : token1,
-            isPrice0 ? token1 : token0
+            _microTick,
+            amountIn,
+            base,
+            quote
         );
 
-        uint _ask = Math.max(_macroPrice, _microPrice).mulUp(INVERSE_EULER.powUp(squiggly));
-        uint _bid = Math.min(_macroPrice, _microPrice).mulDown(EULER.powUp(squiggly));
+        uint _ask = Math.max(_macroPrice, _microPrice).mulUp(INVERSE_EULER.powUp(spread));
+        uint _bid = Math.min(_macroPrice, _microPrice).mulDown(EULER.powUp(spread));
 
         return PricePoint(
-            bid_,
-            ask_,
+            _bid,
+            _ask,
             _macroPrice
         );
 
@@ -175,16 +157,18 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         (   uint _updatesThen,,,,
             uint _compoundings,
-            uint _tCompounding, ) = epochs(block.timestamp, updated, _toUpdate);
+            uint _tCompounding, ) = epochs(block.timestamp, _updated, _toUpdate);
 
         // only update if there is a position to update
         if (0 < _updatesThen) {
+
             uint _then = block.timestamp - _toUpdate;
             PricePoint memory _price = price(_then);
             setPricePointCurrent(_price);
             updated = _toUpdate;
             toUpdate = type(uint256).max;
             updated_ = true;
+
         }
 
         if (0 < _compoundings) {
@@ -271,7 +255,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         oiLong_ = __oiLong__;
         oiShort_ = __oiShort__;
-        uint _k = fundingK;
+        uint _k = k;
         uint _queuedOiLong = queuedOiLong;
         uint _queuedOiShort = queuedOiShort;
 

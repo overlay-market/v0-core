@@ -3,72 +3,23 @@ pragma solidity ^0.8.7;
 
 import "../libraries/Position.sol";
 import "../libraries/FixedPoint.sol";
-import "../interfaces/IOverlayV1Factory.sol";
+import "../interfaces/IOverlayV1Mothership.sol";
 import "./OverlayV1Governance.sol";
 import "./OverlayV1OI.sol";
 import "./OverlayV1PricePoint.sol";
 import "../OverlayToken.sol";
 import "./OverlayV1Comptroller.sol";
 
-abstract contract OverlayV1Market is 
-    OverlayV1Governance, 
-    OverlayV1OI, 
-    OverlayV1Comptroller,
-    OverlayV1PricePoint {
+abstract contract OverlayV1Market is OverlayV1Governance {
 
     using FixedPoint for uint256;
 
-    mapping (address => bool) public isCollateral;
 
     uint256 private unlocked = 1;
 
     modifier lock() { require(unlocked == 1, "OVLV1:!unlocked"); unlocked = 0; _; unlocked = 1; }
 
-    modifier onlyCollateral () { require(isCollateral[msg.sender], "OVLV1:!collateral"); _; }
-
-    constructor(
-        address _ovl,
-        uint256 _updatePeriod,
-        uint256 _compoundingPeriod,
-        uint256 _impactWindow,
-        uint256 _brrrrFade,
-        uint256 _oiCap,
-        uint256 _fundingK,
-        uint256 _leverageMax
-    ) OverlayV1Governance (
-        _ovl,
-        _updatePeriod,
-        _compoundingPeriod,
-        _oiCap,
-        _fundingK,
-        _leverageMax
-    ) OverlayV1Comptroller (
-        _impactWindow
-        _brrrrFade,
-    ) { }
-
-    function init (uint _lambda) public {
-        lambda = _lambda;
-    }
-
-    function addCollateral (address _collateral) public {
-
-        isCollateral[_collateral] = true;
-
-    }
-    
-    function removeCollateral (address _collateral) public {
-
-        isCollateral[_collateral] = false;
-
-    }
-
-    // compounding period - funding compound
-    // update period - price update
-    // printing period - rolling printing window
-
-    // price points are updated at epoch timeframes
-    // funding is paid and compounds by each epoch
+    constructor(address _mothership) OverlayV1Governance( _mothership) { }
 
     function staticUpdate () internal virtual returns (bool updated_);
     function entryUpdate () internal virtual returns (uint256 t1Compounding_);
@@ -79,7 +30,7 @@ abstract contract OverlayV1Market is
         if (_epochs > 0) {
 
             // WARNING: must pay funding before updating OI to avoid free rides
-            payFunding(fundingK, _epochs);
+            payFunding(k, _epochs);
             
             updateOi(); 
 
@@ -120,7 +71,7 @@ abstract contract OverlayV1Market is
 
         ( uint _impact, uint _cap ) = intake(_isLong, _oi);
 
-        fee_ = _oi.mulUp(factory.fee());
+        fee_ = _oi.mulUp(mothership.fee());
 
         collateralAdjusted_ = _collateral - _impact - fee_;
 
