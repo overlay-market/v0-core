@@ -6,7 +6,7 @@ import "../libraries/Position.sol";
 import "../libraries/FixedPoint.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import "../interfaces/IOverlayV1Market.sol";
-import "../interfaces/IOverlayV1Factory.sol";
+import "../interfaces/IOverlayV1Mothership.sol";
 import "../interfaces/IOverlayToken.sol";
 
 contract OverlayV1OVLCollateral is ERC1155Supply {
@@ -30,7 +30,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     uint nextPositionId;
 
     IOverlayToken public ovl;
-    IOverlayV1Factory public factory;
+    IOverlayV1Mothership public mothership;
 
     uint256 public fees;
     uint256 public liquidations;
@@ -49,11 +49,11 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     constructor (
         string memory _uri,
         address _ovl,
-        address _factory
+        address _mothership
     ) ERC1155(_uri) { 
 
         ovl = IOverlayToken(_ovl);
-        factory = IOverlayV1Factory(_factory);
+        mothership = IOverlayV1Mothership(_mothership);
 
         positions.push(Position.Info({
             market: address(0),
@@ -88,7 +88,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             (   uint256 _marginBurnRate,
                 uint256 _feeBurnRate,
                 uint256 _feeRewardsRate,
-                address _feeTo ) = factory.getUpdateParams();
+                address _feeTo ) = mothership.getUpdateParams();
 
             uint _feeForward = fees;
             uint _feeBurn = ( _feeForward * _feeBurnRate ) / RESOLUTION;
@@ -192,7 +192,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         ovl.transferFrom(msg.sender, address(this), _collateral);
 
-        ovl.burn(address(this), _collateral - _collateralAdjusted - _fee);
+        ovl.burn(address(this), _collateral - _collateralAdjusted);
 
         _mint(msg.sender, _positionId, _oiAdjusted, ""); // WARNING: last b/c erc1155 callback
 
@@ -226,7 +226,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         uint _userOi = _shares * pos.oi(_oi, _oiShares) / _totalPosShares;
 
         // TODO: think through edge case of underwater position ... and fee adjustments ...
-        uint _feeAmount = _userNotional.mulUp(factory.fee());
+        uint _feeAmount = _userNotional.mulUp(mothership.fee());
 
         uint _userValueAdjusted = _userNotional - _feeAmount;
         if (_userValueAdjusted > _userDebt) _userValueAdjusted -= _userDebt;
@@ -283,7 +283,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             uint _tCompounding ) = IOverlayV1Market(pos.market).exitData(_isLong, pos.pricePoint);
 
         (   uint _marginMaintenance,
-            uint _marginRewardRate   ) = factory.getMarginParams();
+            uint _marginRewardRate   ) = mothership.getMarginParams();
 
         require(pos.isLiquidatable(
             _priceFrame,
@@ -303,7 +303,6 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         );
 
         // TODO: which is better on gas
-        pos.oi = 0;
         pos.oiShares = 0;
         pos.debt = 0;
         // positions[positionId].oiShares = 0;
