@@ -120,10 +120,13 @@ def get_uni_oracle (feed_owner):
 
     uniswapv3_factory = feed_owner.deploy(UniswapV3MockFactory)
 
+    base = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+    quote = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+
     # TODO: place token0 and token1 into the json
     uniswapv3_factory.createPool(
-        "0x6B175474E89094C44Da98b954EedeAC495271d0F",
-        "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+        base,
+        quote
     );
 
     uniswapv3_mock = IUniswapV3OracleMock( uniswapv3_factory.allPools(0) )
@@ -133,7 +136,7 @@ def get_uni_oracle (feed_owner):
 
     chain.mine(1, timestamp=chain[-1].timestamp + 1200)
 
-    return uniswapv3_factory.address, uniswapv3_mock.address
+    return uniswapv3_factory.address, uniswapv3_mock.address, base
 
 @pytest.fixture( scope="module" )
 def comptroller(gov):
@@ -143,48 +146,69 @@ def comptroller(gov):
 @pytest.fixture(
     scope="module",
     params=[
-        ("OverlayV1UniswapV3Deployer", [],
-         "OverlayV1UniswapV3Factory", [15, 5000, 100, ETH_ADDRESS, 60, 50, 25], 
-         "OverlayV1UniswapV3Market", [ 10, 10, 10, 600, 60, OI_CAP*10**TOKEN_DECIMALS, 3293944666953, 9007199254740992, 100, AMOUNT_IN*10**TOKEN_DECIMALS, True ],
+        ("OverlayV1UniswapV3Mothership", [15, 5000, 100, ETH_ADDRESS, 60, 50, 25], 
+         "OverlayV1UniswapV3Market", [ 600, 60, 
+         5725031958894104, # k
+         100, # levmax
+         10, # update period
+         10, # compound period
+         600, # impact window
+         OI_CAP*10**TOKEN_DECIMALS, # oi cap
+         365701321109246, # lambda
+         1e18, # brrrr fade
+         ],
          get_uni_oracle,
         ),
     ])
-def create_factory(token, gov, feed_owner, request):
-    ovlmd_name, _, ovlf_name, ovlf_args, __, ovlm_args, get_feed = request.param
+def create_mothership(token, gov, feed_owner, request):
+    ovlms_name, ovlms_args, ovlm_name, ovlm_args, ovlm_setters, get_feed = request.param
 
-    ovlmd = getattr(brownie, ovlmd_name)
-    ovlf = getattr(brownie, ovlf_name)
+    ovlms = getattr(brownie, ovlms_name)
+    ovlm = getattr(brownie, ovlm_name)
 
-    def create_factory(
+    def create_mothership(
         tok=token,
-        ovlmd_type=ovlmd,
-        ovlf_type=ovlf,
-        ovlf_args=ovlf_args,
+        ovlms_type=ovlms,
+        ovlms_args=ovlms_args,
+        ovlm_type=ovlm,
         ovlm_args=ovlm_args,
         fd_getter=get_feed
     ):
-        print("create factory")
+        print("create mothership")
 
-        feed_factory, feed_addr = fd_getter(feed_owner)
+        feed_factory, feed_addr, base = fd_getter(feed_owner)
 
-        deployer = gov.deploy(ovlmd_type)
-        factory = gov.deploy(ovlf_type, tok, deployer, feed_factory, *ovlf_args)
-        tok.grantRole(tok.ADMIN_ROLE(), factory, {"from": gov})
-        factory.createMarket(feed_addr, *ovlm_args, {"from": gov})
+        mothership = gov.deploy(ovlms_type, tok, *ovlms_args)
+        tok.grantRole(tok.ADMIN_ROLE(), mothership, {"from": gov})
+        market = gov.deploy(
+            ovlm_type, 
+            mothership, 
+            feed_addr, 
+            base,
+            *ovlm_args[:2], 
+            {"from": gov}
+        )
 
-        chain.mine(ovlm_args[0]) # mine the update period
+        market.setEverything(
+            *ovlm_args[2:],
+            { "from": gov }
+        )
 
-        return factory
+        mothership.initializeMarket(market, { "from": gov})
 
-    yield create_factory
+        chain.mine(timedelta=ovlm_args[0]) # mine the update period
+
+        return mothership
+
+    yield create_mothership
 
 @pytest.fixture(scope="module")
-def ovl_collateral(factory, market, gov, token):
+def ovl_collateral(mothership, market, gov, token):
     OvlCollateral = getattr(brownie, 'OverlayV1OVLCollateral')
     collateral_man = OvlCollateral.deploy(
         "", 
         token, 
-        factory,
+        mothership,
         { 'from': gov }
     )
     market.addCollateral(collateral_man, { 'from': gov })
@@ -193,14 +217,14 @@ def ovl_collateral(factory, market, gov, token):
     yield collateral_man
 
 @pytest.fixture(scope="module")
-def factory(create_factory):
-    yield create_factory()
+def mothership(create_mothership):
+    yield create_mothership()
 
 @pytest.fixture(
     scope="module",
     params=["IOverlayV1Market"])
-def market(factory, request):
-    addr = factory.allMarkets(0)
+def market(mothership, request):
+    addr = mothership.allMarkets(0)
     market = getattr(interface, request.param)(addr)
     yield market
 

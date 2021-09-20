@@ -2,9 +2,10 @@
 pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
-import "./interfaces/IOverlayV1Market.sol";
-import "./OverlayToken.sol";
+import "../interfaces/IOverlayV1Market.sol";
+import "../OverlayToken.sol";
 
 contract OverlayV1Mothership is Ownable {
 
