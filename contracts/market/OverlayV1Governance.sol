@@ -1,75 +1,155 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import "../interfaces/IOverlayV1Factory.sol";
+import "../interfaces/IOverlayV1Mothership.sol";
 import "../interfaces/IOverlayToken.sol";
 
-contract OverlayV1Governance {
+import "./OverlayV1Comptroller.sol";
+import "./OverlayV1OI.sol";
+import "./OverlayV1PricePoint.sol";
 
-    // ovl erc20 token
-    IOverlayToken public immutable ovl;
-    // OverlayFactory address
-    IOverlayV1Factory public immutable factory;
+abstract contract OverlayV1Governance is 
+    OverlayV1Comptroller, 
+    OverlayV1OI, 
+    OverlayV1PricePoint {
+
+    IOverlayToken public ovl;
+    IOverlayV1Mothership public immutable mothership;
+
+    mapping (address => bool) public isCollateral;
+
+    bytes32 constant GOVERNOR = keccak256("GOVERNOR");
 
     // leverage max allowed for a position: leverages are assumed to be discrete increments of 1
     uint256 public leverageMax;
     // open interest cap on each side long/short
-    uint256 public oiCap;
-
-    // open interest funding constant factor, charged per updatePeriod
-    // 1/d = 1 - 2k; 0 < k < 1/2, 1 < d < infty
-    uint256 public fundingK;
 
     uint256 public updatePeriod;
     uint256 public compoundingPeriod;
 
-    modifier onlyFactory() {
-        require(msg.sender == address(factory), "OVLV1:!factory");
-        _;
+
+    modifier onlyCollateral () { 
+        require(isCollateral[msg.sender], "OVLV1:!collateral"); 
+        _; 
     }
 
     modifier enabled() {
-        require(factory.isMarket(address(this)), "OVLV1:!enabled");
+        require(mothership.isMarket(address(this)), "OVLV1:!enabled");
         _;
     }
 
-    constructor(
-        address _ovl,
-        uint256 _updatePeriod,
-        uint256 _compoundingPeriod,
-        uint256 _oiCap,
-        uint256 _fundingK,
-        uint256 _leverageMax
-    ) {
+    modifier onlyMothership() {
+        require(msg.sender == address(mothership), "OVLV1:!mothership");
+        _;
+    }
+
+    modifier onlyGovernor () {
+        require(mothership.hasRole(GOVERNOR, msg.sender));
+        _;
+    }
+
+    constructor(address _mothership) {
+
         // immutables
-        factory = IOverlayV1Factory(msg.sender);
-        ovl = IOverlayToken(_ovl);
+        mothership = IOverlayV1Mothership(_mothership);
+        ovl = IOverlayV1Mothership(_mothership).ovl();
 
-        // per-market adjustable params
-        require(_updatePeriod >= 1, "OVLV1: invalid update period");
-        updatePeriod = _updatePeriod;
-        compoundingPeriod = _compoundingPeriod;
-        leverageMax = _leverageMax;
-        oiCap = _oiCap;
-
-        fundingK = _fundingK;
     }
 
-    /// @notice Adjusts params associated with this market
-    function adjustParams(
+    function addCollateral (address _collateral) public onlyGovernor {
+
+        isCollateral[_collateral] = true;
+
+    }
+    
+    function removeCollateral (address _collateral) public onlyGovernor {
+
+        isCollateral[_collateral] = false;
+
+    }
+
+    function setOVL () public onlyGovernor {
+
+        ovl = mothership.ovl();
+
+    }
+
+    function setEverything (
+        uint256 _k,
+        uint256 _leverageMax,
         uint256 _updatePeriod,
-        uint256 _compoundingPeriod,
-        uint144 _oiCap,
-        uint112 _fundingK,
-        uint8 _leverageMax
-    ) external onlyFactory {
+        uint256 _compoundPeriod,
+        uint256 _impactWindow,
+        uint256 _oiCap,
+        uint256 _lambda,
+        uint256 _brrrrFade
+    ) public onlyGovernor {
+
+        setK(_k);
+
+        setLeverageMax(_leverageMax);
+
+        setPeriods(
+            _updatePeriod, 
+            _compoundPeriod
+        );
+
+        setComptrollerParams(
+            _impactWindow,
+            _oiCap,
+            _lambda,
+            _brrrrFade
+        );
+
+    }
+
+    function setK (
+        uint256 _k
+    ) public onlyGovernor {
+        k = _k;
+    }
+
+    function setLeverageMax (
+        uint256 _leverageMax
+    ) public onlyGovernor {
+
+        leverageMax = _leverageMax;
+
+    }
+
+    function setPeriods(
+        uint256 _updatePeriod,
+        uint256 _compoundingPeriod
+    ) public onlyGovernor {
+
         // TODO: requires on params; particularly leverageMax wrt MAX_FEE and cap
-        require(_updatePeriod >= 1, "OVLV1: invalid update period");
+        require(_updatePeriod >= 1, "OVLV1:!update");
+        require(_updatePeriod >= _compoundingPeriod, "OVLV1:update<compound");
+
         updatePeriod = _updatePeriod;
         compoundingPeriod = _compoundingPeriod;
-        leverageMax = _leverageMax;
-        oiCap = _oiCap;
 
-        fundingK = _fundingK;
     }
+
+    function setComptrollerParams (
+        uint256 _impactWindow,
+        uint256 _oiCap,
+        uint256 _lambda,
+        uint256 _brrrrFade
+    ) public onlyGovernor {
+
+        impactWindow = _impactWindow;
+        oiCap = _oiCap;
+        lambda = _lambda;
+        brrrrFade = _brrrrFade;
+
+    }
+
+    function set_TEST_CAP (uint _cap) public {
+
+        TEST_CAP = _cap;
+
+    }
+    
+
 }

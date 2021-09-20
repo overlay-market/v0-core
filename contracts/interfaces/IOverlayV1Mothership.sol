@@ -1,12 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-interface IOverlayV1Factory {
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "./IOverlayToken.sol";
+
+interface IOverlayV1Mothership {
 
     function isMarket(
         address
     ) external view returns (
         bool
+    );
+
+    function ovl () external view returns (
+        IOverlayToken ovl_
     );
 
     function allMarkets(
@@ -50,4 +57,12 @@ interface IOverlayV1Factory {
     function massUpdateMarkets(
         address _rewardsTo
     ) external;
+
+    function hasRole(
+        bytes32 _role, 
+        address _account
+    ) external view returns (
+        bool
+    );
+
 }
