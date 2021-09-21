@@ -309,7 +309,7 @@ contract OverlayV1UniswapV3MultiplexMarket is OverlayV1Market {
 
     }
 
-    function oiLong () external returns (uint oiLong_) {
+    function oiLong () external view returns (uint oiLong_) {
         (   oiLong_, ) = oi();
     }
 
