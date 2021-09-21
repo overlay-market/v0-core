@@ -17,7 +17,9 @@ abstract contract OverlayV1Governance is
 
     mapping (address => bool) public isCollateral;
 
-    bytes32 constant GOVERNOR = keccak256("GOVERNOR");
+    bytes32 constant private COLLATERAL = keccak256("COLLATERAL");
+    bytes32 constant private GOVERNOR = keccak256("GOVERNOR");
+    bytes32 constant private MARKET = keccak256("MARKET");
 
     // leverage max allowed for a position: leverages are assumed to be discrete increments of 1
     uint256 public leverageMax;
@@ -29,22 +31,17 @@ abstract contract OverlayV1Governance is
 
 
     modifier onlyCollateral () { 
-        require(isCollateral[msg.sender], "OVLV1:!collateral"); 
+        require(mothership.hasRole(COLLATERAL, msg.sender), "OVLV1:!collateral"); 
         _; 
     }
 
-    modifier enabled() {
-        require(mothership.isMarket(address(this)), "OVLV1:!enabled");
-        _;
-    }
-
-    modifier onlyMothership() {
-        require(msg.sender == address(mothership), "OVLV1:!mothership");
-        _;
-    }
-
     modifier onlyGovernor () {
-        require(mothership.hasRole(GOVERNOR, msg.sender));
+        require(mothership.hasRole(GOVERNOR, msg.sender), "OVLV1:!governor");
+        _;
+    }
+
+    modifier enabled() {
+        require(mothership.hasRole(MARKET, address(this)), "OVLV1:!enabled");
         _;
     }
 
@@ -103,7 +100,6 @@ abstract contract OverlayV1Governance is
             _lambda,
             _brrrrFade
         );
-
 
     }
 
