@@ -150,14 +150,14 @@ def comptroller(gov):
          "OverlayV1UniswapV3Market", [ 
             600,                    # macro window
             60,                     # micro window
-            5725031958894104,       # k
+            343454218783234,        # k
             100,                    # levmax
-            1e18,                   # spread
+            5730000000000000,       # spread
             600,                    # update period
             600,                    # compound period
             600,                    # impact window
             OI_CAP*1e18,            # oi cap
-            365701321109246,        # lambda
+            626000000000000000,     # lambda
             1e18,                   # brrrr fade
          ],
          get_uni_oracle,

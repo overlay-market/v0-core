@@ -14,7 +14,6 @@ MIN_COLLATERAL_AMOUNT = 10**4  # min amount to build
 TOKEN_DECIMALS = 18
 TOKEN_TOTAL_SUPPLY = 8000000
 OI_CAP = 800000
-FEE_RESOLUTION = 1e4
 
 def set_compound(sender, factory, market, compound):
     args = market_params(market)
@@ -101,7 +100,7 @@ def test_update(token,
     prior_compounded = market.compounded()
 
     # Calc reward rate before update
-    reward_perc = fee_reward_rate / FEE_RESOLUTION
+    reward_perc = fee_reward_rate / 1e18
 
     expected_fee_reward = int(reward_perc * prior_fees)
 

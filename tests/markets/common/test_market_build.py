@@ -6,7 +6,6 @@ MIN_COLLATERAL_AMOUNT = 10**4  # min amount to build
 TOKEN_DECIMALS = 18
 TOKEN_TOTAL_SUPPLY = 8000000
 OI_CAP = 800000
-FEE_RESOLUTION = 1e4
 
 @given(
     collateral=strategy('uint256',
@@ -19,7 +18,7 @@ def test_build(ovl_collateral, token, factory, market, bob, rewards, collateral,
     market.update({ 'from': bob })
     oi = collateral * leverage
     fee = factory.fee()
-    fee_perc = fee / FEE_RESOLUTION
+    fee_perc = fee / 1e18
 
     # prior token balances
     prior_balance_ovl_collateral = token.balanceOf(ovl_collateral)

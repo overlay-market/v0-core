@@ -14,23 +14,21 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     using Position for Position.Info;
     using FixedPoint for uint256;
 
-    // TODO: do we have a struct for markets?
-    struct Market { uint _marginAdjustment; }
+    uint256 constant public MIN_COLLAT = 1e4;
+    bytes32 constant private GOVERNOR = keccak256("GOVERNOR");
 
-    mapping (address => uint) marginAdjustments;
-    mapping (address => bool) supportedMarket;
     mapping (address => mapping(uint => uint)) internal queuedPositionLongs;
     mapping (address => mapping(uint => uint)) internal queuedPositionShorts;
+    mapping (address => MarketInfo) marketInfo;
+    struct MarketInfo { 
+        uint marginMaintenance;
+        uint marginRewardRate;
+    }
 
     Position.Info[] public positions;
 
-    uint16 public constant MIN_COLLAT = 1e4;
-    uint constant RESOLUTION = 1e4;
-
-    uint nextPositionId;
-
-    IOverlayToken public ovl;
     IOverlayV1Mothership public mothership;
+    IOverlayToken public ovl;
 
     uint256 public fees;
     uint256 public liquidations;
@@ -46,6 +44,12 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         uint liquidationsCollected, 
         uint liquidationsBurned 
     );
+
+    modifier onlyGovernor () {
+        require(mothership.hasRole(GOVERNOR, msg.sender), "OVLV1:!governor");
+        _;
+    }
+
     constructor (
         string memory _uri,
         address _ovl,
@@ -68,14 +72,17 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     }
 
-    function addMarket (
+    function setMarketInfo (
         address _market,
-        uint _marginAdjustment
-    ) external {
+        uint _marginMaintenance,
+        uint _marginRewardRate
+    ) external onlyGovernor {
 
-        marginAdjustments[_market] = _marginAdjustment;
+        marketInfo[_market].marginMaintenance = _marginMaintenance;
+        marketInfo[_market].marginRewardRate = _marginRewardRate;
 
     }
+
 
     /// @notice Updates funding payments, cumulative fees, queued position builds, and price points
     function update(
@@ -91,12 +98,12 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
                 address _feeTo ) = mothership.getUpdateParams();
 
             uint _feeForward = fees;
-            uint _feeBurn = ( _feeForward * _feeBurnRate ) / RESOLUTION;
-            uint _feeReward = ( _feeForward * _feeRewardsRate ) / RESOLUTION;
+            uint _feeBurn = _feeForward.mulUp(_feeBurnRate);
+            uint _feeReward = _feeForward.mulUp(_feeRewardsRate);
             _feeForward = _feeForward - _feeBurn - _feeReward;
 
             uint _liqForward = liquidations;
-            uint _liqBurn = ( _liqForward * _marginBurnRate ) / RESOLUTION;
+            uint _liqBurn = _liqForward.mulUp(_marginBurnRate);
             _liqForward -= _liqBurn;
 
             fees = 0;
@@ -282,14 +289,13 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             uint _priceFrame,
             uint _tCompounding ) = IOverlayV1Market(pos.market).exitData(_isLong, pos.pricePoint);
 
-        (   uint _marginMaintenance,
-            uint _marginRewardRate   ) = mothership.getMarginParams();
+        MarketInfo memory _marketInfo = marketInfo[pos.market];
 
         require(pos.isLiquidatable(
             _priceFrame,
             _oi,
             _oiShares,
-            _marginMaintenance
+            _marketInfo.marginMaintenance
         ), "OverlayV1: position not liquidatable");
 
         uint _value = pos.value(_priceFrame, _oi, _oiShares);
@@ -308,7 +314,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         // positions[positionId].oiShares = 0;
 
         uint _toForward = _value;
-        uint _toReward = _toForward.mulUp(_marginRewardRate );
+        uint _toReward = _toForward.mulUp(_marketInfo.marginRewardRate);
 
         liquidations += _toForward - _toReward;
 
