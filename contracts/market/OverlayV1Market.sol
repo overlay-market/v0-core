@@ -14,7 +14,6 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
     using FixedPoint for uint256;
 
-
     uint256 private unlocked = 1;
 
     modifier lock() { require(unlocked == 1, "OVLV1:!unlocked"); unlocked = 0; _; unlocked = 1; }

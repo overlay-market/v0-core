@@ -7,10 +7,11 @@ import "./OverlayV1Governance.sol";
 
 contract OverlayV1Comptroller {
 
+
     using FixedPoint for uint256;
 
-    uint256 internal constant INVERSE_EULER = 0x51AF86713316A9A;
-    uint256 internal constant ONE = 1e18;
+    uint256 private constant INVERSE_E = 0x51AF86713316A9A;
+    uint256 private constant ONE = 1e18;
     struct Roller {
         uint time;
         uint longPressure;
@@ -82,6 +83,8 @@ contract OverlayV1Comptroller {
 
         impact_ = _oi.sub(_oi.mulUp(_impact));
 
+        brrrr(-int(impact_));
+
         cap_ = _cap;
 
     }
@@ -115,7 +118,7 @@ contract OverlayV1Comptroller {
         lastMoment_ = _lastMoment;
         rollerNow_ = _rollerNow;
         impact_ = _pressure != 0 
-            ? ONE.sub(INVERSE_EULER.powUp(_power)) 
+            ? ONE.sub(INVERSE_E.powUp(_power)) 
             : 0;
         cap_ = _cap;
 

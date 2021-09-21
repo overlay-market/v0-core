@@ -8,8 +8,8 @@ abstract contract OverlayV1PricePoint {
 
     using FixedPoint for uint256;
 
-    uint256 internal constant E = 0x25B946EBC0B36351;
-    uint256 internal constant INVERSE_E = 0x51AF86713316A9A;
+    uint256 private constant E = 0x25B946EBC0B36351;
+    uint256 private constant INVERSE_E = 0x51AF86713316A9A;
 
     struct PricePoint {
         uint256 bid;
@@ -39,6 +39,7 @@ abstract contract OverlayV1PricePoint {
     ) {
 
         uint _ask = Math.max(_macroPrice, _microPrice).mulUp(INVERSE_E.powUp(pbnj));
+
         uint _bid = Math.min(_macroPrice, _microPrice).mulDown(E.powUp(pbnj));
 
         pricePoint_ = PricePoint(
