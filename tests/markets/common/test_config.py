@@ -1,11 +1,9 @@
 import re
 
-
 TOKEN_DECIMALS = 18
 TOKEN_TOTAL_SUPPLY = 8000000
 OI_CAP = 800000
 AMOUNT_IN = 1
-
 
 def test_balances(token, gov, rewards, alice, bob, feed_owner):
     assert token.totalSupply() == token.balanceOf(bob)
@@ -13,7 +11,6 @@ def test_balances(token, gov, rewards, alice, bob, feed_owner):
     assert token.balanceOf(rewards) == 0
     assert token.balanceOf(alice) == 0
     assert token.balanceOf(feed_owner) == 0
-
 
 def test_roles(token, gov, feed_owner, factory, market, alice, bob):
     assert token.hasRole(token.ADMIN_ROLE(), gov) is True

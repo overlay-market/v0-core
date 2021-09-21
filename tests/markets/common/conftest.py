@@ -2,6 +2,7 @@ import pytest
 import brownie
 import os
 import json
+import time
 from brownie import \
     ETH_ADDRESS,\
     OverlayToken,\
@@ -11,79 +12,44 @@ from brownie import \
 
 
 TOKEN_DECIMALS = 18
-TOKEN_TOTAL_SUPPLY = 8000000
+TOKEN_TOTAL_SUPPLY = 8000000e18
 OI_CAP = 800000
 AMOUNT_IN = 1
 PRICE_POINTS_START = 50
 PRICE_POINTS_END = 100
-FIRST_TIMESTAMP = chain.time()
-
 
 @pytest.fixture(scope="module")
 def gov(accounts):
     yield accounts[0]
 
-
 @pytest.fixture(scope="module")
 def rewards(accounts):
     yield accounts[1]
-
 
 @pytest.fixture(scope="module")
 def alice(accounts):
     yield accounts[2]
 
-
 @pytest.fixture(scope="module")
 def bob(accounts):
     yield accounts[3]
-
-
-@pytest.fixture(scope="module")
-def create_token(gov, alice, bob):
-    sup = TOKEN_TOTAL_SUPPLY
-
-    def create_token(supply=sup):
-        tok = gov.deploy(OverlayToken)
-        tok.mint(gov, supply * 10 ** tok.decimals(), {"from": gov})
-        ts = tok.totalSupply()
-        tok.transfer(bob, supply * 10 ** tok.decimals(), {"from": gov})
-        return tok
-
-    yield create_token
-
-
-@pytest.fixture(scope="module")
-def token(create_token):
-    yield create_token()
-
 
 @pytest.fixture(scope="module")
 def feed_owner(accounts):
     yield accounts[6]
 
-
 @pytest.fixture(scope="module")
-def price_points(token):
-    # TODO: json import of real data ...
-    decimals = token.decimals()
-    price_range = range(1, PRICE_POINTS_START)
-    return (
-        [FIRST_TIMESTAMP - PRICE_POINTS_START + i for i in price_range],
-        [i * 10 ** decimals for i in price_range],
-        [(1 / i) * 10 ** decimals for i in price_range]
-    )
+def create_token(gov, alice, bob):
+    sup = TOKEN_TOTAL_SUPPLY
 
+    def create_token(mothership, supply=sup):
+        tok = gov.deploy(OverlayToken, mothership)
+        tok.mint(gov, supply, {"from": gov})
+        ts = tok.totalSupply()
+        tok.transfer(bob, supply, {"from": gov})
+        return tok
 
-@pytest.fixture(scope="module")
-def price_points_after(token):
-    decimals = token.decimals()
-    price_range = range(PRICE_POINTS_START, PRICE_POINTS_END)
-    return (
-        [FIRST_TIMESTAMP - PRICE_POINTS_START + i for i in price_range],
-        [i * 10 ** decimals for i in price_range],
-        [(1 / i) * 10 ** decimals for i in price_range]
-    )
+    yield create_token
 
 def get_uni_oracle (feed_owner):
 
@@ -114,7 +80,7 @@ def get_uni_oracle (feed_owner):
             f['observation'][0] = f['shim'][0] = now + diff
             obs[len(obs)-1].append(f['observation'])
             shims[len(shims)-1].append(f['shim'])
-
+    
     UniswapV3MockFactory = getattr(brownie, 'UniswapV3FactoryMock')
     IUniswapV3OracleMock = getattr(interface, 'IUniswapV3OracleMock')
 
@@ -146,82 +112,96 @@ def comptroller(gov):
 @pytest.fixture(
     scope="module",
     params=[
-        ("OverlayV1UniswapV3Mothership", [15, 5000, 100, ETH_ADDRESS, 60, 50, 25], 
+        ("OverlayV1Mothership", [
+            .5e18,         # margin burn rate
+            .00015e18,    # fee
+            .5e18,        # fee burn rate
+            .001e18,      # update reward rate
+        ], 
          "OverlayV1UniswapV3Market", [ 
-            600,                    # macro window
-            60,                     # micro window
-            343454218783234,        # k
-            100,                    # levmax
-            5730000000000000,       # spread
-            600,                    # update period
-            600,                    # compound period
-            600,                    # impact window
-            OI_CAP*1e18,            # oi cap
-            626000000000000000,     # lambda
-            1e18,                   # brrrr fade
+            1e18,                # amount in
+            600,                 # macro window
+            60,                  # micro window
+            343454218783234,     # k
+            100,                 # levmax
+            .00573e18,           # spread
+            600,                 # update period
+            600,                 # compound period
+            600,                 # impact window
+            OI_CAP*1e18,         # oi cap
+            .626e18,             # lambda
+            1e18,                # brrrr fade
+         ],
+         "OverlayV1OVLCollateral", [
+             .06e18,             # margin maintenance
+             .5e18,              # margin reward rate
          ],
          get_uni_oracle,
         ),
     ])
-def create_mothership(token, gov, feed_owner, request):
-    ovlms_name, ovlms_args, ovlm_name, ovlm_args, ovlm_setters, get_feed = request.param
+def create_mothership(create_token, alice, bob, gov, rewards, feed_owner, request):
+    ovlms_name, ovlms_args, ovlm_name, ovlm_args, ovlc_name, ovlc_args, get_feed = request.param
+
+    chain.mine(timestamp=int(time.time()))
 
     ovlms = getattr(brownie, ovlms_name)
     ovlm = getattr(brownie, ovlm_name)
+    ovlc = getattr(brownie, ovlc_name)
+
+    ovlms_args.append(rewards)
 
     def create_mothership(
-        tok=token,
+        c_tok=create_token,
         ovlms_type=ovlms,
         ovlms_args=ovlms_args,
         ovlm_type=ovlm,
         ovlm_args=ovlm_args,
+        ovlc_type=ovlc,
+        ovlc_args=ovlc_args,
         fd_getter=get_feed
     ):
-        print("create mothership")
+        feed_factory, feed_addr, quote = fd_getter(feed_owner)
 
-        feed_factory, feed_addr, base = fd_getter(feed_owner)
+        mothership = gov.deploy(ovlms_type, *ovlms_args)
 
-        mothership = gov.deploy(ovlms_type, tok, *ovlms_args)
-        tok.grantRole(tok.ADMIN_ROLE(), mothership, {"from": gov})
-        market = gov.deploy(
-            ovlm_type, 
-            mothership, 
-            feed_addr, 
-            base,
-            *ovlm_args[:2], 
-            {"from": gov}
-        )
+        tok = c_tok(mothership)
 
-        market.setEverything(
-            *ovlm_args[2:],
-            { "from": gov }
-        )
+        mothership.setOVL(tok, { 'from': gov })
 
+        market = gov.deploy(ovlm_type, mothership, feed_addr, quote, *ovlm_args[:3])
+        market.setEverything(*ovlm_args[3:], { "from": gov })
         mothership.initializeMarket(market, { "from": gov})
 
-        chain.mine(timedelta=ovlm_args[0]) # mine the update period
+        ovl_collateral = gov.deploy(ovlc_type, "our_uri", mothership)
+        ovl_collateral.setMarketInfo(market, *ovlc_args, { "from": gov })
+        mothership.initializeCollateral(ovl_collateral)
+
+        market.addCollateral(ovl_collateral, { 'from': gov })
+
+        tok.approve(ovl_collateral, 1e50, { "from": alice })
+        tok.approve(ovl_collateral, 1e50, { "from": bob })
+
+        chain.mine(timedelta=ovlm_args[1]) # mine the update period
 
         return mothership
 
     yield create_mothership
 
 @pytest.fixture(scope="module")
-def ovl_collateral(mothership, market, gov, token):
-    OvlCollateral = getattr(brownie, 'OverlayV1OVLCollateral')
-    collateral_man = OvlCollateral.deploy(
-        "", 
-        token, 
-        mothership,
-        { 'from': gov }
-    )
-    market.addCollateral(collateral_man, { 'from': gov })
-    token.grantRole(token.MINTER_ROLE(), collateral_man, { 'from': gov })
-    token.grantRole(token.BURNER_ROLE(), collateral_man, { 'from': gov })
-    yield collateral_man
-
-@pytest.fixture(scope="module")
 def mothership(create_mothership):
     yield create_mothership()
+
+@pytest.fixture(scope="module")
+def token(mothership):
+    yield getattr(interface, 'IOverlayToken')(mothership.ovl())
+
+@pytest.fixture(
+    scope="module",
+    params=['IOverlayV1OVLCollateral'])
+def ovl_collateral(mothership, request):
+    addr = mothership.allCollateral(0)
+    ovl_collateral = getattr(interface, request.param)(addr)
+    yield ovl_collateral
 
 @pytest.fixture(
     scope="module",

@@ -31,7 +31,7 @@ abstract contract OverlayV1Governance is
 
 
     modifier onlyCollateral () { 
-        require(mothership.hasRole(COLLATERAL, msg.sender), "OVLV1:!collateral"); 
+        require(isCollateral[msg.sender], "OVLV1:!collateral"); 
         _; 
     }
 

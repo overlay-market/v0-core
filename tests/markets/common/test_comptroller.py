@@ -42,11 +42,6 @@ def test_expand_cardinality_next(comptroller):
 
 def test_impact(comptroller):
 
-    # num = comptroller.underflow(1,2)
-    # print("num", num)
-    # num = comptroller.underflow(1, num)
-    # print("num", num)
-
     roller0 = comptroller.rollers(0)
     roller1 = comptroller.rollers(1)
     roller2 = comptroller.rollers(2)
@@ -156,7 +151,7 @@ def test_impact_cardinality_two_increments_cardinality_once(comptroller):
     assert comptroller.index() == 1
     assert comptroller.cardinality() == 2
 
-def test_roller_cardinality_two_rolls_index_over_to_0_with_single_rolls(comptroller):
+def test_roller_cardinality_two_rolls_index_rolls_over_to_0_with_single_rolls(comptroller):
 
     comptroller.expand(2)
 

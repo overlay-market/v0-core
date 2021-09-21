@@ -44,7 +44,6 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
     }
 
-
     /// @notice Adds open interest to the market
     /// @dev invoked by an overlay position contract
     function enterOI (
@@ -60,6 +59,10 @@ abstract contract OverlayV1Market is OverlayV1Governance {
         uint t1Compounding_
     ) {
 
+        emit log("collateral", _collateral);
+        emit log("leverage", _leverage);
+        emit log("mothership.fee()", mothership.fee());
+
         require(_leverage <= leverageMax, "OVLV1:lev>max");
 
         t1Compounding_ = entryUpdate();
@@ -70,15 +73,15 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
         ( uint _impact, uint _cap ) = intake(_isLong, _oi);
 
-        fee_ = _oi.mulUp(mothership.fee());
+        // fee_ = _oi.mulUp(mothership.fee());
 
-        collateralAdjusted_ = _collateral - _impact - fee_;
+        // collateralAdjusted_ = _collateral - _impact - fee_;
 
-        oiAdjusted_ = collateralAdjusted_ * _leverage;
+        // oiAdjusted_ = collateralAdjusted_ * _leverage;
 
-        debtAdjusted_ = oiAdjusted_ - collateralAdjusted_;
+        // debtAdjusted_ = oiAdjusted_ - collateralAdjusted_;
 
-        queueOi(_isLong, oiAdjusted_, _cap);
+        // queueOi(_isLong, oiAdjusted_, _cap);
 
     }
 
