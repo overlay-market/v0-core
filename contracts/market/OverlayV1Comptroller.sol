@@ -5,7 +5,7 @@ import "../libraries/FixedPoint.sol";
 
 import "./OverlayV1Governance.sol";
 
-contract OverlayV1Comptroller {
+abstract contract OverlayV1Comptroller {
 
     event log(string k, uint v);
 
@@ -60,6 +60,8 @@ contract OverlayV1Comptroller {
         cardinalityNext = next;
 
     }
+
+    function depth () internal virtual view returns ( uint256 depth_ );
 
     function cap () internal view returns ( uint cap_) {
 

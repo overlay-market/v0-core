@@ -8,7 +8,8 @@ from brownie import \
     OverlayToken,\
     ComptrollerShim,\
     chain,\
-    interface
+    interface,\
+    UniTest
 
 
 TOKEN_DECIMALS = 18
@@ -211,3 +212,35 @@ def market(mothership, request):
     market = getattr(interface, request.param)(addr)
     yield market
 
+
+
+@pytest.fixture(scope="module")
+def uni_test(gov, rewards, accounts):
+
+    dai_eth = "0xc2e9f25be6257c210d7adf0d4cd6e3e881ba25f8"
+    usdc_eth = "0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8"
+    wbtc_eth = "0xcbcdf9626bc03e24f779434178a73a0b4bad62ed"
+    uni_eth = "0x1d42064Fc4Beb5F8aAF85F4617AE8b3b5B8Bd801"
+    link_eth = "0xa6Cc3C2531FdaA6Ae1A3CA84c2855806728693e8"
+    aave_eth = "0x5aB53EE1d50eeF2C1DD3d5402789cd27bB52c1bB"
+
+    usdc = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+    eth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+    wbtc = "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599"
+    uni = "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984"
+    link = "0x514910771AF9Ca656af840dff83E8264EcF986CA"
+    aave = "0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9"
+
+    # we are trying to find amount USDC in OVL terms
+
+    unitest = rewards.deploy(
+        UniTest, 
+        eth,
+        usdc,
+        usdc_eth,
+        aave,
+        eth,
+        aave_eth
+    )
+
+    yield unitest

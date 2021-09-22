@@ -39,7 +39,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         address _token1 = IUniswapV3Pool(_uniV3Pool).token1();
 
         base = _token0 != _quote ? _token0 : _token1;
-        quote = _token0 == _quote ? _token1 : _token0;
+        quote = _token0 == _quote ? _token0 : _token1;
 
         int24 _tick = OracleLibraryV2.consult(
             _uniV3Pool, 
@@ -51,7 +51,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             _tick,
             uint128(_amountIn),
             _token0 != _quote ? _token0 : _token1,
-            _token0 == _quote ? _token1 : _token0
+            _token0 == _quote ? _token0 : _token1
         );
 
         setPricePointCurrent(PricePoint(_price, _price, _price));
@@ -79,24 +79,37 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         ( int56[] memory _ticks, ) = IUniswapV3Pool(feed).observe(_secondsAgo);
 
-        int24 _macroTick = int24((_ticks[2] - _ticks[0]) / int56(int32(int(macroWindow))));
-        int24 _microTick = int24((_ticks[2] - _ticks[1]) / int56(int32(int(microWindow))));
-
         uint _macroPrice = OracleLibraryV2.getQuoteAtTick(
-            _macroTick,
+            int24((_ticks[2] - _ticks[0]) / int56(int32(int(macroWindow)))),
             amountIn,
             base,
             quote
         );
 
         uint _microPrice = OracleLibraryV2.getQuoteAtTick(
-            _microTick,
+            int24((_ticks[2] - _ticks[1]) / int56(int32(int(microWindow)))),
             amountIn,
             base,
             quote
         );
 
         return insertSpread(_microPrice, _macroPrice);
+
+    }
+
+    function depth () internal view override returns (uint256 depth_) {
+
+        uint32[] memory _secondsAgo = new uint32[](2);
+        _secondsAgo[0] = uint32(microWindow);
+        _secondsAgo[1] = 0;
+
+        ( int56[] memory _ticks, uint160[] memory _invLiqs ) = IUniswapV3Pool(feed).observe(_secondsAgo);
+
+        uint256 _sqrtRatio = TickMath.getSqrtRatioAtTick(
+            int24((_ticks[1] - _ticks[0]) / int56(int32(int(microWindow))))
+        );
+
+        uint256 _liquidity = (uint160(microWindow) << 128) / ( _invLiqs[1] - _invLiqs[0] );
 
     }
 

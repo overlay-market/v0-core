@@ -19,6 +19,8 @@ contract ComptrollerShim is OverlayV1Comptroller {
     //     brrrrFade = _brrrrFade;
     // }
 
+    function depth () internal view override returns (uint256) {}
+
     // function setRoller (
     //     uint index,
     //     uint __timestamp,

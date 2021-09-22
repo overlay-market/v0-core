@@ -132,6 +132,7 @@ contract OverlayV1UniswapV3MultiplexMarket is OverlayV1Market {
         return insertSpread(_microPrice, _macroPrice);
 
     }
+        function depth () internal view override returns (uint256 depth_) {}
 
     function epochs (
         uint _time,
