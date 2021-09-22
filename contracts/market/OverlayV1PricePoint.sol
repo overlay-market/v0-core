@@ -38,9 +38,9 @@ abstract contract OverlayV1PricePoint {
         PricePoint memory pricePoint_
     ) {
 
-        uint _ask = Math.max(_macroPrice, _microPrice).mulUp(INVERSE_E.powUp(pbnj));
+        uint _ask = Math.max(_macroPrice, _microPrice).mulUp(E.powUp(pbnj));
 
-        uint _bid = Math.min(_macroPrice, _microPrice).mulDown(E.powUp(pbnj));
+        uint _bid = Math.min(_macroPrice, _microPrice).mulDown(INVERSE_E.powUp(pbnj));
 
         pricePoint_ = PricePoint(
             _bid,
