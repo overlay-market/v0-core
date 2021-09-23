@@ -52,7 +52,7 @@ def create_token(gov, alice, bob):
 
     yield create_token
 
-def get_uni_oracle (feed_owner):
+def get_uni_feeds (feed_owner):
 
     base = os.path.dirname(os.path.abspath(__file__))
     path = '../../../feeds/historic_observations/univ3_dai_weth.json'
@@ -103,7 +103,7 @@ def get_uni_oracle (feed_owner):
 
     chain.mine(1, timestamp=chain[-1].timestamp + 1200)
 
-    return uniswapv3_factory.address, uniswapv3_mock.address, base
+    return uniswapv3_factory.address, uniswapv3_mock.address, uniswapv3_mock.address, base
 
 @pytest.fixture( scope="module" )
 def comptroller(gov):
@@ -137,7 +137,7 @@ def comptroller(gov):
              .06e18,             # margin maintenance
              .5e18,              # margin reward rate
          ],
-         get_uni_oracle,
+         get_uni_feeds,
         ),
     ])
 def create_mothership(create_token, alice, bob, gov, rewards, feed_owner, request):
@@ -161,15 +161,17 @@ def create_mothership(create_token, alice, bob, gov, rewards, feed_owner, reques
         ovlc_args=ovlc_args,
         fd_getter=get_feed
     ):
-        feed_factory, feed_addr, quote = fd_getter(feed_owner)
+        feed_factory, ovl_feed, market_feed, quote = fd_getter(feed_owner)
 
         mothership = gov.deploy(ovlms_type, *ovlms_args)
+
+        eth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 
         tok = c_tok(mothership)
 
         mothership.setOVL(tok, { 'from': gov })
 
-        market = gov.deploy(ovlm_type, mothership, feed_addr, quote, *ovlm_args[:3])
+        market = gov.deploy(ovlm_type, mothership, ovl_feed, market_feed, quote, eth, *ovlm_args[:3])
         market.setEverything(*ovlm_args[3:], { "from": gov })
         mothership.initializeMarket(market, { "from": gov})
 
