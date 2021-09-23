@@ -12,23 +12,19 @@ abstract contract OverlayV1Governance is
     OverlayV1OI, 
     OverlayV1PricePoint {
 
-    IOverlayToken public ovl;
-    IOverlayV1Mothership public immutable mothership;
-
-    mapping (address => bool) public isCollateral;
-
     bytes32 constant private COLLATERAL = keccak256("COLLATERAL");
     bytes32 constant private GOVERNOR = keccak256("GOVERNOR");
     bytes32 constant private MARKET = keccak256("MARKET");
 
-    // leverage max allowed for a position: leverages are assumed to be discrete increments of 1
-    uint256 public leverageMax;
+    IOverlayToken public ovl;
+    IOverlayV1Mothership public immutable mothership;
 
-    // open interest cap on each side long/short
+    uint256 public leverageMax;
 
     uint256 public updatePeriod;
     uint256 public compoundingPeriod;
 
+    mapping (address => bool) public isCollateral;
 
     modifier onlyCollateral () { 
         require(isCollateral[msg.sender], "OVLV1:!collateral"); 
