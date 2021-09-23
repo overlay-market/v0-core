@@ -33,8 +33,6 @@ abstract contract OverlayV1Comptroller {
     uint256 public brrrrdWhen;
     uint256 public brrrrFade;
 
-    uint256 public TEST_CAP;
-
     constructor () {
 
         cardinality = 1;
@@ -173,7 +171,9 @@ abstract contract OverlayV1Comptroller {
 
             _brrrrd = Math.max(_brrrrd + _brrrr, oiCap);
 
-        } else {
+        } 
+
+        if (0 < _antiBrrrr) {
 
             _brrrrd -= Math.min(_antiBrrrr, _brrrrd);
 
