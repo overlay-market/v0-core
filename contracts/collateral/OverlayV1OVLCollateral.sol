@@ -167,44 +167,44 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         bool _isLong
     ) external {
 
-        require(MIN_COLLAT <= _collateral, "OVLV1:collat<min");
+        // require(MIN_COLLAT <= _collateral, "OVLV1:collat<min");
 
-        (   uint _oiAdjusted,
-            uint _collateralAdjusted,
-            uint _debtAdjusted,
-            uint _fee,
-            uint _impact,
-            uint _pricePointCurrent,
-            uint _t1Compounding ) = IOverlayV1Market(_market)
-                .enterOI(
-                    _isLong, 
-                    _collateral, 
-                    _leverage
-                );
+        // (   uint _oiAdjusted,
+        //     uint _collateralAdjusted,
+        //     uint _debtAdjusted,
+        //     uint _fee,
+        //     uint _impact,
+        //     uint _pricePointCurrent,
+        //     uint _t1Compounding ) = IOverlayV1Market(_market)
+        //         .enterOI(
+        //             _isLong, 
+        //             _collateral, 
+        //             _leverage
+        //         );
 
-        uint _positionId = getQueuedPositionId(
-            _market, 
-            _isLong, 
-            _leverage, 
-            _pricePointCurrent,
-            _t1Compounding
-        );
+        // uint _positionId = getQueuedPositionId(
+        //     _market, 
+        //     _isLong, 
+        //     _leverage, 
+        //     _pricePointCurrent,
+        //     _t1Compounding
+        // );
 
-        Position.Info storage pos = positions[_positionId];
+        // Position.Info storage pos = positions[_positionId];
 
-        pos.oiShares += _oiAdjusted;
-        pos.cost += _collateralAdjusted;
-        pos.debt += _debtAdjusted;
+        // pos.oiShares += _oiAdjusted;
+        // pos.cost += _collateralAdjusted;
+        // pos.debt += _debtAdjusted;
 
-        fees += _fee;
+        // fees += _fee;
 
-        emit Build(_positionId, _oiAdjusted, _debtAdjusted);
+        // emit Build(_positionId, _oiAdjusted, _debtAdjusted);
 
-        ovl.transferFrom(msg.sender, address(this), _collateral);
+        // ovl.transferFrom(msg.sender, address(this), _collateral);
 
-        ovl.burn(address(this), _impact);
+        // ovl.burn(address(this), _impact);
 
-        _mint(msg.sender, _positionId, _oiAdjusted, ""); // WARNING: last b/c erc1155 callback
+        // _mint(msg.sender, _positionId, _oiAdjusted, ""); // WARNING: last b/c erc1155 callback
 
     }
 

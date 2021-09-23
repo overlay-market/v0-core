@@ -48,8 +48,7 @@ interface IOverlayV1OVLCollateral is IERC1155 {
         address _market,
         uint256 _collateral,
         bool _isLong,
-        uint256 _leverage,
-        address _rewardsTo
+        uint256 _leverage
     ) external;
 
     function unwind(

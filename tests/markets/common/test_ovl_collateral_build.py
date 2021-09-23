@@ -80,11 +80,10 @@ def test_build(
         collateral, 
         is_long, 
         leverage, 
-        bob, 
         {"from": bob}
     )
 
-    print_events(tx)
+    # print_events(tx)
 
     # assert 'Build' in tx.events
     # assert 'positionId' in tx.events['Build']
@@ -178,4 +177,4 @@ def test_build_breach_cap(token, mothership, ovl_collateral, market, bob, oi, le
     collateral = int(oi / leverage)
     token.approve(ovl_collateral, collateral, {"from": bob})
     with reverts("OVLV1:collat<min"):
-        ovl_collateral.build(market, collateral, is_long, leverage, bob, {"from": bob})
+        ovl_collateral.build(market, collateral, is_long, leverage, {"from": bob})
