@@ -153,11 +153,5 @@ abstract contract OverlayV1Governance is
 
     }
 
-    function set_TEST_CAP (uint _cap) public {
-
-        TEST_CAP = _cap;
-
-    }
     
-
 }
