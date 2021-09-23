@@ -12,6 +12,10 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     uint256 internal X96 = 0x1000000000000000000000000;
 
+    uint public toUpdate;
+    uint public updated;
+    uint public compounded;
+
     uint256 public immutable macroWindow; // window size for main TWAP
     uint256 public immutable microWindow; // window size for bid/ask TWAP
 
@@ -36,7 +40,6 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     ) OverlayV1Market(
         _mothership
     ) {
-
 
         // immutables
         eth = _eth;
@@ -73,10 +76,6 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         compounded = block.timestamp;
 
     }
-
-    uint public toUpdate;
-    uint public updated;
-    uint public compounded;
 
     function price (
         uint _at
