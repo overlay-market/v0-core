@@ -152,6 +152,5 @@ abstract contract OverlayV1Governance is
         brrrrFade = _brrrrFade;
 
     }
-
     
 }
