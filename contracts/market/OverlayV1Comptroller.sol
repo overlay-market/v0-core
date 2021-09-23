@@ -6,7 +6,7 @@ import "../libraries/FixedPoint.sol";
 import "./OverlayV1Governance.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
-abstract contract OverlayV1Comptroller {
+abstract contract OverlayV1Comptroller { 
 
     event log(string k, uint v);
 
@@ -30,7 +30,7 @@ abstract contract OverlayV1Comptroller {
     uint256 public impactWindow;
     uint256 public lambda;
 
-    uint256 public brrrrd;
+    int256 public brrrrd;
     uint256 public brrrrdWhen;
     uint256 public brrrrFade;
 
@@ -64,11 +64,11 @@ abstract contract OverlayV1Comptroller {
     function depth () internal virtual view returns ( uint256 depth_ );
 
     function getBrrrrd () internal view returns (
-        uint brrrrd_,
+        int brrrrd_,
         uint now_
     ) {
 
-        uint _brrrrd = brrrrd;
+        brrrrd_ = brrrrd;
 
         uint _then = brrrrdWhen;
 
@@ -78,7 +78,10 @@ abstract contract OverlayV1Comptroller {
 
             uint _fade = ( now_ - _then ).mulUp(brrrrFade);
 
-            brrrrd_ -= Math.min(_brrrrd, _fade);
+            0 < brrrrd_
+                ? brrrrd_ -= int(Math.min(uint(brrrrd_), _fade))
+                : brrrrd_ += int(Math.min(uint(-brrrrd_), _fade));
+
 
         }
 
@@ -86,14 +89,14 @@ abstract contract OverlayV1Comptroller {
 
     function cap () internal view returns (
         uint cap_, 
-        uint brrrrd_,
-        uint now_
+        uint now_,
+        int brrrrd_
     ) {
 
         ( brrrrd_, now_ ) = getBrrrrd();
 
         cap_ = Math.min(
-            oiCap - brrrrd_, 
+            uint(int(oiCap) - brrrrd_), 
             lambda.mulUp(depth()).divDown(2e18)
         );
 
@@ -111,8 +114,8 @@ abstract contract OverlayV1Comptroller {
             uint _lastMoment,
             uint _impact,
             uint _cap,
-            uint _brrrrd,
-            uint _now ) = _intake(_isLong, _oi);
+            uint _now,
+            int _brrrrd ) = _intake(_isLong, _oi);
 
         brrrrdWhen = _now;
 
@@ -134,15 +137,15 @@ abstract contract OverlayV1Comptroller {
         uint lastMoment_,
         uint impact_,
         uint cap_,
-        uint brrrrd_,
-        uint now_
+        uint now_,
+        int brrrrd_
     ) {
 
         (   uint _lastMoment,
             Roller memory _rollerNow, 
             Roller memory _rollerImpact ) = scry(impactWindow);
         
-        ( cap_, brrrrd_, now_ ) = cap();
+        ( cap_, now_, brrrrd_ ) = cap();
 
         uint _pressure = _oi.divUp(cap_);
 
@@ -165,18 +168,18 @@ abstract contract OverlayV1Comptroller {
     function brrrr (
         uint _brrrr,
         uint _antiBrrrr,
-        uint _brrrrd
+        int _brrrrd
     ) internal {
 
         if (0 < _brrrr) {
 
-            _brrrrd = Math.max(_brrrrd + _brrrr, oiCap);
+            _brrrrd = int(Math.max(uint(_brrrrd) + _brrrr, oiCap));
 
         } 
 
         if (0 < _antiBrrrr) {
 
-            _brrrrd -= Math.min(_antiBrrrr, _brrrrd);
+            _brrrrd -= int(_antiBrrrr);
 
         }
 
