@@ -90,39 +90,36 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         address _rewardsTo
     ) public {
 
-        if (IOverlayV1Market(_market).update()) {
 
-            (   uint256 _marginBurnRate,
-                uint256 _feeBurnRate,
-                uint256 _feeRewardsRate,
-                address _feeTo ) = mothership.getUpdateParams();
+        (   uint256 _marginBurnRate,
+            uint256 _feeBurnRate,
+            uint256 _feeRewardsRate,
+            address _feeTo ) = mothership.getUpdateParams();
 
-            uint _feeForward = fees;
-            uint _feeBurn = _feeForward.mulUp(_feeBurnRate);
-            uint _feeReward = _feeForward.mulUp(_feeRewardsRate);
-            _feeForward = _feeForward - _feeBurn - _feeReward;
+        uint _feeForward = fees;
+        uint _feeBurn = _feeForward.mulUp(_feeBurnRate);
+        uint _feeReward = _feeForward.mulUp(_feeRewardsRate);
+        _feeForward = _feeForward - _feeBurn - _feeReward;
 
-            uint _liqForward = liquidations;
-            uint _liqBurn = _liqForward.mulUp(_marginBurnRate);
-            _liqForward -= _liqBurn;
+        uint _liqForward = liquidations;
+        uint _liqBurn = _liqForward.mulUp(_marginBurnRate);
+        _liqForward -= _liqBurn;
 
-            fees = 0;
-            liquidations = 0;
+        fees = 0;
+        liquidations = 0;
 
-            emit Update(
-                _rewardsTo,
-                _feeReward,
-                _feeForward,
-                _feeBurn,
-                _liqForward,
-                _liqBurn
-            );
+        emit Update(
+            _rewardsTo,
+            _feeReward,
+            _feeForward,
+            _feeBurn,
+            _liqForward,
+            _liqBurn
+        );
 
-            ovl.burn(address(this), _feeBurn + _liqBurn);
-            ovl.transfer(_feeTo, _feeForward + _liqForward);
-            ovl.transfer(_rewardsTo, _feeReward);
-
-        }
+        ovl.burn(address(this), _feeBurn + _liqBurn);
+        ovl.transfer(_feeTo, _feeForward + _liqForward);
+        ovl.transfer(_rewardsTo, _feeReward);
 
     }
 
