@@ -55,6 +55,7 @@ abstract contract OverlayV1Market is OverlayV1Governance {
         uint collateralAdjusted_,
         uint debtAdjusted_,
         uint fee_,
+        uint impact_,
         uint pricePointCurrent_,
         uint t1Compounding_
     ) {
@@ -73,15 +74,17 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
         ( uint _impact, uint _cap ) = intake(_isLong, _oi);
 
-        // fee_ = _oi.mulUp(mothership.fee());
+        fee_ = _oi.mulUp(mothership.fee());
 
-        // collateralAdjusted_ = _collateral - _impact - fee_;
+        impact_ = _impact;
 
-        // oiAdjusted_ = collateralAdjusted_ * _leverage;
+        collateralAdjusted_ = _collateral - _impact - fee_;
 
-        // debtAdjusted_ = oiAdjusted_ - collateralAdjusted_;
+        oiAdjusted_ = collateralAdjusted_ * _leverage;
 
-        // queueOi(_isLong, oiAdjusted_, _cap);
+        debtAdjusted_ = oiAdjusted_ - collateralAdjusted_;
+
+        queueOi(_isLong, oiAdjusted_, _cap);
 
     }
 

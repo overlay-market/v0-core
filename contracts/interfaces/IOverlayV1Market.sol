@@ -39,6 +39,15 @@ interface IOverlayV1Market is IERC1155 {
         address _collateral
     ) external;
 
+    function adjustParams (
+        uint256 _updatePeriod, 
+        uint256 _compoundingPeriod, 
+        uint144 _oiCap, 
+        uint112 _fundingKNumerator, 
+        uint112 _fundingKDenominator,
+        uint8 _leverageMax
+    ) external;
+
     function enterOI (
         bool _isLong,
         uint _collateral,
@@ -48,6 +57,7 @@ interface IOverlayV1Market is IERC1155 {
         uint collateralAdjusted_,
         uint debtAdjusted_,
         uint fee_,
+        uint impact_,
         uint pricePointCurrent_,
         uint t1Compounding_
     );
@@ -61,15 +71,6 @@ interface IOverlayV1Market is IERC1155 {
         uint priceFrame_,
         uint tCompounding_
     );
-
-    function adjustParams (
-        uint256 _updatePeriod, 
-        uint256 _compoundingPeriod, 
-        uint144 _oiCap, 
-        uint112 _fundingKNumerator, 
-        uint112 _fundingKDenominator,
-        uint8 _leverageMax
-    ) external;
 
     function exitOI (
         bool _compounded,
