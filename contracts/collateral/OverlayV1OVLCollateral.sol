@@ -170,7 +170,9 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         uint256 _collateral,
         uint256 _leverage,
         bool _isLong
-    ) external isMarket(_market) {
+    ) external {
+
+        require(mothership.isMarket(_market), "OVLV1:!market");
 
         require(MIN_COLLAT <= _collateral, "OVLV1:collat<min");
 
@@ -234,7 +236,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         
         uint _totalPosShares = totalSupply(_positionId);
 
-        uint _userOiShares = _shares * pos.oiShares / _totalPosShares;
+        uint _userOiShares = _shares;
         uint _userNotional = _shares * pos.notional(_priceFrame, _oi, _oiShares) / _totalPosShares;
         uint _userDebt = _shares * pos.debt / _totalPosShares;
         uint _userCost = _shares * pos.cost / _totalPosShares;
