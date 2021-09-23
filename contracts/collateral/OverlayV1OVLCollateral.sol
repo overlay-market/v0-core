@@ -219,72 +219,72 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         uint256 _shares
     ) external {
 
-        // require( 0 < _shares && _shares <= balanceOf(msg.sender, _positionId), "OVLV1:!shares");
+        require( 0 < _shares && _shares <= balanceOf(msg.sender, _positionId), "OVLV1:!shares");
 
-        // Position.Info storage pos = positions[_positionId];
+        Position.Info storage pos = positions[_positionId];
 
-        // require(0 < pos.oiShares, "OVLV1:liquidated");
+        require(0 < pos.oiShares, "OVLV1:liquidated");
 
-        // {
+        {
 
-        // (   uint _oi,
-        //     uint _oiShares,
-        //     uint _priceFrame,
-        //     uint _tCompounding ) = IOverlayV1Market(pos.market).exitData(pos.isLong, pos.pricePoint);
+        (   uint _oi,
+            uint _oiShares,
+            uint _priceFrame,
+            uint _tCompounding ) = IOverlayV1Market(pos.market).exitData(pos.isLong, pos.pricePoint);
         
-        // uint _totalPosShares = totalSupply(_positionId);
+        uint _totalPosShares = totalSupply(_positionId);
 
-        // uint _userOiShares = _shares * pos.oiShares / _totalPosShares;
-        // uint _userNotional = _shares * pos.notional(_priceFrame, _oi, _oiShares) / _totalPosShares;
-        // uint _userDebt = _shares * pos.debt / _totalPosShares;
-        // uint _userCost = _shares * pos.cost / _totalPosShares;
-        // uint _userOi = _shares * pos.oi(_oi, _oiShares) / _totalPosShares;
+        uint _userOiShares = _shares * pos.oiShares / _totalPosShares;
+        uint _userNotional = _shares * pos.notional(_priceFrame, _oi, _oiShares) / _totalPosShares;
+        uint _userDebt = _shares * pos.debt / _totalPosShares;
+        uint _userCost = _shares * pos.cost / _totalPosShares;
+        uint _userOi = _shares * pos.oi(_oi, _oiShares) / _totalPosShares;
 
-        // // TODO: think through edge case of underwater position ... and fee adjustments ...
-        // uint _feeAmount = _userNotional.mulUp(mothership.fee());
+        // TODO: think through edge case of underwater position ... and fee adjustments ...
+        uint _feeAmount = _userNotional.mulUp(mothership.fee());
 
-        // uint _userValueAdjusted = _userNotional - _feeAmount;
-        // if (_userValueAdjusted > _userDebt) _userValueAdjusted -= _userDebt;
-        // else _userValueAdjusted = 0;
+        uint _userValueAdjusted = _userNotional - _feeAmount;
+        if (_userValueAdjusted > _userDebt) _userValueAdjusted -= _userDebt;
+        else _userValueAdjusted = 0;
 
-        // fees += _feeAmount; // adds to fee pot, which is transferred on update
+        fees += _feeAmount; // adds to fee pot, which is transferred on update
 
-        // // TODO: compare gas expenditure
-        // pos.debt -= _userDebt;
-        // pos.cost -= _userCost;
-        // pos.oiShares -= _userOiShares;
-        // // TODO: compare gas expenditure
-        // // positions[_positionId].debt -= _userDebt;
-        // // positions[_positionId].cost -= _userCost;
-        // // positions[_positionId].oiShares -= _userOiShares;
+        // TODO: compare gas expenditure
+        pos.debt -= _userDebt;
+        pos.cost -= _userCost;
+        pos.oiShares -= _userOiShares;
+        // TODO: compare gas expenditure
+        // positions[_positionId].debt -= _userDebt;
+        // positions[_positionId].cost -= _userCost;
+        // positions[_positionId].oiShares -= _userOiShares;
 
-        // emit Unwind(_positionId, _userOi, _userDebt);
+        emit Unwind(_positionId, _userOi, _userDebt);
 
-        // // mint/burn excess PnL = valueAdjusted - cost, accounting for need to also burn debt
-        // if (_userCost < _userValueAdjusted) {
+        // mint/burn excess PnL = valueAdjusted - cost, accounting for need to also burn debt
+        if (_userCost < _userValueAdjusted) {
 
-        //     ovl.mint(address(this), _userValueAdjusted - _userCost);
+            ovl.mint(address(this), _userValueAdjusted - _userCost);
 
-        // } else {
+        } else {
 
-        //     ovl.burn(address(this), _userCost - _userValueAdjusted);
+            ovl.burn(address(this), _userCost - _userValueAdjusted);
 
-        // }
+        }
 
-        // ovl.transfer(msg.sender, _userValueAdjusted);
+        ovl.transfer(msg.sender, _userValueAdjusted);
 
-        // IOverlayV1Market(pos.market).exitOI(
-        //     pos.compounding <= _tCompounding, 
-        //     pos.isLong, 
-        //     _userOi, 
-        //     _userOiShares,
-        //     _userCost < _userValueAdjusted ? _userValueAdjusted - _userCost : 0,
-        //     _userCost < _userValueAdjusted ? 0 : _userValueAdjusted - _userCost
-        // );
+        IOverlayV1Market(pos.market).exitOI(
+            pos.compounding <= _tCompounding, 
+            pos.isLong, 
+            _userOi, 
+            _userOiShares,
+            _userCost < _userValueAdjusted ? _userValueAdjusted - _userCost : 0,
+            _userCost < _userValueAdjusted ? 0 : _userValueAdjusted - _userCost
+        );
 
-        // }
+        }
 
-        // _burn(msg.sender, _positionId, _shares);
+        _burn(msg.sender, _positionId, _shares);
  
     }
 
