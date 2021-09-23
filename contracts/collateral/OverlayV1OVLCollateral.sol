@@ -50,6 +50,11 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         _;
     }
 
+    modifier isMarket (address _market) {
+        require(mothership.isMarket(_market), "OVLV1:!governor");
+        _;
+    }
+
     constructor (
         string memory _uri,
         address _mothership
@@ -165,7 +170,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         uint256 _collateral,
         uint256 _leverage,
         bool _isLong
-    ) external {
+    ) external isMarket(_market) {
 
         require(MIN_COLLAT <= _collateral, "OVLV1:collat<min");
 
