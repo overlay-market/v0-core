@@ -108,7 +108,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
-    function depth () internal view override returns (uint256 depth_) {
+    function depth () internal virtual override returns (uint256 depth_) {
 
         uint32[] memory _secondsAgo = new uint32[](2);
         _secondsAgo[0] = uint32(microWindow);
@@ -125,7 +125,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         uint _ethAmount = ethIs0
             ? ( uint256(_liquidity) << 96 ) / _sqrtPrice
             : FullMath.mulDiv(uint256(_liquidity), _sqrtPrice, X96);
-        
+
         ( _ticks, ) = IUniswapV3Pool(ovlFeed).observe(_secondsAgo);
 
         uint _price = OracleLibraryV2.getQuoteAtTick(
@@ -135,7 +135,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             eth
         );
 
-        depth_ = ( _ethAmount * 1e18 ) / _price;
+        depth_ = lambda.mulUp(( _ethAmount * 1e18 ) / _price).divDown(2e18);
 
     }
 

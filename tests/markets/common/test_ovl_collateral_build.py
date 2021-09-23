@@ -73,34 +73,36 @@ def test_build(
     print("collateral", collateral)
     print("is long", is_long)
     print("leverage", leverage)
+    print("bob", bob)
+    print("ovl collateral", ovl_collateral)
 
     # build the position
     tx = ovl_collateral.build(
         market,
         collateral, 
-        is_long, 
         leverage, 
-        {"from": bob}
+        is_long, 
+        {"from": bob }
     )
 
-    # print_events(tx)
+    print_events(tx)
 
-    # assert 'Build' in tx.events
-    # assert 'positionId' in tx.events['Build']
-    # pid = tx.events['Build']['positionId']
+    assert 'Build' in tx.events
+    assert 'positionId' in tx.events['Build']
+    pid = tx.events['Build']['positionId']
 
-    # print("pid", pid)
+    print("pid", pid)
 
-    # # TODO: Fix for precision and not with +1 in rounding ...
-    # assert abs(tx.events['Build']['oi'] - oi_adjusted) <= 1
-    # assert abs(tx.events['Build']['debt'] - debt_adjusted) <= 1
+    # TODO: Fix for precision and not with +1 in rounding ...
+    assert abs(tx.events['Build']['oi'] - oi_adjusted) <= 1
+    assert abs(tx.events['Build']['debt'] - debt_adjusted) <= 1
 
-    # # check collateral transferred from bob's address
-    # expected_balance_trader = prior_balance_trader - collateral
-    # # mints debt to contract + additional collateral sent from trader
-    # expected_balance_ovl_collateral = prior_balance_ovl_collateral + collateral
-    # assert token.balanceOf(bob) == expected_balance_trader
-    # assert token.balanceOf(ovl_collateral) == expected_balance_ovl_collateral
+    # check collateral transferred from bob's address
+    expected_balance_trader = prior_balance_trader - collateral
+    # mints debt to contract + additional collateral sent from trader
+    expected_balance_ovl_collateral = prior_balance_ovl_collateral + collateral
+    assert token.balanceOf(bob) == expected_balance_trader
+    assert token.balanceOf(ovl_collateral) == expected_balance_ovl_collateral
 
     # # check shares of erc 1155 match contribution to oi
     # curr_shares_balance = ovl_collateral.balanceOf(bob, pid)

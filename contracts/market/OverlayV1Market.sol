@@ -26,7 +26,7 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
     function updateFunding (uint _epochs) internal returns (bool updated_) {
 
-        if (_epochs > 0) {
+        if (0 < _epochs) {
 
             // WARNING: must pay funding before updating OI to avoid free rides
             payFunding(k, _epochs);
@@ -60,10 +60,6 @@ abstract contract OverlayV1Market is OverlayV1Governance {
         uint t1Compounding_
     ) {
 
-        emit log("collateral", _collateral);
-        emit log("leverage", _leverage);
-        emit log("mothership.fee()", mothership.fee());
-
         require(_leverage <= leverageMax, "OVLV1:lev>max");
 
         t1Compounding_ = entryUpdate();
@@ -74,7 +70,7 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
         ( uint _impact, uint _cap ) = intake(_isLong, _oi);
 
-        fee_ = _oi.mulUp(mothership.fee());
+        fee_ = _oi.mulDown(mothership.fee());
 
         impact_ = _impact;
 

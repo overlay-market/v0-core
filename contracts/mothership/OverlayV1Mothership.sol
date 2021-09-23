@@ -127,6 +127,10 @@ contract OverlayV1Mothership is AccessControlEnumerable {
 
         allCollateral.push(_collateral);
 
+        OverlayToken(ovl).grantRole(OverlayToken(ovl).MINTER_ROLE(), _collateral);
+
+        OverlayToken(ovl).grantRole(OverlayToken(ovl).BURNER_ROLE(), _collateral);
+
     }
 
     function enableCollateral (address _collateral) external onlyGovernor {

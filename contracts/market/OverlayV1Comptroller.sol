@@ -61,7 +61,7 @@ abstract contract OverlayV1Comptroller {
 
     }
 
-    function depth () internal virtual view returns ( uint256 depth_ );
+    function depth () internal virtual returns ( uint256 depth_ );
 
     function getBrrrrd () internal view returns (
         int brrrrd_,
@@ -82,12 +82,11 @@ abstract contract OverlayV1Comptroller {
                 ? brrrrd_ -= int(Math.min(uint(brrrrd_), _fade))
                 : brrrrd_ += int(Math.min(uint(-brrrrd_), _fade));
 
-
         }
 
     }
 
-    function cap () internal view returns (
+    function cap () internal returns (
         uint cap_, 
         uint now_,
         int brrrrd_
@@ -96,8 +95,8 @@ abstract contract OverlayV1Comptroller {
         ( brrrrd_, now_ ) = getBrrrrd();
 
         cap_ = Math.min(
-            uint(int(oiCap) - brrrrd_), 
-            lambda.mulUp(depth()).divDown(2e18)
+            depth(),
+            uint(int(oiCap) - brrrrd_)
         );
 
     }
@@ -240,15 +239,9 @@ abstract contract OverlayV1Comptroller {
 
         rollerNow_ = rollers[index];
 
-        emit log("scry", 0);
-        emit log("ago", _ago);
-        emit log("time", _time);
-        emit log("rollerNow_.time", rollerNow_.time);
-
         lastMoment_ = rollerNow_.time;
 
         uint _target = _time - _ago;
-        emit log("target", _target);
 
         if (rollerNow_.time <= _target) {
 
@@ -266,29 +259,6 @@ abstract contract OverlayV1Comptroller {
 
         (   Roller memory _beforeOrAt, 
             Roller memory _atOrAfter ) = scryRollers(_target);
-
-        emit log("_beforeOrAt.timestamp", _beforeOrAt.time);
-        emit log("_beforeOrAt.longPressure", _beforeOrAt.longPressure);
-        emit log("_beforeOrAt.shortPressure", _beforeOrAt.shortPressure);
-
-        emit log("_atOrAfter.timestamp", _atOrAfter.time);
-        emit log("_atOrAfter.longPressure", _atOrAfter.longPressure);
-        emit log("_atOrAfter.shortPressure", _atOrAfter.shortPressure);
-
-        emit log("cardinality", cardinality);
-        emit log("index", index);
-
-        emit log("rollers[0].time", rollers[0].time);
-        emit log("rollers[0].longPressure", rollers[0].longPressure);
-        emit log("rollers[0].shortPressure", rollers[0].shortPressure);
-
-        emit log("rollers[1].time", rollers[1].time);
-        emit log("rollers[1].longPressure", rollers[1].longPressure);
-        emit log("rollers[1].shortPressure", rollers[1].shortPressure);
-
-        emit log("rollers[2].time", rollers[2].time);
-        emit log("rollers[2].longPressure", rollers[2].longPressure);
-        emit log("rollers[2].shortPressure", rollers[2].shortPressure);
 
         if (_atOrAfter.time - _beforeOrAt.time > _ago) {
 

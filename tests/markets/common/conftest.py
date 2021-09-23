@@ -87,13 +87,13 @@ def get_uni_feeds (feed_owner):
 
     uniswapv3_factory = feed_owner.deploy(UniswapV3MockFactory)
 
-    base = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-    quote = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+    token0 = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+    token1 = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 
     # TODO: place token0 and token1 into the json
     uniswapv3_factory.createPool(
-        base,
-        quote
+        token0,
+        token1,
     );
 
     uniswapv3_mock = IUniswapV3OracleMock( uniswapv3_factory.allPools(0) )
@@ -103,7 +103,7 @@ def get_uni_feeds (feed_owner):
 
     chain.mine(1, timestamp=chain[-1].timestamp + 1200)
 
-    return uniswapv3_factory.address, uniswapv3_mock.address, uniswapv3_mock.address, base
+    return uniswapv3_factory.address, uniswapv3_mock.address, uniswapv3_mock.address, token1
 
 @pytest.fixture( scope="module" )
 def comptroller(gov):
@@ -119,7 +119,7 @@ def comptroller(gov):
             .5e18,        # fee burn rate
             .001e18,      # update reward rate
         ], 
-         "OverlayV1UniswapV3Market", [ 
+         "OverlayV1UniswapV3MarketZeroComptrollerShim", [ 
             1e18,                # amount in
             600,                 # macro window
             60,                  # micro window
@@ -130,7 +130,7 @@ def comptroller(gov):
             600,                 # compound period
             600,                 # impact window
             OI_CAP*1e18,         # oi cap
-            .626e18,             # lambda
+            0,                   # lambda
             1e18,                # brrrr fade
          ],
          "OverlayV1OVLCollateral", [
@@ -170,6 +170,13 @@ def create_mothership(create_token, alice, bob, gov, rewards, feed_owner, reques
         tok = c_tok(mothership)
 
         mothership.setOVL(tok, { 'from': gov })
+
+        print("ovlm_type", ovlm_type)
+        print("mothership", mothership)
+        print("ovl feed", ovl_feed)
+        print("market_feed", market_feed)
+        print("quote", quote)
+        print("eth", eth)
 
         market = gov.deploy(ovlm_type, mothership, ovl_feed, market_feed, quote, eth, *ovlm_args[:3])
         market.setEverything(*ovlm_args[3:], { "from": gov })
