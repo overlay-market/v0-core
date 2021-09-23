@@ -19,6 +19,7 @@ abstract contract OverlayV1Comptroller {
     uint24 public cardinality;
     uint24 public cardinalityNext;
     Roller[216000] public rollers;
+
     struct Roller {
         uint time;
         uint longPressure;
@@ -117,7 +118,7 @@ abstract contract OverlayV1Comptroller {
 
         roll(_rollerImpact, _lastMoment);
 
-        impact_ = _oi.sub(_oi.mulUp(_impact));
+        impact_ = _oi.mulUp(_impact);
 
         brrrr(0, _impact, _brrrrd);
 
