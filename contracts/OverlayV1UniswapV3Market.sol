@@ -19,11 +19,11 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     address public immutable ovlFeed;
     address public immutable base;
     address public immutable quote;
-    address internal immutable token0;
     uint128 internal immutable amountIn;
 
     address internal immutable eth;
     bool internal immutable ethIs0;
+
     constructor(
         address _mothership,
         address _ovlFeed,

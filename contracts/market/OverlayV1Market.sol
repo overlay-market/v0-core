@@ -123,10 +123,15 @@ abstract contract OverlayV1Market is OverlayV1Governance {
         bool _isLong,
         uint _oi,
         uint _oiShares,
-        int  _brrrr
+        uint _brrrr,
+        uint _antibrrrr
     ) external onlyCollateral {
 
-        brrrr(_brrrr);
+        ( uint _brrrrd, uint _now )= getBrrrrd();
+
+        brrrrdWhen = _now;
+
+        brrrr(_brrrr, _antibrrrr, _brrrrd);
 
         if (_fromQueued) {
 

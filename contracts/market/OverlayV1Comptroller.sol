@@ -4,6 +4,7 @@ pragma solidity ^0.8.7;
 import "../libraries/FixedPoint.sol";
 
 import "./OverlayV1Governance.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 abstract contract OverlayV1Comptroller {
 
@@ -63,9 +64,39 @@ abstract contract OverlayV1Comptroller {
 
     function depth () internal virtual view returns ( uint256 depth_ );
 
-    function cap () internal view returns ( uint cap_) {
+    function getBrrrrd () internal view returns (
+        uint brrrrd_,
+        uint now_
+    ) {
 
-        cap_ = TEST_CAP - brrrrd;
+        uint _brrrrd = brrrrd;
+
+        uint _then = brrrrdWhen;
+
+        now_ = block.timestamp;
+
+        if (_then < now_) {
+
+            uint _fade = ( now_ - _then ).mulUp(brrrrFade);
+
+            brrrrd_ -= Math.min(_brrrrd, _fade);
+
+        }
+
+    }
+
+    function cap () internal view returns (
+        uint cap_, 
+        uint brrrrd_,
+        uint now_
+    ) {
+
+        ( brrrrd_, now_ ) = getBrrrrd();
+
+        cap_ = Math.min(
+            oiCap - brrrrd_, 
+            lambda.mulUp(depth()).divDown(2e18)
+        );
 
     }
 
@@ -80,19 +111,19 @@ abstract contract OverlayV1Comptroller {
         (   Roller memory _rollerImpact,
             uint _lastMoment,
             uint _impact,
-            uint _cap ) = _intake(_isLong, _oi);
+            uint _cap,
+            uint _brrrrd,
+            uint _now ) = _intake(_isLong, _oi);
 
-        emit log("last moment", _lastMoment);
-        emit log("impact", _impact);
-        emit log("cap", _cap);
+        brrrrdWhen = _now;
 
-        // roll(_rollerImpact, _lastMoment);
+        roll(_rollerImpact, _lastMoment);
 
-        // impact_ = _oi.sub(_oi.mulUp(_impact));
+        impact_ = _oi.sub(_oi.mulUp(_impact));
 
-        // brrrr(-int(impact_));
+        brrrr(0, _impact, _brrrrd);
 
-        // cap_ = _cap;
+        cap_ = _cap;
 
     }
 
@@ -103,53 +134,54 @@ abstract contract OverlayV1Comptroller {
         Roller memory rollerNow_,
         uint lastMoment_,
         uint impact_,
-        uint cap_
+        uint cap_,
+        uint brrrrd_,
+        uint now_
     ) {
 
         (   uint _lastMoment,
             Roller memory _rollerNow, 
             Roller memory _rollerImpact ) = scry(impactWindow);
         
-        // uint _cap = cap();
+        ( cap_, brrrrd_, now_ ) = cap();
 
-        // uint _pressure = _oi.divUp(_cap);
+        uint _pressure = _oi.divUp(cap_);
 
-        // if (_isLong) _rollerNow.longPressure += _pressure;
-        // else _rollerNow.shortPressure += _pressure;
+        if (_isLong) _rollerNow.longPressure += _pressure;
+        else _rollerNow.shortPressure += _pressure;
 
-        // uint _power = lambda.mulUp(_isLong
-        //     ? _rollerNow.longPressure - _rollerImpact.longPressure
-        //     : _rollerNow.shortPressure - _rollerImpact.shortPressure
-        // );
+        uint _power = lambda.mulUp(_isLong
+            ? _rollerNow.longPressure - _rollerImpact.longPressure
+            : _rollerNow.shortPressure - _rollerImpact.shortPressure
+        );
 
-        // lastMoment_ = _lastMoment;
-        // rollerNow_ = _rollerNow;
-        // impact_ = _pressure != 0 
-        //     ? ONE.sub(INVERSE_E.powUp(_power)) 
-        //     : 0;
-        // cap_ = _cap;
+        lastMoment_ = _lastMoment;
+        rollerNow_ = _rollerNow;
+        impact_ = _pressure != 0 
+            ? ONE.sub(INVERSE_E.powUp(_power)) 
+            : 0;
 
     }
 
     function brrrr (
-        int _brrrr
+        uint _brrrr,
+        uint _antiBrrrr,
+        uint _brrrrd
     ) internal {
 
-        uint _brrrrd = brrrrd;
+        if (0 < _brrrr) {
 
-        if (_brrrr >= 0) _brrrrd += uint(_brrrr);
-        else _brrrrd -= uint(-_brrrr);
+            _brrrrd = Math.max(_brrrrd + _brrrr, oiCap);
 
-        uint _now = block.timestamp;
-        uint _brrrrdThen = brrrrdWhen;
-        brrrrdWhen = _now;
+        } else {
 
-        uint _fadeFactor = brrrrFade.mulUp(_now - _brrrrdThen);
+            _brrrrd -= Math.min(_antiBrrrr, _brrrrd);
 
-        brrrrd = _brrrrd.mulUp(_fadeFactor);
+        }
+
+        brrrrd = _brrrrd;
 
     }
-
 
     function roll (
         Roller memory _roller,
@@ -254,36 +286,36 @@ abstract contract OverlayV1Comptroller {
         emit log("rollers[2].longPressure", rollers[2].longPressure);
         emit log("rollers[2].shortPressure", rollers[2].shortPressure);
 
-        // if (_atOrAfter.time - _beforeOrAt.time > _ago) {
+        if (_atOrAfter.time - _beforeOrAt.time > _ago) {
 
-        //     rollerThen_.time = _target;
+            rollerThen_.time = _target;
 
-        // } else if (_beforeOrAt.time == _target) {
+        } else if (_beforeOrAt.time == _target) {
 
-        //     rollerThen_ = _beforeOrAt;
+            rollerThen_ = _beforeOrAt;
 
-        // } else if (_target == _atOrAfter.time) {
+        } else if (_target == _atOrAfter.time) {
 
-        //     rollerThen_ = _atOrAfter;
+            rollerThen_ = _atOrAfter;
 
-        // } else if (_atOrAfter.time == _beforeOrAt.time) {
+        } else if (_atOrAfter.time == _beforeOrAt.time) {
 
-        //     rollerThen_ = _beforeOrAt;
+            rollerThen_ = _beforeOrAt;
         
-        // } else {
+        } else {
 
-        //     uint _longPressureDiff = _atOrAfter.longPressure - _beforeOrAt.longPressure;
-        //     uint _shortPressureDiff = _atOrAfter.shortPressure - _beforeOrAt.shortPressure;
+            uint _longPressureDiff = _atOrAfter.longPressure - _beforeOrAt.longPressure;
+            uint _shortPressureDiff = _atOrAfter.shortPressure - _beforeOrAt.shortPressure;
 
-        //     uint _timeDiff = ( _atOrAfter.time - _beforeOrAt.time ) * 1e18;
+            uint _timeDiff = ( _atOrAfter.time - _beforeOrAt.time ) * 1e18;
 
-        //     uint _targetRatio = ( ( _target - _beforeOrAt.time ) * 1e18 ).divUp(_timeDiff);
+            uint _targetRatio = ( ( _target - _beforeOrAt.time ) * 1e18 ).divUp(_timeDiff);
 
-        //     rollerThen_.longPressure = _beforeOrAt.longPressure.add(_longPressureDiff.mulDown(_targetRatio));
-        //     rollerThen_.shortPressure = _beforeOrAt.shortPressure.add(_shortPressureDiff.mulDown(_targetRatio));
-        //     rollerThen_.time = _target;
+            rollerThen_.longPressure = _beforeOrAt.longPressure.add(_longPressureDiff.mulDown(_targetRatio));
+            rollerThen_.shortPressure = _beforeOrAt.shortPressure.add(_shortPressureDiff.mulDown(_targetRatio));
+            rollerThen_.time = _target;
 
-        // }
+        }
 
     }
 

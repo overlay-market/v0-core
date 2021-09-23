@@ -258,8 +258,16 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         emit Unwind(_positionId, _userOi, _userDebt);
 
         // mint/burn excess PnL = valueAdjusted - cost, accounting for need to also burn debt
-        if (_userCost < _userValueAdjusted) ovl.mint(address(this), _userValueAdjusted - _userCost);
-        else ovl.burn(address(this), _userCost - _userValueAdjusted);
+
+        if (_userCost < _userValueAdjusted) {
+
+            ovl.mint(address(this), _userValueAdjusted - _userCost);
+
+        } else {
+
+            ovl.burn(address(this), _userCost - _userValueAdjusted);
+
+        }
 
         ovl.transfer(msg.sender, _userValueAdjusted);
 
@@ -268,7 +276,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             pos.isLong, 
             _userOi, 
             _userOiShares,
-            int(_userValueAdjusted) - int(_userCost)
+            _userCost < _userValueAdjusted ? _userValueAdjusted - _userCost : 0,
+            _userCost < _userValueAdjusted ? 0 : _userValueAdjusted - _userCost
         );
 
         }
@@ -310,6 +319,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             _isLong, 
             pos.oi(_oi, _oiShares), 
             pos.oiShares,
+            0,
             0
         );
 
