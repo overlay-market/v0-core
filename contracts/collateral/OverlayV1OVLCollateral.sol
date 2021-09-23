@@ -107,6 +107,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             _liqForward -= _liqBurn;
 
             fees = 0;
+            liquidations = 0;
 
             emit Update(
                 _rewardsTo,
@@ -258,7 +259,6 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         emit Unwind(_positionId, _userOi, _userDebt);
 
         // mint/burn excess PnL = valueAdjusted - cost, accounting for need to also burn debt
-
         if (_userCost < _userValueAdjusted) {
 
             ovl.mint(address(this), _userValueAdjusted - _userCost);
