@@ -74,7 +74,7 @@ abstract contract OverlayV1Governance is
         uint256 _updatePeriod,
         uint256 _compoundPeriod,
         uint256 _impactWindow,
-        uint256 _oiCap,
+        uint256 _staticCap,
         uint256 _lambda,
         uint256 _brrrrFade
     ) public onlyGovernor {
@@ -137,13 +137,13 @@ abstract contract OverlayV1Governance is
 
     function setComptrollerParams (
         uint256 _impactWindow,
-        uint256 _oiCap,
+        uint256 _staticCap,
         uint256 _lambda,
         uint256 _brrrrFade
     ) public onlyGovernor {
 
         impactWindow = _impactWindow;
-        oiCap = _oiCap;
+        staticCap = _staticCap;
         lambda = _lambda;
         brrrrFade = _brrrrFade;
 
