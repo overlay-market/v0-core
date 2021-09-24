@@ -108,7 +108,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
-    function depth () internal virtual override returns (uint256 depth_) {
+    function depth () internal virtual override view returns (uint256 depth_) {
 
         uint32[] memory _secondsAgo = new uint32[](2);
         _secondsAgo[0] = uint32(microWindow);

@@ -28,11 +28,11 @@ contract OverlayV1UniswapV3MarketZeroComptrollerShim is OverlayV1UniswapV3Market
         _microWindow
     ) { }
 
-    function depth () internal override returns (
+    function depth () internal override view returns (
         uint256 depth_
     ) {
 
-        depth_ = oiCap;
+        depth_ = staticCap;
 
     }
 

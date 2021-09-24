@@ -61,7 +61,7 @@ abstract contract OverlayV1Comptroller {
 
     }
 
-    function depth () internal virtual returns ( uint256 depth_ );
+    function depth () internal virtual view returns ( uint256 depth_ );
 
     function getBrrrrd () internal view returns (
         int brrrrd_,
@@ -172,7 +172,7 @@ abstract contract OverlayV1Comptroller {
 
         if (0 < _brrrr) {
 
-            _brrrrd = int(Math.max(uint(_brrrrd) + _brrrr, oiCap));
+            _brrrrd = int(Math.max(uint(_brrrrd) + _brrrr, staticCap));
 
         } 
 
