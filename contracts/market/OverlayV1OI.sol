@@ -127,6 +127,21 @@ contract OverlayV1OI {
 
     }
 
+    function updateFunding (uint _epochs) internal returns (bool updated_) {
+
+        if (0 < _epochs) {
+
+            payFunding(k, _epochs); // WARNING: must pay funding before updating OI to avoid free rides
+
+            updateOi(); 
+
+            updated_ = true;
+
+        }
+
+    }
+
+
     /// @notice Updates open interest at T+1 price settlement
     /// @dev Execute at market update() to prevent funding payment harvest without price risk
     function updateOi() internal {
