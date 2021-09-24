@@ -94,10 +94,9 @@ abstract contract OverlayV1Comptroller {
 
         ( brrrrd_, now_ ) = getBrrrrd();
 
-        cap_ = Math.min(
-            depth(),
-            uint(int(staticCap) - brrrrd_)
-        );
+        cap_ = brrrrd_ < 0
+            ? Math.min(staticCap, depth())
+            : Math.min(staticCap - uint(brrrrd_), depth());
 
     }
 
@@ -172,7 +171,12 @@ abstract contract OverlayV1Comptroller {
 
         if (0 < _brrrr) {
 
-            _brrrrd = int(Math.max(uint(_brrrrd) + _brrrr, staticCap));
+            int _staticCap = int(staticCap);
+
+            // enforce brrrrd < static cap in mt staticCap - b
+            _brrrrd = _staticCap < ( _brrrrd += int(_brrrr))
+                ? _staticCap
+                : _brrrrd;
 
         } 
 
