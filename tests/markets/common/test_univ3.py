@@ -57,8 +57,13 @@ from brownie import \
 
 def test_uni_liq(uni_test):
 
-    x, y, z = uni_test.testUniLiq(600)
+    # x, y, z = uni_test.testUniLiq(600)
+
+    # print("x", x)
+    # print("y", y)
+    # print("z", z)
+
+    
+    x = uni_test.thing()
 
     print("x", x)
-    print("y", y)
-    print("z", z)

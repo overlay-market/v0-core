@@ -8,10 +8,7 @@ from decimal import *
 
 def print_events(tx):
     for i in range(len(tx.events['log'])):
-        print(
-            tx.events['log'][i]['k'] + ": " 
-            + str(tx.events['log'][i]['v'])
-        )
+        print(tx.events['log'][i]['k'] + ": " + str(tx.events['log'][i]['v']))
 
 def test_cap_correct_eth_quote_in_ovl ():
     pass

@@ -71,7 +71,7 @@ def test_impact(comptroller):
     print(roller1)
     print(roller2)
 
-    tx = comptroller.impact([True],[1e18])
+    tx = comptroller.impactBatch([True],[1e18])
 
     print_events(tx)
 
@@ -83,7 +83,7 @@ def test_impact(comptroller):
     print(roller1)
     print(roller2)
 
-    tx = comptroller.impact([True],[1e18])
+    tx = comptroller.impactBatch([True],[1e18])
 
     roller0 = comptroller.rollers(0)
     roller1 = comptroller.rollers(1)
@@ -95,7 +95,7 @@ def test_impact(comptroller):
 
     print_events(tx)
 
-    tx = comptroller.impact([True],[1e18])
+    tx = comptroller.impactBatch([True],[1e18])
 
     roller0 = comptroller.rollers(0)
     roller1 = comptroller.rollers(1)
@@ -109,12 +109,12 @@ def test_impact(comptroller):
 
 def test_impact_cardinality_one_one_per_block_overwrites_roller(comptroller):
 
-    tx = comptroller.brrrr([1e18])
+    tx = comptroller.impactBatch([True],[1e18])
     assert comptroller.rollers(0)[0] == chain[-1].timestamp
 
     chain.mine(timedelta=10)
 
-    tx = comptroller.impact([True],[1e18])
+    tx = comptroller.impactBatch([True],[1e18])
 
     roller = comptroller.rollers(0)
     assert roller[0] == chain[-1].timestamp
@@ -122,14 +122,14 @@ def test_impact_cardinality_one_one_per_block_overwrites_roller(comptroller):
 
 def test_impact_cardinality_one_many_per_block_overwrites_roller(comptroller):
 
-    tx = comptroller.impact([True,True],[1e18,1e18])
+    tx = comptroller.impactBatch([True,True],[1e18,1e18])
 
     print(comptroller.rollers(0))
     print(comptroller.rollers(1))
 
     chain.mine(timedelta=10)
 
-    tx = comptroller.impact([True,True,True],[1e18,1e18,1e18])
+    tx = comptroller.impactBatch([True,True,True],[1e18,1e18,1e18])
 
     roller = comptroller.rollers(0)
     assert roller[0] == chain[-1].timestamp
@@ -141,7 +141,7 @@ def test_impact_cardinality_two_increments_cardinality_once(comptroller):
 
     assert comptroller.cardinalityNext() == 2
 
-    tx = comptroller.impact([True], [1e18])
+    tx = comptroller.impactBatch([True], [1e18])
 
     roller = comptroller.rollers(1)
 
@@ -159,7 +159,7 @@ def test_roller_cardinality_two_rolls_index_rolls_over_to_0_with_single_rolls(co
 
     assert comptroller.cardinalityNext() == 2
 
-    tx = comptroller.impact([True],[1e18])
+    tx = comptroller.impactBatch([True],[1e18])
 
     chain.mine(timedelta=10)
 
@@ -169,7 +169,7 @@ def test_roller_cardinality_two_rolls_index_rolls_over_to_0_with_single_rolls(co
     assert comptroller.index() == 1
     assert comptroller.cardinality() == 2
 
-    tx = comptroller.impact([True],[1e18])
+    tx = comptroller.impactBatch([True],[1e18])
 
     print(comptroller.rollers(0))
     print(comptroller.rollers(1))
@@ -187,15 +187,15 @@ def test_roller_cardinality_increments_to_5_with_single_rolls(comptroller):
     comptroller.expand(5)
     chain.mine(timedelta=10)
 
-    tx = comptroller.impact([True],[1e18])
+    tx = comptroller.impactBatch([True],[1e18])
     chain.mine(timedelta=10)
-    tx = comptroller.impact([True],[1e18])
+    tx = comptroller.impactBatch([True],[1e18])
     chain.mine(timedelta=10)
-    tx = comptroller.impact([True],[1e18])
+    tx = comptroller.impactBatch([True],[1e18])
     chain.mine(timedelta=10)
-    tx = comptroller.impact([True],[1e18])
+    tx = comptroller.impactBatch([True],[1e18])
     chain.mine(timedelta=10)
-    tx = comptroller.impact([True],[1e18])
+    tx = comptroller.impactBatch([True],[1e18])
 
     assert comptroller.cardinality() == 5
     assert comptroller.index() == 0
@@ -213,28 +213,28 @@ def test_roller_cardinality_increments_to_5_with_many_rolls(comptroller):
     comptroller.expand(5)
     chain.mine(timedelta=10)
 
-    tx = comptroller.impact(
-        [True,True,True,True ]
+    tx = comptroller.impactBatch(
+        [True,True,True,True ],
         [1e18, 1e18, 1e18, 1e18]
     )
     chain.mine(timedelta=10)
-    tx = comptroller.impact(
-        [True,True,True]
+    tx = comptroller.impactBatch(
+        [True,True,True],
         [1e18, 1e18, 1e18]
     )
     chain.mine(timedelta=10)
-    tx = comptroller.impact(
-        [True,True,True,True]
+    tx = comptroller.impactBatch(
+        [True,True,True,True],
         [1e18, 1e18, 1e18, 1e18]
     )
     chain.mine(timedelta=10)
-    tx = comptroller.impact(
-        [True,True,True,True,True]
+    tx = comptroller.impactBatch(
+        [True,True,True,True,True],
         [1e18, 1e18, 1e18, 1e18, 1e18]
     )
     chain.mine(timedelta=10)
-    tx = comptroller.impact(
-        [True,True,True,True,True,True]
+    tx = comptroller.impactBatch(
+        [True,True,True,True,True,True],
         [1e18, 1e18, 1e18, 1e18, 1e18, 1e18]
     )
 
@@ -255,11 +255,11 @@ def test_roller_cardinality_two_index_rolls_over(comptroller):
 
     chain.mine(timedelta=10)
 
-    tx = comptroller.brrrr([True,True],[1e18, 1e18])
+    tx = comptroller.impactBatch([True,True],[1e18, 1e18])
 
     chain.mine(timedelta=10)
 
-    tx = comptroller.brrrr([True,True],[1e18, 1e18])
+    tx = comptroller.impactBatch([True,True],[1e18, 1e18])
 
     assert comptroller.rollers(0)[0] == chain[-1].timestamp
     assert comptroller.rollers(0)[1] == 4e18
@@ -267,7 +267,7 @@ def test_roller_cardinality_two_index_rolls_over(comptroller):
 
     chain.mine(timedelta=10)
 
-    tx = comptroller.brrrr(
+    tx = comptroller.impactBatch(
         [True,True,True,True,True,True]
         [1e18,1e18,1e18,1e18,1e18,1e18]
     )
@@ -283,7 +283,7 @@ def test_roller_cardinality_two_index_rolls_over(comptroller):
 
 
 @given(timediff=strategy('uint', min_value=1, max_value=100))
-@settings(max_examples=100)
+@settings(max_examples=1)
 def test_scry_interpolated_roller(comptroller, timediff):
 
     comptroller.expand(3)
@@ -294,7 +294,7 @@ def test_scry_interpolated_roller(comptroller, timediff):
     time0 = chain[-1].timestamp
     print("TIME 0", time0)
 
-    tx = comptroller.impact([True],[1e18])
+    tx = comptroller.impactBatch([True],[1e18])
 
     print_events(tx)
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
@@ -303,7 +303,7 @@ def test_scry_interpolated_roller(comptroller, timediff):
     time1 = chain[-1].timestamp
     print("TIME 1", time1)
 
-    tx = comptroller.impact([True],[1e18])
+    tx = comptroller.impactBatch([True],[1e18])
     print_events(tx)
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
@@ -321,7 +321,6 @@ def test_scry_interpolated_roller(comptroller, timediff):
     timeDiff = roller1[0] - roller0[0]
     brrrrDiff = roller1[1] - roller0[1]
     target = chain[-1].timestamp - window
-
     ratio = ( target - roller0[0]) / timeDiff
     remove = brrrrDiff * ratio
     extra = roller2[1] - roller1[1]
@@ -336,6 +335,8 @@ def test_scry_interpolated_roller(comptroller, timediff):
     print("remove", remove)
     print("extra", extra)
     print("expected", expected)
+
+    impact = comptroller.viewImpact(True, 1e18)
 
 
 def test_brrrr_one_time_one_block(comptroller):
@@ -363,7 +364,7 @@ def test_impact_pressure(comptroller, entry, rand):
 
     _lambda = comptroller.viewLambda()
 
-    comptroller.impact([True], [entry])
+    comptroller.impactBatch([True], [entry])
 
     impact = comptroller.viewImpact(True, 1e18)
 
@@ -393,7 +394,7 @@ def test_impact_pressure_full_cooldown (comptroller, entry, rand):
 
     comptroller.set_TEST_CAP(cap)
 
-    comptroller.impact([True], [entry])
+    comptroller.impactBatch([True], [entry])
 
     chain.mine(timedelta=impact_window+1)
 
