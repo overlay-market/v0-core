@@ -86,7 +86,7 @@ abstract contract OverlayV1Comptroller {
 
     }
 
-    function cap () public view returns (
+    function oiCap () public view returns (
         uint cap_, 
         uint now_,
         int brrrrd_
@@ -121,7 +121,7 @@ abstract contract OverlayV1Comptroller {
 
         impact_ = _oi.mulUp(_impact);
 
-        brrrr(0, _impact, _brrrrd);
+        brrrr(0, impact_, _brrrrd);
 
         cap_ = _cap;
 
@@ -143,7 +143,9 @@ abstract contract OverlayV1Comptroller {
             Roller memory _rollerNow, 
             Roller memory _rollerImpact ) = scry(impactWindow);
         
-        ( cap_, now_, brrrrd_ ) = cap();
+        ( cap_, now_, brrrrd_ ) = oiCap();
+
+        // emit log("cap", cap_);
 
         uint _pressure = _oi.divUp(cap_);
 
@@ -238,7 +240,6 @@ abstract contract OverlayV1Comptroller {
         Roller memory rollerThen_
     ) {
 
-
         uint _time = block.timestamp;
 
         rollerNow_ = rollers[index];
@@ -261,26 +262,33 @@ abstract contract OverlayV1Comptroller {
 
         }
 
+        // emit log("hello", 0);
+
         (   Roller memory _beforeOrAt, 
             Roller memory _atOrAfter ) = scryRollers(_target);
 
-        if (_atOrAfter.time - _beforeOrAt.time > _ago) {
 
-            rollerThen_.time = _target;
+        if (_beforeOrAt.time == _target) {
 
-        } else if (_beforeOrAt.time == _target) {
+            // emit log("zang", 0);
 
             rollerThen_ = _beforeOrAt;
 
         } else if (_target == _atOrAfter.time) {
 
+            // emit log("zling", 0);
+
             rollerThen_ = _atOrAfter;
 
         } else if (_atOrAfter.time == _beforeOrAt.time) {
 
+            // emit log("zlung", 0);
+
             rollerThen_ = _beforeOrAt;
         
         } else {
+
+            // emit log("here", 0);
 
             uint _longPressureDiff = _atOrAfter.longPressure - _beforeOrAt.longPressure;
             uint _shortPressureDiff = _atOrAfter.shortPressure - _beforeOrAt.shortPressure;

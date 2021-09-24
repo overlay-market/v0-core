@@ -268,7 +268,7 @@ def test_roller_cardinality_two_index_rolls_over(comptroller):
     chain.mine(timedelta=10)
 
     tx = comptroller.impactBatch(
-        [True,True,True,True,True,True]
+        [True,True,True,True,True,True],
         [1e18,1e18,1e18,1e18,1e18,1e18]
     )
 
@@ -282,62 +282,47 @@ def test_roller_cardinality_two_index_rolls_over(comptroller):
     assert comptroller.rollers(0)[1] == 20e18
 
 
-@given(timediff=strategy('uint', min_value=1, max_value=100))
-@settings(max_examples=1)
-def test_scry_interpolated_roller(comptroller, timediff):
+@given(time_diff=strategy('uint', min_value=1, max_value=100),
+       brrrr=strategy('uint', min_value=100, max_value=100000))
+@settings(max_examples=100)
+def test_scry_interpolated_roller(comptroller, time_diff, brrrr):
+
+    brrrr = brrrr * 1e16
+
+    ( cap,_,__ ) = comptroller.oiCap()
+
+    time0 = Decimal(chain[-1].timestamp)
 
     comptroller.expand(3)
 
     window = comptroller.impactWindow()
 
-    chain.mine(timedelta=window+timediff)
-    time0 = chain[-1].timestamp
-    print("TIME 0", time0)
+    chain.mine(timedelta=window+time_diff)
 
-    tx = comptroller.impactBatch([True],[1e18])
-
-    print_events(tx)
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    tx = comptroller.impactBatch([True],[brrrr])
+    time1 = Decimal(chain[-1].timestamp)
 
     chain.mine(timedelta=(window/4))
-    time1 = chain[-1].timestamp
-    print("TIME 1", time1)
 
-    tx = comptroller.impactBatch([True],[1e18])
-    print_events(tx)
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    tx = comptroller.impactBatch([True],[brrrr])
+    time2 = Decimal(chain[-1].timestamp)
 
-    ( rollerNow, rollerThen ) = comptroller.viewScry(window)
-    # tx = comptroller.viewScry(window)
-    # print_events(tx)
-    print('interpolated roller', rollerThen[1])
+    ( roller_now, roller_then ) = comptroller.viewScry(window)
 
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    time_target = time2 - Decimal(window)
+    time_diff = time1 - time0
+    ratio = ( time_target - time0 ) / ( time_diff )
 
-    roller0 = comptroller.rollers(0)
-    roller1 = comptroller.rollers(1)
-    roller2 = comptroller.rollers(2)
+    pressure = Decimal(brrrr) / Decimal(cap)
 
-    timeDiff = roller1[0] - roller0[0]
-    brrrrDiff = roller1[1] - roller0[1]
-    target = chain[-1].timestamp - window
-    ratio = ( target - roller0[0]) / timeDiff
-    remove = brrrrDiff * ratio
-    extra = roller2[1] - roller1[1]
-    expected = (extra + (roller1[1] - (remove)))
+    expected_pressure = pressure * ratio
+    expected_pressure_total = pressure + pressure - expected_pressure
 
-    print("roller0", roller0)
-    print("roller1", roller1)
-    print("roller2", roller2)
-    print("time0", time0)
-    print("time1", time1)
-    print("ratio", ratio)
-    print("remove", remove)
-    print("extra", extra)
-    print("expected", expected)
+    interpolated_pressure = Decimal(roller_then[1]) / Decimal(1e18)
+    interpolated_pressure_total = (Decimal(roller_now[1]) / Decimal(1e18)) - interpolated_pressure
 
-    impact = comptroller.viewImpact(True, 1e18)
-
+    assert abs(expected_pressure - interpolated_pressure) <= Decimal(1/10**17)
+    assert abs(expected_pressure_total - interpolated_pressure_total) <= Decimal(1/10**17)
 
 def test_brrrr_one_time_one_block(comptroller):
 
