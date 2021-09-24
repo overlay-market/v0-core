@@ -74,6 +74,7 @@ abstract contract OverlayV1Governance is
     function setEverything (
         uint256 _k,
         uint256 _leverageMax,
+        uint256 _payoffCap,
         uint256 _pbnj,
         uint256 _updatePeriod,
         uint256 _compoundPeriod,
@@ -86,6 +87,8 @@ abstract contract OverlayV1Governance is
         setK(_k);
 
         setLeverageMax(_leverageMax);
+
+        setPayoffCap(_payoffCap);
 
         setSpread(_pbnj);
 
