@@ -282,7 +282,7 @@ def test_roller_cardinality_two_index_rolls_over(comptroller):
     assert comptroller.rollers(0)[1] == 20e18
 
 
-@given(time_diff=strategy('uint', min_value=1, max_value=100),
+@given(time_diff=strategy('uint', min_value=1, max_value=1000),
        brrrr=strategy('uint', min_value=100, max_value=100000))
 @settings(max_examples=100)
 def test_scry_interpolated_roller(comptroller, time_diff, brrrr):

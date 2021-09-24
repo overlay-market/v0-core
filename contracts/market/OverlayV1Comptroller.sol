@@ -145,8 +145,6 @@ abstract contract OverlayV1Comptroller {
         
         ( cap_, now_, brrrrd_ ) = oiCap();
 
-        // emit log("cap", cap_);
-
         uint _pressure = _oi.divUp(cap_);
 
         if (_isLong) _rollerNow.longPressure += _pressure;
