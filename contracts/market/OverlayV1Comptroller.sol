@@ -130,7 +130,7 @@ abstract contract OverlayV1Comptroller {
     function _intake (
         bool _isLong,
         uint _oi
-    ) internal returns (
+    ) internal view returns (
         Roller memory rollerNow_,
         uint lastMoment_,
         uint impact_,

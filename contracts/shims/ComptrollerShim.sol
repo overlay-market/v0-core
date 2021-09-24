@@ -17,7 +17,11 @@ contract ComptrollerShim is OverlayV1Comptroller {
         lambda = _lambda;
     }
 
-    function depth () internal view override returns (uint256) {}
+    function depth () internal view override returns (uint256) {
+
+        return staticCap;
+
+    }
 
     function setRoller (
         uint index,
@@ -34,7 +38,7 @@ contract ComptrollerShim is OverlayV1Comptroller {
 
     function viewScry(
         uint _ago
-    ) internal view returns (
+    ) public view returns (
         Roller memory rollerNow_,
         Roller memory rollerThen_
     ) {
@@ -97,7 +101,7 @@ contract ComptrollerShim is OverlayV1Comptroller {
     function viewImpact (
         bool _isLong,
         uint _oi
-    ) public returns (
+    ) public view returns (
         uint impact_
     ) {
 

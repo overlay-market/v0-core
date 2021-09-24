@@ -80,4 +80,18 @@ contract UniTest {
 
     }
 
+    function thing () public view returns (int) {
+
+        int _staticCap = 10;
+        int _brrrrd = 3;
+        int _brrrr = 5;
+
+        _brrrrd = _staticCap < ( _brrrrd += _brrrr ) 
+            ? _brrrrd
+            : _staticCap;
+
+        return _brrrrd;
+
+    }
+
 }

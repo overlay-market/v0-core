@@ -89,7 +89,7 @@ abstract contract OverlayV1Market is OverlayV1Governance {
         PricePoint storage priceExit = pricePoints[_pricePoint];
 
         priceFrame_ = _isLong
-            ? priceExit.bid / priceEntry.ask
+            ? Math.min(priceExit.bid / priceEntry.ask, payoffCap)
             : priceExit.ask / priceEntry.bid;
 
         if (_isLong) ( oiShares_ = oiLongShares, oi_ = __oiLong__ + queuedOiLong );

@@ -12,6 +12,8 @@ abstract contract OverlayV1Governance is
     OverlayV1OI, 
     OverlayV1PricePoint {
 
+    uint constant private ONE = 1e18;
+
     bytes32 constant private COLLATERAL = keccak256("COLLATERAL");
     bytes32 constant private GOVERNOR = keccak256("GOVERNOR");
     bytes32 constant private MARKET = keccak256("MARKET");
@@ -20,6 +22,8 @@ abstract contract OverlayV1Governance is
     IOverlayV1Mothership public immutable mothership;
 
     uint256 public leverageMax;
+
+    uint256 public payoffCap;
 
     uint256 public updatePeriod;
     uint256 public compoundingPeriod;
@@ -96,6 +100,16 @@ abstract contract OverlayV1Governance is
             _lambda,
             _brrrrFade
         );
+
+    }
+
+    function setPayoffCap (
+        uint256 _payoffCap
+    ) public onlyGovernor {
+
+        require(ONE < _payoffCap, "OVLV1:!payoff");
+
+        payoffCap = _payoffCap;
 
     }
 
