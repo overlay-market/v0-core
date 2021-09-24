@@ -92,7 +92,7 @@ abstract contract OverlayV1Governance is
 
         setComptrollerParams(
             _impactWindow,
-            _oiCap,
+            _staticCap,
             _lambda,
             _brrrrFade
         );
