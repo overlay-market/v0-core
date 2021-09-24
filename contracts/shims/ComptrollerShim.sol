@@ -5,113 +5,104 @@ import "../market/OverlayV1Comptroller.sol";
 
 contract ComptrollerShim is OverlayV1Comptroller {
 
-    // event log(string k, uint v);
-
-    // constructor (
-    //     uint _oiCap,
-    //     uint _impactWindow,
-    //     uint _brrrrFade,
-    //     uint _lambda
-    // ) {
-    //     oiCap = _oiCap;
-    //     lambda = _lambda;
-    //     impactWindow = _impactWindow;
-    //     brrrrFade = _brrrrFade;
-    // }
+    constructor (
+        uint _staticCap,
+        uint _impactWindow,
+        uint _brrrrFade,
+        uint _lambda
+    ) {
+        staticCap = _staticCap;
+        impactWindow = _impactWindow;
+        brrrrFade = _brrrrFade;
+        lambda = _lambda;
+    }
 
     function depth () internal view override returns (uint256) {}
 
-    // function setRoller (
-    //     uint index,
-    //     uint __timestamp,
-    //     uint __longPressure,
-    //     uint __shortPressure
-    // ) public {
+    function setRoller (
+        uint index,
+        uint __timestamp,
+        uint __longPressure,
+        uint __shortPressure
+    ) public {
 
-    //     rollers[index].time = __timestamp;
-    //     rollers[index].longPressure = __longPressure;
-    //     rollers[index].shortPressure = __shortPressure;
+        rollers[index].time = __timestamp;
+        rollers[index].longPressure = __longPressure;
+        rollers[index].shortPressure = __shortPressure;
 
-    // }
+    }
 
-    // function viewScry(
-    //     uint _ago
-    // ) internal view returns (
-    //     Roller memory rollerNow_,
-    //     Roller memory rollerThen_
-    // ) {
+    function viewScry(
+        uint _ago
+    ) internal view returns (
+        Roller memory rollerNow_,
+        Roller memory rollerThen_
+    ) {
 
-    //     uint lastMoment;
+        uint lastMoment;
 
-    //     (   lastMoment,
-    //         rollerNow_,
-    //         rollerThen_ ) = scry(_ago);
+        (   lastMoment,
+            rollerNow_,
+            rollerThen_ ) = scry(_ago);
 
-    // }
+    }
 
-    // function brrrr (
-    //     int[] memory __brrrr
-    // ) public {
+    function brrrrBatch (
+        uint[] memory _brrrr,
+        uint[] memory _antiBrrrr
+    ) public {
 
-    //     uint len = __brrrr.length;
+        uint len = _brrrr.length;
 
-    //     for (uint i = 0; i < len; i++) brrrr(__brrrr[i]);
+        for (uint i = 0; i < len; i++) {
 
-    // }
+            ( int _brrrrd, uint _now ) = getBrrrrd();
 
-    // function impact (
-    //     bool[] memory _isLong,
-    //     uint[] memory _oi
-    // ) public returns (
-    //     uint impact_
-    // ) {
+            brrrr(
+                _brrrr[i], 
+                _antiBrrrr[i], 
+                _brrrrd
+            );
 
-    //     uint len = _isLong.length;
+            brrrrdWhen = _now;
+
+        }
 
 
-    //     for (uint i = 0; i < len; i++) {
+    }
 
-    //         ( impact_, ) = intake(_isLong[i], _oi[i]);
+    function impactBatch (
+        bool[] memory _isLong,
+        uint[] memory _oi
+    ) public returns (
+        uint impact_
+    ) {
 
-    //         emit log("impact_", impact_);
+        uint len = _isLong.length;
 
-    //     }
 
-    //     emit log("now", block.timestamp);
-    //     emit log("block number", block.number);
+        for (uint i = 0; i < len; i++) {
 
-    // }
+            ( impact_, ) = intake(_isLong[i], _oi[i]);
 
-    // function viewImpact (
-    //     bool _isLong,
-    //     uint _oi
-    // ) public returns (
-    //     uint impact_
-    // ) {
+            emit log("impact_", impact_);
 
-    //     ( ,,impact_, ) = _intake(_isLong, _oi);
+        }
 
-    // }
+        emit log("now", block.timestamp);
+        emit log("block number", block.number);
 
-    // function overflow (
-    //     uint a,
-    //     uint b
-    // ) public pure returns (
-    //     uint c
-    // ) {
-    //     unchecked {
-    //         c = a + b;
-    //     }
-    // }
-    // function underflow (
-    //     uint a,
-    //     uint b
-    // ) public pure returns (
-    //     uint c
-    // ) {
-    //     unchecked {
-    //         c = a - b;
-    //     }
-    // }
-    
+    }
+
+    function viewImpact (
+        bool _isLong,
+        uint _oi
+    ) public returns (
+        uint impact_
+    ) {
+
+        ( ,,impact_,,, ) = _intake(_isLong, _oi);
+
+    }
+
 }

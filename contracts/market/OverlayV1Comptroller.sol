@@ -228,7 +228,7 @@ abstract contract OverlayV1Comptroller {
 
     function scry (
         uint _ago
-    ) internal returns (
+    ) internal view returns (
         uint lastMoment_,
         Roller memory rollerNow_, 
         Roller memory rollerThen_
@@ -292,7 +292,6 @@ abstract contract OverlayV1Comptroller {
         }
 
     }
-
 
     function scryRollers (
         uint target
