@@ -23,7 +23,7 @@ abstract contract OverlayV1Governance is
 
     uint256 public leverageMax;
 
-    uint256 public payoffCap;
+    uint256 public priceFrameCap;
 
     uint256 public updatePeriod;
     uint256 public compoundingPeriod;
@@ -74,7 +74,7 @@ abstract contract OverlayV1Governance is
     function setEverything (
         uint256 _k,
         uint256 _leverageMax,
-        uint256 _payoffCap,
+        uint256 _priceFrameCap,
         uint256 _pbnj,
         uint256 _updatePeriod,
         uint256 _compoundPeriod,
@@ -88,7 +88,7 @@ abstract contract OverlayV1Governance is
 
         setLeverageMax(_leverageMax);
 
-        setPayoffCap(_payoffCap);
+        setPriceFrameCap(_priceFrameCap);
 
         setSpread(_pbnj);
 
@@ -106,13 +106,13 @@ abstract contract OverlayV1Governance is
 
     }
 
-    function setPayoffCap (
-        uint256 _payoffCap
+    function setPriceFrameCap (
+        uint256 _priceFrameCap
     ) public onlyGovernor {
 
-        require(ONE < _payoffCap, "OVLV1:!payoff");
+        require(ONE < _priceFrameCap, "OVLV1:!priceFrame");
 
-        payoffCap = _payoffCap;
+        priceFrameCap = _priceFrameCap;
 
     }
 
