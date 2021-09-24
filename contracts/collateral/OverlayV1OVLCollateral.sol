@@ -319,7 +319,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             pos.oi(_oi, _oiShares), 
             pos.oiShares,
             0,
-            0
+            pos.cost - _value 
         );
 
         // TODO: which is better on gas
@@ -327,10 +327,9 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         pos.debt = 0;
         // positions[positionId].oiShares = 0;
 
-        uint _toForward = _value;
-        uint _toReward = _toForward.mulUp(_marketInfo.marginRewardRate);
+        uint _toReward = _value.mulUp(_marketInfo.marginRewardRate);
 
-        liquidations += _toForward - _toReward;
+        liquidations += _value - _toReward;
 
         ovl.burn(address(this), pos.cost - _value);
         ovl.transfer(_rewardsTo, _toReward);
