@@ -26,7 +26,7 @@ abstract contract OverlayV1Comptroller {
         uint shortPressure;
     }
 
-    uint256 public oiCap;
+    uint256 internal staticCap;
     uint256 public impactWindow;
     uint256 public lambda;
 
@@ -86,7 +86,7 @@ abstract contract OverlayV1Comptroller {
 
     }
 
-    function cap () internal returns (
+    function cap () public view returns (
         uint cap_, 
         uint now_,
         int brrrrd_
@@ -96,7 +96,7 @@ abstract contract OverlayV1Comptroller {
 
         cap_ = Math.min(
             depth(),
-            uint(int(oiCap) - brrrrd_)
+            uint(int(staticCap) - brrrrd_)
         );
 
     }
