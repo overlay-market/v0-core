@@ -1,29 +1,26 @@
-import pytest
-
-from brownie import\
-    chain,\
-    interface,\
-    UniswapV3Listener
+from brownie import chain
 from brownie.test import given, strategy
-from collections import OrderedDict
 from hypothesis import settings
 
-import time
 
 MIN_COLLATERAL_AMOUNT = 10**4  # min amount to build
 TOKEN_DECIMALS = 18
 TOKEN_TOTAL_SUPPLY = 8000000
 OI_CAP = 800000
+FEE_RESOLUTION = 1e18
+
 
 def set_compound(sender, factory, market, compound):
     args = market_params(market)
     args[1] = compound
-    factory.adjustParamsPerMarket(args, { 'from': sender })
+    factory.adjustParamsPerMarket(args, {'from': sender})
+
 
 def set_update(sender, factory, market, update):
     args = market_params(market)
     args[0] = update
-    factory.adjustParamsPerMarket(args, { 'from': sender })
+    factory.adjustParamsPerMarket(args, {'from': sender})
+
 
 def market_params(market):
     return (
@@ -36,12 +33,6 @@ def market_params(market):
         market.leverageMax()
     )
 
-def print_events(events):
-    for i in range(len(events['log'])):
-        print(
-            events['log'][i]['k'] + ": " 
-            + str(events['log'][i]['v'])
-        )
 
 @given(
     oi_long=strategy('uint256',
@@ -66,15 +57,13 @@ def test_update(token,
 
     update_period = market.updatePeriod()
 
-    feed = market.feed()
-
     token.approve(ovl_collateral, 1e70, {"from": bob})
 
     # do an initial update before build so all oi is queued
     market.update({"from": alice})
 
-    ovl_collateral.build(market, oi_long, True, 1, bob, {"from": bob})
-    ovl_collateral.build(market, oi_short, False, 1, bob, {"from": bob})
+    ovl_collateral.build(market, oi_long, 1, True, bob, {"from": bob})
+    ovl_collateral.build(market, oi_short, 1, False, bob, {"from": bob})
 
     # prior fee state
     _, fee_burn_rate, fee_reward_rate, fee_to = factory.getUpdateParams()
@@ -109,7 +98,7 @@ def test_update(token,
     tx = ovl_collateral.update(market, rewards, {"from": alice})
 
     curr_updated = market.updated()
-    assert  curr_updated == prior_updated + update_period
+    assert curr_updated == prior_updated + update_period
 
     # check update event attrs
     assert 'FundingPaid' in tx.events
@@ -145,7 +134,8 @@ def test_update(token,
     assert abs(curr_total_supply - expected_total_supply) <= 1
 
     # ... and rewards sent to address to be rewarded
-    expected_balance_rewards_to = prior_balance_rewards_to + expected_fee_reward
+    expected_balance_rewards_to = prior_balance_rewards_to +\
+        expected_fee_reward
     curr_balance_rewards_to = token.balanceOf(rewards)
     assert abs(curr_balance_rewards_to - expected_balance_rewards_to) <= 1
 
@@ -165,8 +155,8 @@ def test_update(token,
     # Now do a longer update ...
     update_delta = num_periods * update_period
 
-    ovl_collateral.build(market, oi_long, True, 1, bob, {"from": bob})
-    ovl_collateral.build(market, oi_short, False, 1, bob, {"from": bob})
+    ovl_collateral.build(market, oi_long, 1, True, bob, {"from": bob})
+    ovl_collateral.build(market, oi_short, 1, False, bob, {"from": bob})
 
     chain.mine(1, timestamp=chain[-1].timestamp + update_delta)
 
@@ -183,7 +173,8 @@ def test_update(token,
     assert 'FundingPaid' in tx.events
     assert 'NewPrice' in tx.events
     assert tx.events['Update']['rewarded'] == rewards.address
-    assert tx.events['Update']['rewardAmount'] == 0  # rewarded 0 since no positions built
+    # rewarded 0 since no positions built
+    assert tx.events['Update']['rewardAmount'] == 0
 
     # check funding payments over longer period
     k = market.fundingKNumerator() / market.fundingKDenominator()
@@ -213,7 +204,8 @@ def test_update_early():
     pass
 
 
-def test_update_between_periods(token, factory, ovl_collateral, market, alice, rewards):
+def test_update_between_periods(token, factory, ovl_collateral, market,
+                                alice, rewards):
     update_period = market.updatePeriod()
     window_size = market.windowSize()
     prior_update_block = market.updateBlockLast()

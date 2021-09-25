@@ -17,6 +17,7 @@ interface IOverlayV1Market is IERC1155 {
     function windowSize() external view returns (uint256);
     function updatePeriod() external view returns (uint256);
     function updated() external view returns (uint256);
+    function update() external returns (bool);
     function toUpdate() external view returns (uint256);
     function compounded() external view returns (uint256);
     function leverageMax() external view returns (uint8);
@@ -39,8 +40,8 @@ interface IOverlayV1Market is IERC1155 {
         uint _from,
         uint _between
     ) external view returns (
-        uint updatesThen_, 
-        uint updatesNow_, 
+        uint updatesThen_,
+        uint updatesNow_,
         uint tUpdate_,
         uint t1Update_,
         uint compoundings_,
@@ -58,10 +59,10 @@ interface IOverlayV1Market is IERC1155 {
     ) external;
 
     function adjustParams (
-        uint256 _updatePeriod, 
-        uint256 _compoundingPeriod, 
-        uint144 _oiCap, 
-        uint112 _fundingKNumerator, 
+        uint256 _updatePeriod,
+        uint256 _compoundingPeriod,
+        uint144 _oiCap,
+        uint112 _fundingKNumerator,
         uint112 _fundingKDenominator,
         uint8 _leverageMax
     ) external;
@@ -98,8 +99,6 @@ interface IOverlayV1Market is IERC1155 {
         uint _brrrr,
         uint _antibrrrr
     ) external;
-
-    function update () external returns (bool);
 
     function priceFrame(
         bool _isLong,

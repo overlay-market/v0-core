@@ -8,6 +8,11 @@ def gov(accounts):
 
 
 @pytest.fixture(scope="module")
+def mothership(accounts):
+    yield accounts[1]
+
+
+@pytest.fixture(scope="module")
 def alice(accounts):
     yield accounts[2]
 
@@ -18,11 +23,11 @@ def bob(accounts):
 
 
 @pytest.fixture(scope="module", params=[8000000])
-def create_token(gov, alice, bob, request):
+def create_token(gov, mothership, alice, bob, request):
     sup = request.param
 
     def create_token(supply=sup):
-        tok = gov.deploy(OverlayToken)
+        tok = gov.deploy(OverlayToken, mothership)
         tok.mint(gov, supply * 10 ** tok.decimals(), {"from": gov})
         tok.transfer(bob, supply * 10 ** tok.decimals(), {"from": gov})
         return tok

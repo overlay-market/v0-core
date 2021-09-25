@@ -6,7 +6,7 @@ import "../libraries/FixedPoint.sol";
 import "./OverlayV1Governance.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
-abstract contract OverlayV1Comptroller { 
+abstract contract OverlayV1Comptroller {
 
     event log(string k, uint v);
 
@@ -87,7 +87,7 @@ abstract contract OverlayV1Comptroller {
     }
 
     function oiCap () public view returns (
-        uint cap_, 
+        uint cap_,
         uint now_,
         int brrrrd_
     ) {
@@ -140,9 +140,9 @@ abstract contract OverlayV1Comptroller {
     ) {
 
         (   uint _lastMoment,
-            Roller memory _rollerNow, 
+            Roller memory _rollerNow,
             Roller memory _rollerImpact ) = scry(impactWindow);
-        
+
         ( cap_, now_, brrrrd_ ) = oiCap();
 
         uint _pressure = _oi.divDown(cap_);
@@ -157,8 +157,8 @@ abstract contract OverlayV1Comptroller {
 
         lastMoment_ = _lastMoment;
         rollerNow_ = _rollerNow;
-        impact_ = _pressure != 0 
-            ? ONE.sub(INVERSE_E.powUp(_power)) 
+        impact_ = _pressure != 0
+            ? ONE.sub(INVERSE_E.powUp(_power))
             : 0;
 
     }
@@ -178,7 +178,7 @@ abstract contract OverlayV1Comptroller {
                 ? _staticCap
                 : _brrrrd;
 
-        } 
+        }
 
         if (0 < _antiBrrrr) {
 
@@ -234,7 +234,7 @@ abstract contract OverlayV1Comptroller {
         uint _ago
     ) internal view returns (
         uint lastMoment_,
-        Roller memory rollerNow_, 
+        Roller memory rollerNow_,
         Roller memory rollerThen_
     ) {
 
@@ -262,7 +262,7 @@ abstract contract OverlayV1Comptroller {
 
         // emit log("hello", 0);
 
-        (   Roller memory _beforeOrAt, 
+        (   Roller memory _beforeOrAt,
             Roller memory _atOrAfter ) = scryRollers(_target);
 
 
@@ -283,7 +283,7 @@ abstract contract OverlayV1Comptroller {
             // emit log("zlung", 0);
 
             rollerThen_ = _beforeOrAt;
-        
+
         } else {
 
             // emit log("here", 0);
@@ -306,13 +306,13 @@ abstract contract OverlayV1Comptroller {
     function scryRollers (
         uint target
     ) internal view returns (
-        Roller memory beforeOrAt, 
+        Roller memory beforeOrAt,
         Roller memory atOrAfter
     ) {
 
         beforeOrAt = rollers[index];
 
-        // if the target is at or after the newest roller, we can return early 
+        // if the target is at or after the newest roller, we can return early
         if (beforeOrAt.time <= target) {
 
             if (beforeOrAt.time == target) {
@@ -342,9 +342,9 @@ abstract contract OverlayV1Comptroller {
 
         if (target <= beforeOrAt.time) return ( beforeOrAt, beforeOrAt);
         else return binarySearch(
-            rollers, 
-            uint32(target), 
-            uint16(index), 
+            rollers,
+            uint32(target),
+            uint16(index),
             uint16(cardinality)
         );
 
@@ -356,7 +356,7 @@ abstract contract OverlayV1Comptroller {
         uint16 _index,
         uint16 _cardinality
     ) private view returns (
-        Roller memory beforeOrAt, 
+        Roller memory beforeOrAt,
         Roller memory atOrAfter
     ) {
 
@@ -368,7 +368,7 @@ abstract contract OverlayV1Comptroller {
 
             beforeOrAt = self[i % _cardinality];
 
-            // we've landed on an uninitialized roller, keep searching 
+            // we've landed on an uninitialized roller, keep searching
             if (beforeOrAt.time <= 1) { l = i + 1; continue; }
 
             atOrAfter = self[(i + 1) % _cardinality];
