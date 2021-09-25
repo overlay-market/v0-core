@@ -60,6 +60,8 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
         impact_ = _impact;
 
+        require(_collateral < impact_ + fee_, "OVLV1:impact++");
+
         collateralAdjusted_ = _collateral - _impact - fee_;
 
         oiAdjusted_ = collateralAdjusted_ * _leverage;
