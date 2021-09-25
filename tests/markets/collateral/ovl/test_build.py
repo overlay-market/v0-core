@@ -25,6 +25,9 @@ def test_build_success_zero_impact(ovl_collateral, token, mothership, market,
     fee_bucket = ovl_collateral.fees()
     ovl_balance = token.balanceOf(ovl_collateral)
 
+    # get prior state of market
+    queued_oi = market.queuedOiLong() if is_long else market.queuedOiShort()
+
     # approve collateral contract to spend bob's ovl to build position
     token.approve(ovl_collateral, collateral, {"from": bob})
 
@@ -52,7 +55,22 @@ def test_build_success_zero_impact(ovl_collateral, token, mothership, market,
     oi_adjusted = collateral_adjusted * leverage
     assert ovl_collateral.balanceOf(bob, pid) == oi_adjusted
 
-    # TODO: check position attributes for PID
+    # check position attributes for PID
+    (pos_market, pos_islong, pos_lev, _, pos_oishares,
+     pos_debt, pos_cost, _) = ovl_collateral.positions(pid)
+
+    assert pos_market == market
+    assert pos_islong == is_long
+    assert pos_lev == leverage
+    assert pos_oishares == oi_adjusted
+    assert pos_debt == (oi_adjusted - collateral_adjusted)
+    assert pos_cost == collateral_adjusted
+
+    # check oi has been queued on the market for respective side of trade
+    if is_long:
+        assert queued_oi + oi_adjusted == market.queuedOiLong()
+    else:
+        assert queued_oi + oi_adjusted == market.queuedOiShort()
 
 
 def test_build_when_market_not_supported(mothership, market, bob):
