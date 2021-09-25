@@ -98,6 +98,10 @@ library LogExpMath {
             return uint256(ONE_18);
         }
 
+        if (y == 1){
+            return x;
+        }
+
         if (x == 0) {
             return 0;
         }

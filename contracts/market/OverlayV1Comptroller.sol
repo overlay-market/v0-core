@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 
 abstract contract OverlayV1Comptroller {
 
-    event log(string k, uint v);
+    // event log(string k, uint v);
 
     using FixedPoint for uint256;
 

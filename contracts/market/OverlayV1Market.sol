@@ -113,12 +113,12 @@ abstract contract OverlayV1Market is OverlayV1Governance {
         uint _oi,
         uint _oiShares,
         uint _brrrr,
-        uint _antibrrrr
+        uint _antiBrrrr
     ) external onlyCollateral {
 
         ( int _brrrrd, uint _now )= getBrrrrd();
 
-        brrrr(_brrrr, _antibrrrr, _brrrrd);
+        brrrr(_brrrr, _antiBrrrr, _brrrrd);
 
         brrrrdWhen = _now;
 
