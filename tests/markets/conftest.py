@@ -3,13 +3,13 @@ import brownie
 import os
 import json
 import time
-from brownie import \
-    ETH_ADDRESS,\
-    OverlayToken,\
-    ComptrollerShim,\
-    chain,\
-    interface,\
+from brownie import (
+    OverlayToken,
+    ComptrollerShim,
+    chain,
+    interface,
     UniTest
+)
 
 
 TOKEN_DECIMALS = 18
@@ -74,7 +74,7 @@ def get_uni_feeds(feed_owner):
 
     feed.reverse()
 
-    obs = []  # blockTimestamp, tickCumulative, liquidityCumulative, initialized
+    obs = []  # blockTimestamp, tickCumulative, liquidityCumulative,initialized
     shims = []  # timestamp, liquidity, tick, cardinality
 
     feed = feed[:300]
@@ -141,7 +141,7 @@ def comptroller(gov):
             600,                 # compound period
             600,                 # impact window
             OI_CAP*1e18,         # oi cap
-            1e18,                # lambda
+            0,                   # lambda
             1e18,                # brrrr fade
          ],
          "OverlayV1OVLCollateral", [
@@ -181,13 +181,6 @@ def create_mothership(create_token, alice, bob, gov, rewards, feed_owner, reques
         tok = c_tok(mothership)
 
         mothership.setOVL(tok, {'from': gov})
-
-        print("ovlm_type", ovlm_type)
-        print("mothership", mothership)
-        print("ovl feed", ovl_feed)
-        print("market_feed", market_feed)
-        print("quote", quote)
-        print("eth", eth)
 
         market = gov.deploy(ovlm_type, mothership, ovl_feed,
                             market_feed, quote, eth, *ovlm_args[:3])
