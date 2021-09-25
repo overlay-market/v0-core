@@ -78,8 +78,8 @@ def test_update(token,
     # do an initial update before build so all oi is queued
     market.update({"from": alice})
 
-    ovl_collateral.build(market, oi_long, True, 1, bob, {"from": bob})
-    ovl_collateral.build(market, oi_short, False, 1, bob, {"from": bob})
+    ovl_collateral.build(market, oi_long, 1, True, bob, {"from": bob})
+    ovl_collateral.build(market, oi_short, 1, False, bob, {"from": bob})
 
     # prior fee state
     _, fee_burn_rate, fee_reward_rate, fee_to = factory.getUpdateParams()
@@ -170,8 +170,8 @@ def test_update(token,
     # Now do a longer update ...
     update_delta = num_periods * update_period
 
-    ovl_collateral.build(market, oi_long, True, 1, bob, {"from": bob})
-    ovl_collateral.build(market, oi_short, False, 1, bob, {"from": bob})
+    ovl_collateral.build(market, oi_long, 1, True, bob, {"from": bob})
+    ovl_collateral.build(market, oi_short, 1, False, bob, {"from": bob})
 
     chain.mine(1, timestamp=chain[-1].timestamp + update_delta)
 

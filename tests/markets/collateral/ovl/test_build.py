@@ -1,4 +1,4 @@
-from brownie import reverts, chain
+import brownie
 from brownie.test import given, strategy
 from hypothesis import settings
 
@@ -63,6 +63,6 @@ def test_build_breach_cap(token, mothership, ovl_collateral, market, bob,
                           oi, leverage, is_long):
     collateral = int(oi / leverage)
     token.approve(ovl_collateral, collateral, {"from": bob})
-    with reverts("OVLV1:collat<min"):
-        ovl_collateral.build(market, collateral, is_long,
-                             leverage, {"from": bob})
+    with brownie.reverts("OVLV1:collat<min"):
+        ovl_collateral.build(market, collateral, leverage,
+                             is_long, {"from": bob})
