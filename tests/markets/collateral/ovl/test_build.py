@@ -40,13 +40,19 @@ def test_build_success_zero_impact(ovl_collateral, token, mothership, market,
     assert 'Build' in tx.events
     assert 'positionId' in tx.events['Build']
     pid = tx.events['Build']['positionId']
-    print("pid", pid)
 
     # fees should be sent to fee bucket in collateral manager
     assert fee_bucket + trade_fee == (ovl_collateral.fees())
 
     # check collateral sent to collateral manager
     assert ovl_balance + collateral == (token.balanceOf(ovl_collateral))
+
+    # check position token issued with correct oi shares
+    collateral_adjusted = collateral - trade_fee
+    oi_adjusted = collateral_adjusted * leverage
+    assert ovl_collateral.balanceOf(bob, pid) == oi_adjusted
+
+    # TODO: check position attributes for PID
 
 
 def test_build_when_market_not_supported(mothership, market, bob):
