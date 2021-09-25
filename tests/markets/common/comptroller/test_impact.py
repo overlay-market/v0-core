@@ -42,16 +42,7 @@ def test_expand_cardinality_next(comptroller):
 
 def test_impact(comptroller):
 
-    roller0 = comptroller.rollers(0)
-    roller1 = comptroller.rollers(1)
-    roller2 = comptroller.rollers(2)
-
-    print(roller0)
-    print(roller1)
-    print(roller2)
-
     chain.mine(timedelta=1200)
-    print("time now", chain[-1].timestamp)
 
     comptroller.expand(50)
 
@@ -59,29 +50,7 @@ def test_impact(comptroller):
     cardinality = comptroller.cardinality()
     cardinality_n = comptroller.cardinalityNext()
 
-    print("index", index)
-    print("cardinality", cardinality)
-    print("cardinalityNext", cardinality_n)
-
-    roller0 = comptroller.rollers(0)
-    roller1 = comptroller.rollers(1)
-    roller2 = comptroller.rollers(2)
-
-    print(roller0)
-    print(roller1)
-    print(roller2)
-
     tx = comptroller.impactBatch([True],[1e18])
-
-    print_events(tx)
-
-    roller0 = comptroller.rollers(0)
-    roller1 = comptroller.rollers(1)
-    roller2 = comptroller.rollers(2)
-
-    print(roller0)
-    print(roller1)
-    print(roller2)
 
     tx = comptroller.impactBatch([True],[1e18])
 
@@ -122,10 +91,11 @@ def test_impact_cardinality_one_one_per_block_overwrites_roller(comptroller):
 
 def test_impact_cardinality_one_many_per_block_overwrites_roller(comptroller):
 
-    tx = comptroller.impactBatch([True,True],[1e18,1e18])
+    ( cap, _, __ ) = comptroller.oiCap()
 
-    print(comptroller.rollers(0))
-    print(comptroller.rollers(1))
+    pressure = Decimal(1e18) / Decimal(cap)
+
+    tx = comptroller.impactBatch([True,True],[1e18,1e18])
 
     chain.mine(timedelta=10)
 
@@ -133,7 +103,7 @@ def test_impact_cardinality_one_many_per_block_overwrites_roller(comptroller):
 
     roller = comptroller.rollers(0)
     assert roller[0] == chain[-1].timestamp
-    assert roller[1] == 5e18
+    assert Decimal(roller[1]) / Decimal(1e18) == pressure * 5
 
 def test_impact_cardinality_two_increments_cardinality_once(comptroller):
 
@@ -141,7 +111,7 @@ def test_impact_cardinality_two_increments_cardinality_once(comptroller):
 
     assert comptroller.cardinalityNext() == 2
 
-    tx = comptroller.impactBatch([True], [1e18])
+    comptroller.impactBatch([True], [1e18])
 
     roller = comptroller.rollers(1)
 
@@ -153,36 +123,35 @@ def test_impact_cardinality_two_increments_cardinality_once(comptroller):
 
 def test_roller_cardinality_two_rolls_index_rolls_over_to_0_with_single_rolls(comptroller):
 
+    ( cap, _, __ ) = comptroller.oiCap()
+    pressure = Decimal(1e18) / Decimal(cap)
+
     comptroller.expand(2)
 
     chain.mine(timedelta=10)
 
     assert comptroller.cardinalityNext() == 2
 
-    tx = comptroller.impactBatch([True],[1e18])
+    comptroller.impactBatch([True],[1e18])
 
     chain.mine(timedelta=10)
-
-    print(comptroller.rollers(0))
-    print(comptroller.rollers(1))
 
     assert comptroller.index() == 1
     assert comptroller.cardinality() == 2
 
-    tx = comptroller.impactBatch([True],[1e18])
-
-    print(comptroller.rollers(0))
-    print(comptroller.rollers(1))
+    comptroller.impactBatch([True],[1e18])
 
     assert comptroller.index() == 0
 
     roller = comptroller.rollers(0)
     assert roller[0] == chain[-1].timestamp
-    assert roller[1] == 2e18
-
-    # tx = comptroller.brrrr([1e18])
+    assert Decimal(roller[1]) / Decimal(1e18) == pressure * 2
 
 def test_roller_cardinality_increments_to_5_with_single_rolls(comptroller):
+
+    ( cap, _, __ ) = comptroller.oiCap()
+
+    pressure = Decimal(1e18) / Decimal(cap)
 
     comptroller.expand(5)
     chain.mine(timedelta=10)
@@ -200,15 +169,18 @@ def test_roller_cardinality_increments_to_5_with_single_rolls(comptroller):
     assert comptroller.cardinality() == 5
     assert comptroller.index() == 0
 
-    assert comptroller.rollers(0)[0] == chain[-1].timestamp
-    assert comptroller.rollers(0)[1] == 5e18
-    assert comptroller.rollers(1)[1] == 1e18
-    assert comptroller.rollers(2)[1] == 2e18
-    assert comptroller.rollers(3)[1] == 3e18
-    assert comptroller.rollers(4)[1] == 4e18
+    assert Decimal(comptroller.rollers(0)[0]) / Decimal(1e18) == chain[-1].timestamp
+    assert Decimal(comptroller.rollers(0)[1]) / Decimal(1e18) == 5 * pressure
+    assert Decimal(comptroller.rollers(1)[1]) / Decimal(1e18) == 1 * pressure
+    assert Decimal(comptroller.rollers(2)[1]) / Decimal(1e18) == 2 * pressure
+    assert Decimal(comptroller.rollers(3)[1]) / Decimal(1e18) == 3 * pressure
+    assert Decimal(comptroller.rollers(4)[1]) / Decimal(1e18) == 4 * pressure
     assert comptroller.rollers(5)[0] == 0
 
 def test_roller_cardinality_increments_to_5_with_many_rolls(comptroller):
+
+    ( cap, _, __ ) = comptroller.oiCap()
+    pressure = Decimal(1e18) / Decimal(cap)
 
     comptroller.expand(5)
     chain.mine(timedelta=10)
@@ -341,13 +313,9 @@ def test_impact_pressure(comptroller, entry, rand):
 
     entry *= 1e18
     rand = float(rand) / 100
-    cap = entry * rand
+    ( cap, _, __ ) = comptroller.oiCap()
 
-    comptroller.set_TEST_CAP(cap)
-
-    cap = comptroller.TEST_CAP()
-
-    _lambda = comptroller.viewLambda()
+    _lambda = comptroller.lmbda()
 
     comptroller.impactBatch([True], [entry])
 
@@ -355,13 +323,17 @@ def test_impact_pressure(comptroller, entry, rand):
 
     inverse_euler = Decimal(1) / Decimal(math.e)
 
-    pressure = Decimal( (entry + 1e18) / 1e18) / Decimal(cap / 1e18)
+    impact_1 = ( Decimal(entry) / Decimal(1e18) ) / ( Decimal(cap) / Decimal(1e18) )
+
+    impact_2 = ( Decimal(1e18) / Decimal(1e18) ) / ( Decimal(cap) / Decimal(1e18) )
+
+    pressure = impact_1 + impact_2
 
     impact_factor = Decimal(_lambda / 1e18) * pressure
 
     expected = ( Decimal(1) - ( inverse_euler ** impact_factor ) ) * Decimal(1e18)
 
-    assert int(expected / Decimal(1e6)) == int(impact / Decimal(1e6))
+    assert abs(expected - impact) < 1e6
 
 @given(
     entry=strategy('uint256', min_value=1, max_value=1e6),

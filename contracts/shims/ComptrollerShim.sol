@@ -9,12 +9,12 @@ contract ComptrollerShim is OverlayV1Comptroller {
         uint _staticCap,
         uint _impactWindow,
         uint _brrrrFade,
-        uint _lambda
+        uint _lmbda
     ) {
         staticCap = _staticCap;
         impactWindow = _impactWindow;
         brrrrFade = _brrrrFade;
-        lambda = _lambda;
+        lmbda = _lmbda;
     }
 
     function depth () internal view override returns (uint256) {

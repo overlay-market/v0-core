@@ -28,7 +28,7 @@ abstract contract OverlayV1Comptroller {
 
     uint256 internal staticCap;
     uint256 public impactWindow;
-    uint256 public lambda;
+    uint256 public lmbda;
 
     int256 public brrrrd;
     uint256 public brrrrdWhen;
@@ -145,12 +145,12 @@ abstract contract OverlayV1Comptroller {
         
         ( cap_, now_, brrrrd_ ) = oiCap();
 
-        uint _pressure = _oi.divUp(cap_);
+        uint _pressure = _oi.divDown(cap_);
 
         if (_isLong) _rollerNow.longPressure += _pressure;
         else _rollerNow.shortPressure += _pressure;
 
-        uint _power = lambda.mulUp(_isLong
+        uint _power = lmbda.mulDown(_isLong
             ? _rollerNow.longPressure - _rollerImpact.longPressure
             : _rollerNow.shortPressure - _rollerImpact.shortPressure
         );

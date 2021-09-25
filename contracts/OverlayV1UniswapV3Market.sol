@@ -135,7 +135,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             eth
         );
 
-        depth_ = lambda.mulUp(( _ethAmount * 1e18 ) / _price).divDown(2e18);
+        depth_ = lmbda.mulUp(( _ethAmount * 1e18 ) / _price).divDown(2e18);
 
     }
 
