@@ -84,8 +84,8 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     ) { 
 
         uint32[] memory _secondsAgo = new uint32[](3);
-        _secondsAgo[0] = uint32(_ago - macroWindow);
-        _secondsAgo[1] = uint32(_ago - microWindow);
+        _secondsAgo[0] = uint32(_ago + macroWindow);
+        _secondsAgo[1] = uint32(_ago + microWindow);
         _secondsAgo[2] = uint32(_ago);
 
         ( int56[] memory _ticks, ) = IUniswapV3Pool(marketFeed).observe(_secondsAgo);
@@ -250,7 +250,6 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             uint _compoundings,
             uint _tCompounding, ) = epochs(_now, updated, _toUpdate);
 
-            
         if (0 < _updatesThen) {
 
             uint _then = _now - _toUpdate;

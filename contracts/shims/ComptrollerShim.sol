@@ -49,12 +49,6 @@ contract ComptrollerShim is OverlayV1Comptroller {
             rollerNow_,
             rollerThen_ ) = scry(_ago);
 
-        // emit log("rollerNow_.longPressure", rollerNow_.longPressure);
-        // emit log("rollerNow_.shortPressure", rollerNow_.shortPressure);
-
-        // emit log("rollerThen_.longPressure", rollerThen_.longPressure);
-        // emit log("rollerThen_.shortPressure", rollerThen_.shortPressure);
-
 
     }
 
@@ -94,12 +88,7 @@ contract ComptrollerShim is OverlayV1Comptroller {
 
             ( impact_, ) = intake(_isLong[i], _oi[i]);
 
-            emit log("impact_", impact_);
-
         }
-
-        emit log("now", block.timestamp);
-        emit log("block number", block.number);
 
     }
 

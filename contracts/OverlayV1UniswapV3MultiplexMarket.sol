@@ -90,8 +90,8 @@ contract OverlayV1UniswapV3MultiplexMarket is OverlayV1Market {
     ) { 
 
         uint32[] memory _secondsAgo = new uint32[](3);
-        _secondsAgo[0] = _at - macroWindow;
-        _secondsAgo[1] = _at - microWindow;
+        _secondsAgo[0] = _at + macroWindow;
+        _secondsAgo[1] = _at + microWindow;
         _secondsAgo[2] = _at;
 
         uint _microPrice;
@@ -275,7 +275,10 @@ contract OverlayV1UniswapV3MultiplexMarket is OverlayV1Market {
 
     }
 
-    function oi () public view returns (uint oiLong_, uint oiShort_) {
+    function oi () public view returns (
+        uint oiLong_, 
+        uint oiShort_
+    ) {
 
         ( ,,,,uint _compoundings,, ) = epochs(block.timestamp, updated, toUpdate);
 

@@ -11,6 +11,8 @@ import "../interfaces/IOverlayToken.sol";
 
 contract OverlayV1OVLCollateral is ERC1155Supply {
 
+    event log(string k, uint v);
+
     using Position for Position.Info;
     using FixedPoint for uint256;
 
@@ -32,8 +34,18 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     uint256 public fees;
     uint256 public liquidations;
 
-    event Build(uint256 positionId, uint256 oi, uint256 debt);
-    event Unwind(uint256 positionId, uint256 oi, uint256 debt);
+    event Build(
+        uint256 positionId, 
+        uint256 oi, 
+        uint256 debt
+    );
+
+    event Unwind(
+        uint256 positionId, 
+        uint256 oi, 
+        uint256 debt
+    );
+
     event Liquidate(uint256 positionId, address rewarded, uint256 reward);
     event Update(
         address rewarded,
@@ -273,8 +285,9 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             _userOi,
             _userOiShares,
             _userCost < _userValueAdjusted ? _userValueAdjusted - _userCost : 0,
-            _userCost < _userValueAdjusted ? 0 : _userValueAdjusted - _userCost
+            _userCost < _userValueAdjusted ? 0 : _userCost - _userValueAdjusted
         );
+
 
         }
 
