@@ -19,25 +19,31 @@ AMOUNT_IN = 1
 PRICE_POINTS_START = 50
 PRICE_POINTS_END = 100
 
+
 @pytest.fixture(scope="module")
 def gov(accounts):
     yield accounts[0]
+
 
 @pytest.fixture(scope="module")
 def rewards(accounts):
     yield accounts[1]
 
+
 @pytest.fixture(scope="module")
 def alice(accounts):
     yield accounts[2]
+
 
 @pytest.fixture(scope="module")
 def bob(accounts):
     yield accounts[3]
 
+
 @pytest.fixture(scope="module")
 def feed_owner(accounts):
     yield accounts[6]
+
 
 @pytest.fixture(scope="module")
 def create_token(gov, alice, bob):
@@ -52,26 +58,27 @@ def create_token(gov, alice, bob):
 
     yield create_token
 
-def get_uni_feeds (feed_owner):
+
+def get_uni_feeds(feed_owner):
 
     base = os.path.dirname(os.path.abspath(__file__))
     path = '../../../feeds/historic_observations/univ3_dai_weth.json'
 
     with open(os.path.normpath(os.path.join(base, path))) as f:
         feed = json.load(f)
-    
+
     now = chain[-1].timestamp
     earliest = feed[-1]['shim'][0]
     diff = 0
 
     feed.reverse()
 
-    obs = [ ] # blockTimestamp, tickCumulative, liquidityCumulative, initialized 
-    shims = [ ] # timestamp, liquidity, tick, cardinality 
+    obs = []  # blockTimestamp, tickCumulative, liquidityCumulative, initialized
+    shims = []  # timestamp, liquidity, tick, cardinality
 
     feed = feed[:300]
 
-    feed = [ feed[i:i+300] for i in range(0,len(feed),300) ]
+    feed = [feed[i:i+300] for i in range(0, len(feed), 300)]
 
     for fd in feed:
         obs.append([])
@@ -81,7 +88,7 @@ def get_uni_feeds (feed_owner):
             f['observation'][0] = f['shim'][0] = now + diff
             obs[len(obs)-1].append(f['observation'])
             shims[len(shims)-1].append(f['shim'])
-    
+
     UniswapV3MockFactory = getattr(brownie, 'UniswapV3FactoryMock')
     IUniswapV3OracleMock = getattr(interface, 'IUniswapV3OracleMock')
 
@@ -94,21 +101,23 @@ def get_uni_feeds (feed_owner):
     uniswapv3_factory.createPool(
         token0,
         token1,
-    );
+    )
 
-    uniswapv3_mock = IUniswapV3OracleMock( uniswapv3_factory.allPools(0) )
+    uniswapv3_mock = IUniswapV3OracleMock(uniswapv3_factory.allPools(0))
 
     for i in range(len(obs)):
-        uniswapv3_mock.loadObservations(obs[i], shims[i], { 'from': feed_owner })
+        uniswapv3_mock.loadObservations(obs[i], shims[i], {'from': feed_owner})
 
     chain.mine(1, timestamp=chain[-1].timestamp + 1200)
 
     return uniswapv3_factory.address, uniswapv3_mock.address, uniswapv3_mock.address, token1
 
-@pytest.fixture( scope="module" )
+
+@pytest.fixture(scope="module")
 def comptroller(gov):
     comptroller = gov.deploy(ComptrollerShim, 1e24, 600, 1653439153439, 1e18)
     yield comptroller
+
 
 @pytest.fixture(
     scope="module",
@@ -118,8 +127,8 @@ def comptroller(gov):
             .00015e18,    # fee
             .5e18,        # fee burn rate
             .001e18,      # update reward rate
-        ], 
-         "OverlayV1UniswapV3MarketZeroComptrollerShim", [ 
+        ],
+         "OverlayV1UniswapV3MarketZeroComptrollerShim", [
             1e18,                # amount in
             600,                 # macro window
             60,                  # micro window
@@ -170,7 +179,7 @@ def create_mothership(create_token, alice, bob, gov, rewards, feed_owner, reques
 
         tok = c_tok(mothership)
 
-        mothership.setOVL(tok, { 'from': gov })
+        mothership.setOVL(tok, {'from': gov})
 
         print("ovlm_type", ovlm_type)
         print("mothership", mothership)
@@ -179,32 +188,36 @@ def create_mothership(create_token, alice, bob, gov, rewards, feed_owner, reques
         print("quote", quote)
         print("eth", eth)
 
-        market = gov.deploy(ovlm_type, mothership, ovl_feed, market_feed, quote, eth, *ovlm_args[:3])
-        market.setEverything(*ovlm_args[3:], { "from": gov })
-        mothership.initializeMarket(market, { "from": gov})
+        market = gov.deploy(ovlm_type, mothership, ovl_feed,
+                            market_feed, quote, eth, *ovlm_args[:3])
+        market.setEverything(*ovlm_args[3:], {"from": gov})
+        mothership.initializeMarket(market, {"from": gov})
 
         ovl_collateral = gov.deploy(ovlc_type, "our_uri", mothership)
-        ovl_collateral.setMarketInfo(market, *ovlc_args, { "from": gov })
+        ovl_collateral.setMarketInfo(market, *ovlc_args, {"from": gov})
         mothership.initializeCollateral(ovl_collateral)
 
-        market.addCollateral(ovl_collateral, { 'from': gov })
+        market.addCollateral(ovl_collateral, {'from': gov})
 
-        tok.approve(ovl_collateral, 1e50, { "from": alice })
-        tok.approve(ovl_collateral, 1e50, { "from": bob })
+        tok.approve(ovl_collateral, 1e50, {"from": alice})
+        tok.approve(ovl_collateral, 1e50, {"from": bob})
 
-        chain.mine(timedelta=ovlm_args[1]) # mine the update period
+        chain.mine(timedelta=ovlm_args[1])  # mine the update period
 
         return mothership
 
     yield create_mothership
 
+
 @pytest.fixture(scope="module")
 def mothership(create_mothership):
     yield create_mothership()
 
+
 @pytest.fixture(scope="module")
 def token(mothership):
     yield getattr(interface, 'IOverlayToken')(mothership.ovl())
+
 
 @pytest.fixture(
     scope="module",
@@ -214,6 +227,7 @@ def ovl_collateral(mothership, request):
     ovl_collateral = getattr(interface, request.param)(addr)
     yield ovl_collateral
 
+
 @pytest.fixture(
     scope="module",
     params=["IOverlayV1Market"])
@@ -221,7 +235,6 @@ def market(mothership, request):
     addr = mothership.allMarkets(0)
     market = getattr(interface, request.param)(addr)
     yield market
-
 
 
 @pytest.fixture(scope="module")
@@ -244,7 +257,7 @@ def uni_test(gov, rewards, accounts):
     # we are trying to find amount USDC in OVL terms
 
     unitest = rewards.deploy(
-        UniTest, 
+        UniTest,
         eth,
         usdc,
         usdc_eth,

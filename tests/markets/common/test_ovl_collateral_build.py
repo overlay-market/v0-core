@@ -2,42 +2,46 @@ from brownie import reverts, chain
 from brownie.test import given, strategy
 from hypothesis import settings
 
+
 def print_events(tx):
     for i in range(len(tx.events['log'])):
         print(
-            tx.events['log'][i]['k'] + ": " 
+            tx.events['log'][i]['k'] + ": "
             + str(tx.events['log'][i]['v'])
         )
+
 
 MIN_COLLATERAL = 1e14  # min amount to build
 TOKEN_DECIMALS = 18
 TOKEN_TOTAL_SUPPLY = 8000000
 OI_CAP = 800000e18
 
+
 @given(
-    collateral=strategy('uint256', min_value=MIN_COLLATERAL, max_value=OI_CAP - 1e4),
+    collateral=strategy('uint256', min_value=MIN_COLLATERAL,
+                        max_value=OI_CAP - 1e4),
     leverage=strategy('uint8', min_value=1, max_value=100),
     is_long=strategy('bool'))
 @settings(max_examples=1)
 def test_build(
-    ovl_collateral, 
-    token, 
-    mothership, 
-    market, 
-    bob, 
-    rewards, 
-    collateral, 
-    leverage, 
+    ovl_collateral,
+    token,
+    mothership,
+    market,
+    bob,
+    rewards,
+    collateral,
+    leverage,
     is_long
 ):
 
     print("test build", token)
 
     updated = market.updated()
-    updatePeriod = market.updatePeriod() 
+    updatePeriod = market.updatePeriod()
     chain.mine(timestamp=updated + updatePeriod)
 
-    market.update({ 'from': bob })
+    market.update({'from': bob})
 
     oi = collateral * leverage
     fee = mothership.fee()
@@ -79,10 +83,10 @@ def test_build(
     # build the position
     tx = ovl_collateral.build(
         market,
-        collateral, 
-        leverage, 
-        is_long, 
-        {"from": bob }
+        collateral,
+        leverage,
+        is_long,
+        {"from": bob}
     )
 
     print_events(tx)
@@ -179,4 +183,5 @@ def test_build_breach_cap(token, mothership, ovl_collateral, market, bob, oi, le
     collateral = int(oi / leverage)
     token.approve(ovl_collateral, collateral, {"from": bob})
     with reverts("OVLV1:collat<min"):
-        ovl_collateral.build(market, collateral, is_long, leverage, {"from": bob})
+        ovl_collateral.build(market, collateral, is_long,
+                             leverage, {"from": bob})

@@ -15,15 +15,18 @@ TOKEN_DECIMALS = 18
 TOKEN_TOTAL_SUPPLY = 8000000
 OI_CAP = 800000
 
+
 def set_compound(sender, factory, market, compound):
     args = market_params(market)
     args[1] = compound
-    factory.adjustParamsPerMarket(args, { 'from': sender })
+    factory.adjustParamsPerMarket(args, {'from': sender})
+
 
 def set_update(sender, factory, market, update):
     args = market_params(market)
     args[0] = update
-    factory.adjustParamsPerMarket(args, { 'from': sender })
+    factory.adjustParamsPerMarket(args, {'from': sender})
+
 
 def market_params(market):
     return (
@@ -36,12 +39,14 @@ def market_params(market):
         market.leverageMax()
     )
 
+
 def print_events(events):
     for i in range(len(events['log'])):
         print(
-            events['log'][i]['k'] + ": " 
+            events['log'][i]['k'] + ": "
             + str(events['log'][i]['v'])
         )
+
 
 @given(
     oi_long=strategy('uint256',
@@ -109,7 +114,7 @@ def test_update(token,
     tx = ovl_collateral.update(market, rewards, {"from": alice})
 
     curr_updated = market.updated()
-    assert  curr_updated == prior_updated + update_period
+    assert curr_updated == prior_updated + update_period
 
     # check update event attrs
     assert 'FundingPaid' in tx.events
@@ -183,7 +188,8 @@ def test_update(token,
     assert 'FundingPaid' in tx.events
     assert 'NewPrice' in tx.events
     assert tx.events['Update']['rewarded'] == rewards.address
-    assert tx.events['Update']['rewardAmount'] == 0  # rewarded 0 since no positions built
+    # rewarded 0 since no positions built
+    assert tx.events['Update']['rewardAmount'] == 0
 
     # check funding payments over longer period
     k = market.fundingKNumerator() / market.fundingKDenominator()
