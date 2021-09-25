@@ -14,6 +14,8 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
     using FixedPoint for uint256;
 
+    uint256 constant public MIN_COLLAT = 1e14;
+
     uint256 private unlocked = 1;
 
     modifier lock() { require(unlocked == 1, "OVLV1:!unlocked"); unlocked = 0; _; unlocked = 1; }
@@ -60,7 +62,7 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
         impact_ = _impact;
 
-        require(_collateral > impact_ + fee_, "OVLV1:impact++");
+        require(_collateral > MIN_COLLAT + impact_ + fee_ , "OVLV1:collat<min");
 
         collateralAdjusted_ = _collateral - _impact - fee_;
 

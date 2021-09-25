@@ -14,7 +14,6 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     using Position for Position.Info;
     using FixedPoint for uint256;
 
-    uint256 constant public MIN_COLLAT = 1e14;
     bytes32 constant private GOVERNOR = keccak256("GOVERNOR");
 
     mapping (address => mapping(uint => uint)) internal queuedPositionLongs;
@@ -168,8 +167,6 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     ) external {
 
         require(mothership.marketActive(_market), "OVLV1:!market");
-
-        require(MIN_COLLAT <= _collateral, "OVLV1:collat<min");
 
         (   uint _oiAdjusted,
             uint _collateralAdjusted,

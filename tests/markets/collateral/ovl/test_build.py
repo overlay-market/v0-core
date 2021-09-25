@@ -10,7 +10,7 @@ FEE_RESOLUTION = 1e18
 
 
 @given(
-    collateral=strategy('uint256', min_value=MIN_COLLATERAL,
+    collateral=strategy('uint256', min_value=1e18,
                         max_value=OI_CAP - 1e4),
     leverage=strategy('uint8', min_value=1, max_value=100),
     is_long=strategy('bool'))
@@ -19,7 +19,11 @@ def test_build_success_zero_impact(ovl_collateral, token, mothership, market,
                                    bob, rewards, collateral, leverage,
                                    is_long):
     oi = collateral * leverage
-    trade_fee = mothership.fee() / FEE_RESOLUTION
+    trade_fee = oi * mothership.fee() / FEE_RESOLUTION
+
+    # get prior state of collateral manager
+    fee_bucket = ovl_collateral.fees()
+    ovl_balance = token.balanceOf(ovl_collateral)
 
     # approve collateral contract to spend bob's ovl to build position
     token.approve(ovl_collateral, collateral, {"from": bob})
@@ -39,6 +43,14 @@ def test_build_success_zero_impact(ovl_collateral, token, mothership, market,
     print("pid", pid)
 
     # fees should be sent to fee bucket in collateral manager
+    assert fee_bucket + trade_fee == (ovl_collateral.fees())
+
+    # check collateral sent to collateral manager
+    assert ovl_balance + collateral == (token.balanceOf(ovl_collateral))
+
+
+def test_build_when_market_not_supported(mothership, market, bob):
+    pass
 
 
 def test_build_breach_min_collateral(token, market, bob):

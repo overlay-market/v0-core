@@ -125,9 +125,9 @@ def comptroller(gov):
     params=[
         ("OverlayV1Mothership", [
             .5e18,         # margin burn rate
-            .00015e18,    # fee
-            .5e18,        # fee burn rate
-            .001e18,      # update reward rate
+            .0015e18,      # fee
+            .5e18,         # fee burn rate
+            .001e18,       # update reward rate
         ],
          "OverlayV1UniswapV3MarketZeroComptrollerShim", [
             1e18,                # amount in
