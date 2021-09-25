@@ -3,12 +3,12 @@ import brownie
 
 
 def test_only_minter(token, alice):
-    with brownie.reverts():
+    with brownie.reverts('only minter'):
         token.mint(alice, 1 * 10 ** token.decimals(), {"from": alice})
 
 
 def test_only_burner(token, bob):
-    with brownie.reverts():
+    with brownie.reverts('only burner'):
         token.burn(bob, 1 * 10 ** token.decimals(), {"from": bob})
 
 
