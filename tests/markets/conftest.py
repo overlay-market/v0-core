@@ -62,7 +62,8 @@ def create_token(gov, alice, bob):
 def get_uni_feeds(feed_owner):
 
     base = os.path.dirname(os.path.abspath(__file__))
-    path = '../../../feeds/historic_observations/univ3_dai_weth.json'
+    # TODO: fix this relative path fetch
+    path = '../../feeds/historic_observations/univ3_dai_weth.json'
 
     with open(os.path.normpath(os.path.join(base, path))) as f:
         feed = json.load(f)
