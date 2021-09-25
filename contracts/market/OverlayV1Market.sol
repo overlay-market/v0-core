@@ -60,7 +60,7 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
         impact_ = _impact;
 
-        require(_collateral < impact_ + fee_, "OVLV1:impact++");
+        require(_collateral > impact_ + fee_, "OVLV1:impact++");
 
         collateralAdjusted_ = _collateral - _impact - fee_;
 
@@ -100,8 +100,8 @@ abstract contract OverlayV1Market is OverlayV1Governance {
     }
 
     /// @notice Removes open interest from the market
-    /// @dev must update two prices if the pending update was from a long 
-    /// @dev time ago in that case, a previously entered position must be 
+    /// @dev must update two prices if the pending update was from a long
+    /// @dev time ago in that case, a previously entered position must be
     /// @dev settled, and the current exit price must be retrieved
     /// @param _isLong is this from the short or the long side
     /// @param _oiShares the amount of oi in shares to be removed

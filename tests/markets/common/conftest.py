@@ -140,7 +140,7 @@ def comptroller(gov):
             600,                 # compound period
             600,                 # impact window
             OI_CAP*1e18,         # oi cap
-            0,                   # lambda
+            1e18,                # lambda
             1e18,                # brrrr fade
          ],
          "OverlayV1OVLCollateral", [
