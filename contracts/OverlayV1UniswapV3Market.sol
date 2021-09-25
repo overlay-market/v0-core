@@ -78,15 +78,15 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     }
 
     function price (
-        uint _at
+        uint _ago
     ) public view returns (
         PricePoint memory
     ) { 
 
         uint32[] memory _secondsAgo = new uint32[](3);
-        _secondsAgo[0] = uint32(_at - macroWindow);
-        _secondsAgo[1] = uint32(_at - microWindow);
-        _secondsAgo[2] = uint32(_at);
+        _secondsAgo[0] = uint32(_ago - macroWindow);
+        _secondsAgo[1] = uint32(_ago - microWindow);
+        _secondsAgo[2] = uint32(_ago);
 
         ( int56[] memory _ticks, ) = IUniswapV3Pool(marketFeed).observe(_secondsAgo);
 
@@ -242,17 +242,18 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     function exitUpdate () internal override returns (uint tCompounding_) {
 
         uint _toUpdate = toUpdate;
+        uint _now = block.timestamp;
 
         (   uint _updatesThen,
             uint _updatesNow,
             uint _tUpdate,,
             uint _compoundings,
-            uint _tCompounding, ) = epochs(block.timestamp, updated, _toUpdate);
+            uint _tCompounding, ) = epochs(_now, updated, _toUpdate);
 
             
         if (0 < _updatesThen) {
 
-            uint _then = block.timestamp - _toUpdate;
+            uint _then = _now - _toUpdate;
             PricePoint memory _price = price(_then);
             setPricePointCurrent(_price);
 
@@ -260,7 +261,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         if (0 < _updatesNow) { 
 
-            uint _then = block.timestamp - _tUpdate;
+            uint _then = _now - _tUpdate;
             PricePoint memory _price = price(_then);
             setPricePointCurrent(_price);
 
@@ -321,6 +322,43 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     function oiShort () external view returns (uint oiShort_) {
         (  ,oiShort_ ) = oi();
+    }
+
+    function priceFrame (
+        bool _isLong,
+        uint _entryIndex
+    ) external view returns (
+        uint256 priceFrame_
+    ) {
+
+        uint _toUpdate = toUpdate;
+
+        uint _now = block.timestamp;
+
+        uint256 _currentIndex = pricePoints.length;
+
+        (   uint _updatesThen,,
+            uint _tUpdate,,,, ) = epochs(_now, updated, _toUpdate);
+
+        PricePoint memory _priceEntry;
+        PricePoint memory _priceExit;
+
+        if (_entryIndex < _currentIndex) {
+
+            _priceEntry = pricePoints[_entryIndex];
+
+        } else if (0 < _updatesThen ) {
+
+            _priceEntry = price(_now - _toUpdate);
+
+        } else revert("OVLV1:!settled");
+
+        _priceExit = price(_now - _tUpdate);
+
+        priceFrame_ = _isLong
+            ? Math.min(_priceExit.bid / _priceEntry.ask, priceFrameCap)
+            : _priceExit.ask / _priceEntry.bid;
+
     }
 
 }

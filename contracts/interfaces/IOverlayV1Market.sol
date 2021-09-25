@@ -25,10 +25,26 @@ interface IOverlayV1Market is IERC1155 {
 
     function queuedOiLong() external view returns (uint256);
     function queuedOiShort() external view returns (uint256);
+    function oi() external view returns (uint256, uint256);
     function oiLong() external view returns (uint256);
     function oiShort() external view returns (uint256);
+    function oiLongShares() external view returns (uint256);
+    function oiShortShares() external view returns (uint256);
     function oiCap() external view returns (uint256);
-    function epochs(uint,uint,uint) external view returns (uint, uint, uint, uint, uint, uint, uint);
+
+    function epochs(
+        uint _time,
+        uint _from,
+        uint _between
+    ) external view returns (
+        uint updatesThen_, 
+        uint updatesNow_, 
+        uint tUpdate_,
+        uint t1Update_,
+        uint compoundings_,
+        uint tCompounding_,
+        uint t1Compounding_
+    );
 
     function pricePointCurrentIndex() external view returns (uint256);
     function pricePoints(uint256 index) external view returns (uint256 price );
@@ -83,6 +99,12 @@ interface IOverlayV1Market is IERC1155 {
 
     function update () external returns (bool);
 
-    function NOW () external view returns (uint);
+    function priceFrame(
+        bool _isLong,
+        uint _entryIndex
+    ) external view returns (
+        uint priceFrame_
+    );
+
 
 }

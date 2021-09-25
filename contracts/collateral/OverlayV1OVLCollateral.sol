@@ -336,4 +336,31 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     }
 
+    function value (
+        uint _positionId
+    ) public view returns (
+        uint256 value_
+    ) {
+
+        Position.Info storage pos = positions[_positionId];
+
+        IOverlayV1Market _market = IOverlayV1Market(pos.market);
+
+        uint _priceFrame = _market.priceFrame(
+            pos.isLong,
+            pos.pricePoint
+        );
+
+        ( uint _oi, uint _oiShares ) = pos.isLong
+            ? ( _market.oiLong(), _market.oiLongShares() )
+            : ( _market.oiShort(), _market.oiShortShares() );
+
+        value_ = pos.value(
+            _priceFrame,
+            _oi,
+            _oiShares
+        );
+
+    }
+
 }
