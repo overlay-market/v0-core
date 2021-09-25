@@ -37,11 +37,9 @@ def test_build(
 
     print("test build", token)
 
-    updated = market.updated()
-    updatePeriod = market.updatePeriod()
-    chain.mine(timestamp=updated + updatePeriod)
-
-    market.update({'from': bob})
+    # updated = market.updated()
+    # updatePeriod = market.updatePeriod()
+    # chain.mine(timestamp=updated + updatePeriod)
 
     oi = collateral * leverage
     fee = mothership.fee()
@@ -89,7 +87,7 @@ def test_build(
         {"from": bob}
     )
 
-    print_events(tx)
+    # print_events(tx)
 
     assert 'Build' in tx.events
     assert 'positionId' in tx.events['Build']
