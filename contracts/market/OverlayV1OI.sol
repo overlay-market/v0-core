@@ -5,10 +5,13 @@ import "../libraries/FixedPoint.sol";
 
 contract OverlayV1OI {
 
+    event log(string k , uint v);
+
     using FixedPoint for uint256;
 
     // max number of periodSize periods before treat funding as completely rebalanced: done for gas savings on compute funding factor
     uint16 public constant MAX_FUNDING_COMPOUND = 4320; // 30d at 10m for updatePeriod
+    uint256 private constant ONE = 1e18;
 
     uint256 internal __oiLong__; // total long open interest
     uint256 internal __oiShort__; // total short open interest
@@ -23,19 +26,6 @@ contract OverlayV1OI {
 
     event FundingPaid(uint oiLong, uint oiShort, int fundingPaid);
 
-    function freeOi (
-        bool _isLong
-    ) public view returns (
-        uint freeOi_
-    ) {
-
-        // freeOi_ = oiLast / 2;
-
-        if (_isLong) freeOi_ -= __oiLong__;
-        else freeOi_ -= __oiShort__;
-
-    }
-
     function computeFunding (
         uint256 _oiLong,
         uint256 _oiShort,
@@ -47,9 +37,13 @@ contract OverlayV1OI {
         int256  fundingPaid_
     ) {
 
+        if (_oiLong == 0 && 0 == _oiShort) return (0, 0, 0);
+
         if (0 == _epochs) return ( _oiLong, _oiShort, 0 );
 
-        uint fundingFactor = _k.powUp(_epochs);
+        uint _fundingFactor = ONE.sub(_k*2);
+
+        _fundingFactor = _fundingFactor.powDown(_epochs);
 
         uint _funder = _oiLong;
         uint _funded = _oiShort;
@@ -58,14 +52,14 @@ contract OverlayV1OI {
 
         if (_funded == 0) {
 
-            uint _oiNow = fundingFactor.mulDown(_funder);
+            uint _oiNow = _fundingFactor.mulDown(_funder);
             fundingPaid_ = int(_funder - _oiNow);
             _funder = _oiNow;
 
         } else {
 
             // TODO: we can make an unsafe mul function here
-            uint256 _oiImbNow = fundingFactor.mulDown(_funder - _funded);
+            uint256 _oiImbNow = _fundingFactor.mulDown(_funder - _funded);
             uint256 _total = _funder + _funded;
 
             _funder = ( _total + _oiImbNow ) / 2;
@@ -82,10 +76,12 @@ contract OverlayV1OI {
 
     /// @notice Transfers funding payments
     /// @dev oiImbalance(m) = oiImbalance(0) * (1 - 2k)**m
-    function payFunding(
+    function payFunding (
         uint256 _k,
         uint256 _epochs
-    ) internal returns (int256 fundingPaid_) {
+    ) internal returns (
+        int256 fundingPaid_
+    ) {
 
         uint _oiLong;
         uint _oiShort;
@@ -105,7 +101,11 @@ contract OverlayV1OI {
     }
 
     /// @notice Adds to queued open interest to prep for T+1 price settlement
-    function queueOi(bool _isLong, uint256 _oi, uint256 _oiCap) internal {
+    function queueOi(
+        bool _isLong, 
+        uint256 _oi, 
+        uint256 _oiCap
+    ) internal {
 
         if (_isLong) {
 
