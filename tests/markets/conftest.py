@@ -18,29 +18,36 @@ AMOUNT_IN = 1
 PRICE_POINTS_START = 50
 PRICE_POINTS_END = 100
 
+
 @pytest.fixture(scope="module")
 def gov(accounts):
     yield accounts[0]
+
 
 @pytest.fixture(scope="module")
 def rewards(accounts):
     yield accounts[1]
 
+
 @pytest.fixture(scope="module")
 def alice(accounts):
     yield accounts[2]
+
 
 @pytest.fixture(scope="module")
 def bob(accounts):
     yield accounts[3]
 
+
 @pytest.fixture(scope="module")
 def feed_owner(accounts):
     yield accounts[6]
 
+
 @pytest.fixture(scope="module")
 def fees(accounts):
     yield accounts[4]
+
 
 @pytest.fixture(scope="module")
 def create_token(gov, alice, bob):
@@ -133,7 +140,7 @@ def comptroller(gov):
             100,                 # levmax
             5e18,                # payoff cap
             .00573e18,           # spread
-            600,                 # update period
+            100,                 # update period
             600,                 # compound period
             600,                 # impact window
             OI_CAP*1e18,         # oi cap
@@ -185,7 +192,7 @@ def create_mothership(create_token, fees, alice, bob, gov, rewards, feed_owner, 
 
         ovl_collateral = gov.deploy(ovlc_type, "our_uri", mothership)
         ovl_collateral.setMarketInfo(market, *ovlc_args, {"from": gov})
-        mothership.initializeCollateral(ovl_collateral, { "from": gov })
+        mothership.initializeCollateral(ovl_collateral, {"from": gov})
 
         market.addCollateral(ovl_collateral, {'from': gov})
 

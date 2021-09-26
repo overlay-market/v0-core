@@ -33,12 +33,11 @@ def test_liquidate_success_zero_impact(ovl_collateral, token, mothership,
     exit_time = grouping["exit"]["timestamp"]
 
     # fast forward to time we want for entry
-    # TODO: brownie.chain.mine(timestamp=entry_time)
+    brownie.chain.mine(timestamp=entry_time)
 
     # market constants
-    mm, mm_reward = ovl_collateral.marketInfo(market)
-    print('mm', mm)
-    print('mm_reward', mm_reward)
+    maintenance_margin, maintenance_margin_reward = ovl_collateral.marketInfo(
+        market)
 
     # build a position with leverage
     token.approve(ovl_collateral, collateral, {"from": bob})
@@ -51,28 +50,9 @@ def test_liquidate_success_zero_impact(ovl_collateral, token, mothership,
     )
     pid = tx_build.events['Build']['positionId']
 
-    print('current_price_idx', market.pricePointCurrentIndex())
-    print('last price point',  market.pricePoints(
-        market.pricePointCurrentIndex()-1))
-
-    # mine the update period then settle the price
-    print('market.compoundingPeriod()', market.compoundingPeriod())
-    print('brownie.chain.time()', brownie.chain.time())
-    print('brownie.chain.snapshot()', brownie.chain.snapshot())
-    brownie.chain.mine(timedelta=market.compoundingPeriod())
-
-    print('brownie.chain.time()', brownie.chain.time())
-    print('brownie.chain.snapshot()', brownie.chain.snapshot())
-
-    market.update({"from": rewards})
-
-    print('brownie.chain.time()', brownie.chain.time())
-    print('brownie.chain.snapshot()', brownie.chain.snapshot())
-
     # Get info after settlement
     (_, _, _, entry_price_idx,
-        oi_shares, debt, cost, _) = ovl_collateral.positions(pid)
-    oi_initial = oi_shares
+        oi, debt, cost, _) = ovl_collateral.positions(pid)
 
     print('entry_price_idx', entry_price_idx)
     print('current_price_idx', market.pricePointCurrentIndex())
@@ -80,16 +60,10 @@ def test_liquidate_success_zero_impact(ovl_collateral, token, mothership,
         market.pricePointCurrentIndex()-1))
 
     # fast forward to time at which should get liquidated
-    # TODO: brownie.chain.mine(timestamp=exit_time)
+    brownie.chain.mine(timestamp=exit_time)
 
     # get market and manager state prior to liquidation
     oi_long_prior, oi_short_prior = market.oi()
-
-    total_oi_prior = oi_long_prior if is_long else oi_short_prior
-    total_oi_shares = market.oiLongShares()\
-        if is_long else market.oiShortShares()
-
-    oi = total_oi_prior * oi_shares / total_oi_shares
     value = ovl_collateral.value(pid)
 
     # get balances  prior
@@ -97,6 +71,8 @@ def test_liquidate_success_zero_impact(ovl_collateral, token, mothership,
     ovl_balance = token.balanceOf(ovl_collateral)
     liquidations = ovl_collateral.liquidations()
 
+    # check liquidation condition was actually met: value < oi(0) * mm
+    assert value < oi * maintenance_margin
     ovl_collateral.liquidate(pid, alice, {"from": alice})
 
     # check oi removed from market
@@ -112,11 +88,8 @@ def test_liquidate_success_zero_impact(ovl_collateral, token, mothership,
     loss = cost - value
     assert ovl_balance - loss == token.balanceOf(ovl_collateral)
 
-    # check liquidation condition was actually met: value < oi(0) * mm
-    assert value < oi_initial * mm
-
     # check reward transferred to rewarded
-    reward = value * mm_reward
+    reward = value * maintenance_margin_reward
     assert reward + alice_balance == token.balanceOf(alice)
 
     # check liquidations pot increased
@@ -124,7 +97,7 @@ def test_liquidate_success_zero_impact(ovl_collateral, token, mothership,
 
     # check position is no longer able to be unwind
     with brownie.reverts("OVLV1:!shares"):
-        ovl_collateral.unwind(pid, oi_shares, {"from": bob})
+        ovl_collateral.unwind(pid, oi, {"from": bob})
 
 
 def test_no_unwind_after_liquidate():
