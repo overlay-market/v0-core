@@ -23,8 +23,78 @@ def test_unwind_revert_insufficient_shares(ovl_collateral, bob):
         );
 
 
+def test_unwind_oi_removed(
+        ovl_collateral,
+        mothership,
+        market,
+        token,
+        bob,
+        alice):
+
+    collateral = 2e18
+    leverage = 1
+    is_long = True
+
+    # Build
+    token.approve(ovl_collateral, collateral, {"from": bob})
+    tx_build = ovl_collateral.build(
+        market,
+        collateral,
+        leverage,
+        is_long,
+        {"from": bob}
+    )
+
+    # Position info
+    pid = tx_build.events['Build']['positionId']
+    (_, _, _, price_point, oi_shares_build, debt_build, cost_build, p_compounding) =\
+        ovl_collateral.positions(pid)
+
+    chain.mine(timedelta=market.updatePeriod()+1)
+
+    # Unwind
+    tx = ovl_collateral.unwind(
+        pid,
+        oi_shares_build,
+        {"from": bob}
+    )
+
+    (_, _, _, _, oi_shares_unwind, debt_unwind, cost_unwind, _) =\
+        ovl_collateral.positions(pid)
+
+    print('oi_shares_unwind', oi_shares_unwind)
+    assert oi_shares_unwind == 0
+
+
 # warning, dependent on what the price/mocks do
-def test_unwind_revert_position_was_liquidated(ovl_collateral, bob):
+def test_unwind_revert_position_was_liquidated(
+        ovl_collateral,
+        mothership,
+        market,
+        collateral,
+        token,
+        bob,
+        alice):
+
+    collateral = 2e18
+    leverage = 1
+    is_long = True
+
+    # token.approve(ovl_collateral, collateral, {"from": bob})
+    # tx_build = ovl_collateral.build(
+    #     market,
+    #     collateral,
+    #     leverage,
+    #     is_long,
+    #     {"from": bob}
+    # )
+
+    # with brownie.reverts("OVLV1:!shares"):
+    #     ovl_collateral.unwind(
+    #         1,
+    #         1e18,
+    #         { "from": bob }
+    #     );
 
     # build a position
     # liquidate a position
