@@ -40,13 +40,7 @@ def test_build_success_zero_impact(
     token.approve(ovl_collateral, collateral, {"from": bob})
 
     # build the position
-    tx = ovl_collateral.build(
-        market,
-        collateral,
-        leverage,
-        is_long,
-        {"from": bob}
-    )
+    tx = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
 
     assert 'Build' in tx.events
     assert 'positionId' in tx.events['Build']
@@ -99,6 +93,7 @@ def test_build_when_market_not_supported(
     ):
 
     EXPECTED_ERROR_MESSAGE = 'OVLV1:!market'
+
     token.approve(ovl_collateral, 3e18, {"from": bob})
     trade_amt = MIN_COLLATERAL*2 #just to avoid failing min_collateral check because of fees
 
@@ -124,6 +119,7 @@ def test_build_min_collateral(
     ):
     
     EXPECTED_ERROR_MESSAGE = 'OVLV1:collat<min'
+
     token.approve(ovl_collateral, 3e18, {"from": bob})
 
     # Here we compute exactly how much to trade in order to have just the MIN_COLLATERAL after fees are taken
@@ -150,6 +146,7 @@ def test_build_max_leverage(
     ):
 
     EXPECTED_ERROR_MESSAGE = 'OVLV1:lev>max'
+
     token.approve(ovl_collateral, collateral, {"from": bob})
     trade_amt = MIN_COLLATERAL*2 #just to avoid failing min_collateral check because of fees
 
@@ -179,3 +176,29 @@ def test_build_cap(
 
     with brownie.reverts(EXPECTED_ERROR_MESSAGE):
         ovl_collateral.build(market, cap + 1, leverage, is_long, {"from": bob})
+
+
+def test_oi_queued(
+        token, 
+        ovl_collateral, 
+        market, 
+        bob,
+        leverage=1, 
+        is_long=1
+    ):
+
+    # get prior state of market
+    queued_oi = market.queuedOiLong() if is_long else market.queuedOiShort()
+
+    # approve collateral contract to spend bob's ovl to build position
+    token.approve(ovl_collateral, collateral, {"from": bob})
+
+    # build the position
+    tx = ovl_collateral.build(
+        market,
+        collateral,
+        leverage,
+        is_long,
+        {"from": bob}
+    )
+)
