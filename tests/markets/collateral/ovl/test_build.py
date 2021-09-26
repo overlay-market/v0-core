@@ -107,8 +107,8 @@ def test_build_min_collateral(
     token.approve(ovl_collateral, collateral, {"from": bob})
 
     #higher than min collateral passes
-    breakpoint()
-    ovl_collateral.build(market, MIN_COLLATERAL+epsilon, leverage, is_long, {'from':bob})
+    tx = ovl_collateral.build(market, MIN_COLLATERAL+epsilon, leverage, is_long, {'from':bob})
+    assert isinstance(tx, brownie.network.transaction.TransactionReceipt)
     #lower than min collateral fails
     with brownie.reverts('OVLV1:collat<min'):
         ovl_collateral.build(market, MIN_COLLATERAL, leverage, is_long, {'from':bob})
