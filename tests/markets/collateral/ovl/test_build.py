@@ -98,8 +98,8 @@ def test_build_when_market_not_supported(
         market,
         notamarket,
         bob,
-        leverage=1,
-        is_long=1
+        leverage=1, #doesn't matter
+        is_long=1   #doesn't matter
     ):
 
     EXPECTED_ERROR_MESSAGE = 'OVLV1:!market'
