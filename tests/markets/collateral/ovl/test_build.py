@@ -3,7 +3,7 @@ import unittest
 from brownie.test import given, strategy
 from hypothesis import settings
 from decimal import Decimal
-from copy import deepcopy
+import copy
 
 MIN_COLLATERAL = 1e14  # min amount to build
 TOKEN_DECIMALS = 18
@@ -91,14 +91,20 @@ def test_build_success_zero_impact(
         assert queued_oi + oi_adjusted == market.queuedOiShort()
 
 
+@given(
+    leverage=strategy('uint8', min_value=1, max_value=100),
+    is_long=strategy('bool')
+    )
+@settings(max_examples=1)
 def test_build_when_market_not_supported(
         ovl_collateral,
         token,
         mothership,
         market,
+        notamarket,
         bob,
-        leverage=1,
-        is_long=1
+        leverage,
+        is_long
     ):
 
     EXPECTED_ERROR_MESSAGE = 'OVLV1:!market'
@@ -109,12 +115,9 @@ def test_build_when_market_not_supported(
     tx = ovl_collateral.build(market, trade_amt, leverage, is_long, {'from':bob})
     assert isinstance(tx, brownie.network.transaction.TransactionReceipt)
 
-    bad_address = str(hex(int(market.address, 0) + 1))
-    market.address = bad_address #mutate market
-    assert ~mothership.marketActive(market)
-
+    assert ~mothership.marketActive(notamarket)
     with brownie.reverts(EXPECTED_ERROR_MESSAGE):
-        ovl_collateral.build(market, trade_amt, leverage, is_long, {'from':bob})
+        ovl_collateral.build(notamarket, trade_amt, leverage, is_long, {'from':bob})
 
 @unittest.skip('XXX REMOVE THIS')
 @given(

@@ -226,6 +226,18 @@ def market(mothership, request):
     market = getattr(interface, request.param)(addr)
     yield market
 
+@pytest.fixture(
+    scope="module",
+    params=["IOverlayV1Market"])
+def notamarket(mothership, request):
+    '''We need this because we cannot mutate the market object in tests (mutated state is inherited by all future tests)
+    And we cannot copy or deepcopy contract objects owing to RecursionError: maximum recursion depth exceeded while calling a Python object
+    '''
+    addr = mothership.allMarkets(0)
+    market = getattr(interface, request.param)(addr)
+    bad_address = str(hex(int(market.address, 0) + 1))
+    market.address = bad_address #mutate market
+    yield market
 
 @pytest.fixture(scope="module")
 def uni_test(gov, rewards, accounts):
