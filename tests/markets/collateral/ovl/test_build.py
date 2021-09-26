@@ -33,6 +33,7 @@ def test_build_success_zero_impact(
     fee_bucket = ovl_collateral.fees()
     ovl_balance = token.balanceOf(ovl_collateral)
 
+    
     # get prior state of market
     queued_oi = market.queuedOiLong() if is_long else market.queuedOiShort()
 
@@ -233,8 +234,7 @@ def test_entry_update_price_fetching(
 
     assert idx1 == idx2
 
-    update_period = market.updatePeriod()
-    brownie.chain.mine(timedelta=update_period)
+    brownie.chain.mine(timedelta=market.updatePeriod())
 
     _ = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
     idx3 = market.pricePointCurrentIndex()
@@ -253,7 +253,6 @@ def test_entry_update_compounding(
         token,
         market,
         mothership,
-        gov,
         bob,
         collateral,
         leverage, 
@@ -262,23 +261,26 @@ def test_entry_update_compounding(
 
     token.approve(ovl_collateral, collateral*3, {"from": bob})
 
-    _ = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
-    idx1 = market.pricePointCurrentIndex()
-    _ = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
-    idx2 = market.pricePointCurrentIndex()
+    tx1 = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
+    oi1 = market.oiLong() if is_long else market.oiShort()
 
-    assert idx1 == idx2
+    tx2 = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
+    oi2 = market.oiLong() if is_long else market.oiShort()
+
+    oi = collateral * leverage
+    trade_fee = oi * mothership.fee() / FEE_RESOLUTION
+    assert oi2 == 2*(oi - trade_fee) 
+
     breakpoint()
-
-    compounding_period = 600 #market.compoundingPeriod() TODO: when mike merges the view fix this
+    compounding_period = 600 #market.compoundingPeriod() #TODO: when mike merges the view fix this
+    brownie.chain.mine(timedelta=compounding_period)
     brownie.chain.mine(timedelta=compounding_period)
 
-    new_oi = market.oiLong if is_long else market.oiShort
-
+    oi_after_funding = market.oiLong() if is_long else market.oiShort()
     # tx.events[]
 
+    #TODO COMPLETE 
     tx3 = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
     idx3 = market.pricePointCurrentIndex()
 
     assert idx3 > idx2
-
