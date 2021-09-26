@@ -112,7 +112,7 @@ def test_unwind_from_queued_oi (ovl_collateral, bob):
     pass
 
 
-def test_that_comptroller_recorded_mint_or_burn (
+def test_comptroller_recorded_mint_or_burn (
     ovl_collateral, 
     mothership,
     token, 
@@ -136,6 +136,7 @@ def test_that_comptroller_recorded_mint_or_burn (
     bobs_shares = tx.events['Build']['oi']
 
     chain.mine(timedelta=update_period*2)
+    token.approve(ovl_collateral, 1e50, { 'from': bob })
 
     tx = ovl_collateral.unwind(
         pos_id,
@@ -143,12 +144,17 @@ def test_that_comptroller_recorded_mint_or_burn (
         { "from": bob }
     )
 
-    fee = mothership.fee()
+    burnt = 0
+    minted = 0
+    for _, v in enumerate(tx.events['Transfer']):
+        if v['to'] == '0x0000000000000000000000000000000000000000':
+            burnt = v['value']
+        elif v['from'] == '0x0000000000000000000000000000000000000000':
+            minted = v['value']
 
-    expected_brrrr = -(Decimal(1) - Decimal(1) * ( Decimal(fee) / Decimal(1e18) ))
-    brrrrd = Decimal(market.brrrrd()) / Decimal(1e18)
+    brrrrd = market.brrrrd()
 
-    assert expected_brrrr == brrrrd
+    assert brrrrd == -burnt if burnt > 0 else brrrrd == minted
 
 
 
