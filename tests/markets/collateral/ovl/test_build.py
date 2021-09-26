@@ -1,6 +1,8 @@
 import brownie
+import unittest
 from brownie.test import given, strategy
 from hypothesis import settings
+from decimal import Decimal
 
 MIN_COLLATERAL = 1e14  # min amount to build
 TOKEN_DECIMALS = 18
@@ -8,7 +10,7 @@ TOKEN_TOTAL_SUPPLY = 8000000
 OI_CAP = 800000e18
 FEE_RESOLUTION = 1e18
 
-
+@unittest.skip('REMOVE')
 @given(
     collateral=strategy('uint256', min_value=1e18, max_value=OI_CAP - 1e4),
     leverage=strategy('uint8', min_value=1, max_value=100),
@@ -30,6 +32,7 @@ def test_build_success_zero_impact(
     oi = collateral * leverage
     trade_fee = oi * mothership.fee() / FEE_RESOLUTION
 
+    breakpoint()
     # get prior state of collateral manager
     fee_bucket = ovl_collateral.fees()
     ovl_balance = token.balanceOf(ovl_collateral)
@@ -86,36 +89,77 @@ def test_build_when_market_not_supported(mothership, market, bob):
     pass
 
 
+# @unittest.skip('REMOVE')
 @given(
-    collateral=strategy('uint256', min_value=2e18, max_value=OI_CAP - 1e4),
+    # collateral=strategy('uint256', min_value=2e18, max_value=OI_CAP - 1e4),
     leverage=strategy('uint8', min_value=1, max_value=100),
     is_long=strategy('bool')
     )
 @settings(max_examples=1)
 def test_build_min_collateral(
+    ovl_collateral,
+    token,
+    mothership,
+    market,
+    bob,
+    # collateral,
+    leverage,
+    is_long
+    ):
+    
+    EXPECTED_ERROR_MESSAGE = 'OVLV1:collat<min'
+    epsilon = 1e-18
+
+    # approve collateral contract to spend bob's ovl to build position
+    token.approve(ovl_collateral, 1e18, {"from": bob})
+
+    fee = mothership.fee()
+    fee = Decimal(fee) / Decimal(1e18)
+    fee_offset = float(Decimal(MIN_COLLATERAL)*(1/fee - Decimal(leverage)))
+    trade_amt = MIN_COLLATERAL + fee_offset
+    breakpoint()
+
+    #higher than min collateral passes
+    tx = ovl_collateral.build(market, trade_amt, leverage, is_long, {'from':bob})
+    assert isinstance(tx, brownie.network.transaction.TransactionReceipt)
+
+    #lower than min collateral fails
+    with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+        ovl_collateral.build(market, trade_amt - epsilon, leverage, is_long, {'from':bob})
+
+
+@unittest.skip('REMOVE')
+@given(
+    collateral=strategy('uint256', min_value=1e18, max_value=OI_CAP - 1e4),
+    # leverage=strategy('uint8', min_value=1, max_value=100),
+    is_long=strategy('bool')
+    )
+@settings(max_examples=1)
+def test_build_max_leverage(
     ovl_collateral, 
     token, 
     market, 
     bob,
     collateral,
-    leverage,
+    # leverage,
     is_long
     ):
+
+    breakpoint()
     
-    epsilon = 1e18
+    EXPECTED_ERROR_MESSAGE = 'OVLV1:lev>max'
+
     # approve collateral contract to spend bob's ovl to build position
     token.approve(ovl_collateral, collateral, {"from": bob})
 
-    #higher than min collateral passes
-    tx = ovl_collateral.build(market, MIN_COLLATERAL+epsilon, leverage, is_long, {'from':bob})
-    assert isinstance(tx, brownie.network.transaction.TransactionReceipt)
-    #lower than min collateral fails
-    with brownie.reverts('OVLV1:collat<min'):
-        ovl_collateral.build(market, MIN_COLLATERAL, leverage, is_long, {'from':bob})
+    for leverage in range(1, market.leverageMax() + 100, 10):
+        if leverage > market.leverageMax():
+            with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+                ovl_collateral.build(market, MIN_COLLATERAL, leverage, is_long, {'from':bob})
+        else:
+            tx = ovl_collateral.build(market, MIN_COLLATERAL, leverage, is_long, {'from':bob})
+            assert isinstance(tx, brownie.network.transaction.TransactionReceipt)
 
-
-def test_build_breach_max_leverage(token, market, bob):
-    pass
 
 
 @given(
