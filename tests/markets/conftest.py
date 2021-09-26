@@ -189,7 +189,7 @@ def create_mothership(create_token, alice, bob, gov, rewards, feed_owner, reques
 
         ovl_collateral = gov.deploy(ovlc_type, "our_uri", mothership)
         ovl_collateral.setMarketInfo(market, *ovlc_args, {"from": gov})
-        mothership.initializeCollateral(ovl_collateral)
+        mothership.initializeCollateral(ovl_collateral, { "from": gov })
 
         market.addCollateral(ovl_collateral, {'from': gov})
 
