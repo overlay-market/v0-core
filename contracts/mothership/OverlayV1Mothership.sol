@@ -22,17 +22,16 @@ contract OverlayV1Mothership is AccessControlEnumerable {
     // ovl erc20 token
     address public ovl;
 
+    // portion of liquidations to burn on update
+    uint public marginBurnRate;
+
     // global params adjustable by gov
     // build/unwind trading fee
     uint public fee;
     // portion of build/unwind fee burnt
     uint public feeBurnRate;
-    // portion of non-burned fees to reward market updaters with (funding + price)
-    uint public feeUpdateRewardsRate;
     // address to send fees to
     address public feeTo;
-    // portion of liquidations to burn on update
-    uint public marginBurnRate;
 
     mapping(address => bool) public marketActive;
     mapping(address => bool) public marketExists;
@@ -53,11 +52,10 @@ contract OverlayV1Mothership is AccessControlEnumerable {
     }
 
     constructor(
-        uint _marginBurnRate,
+        address _feeTo,
         uint _fee,
         uint _feeBurnRate,
-        uint _feeUpdateRewardsRate,
-        address _feeTo
+        uint _marginBurnRate
     ) {
 
         _setupRole(ADMIN, msg.sender);
@@ -69,7 +67,6 @@ contract OverlayV1Mothership is AccessControlEnumerable {
         // global params
         fee = _fee;
         feeBurnRate = _feeBurnRate;
-        feeUpdateRewardsRate = _feeUpdateRewardsRate;
         feeTo = _feeTo;
         marginBurnRate = _marginBurnRate;
 
@@ -161,17 +158,14 @@ contract OverlayV1Mothership is AccessControlEnumerable {
     function adjustGlobalParams(
         uint16 _fee,
         uint16 _feeBurnRate,
-        uint16 _feeUpdateRewardsRate,
         address _feeTo
     ) external onlyGovernor {
         fee = _fee;
         feeBurnRate = _feeBurnRate;
-        feeUpdateRewardsRate = _feeUpdateRewardsRate;
         feeTo = _feeTo;
     }
 
     function getUpdateParams() external view returns (
-        uint,
         uint,
         uint,
         address
@@ -179,7 +173,6 @@ contract OverlayV1Mothership is AccessControlEnumerable {
         return (
             marginBurnRate,
             feeBurnRate,
-            feeUpdateRewardsRate,
             feeTo
         );
     }
