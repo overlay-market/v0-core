@@ -52,16 +52,14 @@ interface IOverlayV1Mothership {
     function getGlobalParams() external view returns (
         uint16 fee_,
         uint16 feeBurnRate_,
-        uint16 feeUpdateRewardsRate_,
         address feeTo_,
         uint8 marginMaintenance_,
         uint8 marginBurnRate_
     );
 
     function getUpdateParams() external view returns (
-        uint16 feeBurnRate_,
-        uint16 feeUpdateRewardsRate_,
-        uint16 marginBurnRate_,
+        uint marginBurnRate_,
+        uint feeBurnRate_,
         address feeTo_
     );
 

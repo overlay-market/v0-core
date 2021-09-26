@@ -42,8 +42,7 @@ interface IOverlayV1OVLCollateral is IERC1155 {
     ) external;
 
     function update(
-        address _market,
-        address _rewardsTo
+        address _market
     ) external;
 
     function build(
