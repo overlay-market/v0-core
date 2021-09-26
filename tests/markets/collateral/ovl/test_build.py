@@ -195,15 +195,15 @@ def test_oi_queued(
         is_long
     ):
 
-    # get prior state of market
     queued_oi = market.queuedOiLong() if is_long else market.queuedOiShort()
+    assert queued_oi == 0
 
     token.approve(ovl_collateral, collateral, {"from": bob})
-
     tx = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
 
+    oi = collateral * leverage
+    trade_fee = oi * mothership.fee() / FEE_RESOLUTION
+
     new_oi = market.queuedOiLong() if is_long else market.queuedOiShort()
+    assert new_oi == oi - trade_fee 
 
-    assert new_oi = queued_oi + collateral(1 - mothership.fee())
-
-    breakpoint()
