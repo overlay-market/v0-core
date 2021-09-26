@@ -5,9 +5,17 @@ from hypothesis import settings
 from brownie import chain
 from decimal import *
 
+MIN_COLLATERAL = 1e14  # min amount to build
+TOKEN_DECIMALS = 18
+TOKEN_TOTAL_SUPPLY = 8000000
+OI_CAP = 800000e18
+FEE_RESOLUTION = 1e18
+
+
 def print_logs(tx):
     for i in range(len(tx.events['log'])):
         print(tx.events['log'][i]['k'] + ": " + str(tx.events['log'][i]['v']))
+
 
 def test_unwind(ovl_collateral, token, bob):
     pass
@@ -19,21 +27,27 @@ def test_unwind_revert_insufficient_shares(ovl_collateral, bob):
         ovl_collateral.unwind(
             1,
             1e18,
-            { "from": bob }
+            {"from": bob}
         );
 
 
+@given(
+    collateral=strategy('uint256', min_value=1e18, max_value=OI_CAP - 1e4),
+    leverage=strategy('uint8', min_value=1, max_value=100),
+    is_long=strategy('bool')
+    )
+@settings(max_examples=1)
 def test_unwind_oi_removed(
         ovl_collateral,
         mothership,
         market,
         token,
         bob,
-        alice):
-
-    collateral = 2e18
-    leverage = 1
-    is_long = True
+        alice,
+        collateral,
+        leverage,
+        is_long
+        ):
 
     # Build
     token.approve(ovl_collateral, collateral, {"from": bob})
