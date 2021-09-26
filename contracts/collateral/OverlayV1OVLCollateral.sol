@@ -271,7 +271,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         ovl.transfer(msg.sender, _userValueAdjusted);
 
         IOverlayV1Market(pos.market).exitOI(
-            pos.compounding <= _tCompounding,
+            pos.compounding < _tCompounding,
             pos.isLong,
             _userOi,
             _userOiShares,
