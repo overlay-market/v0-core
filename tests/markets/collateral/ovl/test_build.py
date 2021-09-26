@@ -1,9 +1,6 @@
 import brownie
-import unittest
 from brownie.test import given, strategy
 from hypothesis import settings
-from decimal import Decimal
-import copy
 
 MIN_COLLATERAL = 1e14  # min amount to build
 TOKEN_DECIMALS = 18
