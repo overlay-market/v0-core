@@ -166,7 +166,7 @@ def test_build_cap(
         is_long=1
     ):
 
-    EXPECTED_ERROR_MESSAGE = 'OVLV1:>cap' #NOTE error meg should be 'OVLV1:collat>cap'
+    EXPECTED_ERROR_MESSAGE = 'OVLV1:>cap' #NOTE error msg should be 'OVLV1:collat>cap'
 
     cap = market.oiCap()
     token.approve(ovl_collateral, cap*2, {"from": bob})
@@ -206,4 +206,40 @@ def test_oi_queued(
 
     new_oi = market.queuedOiLong() if is_long else market.queuedOiShort()
     assert new_oi == oi - trade_fee 
+
+
+@given(
+    collateral=strategy('uint256', min_value=1e18, max_value=OI_CAP - 1e4),
+    leverage=strategy('uint8', min_value=1, max_value=100),
+    is_long=strategy('bool')
+    )
+@settings(max_examples=1)
+def test_entry_update_price_fetching(
+        ovl_collateral,
+        token,
+        mothership,
+        market,
+        bob,
+        collateral,
+        leverage, 
+        is_long
+    ):
+
+    token.approve(ovl_collateral, collateral*4, {"from": bob})
+    tx1 = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
+    idx1 = market.pricePointCurrentIndex()
+
+    tx2 = ovl_collateral.build(market, collateral*2, leverage, is_long, {"from": bob})
+    idx2 = market.pricePointCurrentIndex()
+
+    assert idx1 == idx2
+
+    update_period = market.updatePeriod()
+    brownie.chain.mine(timedelta=update_period)
+
+
+    tx3 = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
+    idx3 = market.pricePointCurrentIndex()
+
+    assert idx3 > idx2
 
