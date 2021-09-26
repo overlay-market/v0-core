@@ -160,22 +160,22 @@ def test_build_max_leverage(
         ovl_collateral.build(market, trade_amt, market.leverageMax() + 1, is_long, {'from':bob})
 
 
-
-@given(
-    oi=strategy('uint256', min_value=1.01*OI_CAP*10**TOKEN_DECIMALS, max_value=2**144-1),
-    leverage=strategy('uint8', min_value=1, max_value=100),
-    is_long=strategy('bool'))
 def test_build_cap(
         token, 
         ovl_collateral, 
         market, 
         bob,
-        oi, 
-        leverage, 
-        is_long
+        leverage=1, 
+        is_long=1
     ):
 
-    collateral = int(oi / leverage)
-    token.approve(ovl_collateral, collateral, {"from": bob})
-    with brownie.reverts("OVLV1:>cap"):
-        ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
+    EXPECTED_ERROR_MESSAGE = 'OVLV1:>cap'
+
+    cap = market.oiCap()
+    token.approve(ovl_collateral, cap*2, {"from": bob})
+
+    tx = ovl_collateral.build(market, cap, leverage, is_long, {'from':bob})
+    assert isinstance(tx, brownie.network.transaction.TransactionReceipt)
+
+    with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+        ovl_collateral.build(market, cap + 1, leverage, is_long, {"from": bob})
