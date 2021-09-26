@@ -67,8 +67,14 @@ def test_build_success_zero_impact(
     assert ovl_collateral.balanceOf(bob, pid) == oi_adjusted
 
     # check position attributes for PID
-    (pos_market, pos_islong, pos_lev, _, pos_oishares,
-     pos_debt, pos_cost, _) = ovl_collateral.positions(pid)
+    (pos_market, 
+    pos_islong, 
+    pos_lev, 
+    _, 
+    pos_oishares, 
+    pos_debt, 
+    pos_cost, 
+    _) = ovl_collateral.positions(pid)
 
     assert pos_market == market
     assert pos_islong == is_long
@@ -84,10 +90,31 @@ def test_build_success_zero_impact(
         assert queued_oi + oi_adjusted == market.queuedOiShort()
 
 
-@unittest.skip('XXX REMOVE THIS')
-def test_build_when_market_not_supported(mothership, market, bob):
-    pass
+@given(
+    leverage=strategy('uint8', min_value=1, max_value=100),
+    is_long=strategy('bool')
+    )
+@settings(max_examples=1)
+def test_build_when_market_not_supported(
+        ovl_collateral,
+        token,
+        mothership,
+        market,
+        bob,
+    ):
 
+    EXPECTED_ERROR_MESSAGE = 'OVLV1:!market'
+    token.approve(ovl_collateral, 3e18, {"from": bob})
+    trade_amt = MIN_COLLATERAL*2 #just to avoid failing min_collateral check because of fees
+
+    assert mothership.marketActive(market)
+
+    bad_address = str(hex(int(market.address, 0) + 1))
+    market.address = bad_address #mutate market
+    assert ~mothership.marketActive(market)
+
+    with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+        ovl_collateral.build(market, trade_amt, leverage, is_long, {'from':bob})
 
 @unittest.skip('XXX REMOVE THIS')
 @given(
@@ -122,12 +149,13 @@ def test_build_min_collateral(
         ovl_collateral.build(market, trade_amt - 1, leverage, is_long, {'from':bob})
 
 
+@unittest.skip('XXX REMOVE THIS')
 @given(
     collateral=strategy('uint256', min_value=1e18, max_value=OI_CAP - 1e4),
     leverage=strategy('uint8', min_value=1, max_value=200), #market.leverageMax() = 100
     is_long=strategy('bool')
     )
-@settings(max_examples=1)
+@settings(max_examples=3)
 def test_build_max_leverage(
         ovl_collateral, 
         token, 
@@ -152,14 +180,20 @@ def test_build_max_leverage(
 
 @unittest.skip('XXX REMOVE THIS')
 @given(
-    oi=strategy('uint256',
-                min_value=1.01*OI_CAP*10**TOKEN_DECIMALS, max_value=2**144-1),
+    oi=strategy('uint256', min_value=1.01*OI_CAP*10**TOKEN_DECIMALS, max_value=2**144-1),
     leverage=strategy('uint8', min_value=1, max_value=100),
     is_long=strategy('bool'))
-def test_build_breach_cap(token, ovl_collateral, market, bob,
-                          oi, leverage, is_long):
+def test_build_cap(
+        token, 
+        ovl_collateral, 
+        market, 
+        bob,
+        oi, 
+        leverage, 
+        is_long
+    ):
+
     collateral = int(oi / leverage)
     token.approve(ovl_collateral, collateral, {"from": bob})
     with brownie.reverts("OVLV1:>cap"):
-        ovl_collateral.build(market, collateral, leverage,
-                             is_long, {"from": bob})
+        ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
