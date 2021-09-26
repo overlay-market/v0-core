@@ -84,23 +84,25 @@ def test_build_success_zero_impact(
         assert queued_oi + oi_adjusted == market.queuedOiShort()
 
 
+@unittest.skip('XXX REMOVE THIS')
 def test_build_when_market_not_supported(mothership, market, bob):
     pass
 
 
+@unittest.skip('XXX REMOVE THIS')
 @given(
     leverage=strategy('uint8', min_value=1, max_value=100),
     is_long=strategy('bool')
     )
-@settings(max_examples=10)
+@settings(max_examples=1)
 def test_build_min_collateral(
-    ovl_collateral,
-    token,
-    mothership,
-    market,
-    bob,
-    leverage,
-    is_long
+        ovl_collateral,
+        token,
+        mothership,
+        market,
+        bob,
+        leverage,
+        is_long
     ):
     
     EXPECTED_ERROR_MESSAGE = 'OVLV1:collat<min'
@@ -108,7 +110,8 @@ def test_build_min_collateral(
 
     # Here we compute exactly how much to trade in order to have just the MIN_COLLATERAL after fees are taken
     fee = mothership.fee()
-    fee_offset = MIN_COLLATERAL*(fee*leverage/(FEE_RESOLUTION - leverage*fee))
+    FL = fee*leverage
+    fee_offset = MIN_COLLATERAL*(FL/(FEE_RESOLUTION - FL))
     trade_amt = (MIN_COLLATERAL + fee_offset)
 
     #higher than min collateral passes
@@ -120,36 +123,32 @@ def test_build_min_collateral(
         ovl_collateral.build(market, trade_amt - 1, leverage, is_long, {'from':bob})
 
 
-@unittest.skip('XXX REMOVE THIS')
 @given(
     collateral=strategy('uint256', min_value=1e18, max_value=OI_CAP - 1e4),
-    # leverage=strategy('uint8', min_value=1, max_value=100),
+    leverage=strategy('uint8', min_value=1, max_value=200), #market.leverageMax() = 100
     is_long=strategy('bool')
     )
 @settings(max_examples=1)
 def test_build_max_leverage(
-    ovl_collateral, 
-    token, 
-    market, 
-    bob,
-    collateral,
-    # leverage,
-    is_long
+        ovl_collateral, 
+        token, 
+        market, 
+        bob,
+        collateral,
+        leverage,
+        is_long
     ):
 
-    
     EXPECTED_ERROR_MESSAGE = 'OVLV1:lev>max'
-
-    # approve collateral contract to spend bob's ovl to build position
     token.approve(ovl_collateral, collateral, {"from": bob})
+    trade_amt = MIN_COLLATERAL*2 #just to avoid failing min_collateral check because of fees
 
-    for leverage in range(1, market.leverageMax() + 100, 10):
-        if leverage > market.leverageMax():
-            with brownie.reverts(EXPECTED_ERROR_MESSAGE):
-                ovl_collateral.build(market, MIN_COLLATERAL, leverage, is_long, {'from':bob})
-        else:
-            tx = ovl_collateral.build(market, MIN_COLLATERAL, leverage, is_long, {'from':bob})
-            assert isinstance(tx, brownie.network.transaction.TransactionReceipt)
+    if leverage > market.leverageMax():
+        with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+            ovl_collateral.build(market, trade_amt, leverage, is_long, {'from':bob})
+    else:
+        tx = ovl_collateral.build(market, trade_amt, leverage, is_long, {'from':bob})
+        assert isinstance(tx, brownie.network.transaction.TransactionReceipt)
 
 
 @unittest.skip('XXX REMOVE THIS')
