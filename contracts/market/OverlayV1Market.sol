@@ -86,11 +86,13 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
         compoundedEpoch_ = exitUpdate();
 
+        uint _latestPrice = pricePoints.length - 1;
+
+        require(_pricePoint <= _latestPrice, "OVLV1:!settled");
+
         PricePoint storage priceEntry = pricePoints[_pricePoint];
 
-        require( (_pricePoint = pricePoints.length - 1) > _pricePoint, "OVLV1:!settled");
-
-        PricePoint storage priceExit = pricePoints[_pricePoint];
+        PricePoint storage priceExit = pricePoints[_latestPrice];
 
         priceFrame_ = _isLong
             ? Math.min(priceExit.bid / priceEntry.ask, priceFrameCap)
