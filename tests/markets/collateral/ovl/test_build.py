@@ -10,14 +10,23 @@ FEE_RESOLUTION = 1e18
 
 
 @given(
-    collateral=strategy('uint256', min_value=1e18,
-                        max_value=OI_CAP - 1e4),
+    collateral=strategy('uint256', min_value=1e18, max_value=OI_CAP - 1e4),
     leverage=strategy('uint8', min_value=1, max_value=100),
-    is_long=strategy('bool'))
+    is_long=strategy('bool')
+    )
 @settings(max_examples=1)
-def test_build_success_zero_impact(ovl_collateral, token, mothership, market,
-                                   bob, rewards, collateral, leverage,
-                                   is_long):
+def test_build_success_zero_impact(
+        ovl_collateral,
+        token,
+        mothership,
+        market,
+        bob,
+        rewards,
+        collateral,
+        leverage,
+        is_long
+        ):
+
     oi = collateral * leverage
     trade_fee = oi * mothership.fee() / FEE_RESOLUTION
 
@@ -77,8 +86,32 @@ def test_build_when_market_not_supported(mothership, market, bob):
     pass
 
 
-def test_build_breach_min_collateral(token, market, bob):
-    pass
+@given(
+    collateral=strategy('uint256', min_value=2e18, max_value=OI_CAP - 1e4),
+    leverage=strategy('uint8', min_value=1, max_value=100),
+    is_long=strategy('bool')
+    )
+@settings(max_examples=1)
+def test_build_min_collateral(
+    ovl_collateral, 
+    token, 
+    market, 
+    bob,
+    collateral,
+    leverage,
+    is_long
+    ):
+    
+    epsilon = 1e18
+    # approve collateral contract to spend bob's ovl to build position
+    token.approve(ovl_collateral, collateral, {"from": bob})
+
+    #higher than min collateral passes
+    breakpoint()
+    ovl_collateral.build(market, MIN_COLLATERAL+epsilon, leverage, is_long, {'from':bob})
+    #lower than min collateral fails
+    with brownie.reverts('OVLV1:collat<min'):
+        ovl_collateral.build(market, MIN_COLLATERAL, leverage, is_long, {'from':bob})
 
 
 def test_build_breach_max_leverage(token, market, bob):
