@@ -47,13 +47,23 @@ def test_unwind_oi_removed(
 
     # Position info
     pid = tx_build.events['Build']['positionId']
-    (_, _, _, price_point, oi_shares_build, debt_build, cost_build, p_compounding) =\
-        ovl_collateral.positions(pid)
+    (_, _, _, price_point, oi_shares_build,
+        debt_build, cost_build, p_compounding) = ovl_collateral.positions(pid)
 
     chain.mine(timedelta=market.updatePeriod()+1)
+    oi_long, oi_short = market.oi()
+
+    if is_long:
+        assert oi_shares_build > 0
+        assert oi_long > 0
+        assert oi_short == 0
+    else:
+        assert oi_shares_build > 0
+        assert oi_short > 0
+        assert oi_long == 0
 
     # Unwind
-    tx = ovl_collateral.unwind(
+    ovl_collateral.unwind(
         pid,
         oi_shares_build,
         {"from": bob}
@@ -62,8 +72,13 @@ def test_unwind_oi_removed(
     (_, _, _, _, oi_shares_unwind, debt_unwind, cost_unwind, _) =\
         ovl_collateral.positions(pid)
 
-    print('oi_shares_unwind', oi_shares_unwind)
+    oi_long, oi_short = market.oi()
+
     assert oi_shares_unwind == 0
+    assert oi_long == 0
+    assert oi_short == 0
+
+    
 
 
 # warning, dependent on what the price/mocks do
