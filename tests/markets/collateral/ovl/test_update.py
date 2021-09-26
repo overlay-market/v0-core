@@ -41,68 +41,24 @@ def test_update(mothership,
     tx_long = ovl_collateral.build(market, oi_long, 1, True, {"from": bob})
     tx_short = ovl_collateral.build(market, oi_short, 1, False, {"from": bob})
 
-    print_logs(tx_long)
-    print_logs(tx_short)
-
-    pos_long_id = tx_long.events['Build']['positionId']
-    pos_short_id = tx_short.events['Build']['positionId']
-
-    pos_long_bal = ovl_collateral.balanceOf(bob, pos_long_id)
-    pos_short_bal = ovl_collateral.balanceOf(bob, pos_short_id)
-
     # prior fee state
     margin_burn_rate, fee_burn_rate, fee_to = mothership.getUpdateParams()
-    prior_fees = ovl_collateral.fees()
+    fees = ovl_collateral.fees()
 
-    # prior token balances
-    prior_balance_ovl_collateral = token.balanceOf(ovl_collateral)
-    prior_balance_fee_to = token.balanceOf(fee_to)
-    prior_balance_rewards_to = token.balanceOf(rewards)
     prior_total_supply = token.totalSupply()
 
-    # prior oi state
-    prior_queued_oi_long = market.queuedOiLong()
-    prior_queued_oi_short = market.queuedOiShort()
-    prior_oi_long = market.oiLong()
-    prior_oi_short = market.oiShort()
-
-    # prior price point state
-    prior_price_point_idx = market.pricePointCurrentIndex()
-
-    # prior epochs
-    prior_updated = market.updated()
-    prior_compounded = market.compounded()
-
-    chain.mine(timestamp=chain[-1].timestamp + update_period)
-
-    tx = ovl_collateral.update(market, {"from": alice})
-
-    print("oi long", oi_long)
-    print("oi short", oi_short)
-
-    print_logs(tx)
-
-    ovl_collateral_balance_now = token.balanceOf(ovl_collateral)
+    ovl_collateral.update(market, {"from": alice})
 
     fee_to_balance_now = token.balanceOf(fee_to)
     total_supply_now = token.totalSupply()
 
-    burn_amount = Decimal(prior_fees) * ( Decimal(fee_burn_rate) / Decimal(1e18) )
-
-    print("prior total supply", prior_total_supply)
-    print("total supply now", total_supply_now)
-    print("burn amount", burn_amount)
-
-    print("prior ovl collateral balance", prior_balance_ovl_collateral)
-    print("prior fee to balance", prior_balance_fee_to)
-
-    print("ovl_collateral_balance_now", ovl_collateral_balance_now)
-    print("fee to balance now", fee_to_balance_now)
+    burn_amount = Decimal(fees) * ( Decimal(fee_burn_rate) / Decimal(1e18) )
 
     # test burn amount
     assert int(total_supply_now) == int(Decimal(prior_total_supply) - burn_amount)
 
-    assert int(fee_to_balance_now) == int(Decimal(prior_fees) * ( Decimal(fee_burn_rate) / Decimal(1e18)))
+    # test fee amount
+    assert int(fee_to_balance_now) == int(Decimal(fees) - burn_amount)
 
 
 def test_update_funding_burn():
