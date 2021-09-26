@@ -166,7 +166,7 @@ def test_build_cap(
         is_long=1
     ):
 
-    EXPECTED_ERROR_MESSAGE = 'OVLV1:>cap'
+    EXPECTED_ERROR_MESSAGE = 'OVLV1:>cap' #NOTE error meg should be 'OVLV1:collat>cap'
 
     cap = market.oiCap()
     token.approve(ovl_collateral, cap*2, {"from": bob})
@@ -178,27 +178,32 @@ def test_build_cap(
         ovl_collateral.build(market, cap + 1, leverage, is_long, {"from": bob})
 
 
+@given(
+    collateral=strategy('uint256', min_value=1e18, max_value=OI_CAP - 1e4),
+    leverage=strategy('uint8', min_value=1, max_value=100),
+    is_long=strategy('bool')
+    )
+@settings(max_examples=1)
 def test_oi_queued(
-        token, 
-        ovl_collateral, 
-        market, 
+        ovl_collateral,
+        token,
+        mothership,
+        market,
         bob,
-        leverage=1, 
-        is_long=1
+        collateral,
+        leverage, 
+        is_long
     ):
 
     # get prior state of market
     queued_oi = market.queuedOiLong() if is_long else market.queuedOiShort()
 
-    # approve collateral contract to spend bob's ovl to build position
     token.approve(ovl_collateral, collateral, {"from": bob})
 
-    # build the position
-    tx = ovl_collateral.build(
-        market,
-        collateral,
-        leverage,
-        is_long,
-        {"from": bob}
-    )
-)
+    tx = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
+
+    new_oi = market.queuedOiLong() if is_long else market.queuedOiShort()
+
+    assert new_oi = queued_oi + collateral(1 - mothership.fee())
+
+    breakpoint()
