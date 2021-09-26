@@ -109,8 +109,7 @@ def test_build_min_collateral(
     token.approve(ovl_collateral, 3e18, {"from": bob})
 
     # Here we compute exactly how much to trade in order to have just the MIN_COLLATERAL after fees are taken
-    fee = mothership.fee()
-    FL = fee*leverage
+    FL = mothership.fee()*leverage
     fee_offset = MIN_COLLATERAL*(FL/(FEE_RESOLUTION - FL))
     trade_amt = (MIN_COLLATERAL + fee_offset)
 
