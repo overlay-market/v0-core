@@ -91,11 +91,6 @@ def test_build_success_zero_impact(
         assert queued_oi + oi_adjusted == market.queuedOiShort()
 
 
-@given(
-    leverage=strategy('uint8', min_value=1, max_value=100),
-    is_long=strategy('bool')
-    )
-@settings(max_examples=1)
 def test_build_when_market_not_supported(
         ovl_collateral,
         token,
@@ -103,8 +98,8 @@ def test_build_when_market_not_supported(
         market,
         notamarket,
         bob,
-        leverage,
-        is_long
+        leverage=1,
+        is_long=1
     ):
 
     EXPECTED_ERROR_MESSAGE = 'OVLV1:!market'
@@ -112,9 +107,6 @@ def test_build_when_market_not_supported(
     trade_amt = MIN_COLLATERAL*2 #just to avoid failing min_collateral check because of fees
 
     assert mothership.marketActive(market)
-    tx = ovl_collateral.build(market, trade_amt, leverage, is_long, {'from':bob})
-    assert isinstance(tx, brownie.network.transaction.TransactionReceipt)
-
     assert ~mothership.marketActive(notamarket)
     with brownie.reverts(EXPECTED_ERROR_MESSAGE):
         ovl_collateral.build(notamarket, trade_amt, leverage, is_long, {'from':bob})
