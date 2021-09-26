@@ -143,32 +143,25 @@ def test_build_min_collateral(
         ovl_collateral.build(market, trade_amt - 1, leverage, is_long, {'from':bob})
 
 
-@given(
-    collateral=strategy('uint256', min_value=1e18, max_value=OI_CAP - 1e4),
-    leverage=strategy('uint8', min_value=1, max_value=200), #market.leverageMax() = 100
-    is_long=strategy('bool')
-    )
-@settings(max_examples=3)
 def test_build_max_leverage(
         ovl_collateral, 
         token, 
         market, 
         bob,
-        collateral,
-        leverage,
-        is_long
+        collateral=1e18,
+        is_long=1
     ):
 
     EXPECTED_ERROR_MESSAGE = 'OVLV1:lev>max'
     token.approve(ovl_collateral, collateral, {"from": bob})
     trade_amt = MIN_COLLATERAL*2 #just to avoid failing min_collateral check because of fees
 
-    if leverage > market.leverageMax():
-        with brownie.reverts(EXPECTED_ERROR_MESSAGE):
-            ovl_collateral.build(market, trade_amt, leverage, is_long, {'from':bob})
-    else:
-        tx = ovl_collateral.build(market, trade_amt, leverage, is_long, {'from':bob})
-        assert isinstance(tx, brownie.network.transaction.TransactionReceipt)
+    tx = ovl_collateral.build(market, trade_amt, market.leverageMax(), is_long, {'from':bob})
+    assert isinstance(tx, brownie.network.transaction.TransactionReceipt)
+
+    with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+        ovl_collateral.build(market, trade_amt, market.leverageMax() + 1, is_long, {'from':bob})
+
 
 
 @given(
