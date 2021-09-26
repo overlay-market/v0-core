@@ -209,15 +209,14 @@ def test_oi_queued(
 
 
 @given(
-    collateral=strategy('uint256', min_value=1e18, max_value=OI_CAP - 1e4),
+    collateral=strategy('uint256', min_value=1e18, max_value=(OI_CAP - 1e4)/300), #bc we build multiple positions w leverage need to take care not to hit CAP
     leverage=strategy('uint8', min_value=1, max_value=100),
     is_long=strategy('bool')
     )
-@settings(max_examples=1)
+@settings(max_examples=10)
 def test_entry_update_price_fetching(
         ovl_collateral,
         token,
-        mothership,
         market,
         bob,
         collateral,
@@ -225,11 +224,11 @@ def test_entry_update_price_fetching(
         is_long
     ):
 
-    token.approve(ovl_collateral, collateral*4, {"from": bob})
-    tx1 = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
-    idx1 = market.pricePointCurrentIndex()
+    token.approve(ovl_collateral, collateral*3, {"from": bob})
 
-    tx2 = ovl_collateral.build(market, collateral*2, leverage, is_long, {"from": bob})
+    _ = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
+    idx1 = market.pricePointCurrentIndex()
+    _ = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
     idx2 = market.pricePointCurrentIndex()
 
     assert idx1 == idx2
@@ -237,6 +236,46 @@ def test_entry_update_price_fetching(
     update_period = market.updatePeriod()
     brownie.chain.mine(timedelta=update_period)
 
+    _ = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
+    idx3 = market.pricePointCurrentIndex()
+
+    assert idx3 > idx2
+
+
+@given(
+    collateral=strategy('uint256', min_value=1e18, max_value=(OI_CAP - 1e4)/300), #bc we build multiple positions w leverage need to take care not to hit CAP
+    leverage=strategy('uint8', min_value=1, max_value=100),
+    is_long=strategy('bool')
+    )
+@settings(max_examples=1)
+def test_entry_update_compounding(
+        ovl_collateral,
+        token,
+        market,
+        mothership,
+        gov,
+        bob,
+        collateral,
+        leverage, 
+        is_long
+    ):
+
+    token.approve(ovl_collateral, collateral*3, {"from": bob})
+
+    _ = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
+    idx1 = market.pricePointCurrentIndex()
+    _ = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
+    idx2 = market.pricePointCurrentIndex()
+
+    assert idx1 == idx2
+    breakpoint()
+
+    compounding_period = 600 #market.compoundingPeriod() TODO: when mike merges the view fix this
+    brownie.chain.mine(timedelta=compounding_period)
+
+    new_oi = market.oiLong if is_long else market.oiShort
+
+    # tx.events[]
 
     tx3 = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
     idx3 = market.pricePointCurrentIndex()
