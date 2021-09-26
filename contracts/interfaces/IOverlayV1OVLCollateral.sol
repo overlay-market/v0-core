@@ -65,4 +65,8 @@ interface IOverlayV1OVLCollateral is IERC1155 {
         address _rewardsTo
     ) external;
 
+    function value (
+        uint _positionId
+    ) external view returns (uint);
+
 }

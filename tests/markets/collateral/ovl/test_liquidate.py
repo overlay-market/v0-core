@@ -33,7 +33,8 @@ def test_liquidate_success_zero_impact(ovl_collateral, token, mothership,
     exit_time = grouping["exit"]["timestamp"]
 
     # fast forward to time we want for entry
-    brownie.chain.mine(timestamp=entry_time)
+    # TODO: timestamp=entry_time
+    brownie.chain.mine(timedelta=10*market.compoundingPeriod())
 
     # market constants
     maintenance_margin, maintenance_margin_reward = ovl_collateral.marketInfo(
@@ -60,7 +61,8 @@ def test_liquidate_success_zero_impact(ovl_collateral, token, mothership,
         market.pricePointCurrentIndex()-1))
 
     # fast forward to time at which should get liquidated
-    brownie.chain.mine(timestamp=exit_time)
+    # TODO: timestamp=exit_time
+    brownie.chain.mine(timedelta=10*market.compoundingPeriod())
 
     # get market and manager state prior to liquidation
     oi_long_prior, oi_short_prior = market.oi()
