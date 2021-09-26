@@ -22,8 +22,9 @@ def test_unwind(ovl_collateral, token, bob):
 
 
 def test_unwind_revert_insufficient_shares(ovl_collateral, bob):
-
-    with brownie.reverts("OVLV1:!shares"):
+    
+    EXPECTED_ERROR_MESSAGE = "OVLV1:!shares"
+    with brownie.reverts(EXPECTED_ERROR_MESSAGE):
         ovl_collateral.unwind(
             1,
             1e18,
@@ -92,9 +93,64 @@ def test_unwind_oi_removed(
     assert oi_long == 0
     assert oi_short == 0
 
-    
 
+# WIP
+@given(
+    collateral=strategy('uint256', min_value=1e18, max_value=OI_CAP - 1e4),
+    leverage=strategy('uint8', min_value=1, max_value=100),
+    is_long=strategy('bool')
+    )
+@settings(max_examples=1)
+def test_unwind_fee_applied(
+        ovl_collateral,
+        mothership,
+        market,
+        token,
+        bob,
+        alice,
+        collateral,
+        leverage,
+        is_long
+        ):
 
+    breakpoint()
+    # Build
+    token.approve(ovl_collateral, collateral, {"from": bob})
+    tx_build = ovl_collateral.build(
+        market,
+        collateral,
+        leverage,
+        is_long,
+        {"from": bob}
+    )
+
+    # Position info
+    pid = tx_build.events['Build']['positionId']
+    (_, _, _, price_point, oi_shares_build,
+        debt_build, cost_build, p_compounding) = ovl_collateral.positions(pid)
+
+    chain.mine(timedelta=market.updatePeriod()+1)
+    oi_long, oi_short = market.oi()
+
+    breakpoint()
+    # Unwind
+    ovl_collateral.unwind(
+        pid,
+        oi_shares_build,
+        {"from": bob}
+    )
+
+    breakpoint()
+    (_, _, _, _, oi_shares_unwind, debt_unwind, cost_unwind, _) =\
+        ovl_collateral.positions(pid)
+
+    oi_long, oi_short = market.oi()
+
+    assert oi_shares_unwind == 0
+    assert oi_long == 0
+    assert oi_short == 0
+
+# WIP
 # warning, dependent on what the price/mocks do
 def test_unwind_revert_position_was_liquidated(
         ovl_collateral,
@@ -141,13 +197,14 @@ def test_unwind_from_queued_oi (ovl_collateral, bob):
     pass
 
 
+# WIP (@realisation working on this one)
 def test_that_comptroller_recorded_mint_or_burn (
-    ovl_collateral, 
-    mothership,
-    token, 
-    market, 
-    bob
-):
+        ovl_collateral, 
+        mothership,
+        token, 
+        market, 
+        bob
+    ):
 
     update_period = market.updatePeriod()
 
