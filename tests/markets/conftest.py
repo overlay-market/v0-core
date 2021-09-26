@@ -11,7 +11,6 @@ from brownie import (
     UniTest
 )
 
-
 TOKEN_DECIMALS = 18
 TOKEN_TOTAL_SUPPLY = 8000000e18
 OI_CAP = 800000
@@ -19,31 +18,29 @@ AMOUNT_IN = 1
 PRICE_POINTS_START = 50
 PRICE_POINTS_END = 100
 
-
 @pytest.fixture(scope="module")
 def gov(accounts):
     yield accounts[0]
-
 
 @pytest.fixture(scope="module")
 def rewards(accounts):
     yield accounts[1]
 
-
 @pytest.fixture(scope="module")
 def alice(accounts):
     yield accounts[2]
-
 
 @pytest.fixture(scope="module")
 def bob(accounts):
     yield accounts[3]
 
-
 @pytest.fixture(scope="module")
 def feed_owner(accounts):
     yield accounts[6]
 
+@pytest.fixture(scope="module")
+def fees(accounts):
+    yield accounts[4]
 
 @pytest.fixture(scope="module")
 def create_token(gov, alice, bob):
@@ -124,10 +121,9 @@ def comptroller(gov):
     scope="module",
     params=[
         ("OverlayV1Mothership", [
-            .5e18,         # margin burn rate
             .0015e18,      # fee
             .5e18,         # fee burn rate
-            .001e18,       # update reward rate
+            .5e18,         # margin burn rate
         ],
          "OverlayV1UniswapV3MarketZeroComptrollerShim", [
             1e18,                # amount in
@@ -151,7 +147,7 @@ def comptroller(gov):
          get_uni_feeds,
         ),
     ])
-def create_mothership(create_token, alice, bob, gov, rewards, feed_owner, request):
+def create_mothership(create_token, fees, alice, bob, gov, rewards, feed_owner, request):
     ovlms_name, ovlms_args, ovlm_name, ovlm_args, ovlc_name, ovlc_args, get_feed = request.param
 
     chain.mine(timestamp=int(time.time()))
@@ -160,7 +156,7 @@ def create_mothership(create_token, alice, bob, gov, rewards, feed_owner, reques
     ovlm = getattr(brownie, ovlm_name)
     ovlc = getattr(brownie, ovlc_name)
 
-    ovlms_args.append(rewards)
+    ovlms_args.insert(0, fees)
 
     def create_mothership(
         c_tok=create_token,

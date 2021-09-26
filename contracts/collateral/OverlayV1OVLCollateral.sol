@@ -48,8 +48,6 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     event Liquidate(uint256 positionId, address rewarded, uint256 reward);
     event Update(
-        address rewarded,
-        uint rewardAmount,
         uint feesCollected,
         uint feesBurned,
         uint liquidationsCollected,
@@ -97,20 +95,16 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     /// @notice Updates funding payments, cumulative fees, queued position builds, and price points
     function update(
-        address _market,
-        address _rewardsTo
+        address _market
     ) public {
-
 
         (   uint256 _marginBurnRate,
             uint256 _feeBurnRate,
-            uint256 _feeRewardsRate,
             address _feeTo ) = mothership.getUpdateParams();
 
         uint _feeForward = fees;
         uint _feeBurn = _feeForward.mulUp(_feeBurnRate);
-        uint _feeReward = _feeForward.mulUp(_feeRewardsRate);
-        _feeForward = _feeForward - _feeBurn - _feeReward;
+        _feeForward = _feeForward - _feeBurn;
 
         uint _liqForward = liquidations;
         uint _liqBurn = _liqForward.mulUp(_marginBurnRate);
@@ -120,8 +114,6 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         liquidations = 0;
 
         emit Update(
-            _rewardsTo,
-            _feeReward,
             _feeForward,
             _feeBurn,
             _liqForward,
@@ -130,7 +122,6 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         ovl.burn(address(this), _feeBurn + _liqBurn);
         ovl.transfer(_feeTo, _feeForward + _liqForward);
-        ovl.transfer(_rewardsTo, _feeReward);
 
     }
 
