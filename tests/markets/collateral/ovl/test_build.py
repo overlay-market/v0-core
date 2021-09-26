@@ -11,7 +11,6 @@ TOKEN_TOTAL_SUPPLY = 8000000
 OI_CAP = 800000e18
 FEE_RESOLUTION = 1e18
 
-@unittest.skip('XXX REMOVE THIS')
 @given(
     collateral=strategy('uint256', min_value=1e18, max_value=OI_CAP - 1e4),
     leverage=strategy('uint8', min_value=1, max_value=100),
@@ -107,11 +106,11 @@ def test_build_when_market_not_supported(
     trade_amt = MIN_COLLATERAL*2 #just to avoid failing min_collateral check because of fees
 
     assert mothership.marketActive(market)
-    assert ~mothership.marketActive(notamarket)
+    assert not mothership.marketActive(notamarket)
     with brownie.reverts(EXPECTED_ERROR_MESSAGE):
         ovl_collateral.build(notamarket, trade_amt, leverage, is_long, {'from':bob})
 
-@unittest.skip('XXX REMOVE THIS')
+
 @given(
     leverage=strategy('uint8', min_value=1, max_value=100),
     is_long=strategy('bool')
@@ -144,7 +143,6 @@ def test_build_min_collateral(
         ovl_collateral.build(market, trade_amt - 1, leverage, is_long, {'from':bob})
 
 
-@unittest.skip('XXX REMOVE THIS')
 @given(
     collateral=strategy('uint256', min_value=1e18, max_value=OI_CAP - 1e4),
     leverage=strategy('uint8', min_value=1, max_value=200), #market.leverageMax() = 100
@@ -173,7 +171,6 @@ def test_build_max_leverage(
         assert isinstance(tx, brownie.network.transaction.TransactionReceipt)
 
 
-@unittest.skip('XXX REMOVE THIS')
 @given(
     oi=strategy('uint256', min_value=1.01*OI_CAP*10**TOKEN_DECIMALS, max_value=2**144-1),
     leverage=strategy('uint8', min_value=1, max_value=100),
