@@ -238,6 +238,11 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         if (0 < _compoundings) {
 
+            // If there was an update queued up, that means            
+            // there was queued oi, which is not involved in
+            // funding until one compounding epoch has passed.
+            // We pay funding for one compounding epoch, then 
+            // compound the rest of the epochs.
             if (_toUpdate != type(uint256).max) {
 
                 updateFunding(1);
