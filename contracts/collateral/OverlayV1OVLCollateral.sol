@@ -20,7 +20,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     mapping (address => mapping(uint => uint)) internal queuedPositionLongs;
     mapping (address => mapping(uint => uint)) internal queuedPositionShorts;
-    mapping (address => MarketInfo) marketInfo;
+    mapping (address => MarketInfo) public marketInfo;
     struct MarketInfo {
         uint marginMaintenance;
         uint marginRewardRate;
@@ -35,14 +35,14 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     uint256 public liquidations;
 
     event Build(
-        uint256 positionId, 
-        uint256 oi, 
+        uint256 positionId,
+        uint256 oi,
         uint256 debt
     );
 
     event Unwind(
-        uint256 positionId, 
-        uint256 oi, 
+        uint256 positionId,
+        uint256 oi,
         uint256 debt
     );
 

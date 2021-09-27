@@ -10,8 +10,10 @@ import "./IOverlayV1Mothership.sol";
 import "./IOverlayToken.sol";
 
 interface IOverlayV1OVLCollateral is IERC1155 {
-
-    event log(string k, uint v);
+    struct MarketInfo {
+        uint marginMaintenance;
+        uint marginRewardRate;
+    }
 
     function totalPositionShares (uint positionId) external view returns (uint256 shares);
     function marginAdjustments (address market) external view returns (uint256 marginAdjustment);
@@ -21,6 +23,7 @@ interface IOverlayV1OVLCollateral is IERC1155 {
     function positions (uint positionId) external view returns (Position.Info memory);
     function ovl () external view returns (IOverlayToken);
     function mothership () external view returns (IOverlayV1Mothership);
+    function marketInfo(address) external view returns (MarketInfo memory);
     function fees () external view returns (uint);
     function liquidation () external view returns (uint);
 
@@ -28,16 +31,16 @@ interface IOverlayV1OVLCollateral is IERC1155 {
     event Unwind(uint256 positionId, uint256 oi, uint256 debt);
     event Liquidate(address rewarded, uint256 reward);
     event Update(
-        address rewarded, 
-        uint rewardAmount, 
-        uint feesCollected, 
-        uint feesBurned, 
-        uint liquidationsCollected, 
-        uint liquidationsBurned 
+        address rewarded,
+        uint rewardAmount,
+        uint feesCollected,
+        uint feesBurned,
+        uint liquidationsCollected,
+        uint liquidationsBurned
     );
 
-    function addMarket ( 
-        address _market, 
+    function addMarket (
+        address _market,
         uint _marginAdjustment
     ) external;
 
@@ -61,5 +64,9 @@ interface IOverlayV1OVLCollateral is IERC1155 {
         uint256 _positionId,
         address _rewardsTo
     ) external;
+
+    function value (
+        uint _positionId
+    ) external view returns (uint);
 
 }

@@ -7,9 +7,9 @@ import "./OverlayV1Comptroller.sol";
 import "./OverlayV1OI.sol";
 import "./OverlayV1PricePoint.sol";
 
-abstract contract OverlayV1Governance is 
-    OverlayV1Comptroller, 
-    OverlayV1OI, 
+abstract contract OverlayV1Governance is
+    OverlayV1Comptroller,
+    OverlayV1OI,
     OverlayV1PricePoint {
 
     uint constant private ONE = 1e18;
@@ -30,9 +30,9 @@ abstract contract OverlayV1Governance is
 
     mapping (address => bool) public isCollateral;
 
-    modifier onlyCollateral () { 
-        require(isCollateral[msg.sender], "OVLV1:!collateral"); 
-        _; 
+    modifier onlyCollateral () {
+        require(isCollateral[msg.sender], "OVLV1:!collateral");
+        _;
     }
 
     modifier onlyGovernor () {
@@ -58,7 +58,7 @@ abstract contract OverlayV1Governance is
         isCollateral[_collateral] = true;
 
     }
-    
+
     function removeCollateral (address _collateral) public onlyGovernor {
 
         isCollateral[_collateral] = false;
@@ -93,7 +93,7 @@ abstract contract OverlayV1Governance is
         setSpread(_pbnj);
 
         setPeriods(
-            _updatePeriod, 
+            _updatePeriod,
             _compoundPeriod
         );
 
@@ -145,7 +145,7 @@ abstract contract OverlayV1Governance is
 
         // TODO: requires on params; particularly leverageMax wrt MAX_FEE and cap
         require(_updatePeriod >= 1, "OVLV1:!update");
-        require(_updatePeriod >= _compoundingPeriod, "OVLV1:update<compound");
+        require(_updatePeriod <= _compoundingPeriod, "OVLV1:update>compound");
 
         updatePeriod = _updatePeriod;
         compoundingPeriod = _compoundingPeriod;
@@ -165,5 +165,5 @@ abstract contract OverlayV1Governance is
         brrrrFade = _brrrrFade;
 
     }
-    
+
 }
