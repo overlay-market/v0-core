@@ -76,15 +76,17 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
     function exitData (
         bool _isLong,
-        uint256 _pricePoint
+        uint256 _pricePoint,
+        uint256 _compounding
     ) public onlyCollateral returns (
         uint oi_,
         uint oiShares_,
         uint priceFrame_,
-        uint compoundedEpoch_
+        bool fromQueued_
     ) {
 
-        compoundedEpoch_ = exitUpdate();
+        // exitUpdate returns the present compounding period
+        fromQueued_ = _compounding > exitUpdate();
 
         uint _latestPrice = pricePoints.length - 1;
 
@@ -98,8 +100,21 @@ abstract contract OverlayV1Market is OverlayV1Governance {
             ? Math.min(priceExit.bid.divDown(priceEntry.ask), priceFrameCap)
             : priceExit.ask.divUp(priceEntry.bid);
 
-        if (_isLong) ( oiShares_ = oiLongShares, oi_ = __oiLong__ + queuedOiLong );
-        else ( oiShares_ = oiShortShares, oi_ = __oiShort__ + queuedOiShort );
+
+        if (fromQueued_){
+
+            uint _queuedOiLong = queuedOiLong;
+            uint _queuedOiShort = queuedOiShort;
+
+            if (_isLong) ( oiShares_ = _queuedOiLong, oi_ = _queuedOiLong );
+            else ( oiShares_ = _queuedOiShort, oi_ = _queuedOiShort );
+
+        } else {
+
+            if (_isLong) ( oiShares_ = oiLongShares , oi_ = __oiLong__ );
+            else ( oiShares_ = oiShortShares, oi_ = __oiShort__ );
+
+        }
 
     }
 
@@ -110,8 +125,8 @@ abstract contract OverlayV1Market is OverlayV1Governance {
     /// @param _isLong is this from the short or the long side
     /// @param _oiShares the amount of oi in shares to be removed
     function exitOI (
-        bool _fromQueued,
         bool _isLong,
+        bool _fromQueued,
         uint _oi,
         uint _oiShares,
         uint _brrrr,

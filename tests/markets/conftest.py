@@ -18,6 +18,9 @@ AMOUNT_IN = 1
 PRICE_POINTS_START = 50
 PRICE_POINTS_END = 100
 
+@pytest.fixture(autouse=True)
+def isolation(fn_isolation):
+    pass
 
 @pytest.fixture(scope="module")
 def gov(accounts):
@@ -136,7 +139,7 @@ def comptroller(gov):
             .5e18,         # fee burn rate
             .5e18,         # margin burn rate
         ],
-         "OverlayV1UniswapV3MarketZeroComptrollerShim", [
+         "OverlayV1UniswapV3MarketZeroLambdaShim", [
             1e18,                # amount in
             600,                 # macro window
             60,                  # micro window

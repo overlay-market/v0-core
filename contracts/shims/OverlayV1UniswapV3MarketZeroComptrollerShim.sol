@@ -4,7 +4,7 @@ pragma solidity ^0.8.7;
 import "../OverlayV1UniswapV3Market.sol";
 import "../libraries/FixedPoint.sol";
 
-contract OverlayV1UniswapV3MarketZeroComptrollerShim is OverlayV1UniswapV3Market {
+contract OverlayV1UniswapV3MarketZeroLambdaShim is OverlayV1UniswapV3Market {
 
     using FixedPoint for uint256;
 
@@ -32,7 +32,9 @@ contract OverlayV1UniswapV3MarketZeroComptrollerShim is OverlayV1UniswapV3Market
         uint256 depth_
     ) {
 
-        depth_ = staticCap;
+        depth_ = lmbda == 0
+            ? staticCap
+            : super.depth();
 
     }
 

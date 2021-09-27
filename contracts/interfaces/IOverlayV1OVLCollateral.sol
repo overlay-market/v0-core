@@ -10,6 +10,8 @@ import "./IOverlayV1Mothership.sol";
 import "./IOverlayToken.sol";
 
 interface IOverlayV1OVLCollateral is IERC1155 {
+
+    event log(string k, uint v);
     struct MarketInfo {
         uint marginMaintenance;
         uint marginRewardRate;
