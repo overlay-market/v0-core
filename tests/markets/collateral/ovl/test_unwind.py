@@ -9,11 +9,12 @@ def print_logs(tx):
     for i in range(len(tx.events['log'])):
         print(tx.events['log'][i]['k'] + ": " + str(tx.events['log'][i]['v']))
 
-def test_unwind(ovl_collateral, token, bob):
+def test_unwind(ovl_collateral, market, token, bob):
+
     pass
 
 
-def test_unwind_revert_insufficient_shares(ovl_collateral, bob):
+def test_unwind_revert_insufficient_shares(ovl_collateral, market, bob):
 
     with brownie.reverts("OVLV1:!shares"):
         ovl_collateral.unwind(
@@ -112,7 +113,6 @@ def test_unwind_from_active_oi(
         leverage,
         is_long
 ):
-
     '''
     We want to unwind from the queued oi so we only mine the chain to the next
     update period, not further into the compounding period. Then we unwind and 
@@ -155,18 +155,24 @@ def test_unwind_from_active_oi(
     assert oi_after_unwind == 0
 
 
-
-    print("compound period", compound_period)
-
+@given(thing=strategy('uint'))
+@settings(max_examples=1)
 def test_comptroller_recorded_mint_or_burn (
     ovl_collateral, 
-    mothership,
     token, 
     market, 
-    bob
+    bob,
+    thing
 ):
+    '''
+    When we unwind we want to see that the comptroller included however much 
+    was minted or burnt from the payout from unwinding the position into its
+    brrrrd storage variable.
+    '''
 
     update_period = market.updatePeriod()
+
+    token.approve(ovl_collateral, 1e50, { 'from': bob })
 
     # when we unwind, seeing if there was a mint/burn, 
     # and see if the brrrrd variable has recorded it
@@ -182,7 +188,6 @@ def test_comptroller_recorded_mint_or_burn (
     bobs_shares = tx.events['Build']['oi']
 
     chain.mine(timedelta=update_period*2)
-    token.approve(ovl_collateral, 1e50, { 'from': bob })
 
     tx = ovl_collateral.unwind(
         pos_id,
@@ -200,7 +205,7 @@ def test_comptroller_recorded_mint_or_burn (
 
     brrrrd = market.brrrrd()
 
-    assert brrrrd == -burnt if burnt > 0 else brrrrd == minted
-
-
-
+    if burnt > 0:
+        assert brrrrd == -burnt
+    else:
+        assert minted == brrrrd
