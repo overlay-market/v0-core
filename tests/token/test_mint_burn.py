@@ -28,10 +28,10 @@ def test_burn(token, burner, bob):
     assert token.balanceOf(bob) == before - amount
 
 
-def test_mint_then_burn(token, admin, alice):
+def test_mint_then_burn(token, market, alice):
     before = token.balanceOf(alice)
-    token.mint(alice, 20 * 10 ** token.decimals(), {"from": admin})
+    token.mint(alice, 20 * 10 ** token.decimals(), {"from": market})
     mid = before + 20 * 10 ** token.decimals()
     assert token.balanceOf(alice) == mid
-    token.burn(alice, 15 * 10 ** token.decimals(), {"from": admin})
+    token.burn(alice, 15 * 10 ** token.decimals(), {"from": market})
     assert token.balanceOf(alice) == mid - 15 * 10 ** token.decimals()

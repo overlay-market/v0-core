@@ -72,7 +72,7 @@ contract OverlayV1Mothership is AccessControlEnumerable {
 
     }
 
-    function setOVL (address _ovl) public {
+    function setOVL (address _ovl) external onlyGovernor {
 
         ovl = _ovl;
 
