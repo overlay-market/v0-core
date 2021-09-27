@@ -4,8 +4,7 @@ pragma solidity ^0.8.7;
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "../libraries/Position.sol";
 
-interface IOverlayV1Market is IERC1155 {
-
+interface IOverlayV1Market is IERC1155 {    
     event NewPrice(uint price);
     event FundingPaid(uint oiLong, uint oiShort, int fundingPaid);
     event log(string k, uint v);
@@ -16,13 +15,13 @@ interface IOverlayV1Market is IERC1155 {
     function feed() external view returns (address);
     function windowSize() external view returns (uint256);
     function updatePeriod() external view returns (uint256);
+    function compoundingPeriod() external view returns (uint256);
     function updated() external view returns (uint256);
     function update() external returns (bool);
     function toUpdate() external view returns (uint256);
     function compounded() external view returns (uint256);
     function leverageMax() external view returns (uint8);
-    function fundingKNumerator() external view returns (uint256);
-    function fundingKDenominator() external view returns (uint256);
+    function k() external view returns (uint256);
 
     function queuedOiLong() external view returns (uint256);
     function queuedOiShort() external view returns (uint256);
