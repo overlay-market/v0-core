@@ -1,6 +1,13 @@
 import brownie
 from brownie.test import given, strategy
 from hypothesis import settings
+from pytest import approx
+
+
+def print_logs(tx):
+    for i in range(len(tx.events['log'])):
+        print(tx.events['log'][i]['k'] + ": " + str(tx.events['log'][i]['v']))
+
 
 MIN_COLLATERAL = 1e14  # min amount to build
 TOKEN_DECIMALS = 18
@@ -42,12 +49,7 @@ def test_build_success_zero_impact(
 
     # build the position
     tx = ovl_collateral.build(
-        market,
-        collateral,
-        leverage,
-        is_long,
-        {"from": bob}
-    )
+        market, collateral, leverage, is_long, {"from": bob})
 
     assert 'Build' in tx.events
     assert 'positionId' in tx.events['Build']
@@ -100,6 +102,7 @@ def test_build_when_market_not_supported(
         ):
 
     EXPECTED_ERROR_MESSAGE = 'OVLV1:!market'
+
     token.approve(ovl_collateral, 3e18, {"from": bob})
     # just to avoid failing min_collateral check because of fees
     trade_amt = MIN_COLLATERAL*2
@@ -127,6 +130,7 @@ def test_build_min_collateral(
         ):
 
     EXPECTED_ERROR_MESSAGE = 'OVLV1:collat<min'
+
     token.approve(ovl_collateral, 3e18, {"from": bob})
 
     # Here we compute exactly how much to trade in order to have just the MIN_COLLATERAL after fees are taken
@@ -155,6 +159,7 @@ def test_build_max_leverage(
         ):
 
     EXPECTED_ERROR_MESSAGE = 'OVLV1:lev>max'
+
     token.approve(ovl_collateral, collateral, {"from": bob})
     # just to avoid failing min_collateral check because of fees
     trade_amt = MIN_COLLATERAL*2
@@ -168,23 +173,147 @@ def test_build_max_leverage(
             market, trade_amt, market.leverageMax() + 1, is_long, {'from': bob})
 
 
-@given(
-    oi=strategy('uint256', min_value=1.01*OI_CAP*10
-                ** TOKEN_DECIMALS, max_value=2**144-1),
-    leverage=strategy('uint8', min_value=1, max_value=100),
-    is_long=strategy('bool'))
 def test_build_cap(
             token,
             ovl_collateral,
             market,
             bob,
-            oi,
+            leverage=1,
+            is_long=1
+        ):
+
+    # NOTE error msg should be 'OVLV1:collat>cap'
+    EXPECTED_ERROR_MESSAGE = 'OVLV1:>cap'
+
+    cap = market.oiCap()
+    token.approve(ovl_collateral, cap*2, {"from": bob})
+
+    tx = ovl_collateral.build(market, cap, leverage, is_long, {'from': bob})
+    assert isinstance(tx, brownie.network.transaction.TransactionReceipt)
+
+    with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+        ovl_collateral.build(market, cap + 1, leverage, is_long, {"from": bob})
+
+
+@given(
+    collateral=strategy('uint256', min_value=1e18, max_value=OI_CAP - 1e4),
+    leverage=strategy('uint8', min_value=1, max_value=100),
+    is_long=strategy('bool')
+    )
+@settings(max_examples=1)
+def test_oi_queued(
+            ovl_collateral,
+            token,
+            mothership,
+            market,
+            bob,
+            collateral,
             leverage,
             is_long
         ):
 
-    collateral = int(oi / leverage)
+    queued_oi = market.queuedOiLong() if is_long else market.queuedOiShort()
+    assert queued_oi == 0
+
     token.approve(ovl_collateral, collateral, {"from": bob})
-    with brownie.reverts("OVLV1:>cap"):
-        ovl_collateral.build(market, collateral, leverage,
-                             is_long, {"from": bob})
+    tx = ovl_collateral.build(
+        market, collateral, leverage, is_long, {"from": bob})
+
+    oi = collateral * leverage
+    trade_fee = oi * mothership.fee() / FEE_RESOLUTION
+
+    new_oi = market.queuedOiLong() if is_long else market.queuedOiShort()
+    assert new_oi == oi - trade_fee
+
+
+@given(
+    # bc we build multiple positions w leverage need to take care not to hit CAP
+    collateral=strategy('uint256', min_value=1e18,
+                        max_value=(OI_CAP - 1e4)/300),
+    leverage=strategy('uint8', min_value=1, max_value=100),
+    is_long=strategy('bool')
+    )
+@settings(max_examples=10)
+def test_entry_update_price_fetching(
+            ovl_collateral,
+            token,
+            market,
+            bob,
+            collateral,
+            leverage,
+            is_long
+        ):
+
+    token.approve(ovl_collateral, collateral*3, {"from": bob})
+
+    _ = ovl_collateral.build(
+        market, collateral, leverage, is_long, {"from": bob})
+    idx1 = market.pricePointCurrentIndex()
+    _ = ovl_collateral.build(
+        market, collateral, leverage, is_long, {"from": bob})
+    idx2 = market.pricePointCurrentIndex()
+
+    assert idx1 == idx2
+
+    brownie.chain.mine(timedelta=market.updatePeriod())
+
+    _ = ovl_collateral.build(
+        market, collateral, leverage, is_long, {"from": bob})
+    idx3 = market.pricePointCurrentIndex()
+
+    assert idx3 > idx2
+
+
+@given(
+    # bc we build multiple positions w leverage need to take care not to hit CAP
+    collateral=strategy('uint256', min_value=1e18,
+                        max_value=(OI_CAP - 1e4)/300),
+    leverage=strategy('uint8', min_value=1, max_value=100),
+    is_long=strategy('bool')
+    )
+@settings(max_examples=1)
+def test_entry_update_compounding(
+            ovl_collateral,
+            token,
+            market,
+            mothership,
+            bob,
+            collateral,
+            leverage,
+            is_long
+        ):
+
+    token.approve(ovl_collateral, collateral*3, {"from": bob})
+
+    _ = ovl_collateral.build(
+        market, collateral, leverage, is_long, {"from": bob})
+
+    _ = ovl_collateral.build(
+        market, collateral, leverage, is_long, {"from": bob})
+    oi2 = market.oiLong() if is_long else market.oiShort()
+
+    queued_oi = market.queuedOiLong() if is_long else market.queuedOiShort()
+
+    k = market.k() / 1e18
+    funding_factor = (1 - 2*k)
+    expected_oi = queued_oi * funding_factor
+
+    oi = collateral * leverage
+    trade_fee = oi * mothership.fee() / FEE_RESOLUTION
+    assert oi2 == 2*(oi - trade_fee)
+
+    # breakpoint()
+    # market.compoundingPeriod() #TODO: when mike merges the view fix this
+    compounding_period = 600
+    brownie.chain.mine(timedelta=compounding_period)
+    brownie.chain.mine(timedelta=compounding_period)
+
+    # #TODO COMPLETE
+    _ = ovl_collateral.build(
+        market, collateral, leverage, is_long, {"from": bob})
+    oi_after_funding = market.oiLong() if is_long else market.oiShort()
+    queued_oi = market.queuedOiLong() if is_long else market.queuedOiShort()
+
+    expected_oi += queued_oi
+
+    assert int(expected_oi) == approx(oi_after_funding)
