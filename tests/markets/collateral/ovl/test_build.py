@@ -267,7 +267,6 @@ def test_entry_update_compounding(
     token.approve(ovl_collateral, collateral*3, {"from": bob})
 
     _ = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
-    _ = market.oiLong() if is_long else market.oiShort()
 
     _ = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
     oi2 = market.oiLong() if is_long else market.oiShort()
@@ -278,18 +277,14 @@ def test_entry_update_compounding(
     funding_factor = ( 1 - 2*k )
     expected_oi = queued_oi * funding_factor
 
-    idx2 = market.pricePointCurrentIndex()
-
     oi = collateral * leverage
     trade_fee = oi * mothership.fee() / FEE_RESOLUTION
     assert oi2 == 2*(oi - trade_fee) 
 
     # breakpoint()
     compounding_period = 600 #market.compoundingPeriod() #TODO: when mike merges the view fix this
+    brownie.chain.mine(timedelta=compounding_period) 
     brownie.chain.mine(timedelta=compounding_period)
-    brownie.chain.mine(timedelta=compounding_period)
-
-    oi_after_funding = market.oiLong({'from': bob}) if is_long else market.oiShort({'from':bob})
 
     # #TODO COMPLETE 
     _ = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
@@ -297,8 +292,5 @@ def test_entry_update_compounding(
     queued_oi = market.queuedOiLong() if is_long else market.queuedOiShort()
 
     expected_oi += queued_oi
-
-    idx3 = market.pricePointCurrentIndex()
-    assert idx3 > idx2
 
     assert int(expected_oi) == approx(oi_after_funding)
