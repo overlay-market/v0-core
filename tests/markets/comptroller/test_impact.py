@@ -335,12 +335,6 @@ def test_impact_pressure_full_cooldown (comptroller, entry, rand):
     impact_window = comptroller.impactWindow()
     chain.mine(timedelta=10)
 
-    entry *= 1e18
-    rand = float(rand) / 100
-    cap = entry * rand
-
-    comptroller.set_TEST_CAP(cap)
-
     comptroller.impactBatch([True], [entry])
 
     chain.mine(timedelta=impact_window+1)
