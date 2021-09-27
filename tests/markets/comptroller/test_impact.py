@@ -248,7 +248,7 @@ def test_roller_cardinality_two_index_rolls_over(comptroller):
     assert comptroller.rollers(1)[1] == 10e18
 
     chain.mine(timedelta=10)
-    tx = comptroller.brrrr([True,True,True],[2e18, 5e18, 3e18])
+    tx = comptroller.impactBatch([True,True,True],[2e18, 5e18, 3e18])
 
     assert comptroller.rollers(0)[0] == chain[-1].timestamp
     assert comptroller.rollers(0)[1] == 20e18
@@ -295,12 +295,6 @@ def test_scry_interpolated_roller(comptroller, time_diff, brrrr):
 
     assert abs(expected_pressure - interpolated_pressure) <= Decimal(1/10**17)
     assert abs(expected_pressure_total - interpolated_pressure_total) <= Decimal(1/10**17)
-
-def test_brrrr_one_time_one_block(comptroller):
-
-    tx = comptroller.brrrr([1e18])
-    brrrr = comptroller.viewBrrrr(0)
-    assert brrrr == 1e18
 
 @given(
     entry=strategy('uint256', min_value=1, max_value=1e6),
