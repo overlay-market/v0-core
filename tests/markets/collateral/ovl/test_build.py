@@ -19,8 +19,7 @@ FEE_RESOLUTION = 1e18
 @given(
     collateral=strategy('uint256', min_value=1e18, max_value=OI_CAP - 1e4),
     leverage=strategy('uint8', min_value=1, max_value=100),
-    is_long=strategy('bool')
-    )
+    is_long=strategy('bool'))
 @settings(max_examples=1)
 def test_build_success_zero_impact(
         ovl_collateral,
