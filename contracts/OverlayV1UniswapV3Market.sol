@@ -209,13 +209,10 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
                 updateFunding(1);
                 updateFunding(_compoundings - 1);
 
-            } else {
-
-                updateFunding(_compoundings);
-
-            }
+            } else updateFunding(_compoundings);
 
             compounded = _tCompounding;
+
         }
 
     }
@@ -246,11 +243,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
                 updateFunding(1);
                 updateFunding(_compoundings - 1);
 
-            } else {
-
-                updateFunding(_compoundings);
-
-            }
+            } else updateFunding(_compoundings);
 
             compounded = _tCompounding;
 
@@ -299,11 +292,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
                 updateFunding(1);
                 updateFunding(_compoundings - 1);
 
-            } else {
-
-                updateFunding(_compoundings);
-
-            }
+            } else updateFunding(_compoundings);
 
             compounded = _tCompounding;
 
