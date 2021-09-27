@@ -252,7 +252,7 @@ def test_entry_update_price_fetching(
     leverage=strategy('uint8', min_value=1, max_value=100),
     is_long=strategy('bool')
     )
-@settings(max_examples=5)
+@settings(max_examples=1)
 def test_entry_update_compounding(
         ovl_collateral,
         token,
@@ -265,29 +265,26 @@ def test_entry_update_compounding(
     ):
 
     token.approve(ovl_collateral, collateral*3, {"from": bob})
+    k = market.k() / 1e18
+    funding_factor = lambda n: ( 1 - 2*k )**n    #n is the number of compounding periods
 
     for _ in range(2):
         ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
-    oi2 = market.oiLong() if is_long else market.oiShort()
-
-    oi = collateral * leverage
-    trade_fee = oi * mothership.fee() / FEE_RESOLUTION
-    assert oi2 == 2*(oi - trade_fee) 
 
     queued_oi = market.queuedOiLong() if is_long else market.queuedOiShort()
+    expected_oi = queued_oi * funding_factor(1)
 
-    k = market.k() / 1e18
-    funding_factor = ( 1 - 2*k )
-    expected_oi = queued_oi * funding_factor
-
-
+    n_periods = 10
     compounding_period = 600 #market.compoundingPeriod() #TODO: when mike merges the view fix this
-    brownie.chain.mine(timedelta=compounding_period*2) 
+    for n in range(1, n_periods):
+        brownie.chain.mine(timedelta=market.compoundingPeriod()*n) 
 
-    _ = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
-    oi_after_funding = market.oiLong() if is_long else market.oiShort()
-    queued_oi = market.queuedOiLong() if is_long else market.queuedOiShort()
+        _ = ovl_collateral.build(market, collateral/n_periods, leverage, is_long, {"from": bob})
 
-    expected_oi += queued_oi
+        expected_oi = queued_oi * funding_factor(n-1)
+        oi_after_funding = market.oiLong() if is_long else market.oiShort()
+        queued_oi = market.queuedOiLong() if is_long else market.queuedOiShort()
 
-    assert int(expected_oi) == approx(oi_after_funding)
+        expected_oi += queued_oi
+
+        assert int(expected_oi) == approx(oi_after_funding)
