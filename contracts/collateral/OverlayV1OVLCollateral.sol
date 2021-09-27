@@ -236,11 +236,6 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         uint _totalPosShares = totalSupply(_positionId);
 
-        emit log("_oi", _oi);
-        emit log("_oiShares", _oiShares);
-        emit log("_priceFrame", _priceFrame);
-        emit log("from queued? -> ", _fromQueued ? 1 : 0);
-
         uint _userOiShares = _shares;
         uint _userNotional = _shares * pos.notional(_priceFrame, _oi, _oiShares) / _totalPosShares;
         uint _userDebt = _shares * pos.debt / _totalPosShares;
