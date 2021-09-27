@@ -1,6 +1,11 @@
 import brownie
 from brownie.test import given, strategy
 from hypothesis import settings
+from pytest import approx
+
+def print_logs(tx):
+    for i in range(len(tx.events['log'])):
+        print(tx.events['log'][i]['k'] + ": " + str(tx.events['log'][i]['v']))
 
 MIN_COLLATERAL = 1e14  # min amount to build
 TOKEN_DECIMALS = 18
@@ -261,26 +266,39 @@ def test_entry_update_compounding(
 
     token.approve(ovl_collateral, collateral*3, {"from": bob})
 
-    tx1 = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
-    oi1 = market.oiLong() if is_long else market.oiShort()
+    _ = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
+    _ = market.oiLong() if is_long else market.oiShort()
 
-    tx2 = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
+    _ = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
     oi2 = market.oiLong() if is_long else market.oiShort()
+
+    queued_oi = market.queuedOiLong() if is_long else market.queuedOiShort()
+
+    k = market.k() / 1e18
+    funding_factor = ( 1 - 2*k )
+    expected_oi = queued_oi * funding_factor
+
+    idx2 = market.pricePointCurrentIndex()
 
     oi = collateral * leverage
     trade_fee = oi * mothership.fee() / FEE_RESOLUTION
     assert oi2 == 2*(oi - trade_fee) 
 
-    breakpoint()
+    # breakpoint()
     compounding_period = 600 #market.compoundingPeriod() #TODO: when mike merges the view fix this
     brownie.chain.mine(timedelta=compounding_period)
     brownie.chain.mine(timedelta=compounding_period)
 
+    oi_after_funding = market.oiLong({'from': bob}) if is_long else market.oiShort({'from':bob})
+
+    # #TODO COMPLETE 
+    _ = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
     oi_after_funding = market.oiLong() if is_long else market.oiShort()
-    # tx.events[]
+    queued_oi = market.queuedOiLong() if is_long else market.queuedOiShort()
 
-    #TODO COMPLETE 
-    tx3 = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
+    expected_oi += queued_oi
+
     idx3 = market.pricePointCurrentIndex()
-
     assert idx3 > idx2
+
+    assert int(expected_oi) == approx(oi_after_funding)
