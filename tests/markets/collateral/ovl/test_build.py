@@ -252,7 +252,7 @@ def test_entry_update_price_fetching(
     leverage=strategy('uint8', min_value=1, max_value=100),
     is_long=strategy('bool')
     )
-@settings(max_examples=1)
+@settings(max_examples=5)
 def test_entry_update_compounding(
         ovl_collateral,
         token,
@@ -266,10 +266,14 @@ def test_entry_update_compounding(
 
     token.approve(ovl_collateral, collateral*3, {"from": bob})
 
-    _ = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
-
-    _ = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
+    for _ in range(2):
+        ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
+    # _ = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
     oi2 = market.oiLong() if is_long else market.oiShort()
+
+    oi = collateral * leverage
+    trade_fee = oi * mothership.fee() / FEE_RESOLUTION
+    assert oi2 == 2*(oi - trade_fee) 
 
     queued_oi = market.queuedOiLong() if is_long else market.queuedOiShort()
 
@@ -277,16 +281,10 @@ def test_entry_update_compounding(
     funding_factor = ( 1 - 2*k )
     expected_oi = queued_oi * funding_factor
 
-    oi = collateral * leverage
-    trade_fee = oi * mothership.fee() / FEE_RESOLUTION
-    assert oi2 == 2*(oi - trade_fee) 
 
-    # breakpoint()
     compounding_period = 600 #market.compoundingPeriod() #TODO: when mike merges the view fix this
-    brownie.chain.mine(timedelta=compounding_period) 
-    brownie.chain.mine(timedelta=compounding_period)
+    brownie.chain.mine(timedelta=compounding_period*2) 
 
-    # #TODO COMPLETE 
     _ = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
     oi_after_funding = market.oiLong() if is_long else market.oiShort()
     queued_oi = market.queuedOiLong() if is_long else market.queuedOiShort()
