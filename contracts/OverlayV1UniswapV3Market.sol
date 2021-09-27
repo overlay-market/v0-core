@@ -203,7 +203,18 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         }
 
         if (0 < _compoundings) {
-            updateFunding(_compoundings);
+
+            if (_toUpdate != type(uint256).max) {
+
+                updateFunding(1);
+                updateFunding(_compoundings - 1);
+
+            } else {
+
+                updateFunding(_compoundings);
+
+            }
+
             compounded = _tCompounding;
         }
 
@@ -229,8 +240,20 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         }
 
         if (0 < _compoundings) {
-            updateFunding(_compoundings);
+
+            if (_toUpdate != type(uint256).max) {
+
+                updateFunding(1);
+                updateFunding(_compoundings - 1);
+
+            } else {
+
+                updateFunding(_compoundings);
+
+            }
+
             compounded = _tCompounding;
+
         }
 
         if (_toUpdate != _tp1Update) toUpdate = _tp1Update;
@@ -271,8 +294,18 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         if (0 < _compoundings) {
 
-            updateFunding(1);
-            updateFunding(_compoundings - 1);
+            if (_toUpdate != type(uint256).max) {
+
+                updateFunding(1);
+                updateFunding(_compoundings - 1);
+
+            } else {
+
+                updateFunding(_compoundings);
+
+            }
+
+            compounded = _tCompounding;
 
         }
 
