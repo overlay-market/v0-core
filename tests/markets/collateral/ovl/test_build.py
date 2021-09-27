@@ -268,7 +268,6 @@ def test_entry_update_compounding(
 
     for _ in range(2):
         ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
-    # _ = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
     oi2 = market.oiLong() if is_long else market.oiShort()
 
     oi = collateral * leverage
