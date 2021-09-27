@@ -274,17 +274,27 @@ def test_entry_update_compounding(
     queued_oi = market.queuedOiLong() if is_long else market.queuedOiShort()
     expected_oi = queued_oi * funding_factor(1)
 
-    n_periods = 10
-    compounding_period = 600 #market.compoundingPeriod() #TODO: when mike merges the view fix this
-    for n in range(1, n_periods):
-        brownie.chain.mine(timedelta=market.compoundingPeriod()*n) 
+    brownie.chain.mine(timedelta=market.compoundingPeriod()*2) 
 
-        _ = ovl_collateral.build(market, collateral/n_periods, leverage, is_long, {"from": bob})
+    _ = ovl_collateral.build(market, collateral, leverage, is_long, {"from": bob})
+    oi_after_funding = market.oiLong() if is_long else market.oiShort()
+    queued_oi = market.queuedOiLong() if is_long else market.queuedOiShort()
 
-        expected_oi = queued_oi * funding_factor(n-1)
-        oi_after_funding = market.oiLong() if is_long else market.oiShort()
-        queued_oi = market.queuedOiLong() if is_long else market.queuedOiShort()
+    expected_oi += queued_oi
 
-        expected_oi += queued_oi
+    assert int(expected_oi) == approx(oi_after_funding)
 
-        assert int(expected_oi) == approx(oi_after_funding)
+    #TODO fix to allow for multiple compounding periods
+    # n_periods = 10
+    # for n in range(1, n_periods):
+    #     brownie.chain.mine(timedelta=market.compoundingPeriod()*n) 
+
+    #     _ = ovl_collateral.build(market, collateral/n_periods, leverage, is_long, {"from": bob})
+
+    #     expected_oi = queued_oi * funding_factor(n-1)
+    #     oi_after_funding = market.oiLong() if is_long else market.oiShort()
+    #     queued_oi = market.queuedOiLong() if is_long else market.queuedOiShort()
+
+    #     expected_oi += queued_oi
+
+    #     assert int(expected_oi) == approx(oi_after_funding)
