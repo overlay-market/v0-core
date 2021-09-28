@@ -258,7 +258,7 @@ def test_entry_update_price_fetching(
 
     assert idx1 == idx2
 
-    brownie.chain.mine(timedelta=market.updatePeriod())
+    brownie.chain.mine(timedelta=market.updatePeriod()+1)
 
     _ = ovl_collateral.build(
         market, collateral, leverage, is_long, {"from": bob})
@@ -302,10 +302,7 @@ def test_entry_update_compounding(
     assert approx(oi2) == int(2*oi_adjusted)
 
     # breakpoint()
-    # market.compoundingPeriod() #TODO: when mike merges the view fix this
-    compounding_period = 600
-    brownie.chain.mine(timedelta=compounding_period)
-    brownie.chain.mine(timedelta=compounding_period)
+    brownie.chain.mine(timedelta=2*market.compoundingPeriod()+1)
 
     # #TODO COMPLETE
     _ = ovl_collateral.build(
