@@ -1,7 +1,7 @@
 import brownie
-import pytest
 import datetime
 from brownie.test import given, strategy
+from pytest import approx
 
 MIN_COLLATERAL = 1e14  # min amount to build
 COLLATERAL = 10*1e18
@@ -80,22 +80,23 @@ def test_liquidate_success_zero_impact(ovl_collateral, token, mothership,
     # check oi removed from market
     oi_long, oi_short = market.oi()
     if is_long:
-        assert oi_long == oi_long_prior - oi
-        assert oi_short == oi_short_prior
+        assert approx(oi_long) == int(oi_long_prior - oi)
+        assert approx(oi_short) == int(oi_short_prior)
     else:
-        assert oi_long == oi_long_prior
-        assert oi_short == oi_short_prior - oi
+        assert approx(oi_long) == int(oi_long_prior)
+        assert approx(oi_short) == int(oi_short_prior - oi)
 
     # check loss burned by collateral manager
     loss = cost - value
-    assert ovl_balance - loss == token.balanceOf(ovl_collateral)
+    assert int(ovl_balance - loss) == approx(token.balanceOf(ovl_collateral))
 
     # check reward transferred to rewarded
     reward = value * maintenance_margin_reward
-    assert reward + alice_balance == token.balanceOf(alice)
+    assert int(reward + alice_balance) == approx(token.balanceOf(alice))
 
     # check liquidations pot increased
-    assert liquidations + (value - reward) == ovl_collateral.liquidations()
+    assert int(liquidations + (value - reward))\
+        == approx(ovl_collateral.liquidations())
 
     # check position is no longer able to be unwind
     with brownie.reverts("OVLV1:!shares"):
