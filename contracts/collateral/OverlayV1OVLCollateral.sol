@@ -286,7 +286,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         }
 
-        // _burn(msg.sender, _positionId, _shares);
+        _burn(msg.sender, _positionId, _shares);
 
     }
 
