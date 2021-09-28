@@ -101,12 +101,4 @@ interface IOverlayV1Market is IERC1155 {
         uint _antibrrrr
     ) external;
 
-    function priceFrame(
-        bool _isLong,
-        uint _entryIndex
-    ) external view returns (
-        uint priceFrame_
-    );
-
-
 }

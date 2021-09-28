@@ -103,16 +103,17 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
         if (fromQueued_){
 
-            uint _queuedOiLong = queuedOiLong;
-            uint _queuedOiShort = queuedOiShort;
+            uint _queuedOiLong = __queuedOiLong__;
+            uint _queuedOiShort = __queuedOiShort__;
 
-            if (_isLong) ( oiShares_ = _queuedOiLong, oi_ = _queuedOiLong );
-            else ( oiShares_ = _queuedOiShort, oi_ = _queuedOiShort );
+            if (_isLong) ( oi_ = _queuedOiLong, oiShares_ = _queuedOiLong );
+            else ( oi_ = _queuedOiShort, oiShares_ = _queuedOiShort );
+
 
         } else {
 
-            if (_isLong) ( oiShares_ = oiLongShares , oi_ = __oiLong__ );
-            else ( oiShares_ = oiShortShares, oi_ = __oiShort__ );
+            if (_isLong) ( oi_ = __oiLong__, oiShares_ = __oiLongShares__ );
+            else ( oi_ = __oiShort__, oiShares_ = __oiShortShares__ );
 
         }
 
@@ -141,13 +142,13 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
         if (_fromQueued) {
 
-            if (_isLong) queuedOiLong -= _oi;
-            else queuedOiShort -= _oi;
+            if (_isLong) __queuedOiLong__ -= _oi;
+            else __queuedOiShort__ -= _oi;
 
         } else {
 
-            if (_isLong) ( __oiLong__ -= _oi, oiLongShares -= _oiShares );
-            else ( __oiShort__ -= _oi, oiShortShares -= _oiShares );
+            if (_isLong) ( __oiLong__ -= _oi, __oiLongShares__ -= _oiShares );
+            else ( __oiShort__ -= _oi, __oiShortShares__ -= _oiShares );
 
         }
 

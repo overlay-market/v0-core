@@ -1,5 +1,3 @@
-
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
@@ -66,9 +64,5 @@ interface IOverlayV1OVLCollateral is IERC1155 {
         uint256 _positionId,
         address _rewardsTo
     ) external;
-
-    function value (
-        uint _positionId
-    ) external view returns (uint);
 
 }
