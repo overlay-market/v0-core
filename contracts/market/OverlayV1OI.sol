@@ -31,7 +31,7 @@ contract OverlayV1OI {
         uint256 _oiShort,
         uint256 _epochs,
         uint256 _k
-    ) internal returns (
+    ) internal pure returns (
         uint256 oiLong_,
         uint256 oiShort_,
         int256  fundingPaid_
@@ -41,9 +41,9 @@ contract OverlayV1OI {
 
         if (0 == _epochs) return ( _oiLong, _oiShort, 0 );
 
-        uint _fundingFactor = ONE.sub(_k.mulUp(2*ONE));
+        uint _fundingFactor = ONE.sub(_k.mulUp(ONE*2));
 
-        _fundingFactor = _fundingFactor.powUp(_epochs*ONE);
+        _fundingFactor = _fundingFactor.powUp(ONE*_epochs);
 
         uint _funder = _oiLong;
         uint _funded = _oiShort;

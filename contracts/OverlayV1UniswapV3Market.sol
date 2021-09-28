@@ -307,7 +307,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
-    function oi () public returns (
+    function oi () public view returns (
         uint oiLong_,
         uint oiShort_,
         uint oiLongShares_,
@@ -329,7 +329,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     function _oi (
         uint _compoundings
-    ) internal returns (
+    ) internal view returns (
         uint oiLong_,
         uint oiShort_,
         uint oiLongShares_,
@@ -373,27 +373,27 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
-    function oiLong () external returns (uint oiLong_) {
+    function oiLong () external view returns (uint oiLong_) {
         (   oiLong_,,,,, ) = oi();
     }
 
-    function oiShort () external returns (uint oiShort_) {
+    function oiShort () external view returns (uint oiShort_) {
         (  ,oiShort_,,,, ) = oi();
     }
 
-    function queuedOiLong () external returns (uint256 queuedOiLong_) {
+    function queuedOiLong () external view returns (uint256 queuedOiLong_) {
         ( ,,,,queuedOiLong_, ) = oi();
     }
 
-    function queuedOiShort () external returns (uint256 queuedOiShort_) {
+    function queuedOiShort () external view returns (uint256 queuedOiShort_) {
         ( ,,,,,queuedOiShort_ ) = oi();
     }
 
-    function oiLongShares () external returns (uint256 oiLongShares_) {
+    function oiLongShares () external view returns (uint256 oiLongShares_) {
         ( ,,oiLongShares_,,, ) = oi();
     }
 
-    function oiShortShares () external returns (uint256 oiShortShares_) {
+    function oiShortShares () external view returns (uint256 oiShortShares_) {
         ( ,,,oiShortShares_,, ) = oi();
     }
 
