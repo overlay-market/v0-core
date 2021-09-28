@@ -16,11 +16,11 @@ contract OverlayV1OI {
     uint256 internal __oiLong__; // total long open interest
     uint256 internal __oiShort__; // total short open interest
 
-    uint256 public oiLongShares; // total shares of long open interest outstanding
-    uint256 public oiShortShares; // total shares of short open interest outstanding
+    uint256 internal __oiLongShares__; // total shares of long open interest outstanding
+    uint256 internal __oiShortShares__; // total shares of short open interest outstanding
 
-    uint256 public queuedOiLong; // queued long open interest to be settled at T+1
-    uint256 public queuedOiShort; // queued short open interest to be settled at T+1
+    uint256 internal __queuedOiLong__; // queued long open interest to be settled at T+1
+    uint256 internal __queuedOiShort__; // queued short open interest to be settled at T+1
 
     uint256 public k;
 
@@ -109,17 +109,17 @@ contract OverlayV1OI {
 
         if (_isLong) {
 
-            uint _queuedOiLong = queuedOiLong;
+            uint _queuedOiLong = __queuedOiLong__;
             _queuedOiLong += _oi;
-            queuedOiLong = _queuedOiLong;
+            __queuedOiLong__ = _queuedOiLong;
 
             require(__oiLong__ + _queuedOiLong <= _oiCap, "OVLV1:>cap");
 
         } else {
 
-            uint _queuedOiShort = queuedOiShort;
+            uint _queuedOiShort = __queuedOiShort__;
             _queuedOiShort += _oi;
-            queuedOiShort = _queuedOiShort;
+            __queuedOiShort__ = _queuedOiShort;
 
             require(__oiShort__ + _queuedOiShort <= _oiCap, "OVLV1:>cap");
 
@@ -146,13 +146,16 @@ contract OverlayV1OI {
     /// @dev Execute at market update() to prevent funding payment harvest without price risk
     function updateOi() internal {
 
-        __oiLong__ += queuedOiLong;
-        __oiShort__ += queuedOiShort;
-        oiLongShares += queuedOiLong;
-        oiShortShares += queuedOiShort;
+        uint _queuedOiLong = __queuedOiLong__;
+        uint _queuedOiShort = __queuedOiShort__;
 
-        queuedOiLong = 0;
-        queuedOiShort = 0;
+        __oiLong__ += _queuedOiLong;
+        __oiShort__ += _queuedOiShort;
+        __oiLongShares__ += _queuedOiLong;
+        __oiShortShares__ += _queuedOiShort;
+
+        __queuedOiLong__ = 0;
+        __queuedOiShort__ = 0;
         
     }
 }
