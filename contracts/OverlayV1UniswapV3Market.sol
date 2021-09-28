@@ -57,7 +57,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         quote = _token0 == _quote ? _token0 : _token1;
 
         int24 _tick = OracleLibraryV2.consult(
-            _marketFeed, 
+            _marketFeed,
             uint32(_macroWindow),
             uint32(0)
         );
@@ -81,7 +81,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         uint _ago
     ) public view returns (
         PricePoint memory
-    ) { 
+    ) {
 
         uint32[] memory _secondsAgo = new uint32[](3);
         _secondsAgo[0] = uint32(_ago + macroWindow);
@@ -151,7 +151,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         uint compoundings_,
         uint tCompounding_,
         uint t1Compounding_
-    ) { 
+    ) {
 
         uint _updatePeriod = updatePeriod;
         uint _compoundPeriod = compoundingPeriod;
@@ -168,7 +168,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             updatesNow_ = ( _time - _from ) / _updatePeriod;
 
         }
-        
+
         tUpdate_ = _from + ( ( updatesThen_ + updatesNow_ ) * _updatePeriod );
 
         t1Update_ = tUpdate_ + _updatePeriod;
@@ -238,10 +238,10 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         if (0 < _compoundings) {
 
-            // If there was an update queued up, that means            
+            // If there was an update queued up, that means
             // there was queued oi, which is not involved in
             // funding until one compounding epoch has passed.
-            // We pay funding for one compounding epoch, then 
+            // We pay funding for one compounding epoch, then
             // compound the rest of the epochs.
             if (_toUpdate != type(uint256).max) {
 
@@ -279,7 +279,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         }
 
-        if (0 < _updatesNow) { 
+        if (0 < _updatesNow) {
 
             uint _then = _now - _tUpdate;
             PricePoint memory _price = price(_then);
@@ -308,9 +308,9 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     }
 
     function oi () public view returns (
-        uint oiLong_, 
-        uint oiShort_, 
-        uint oiLongShares_, 
+        uint oiLong_,
+        uint oiShort_,
+        uint oiLongShares_,
         uint oiShortShares_,
         uint queuedOiLong_,
         uint queuedOiShort_
@@ -318,7 +318,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         ( ,,,,uint _compoundings,, ) = epochs(block.timestamp, updated, toUpdate);
 
-        (   oiLong_, 
+        (   oiLong_,
             oiShort_,
             oiLongShares_,
             oiShortShares_,
@@ -330,7 +330,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     function _oi (
         uint _compoundings
     ) internal view returns (
-        uint oiLong_, 
+        uint oiLong_,
         uint oiShort_,
         uint oiLongShares_,
         uint oiShortShares_,
@@ -369,7 +369,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             queuedOiLong_ = 0;
             queuedOiShort_ = 0;
 
-        } 
+        }
 
     }
 
@@ -401,7 +401,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         bool _isLong,
         uint _entryIndex,
         uint _compounding
-    ) external view returns (
+    ) external returns (
         uint256 oi_,
         uint256 oiShares_,
         uint256 priceFrame_
@@ -420,13 +420,13 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             _tUpdate
         );
 
-        (   uint _oiLong, 
-            uint _oiShort, 
-            uint _oiLongShares, 
+        (   uint _oiLong,
+            uint _oiShort,
+            uint _oiLongShares,
             uint _oiShortShares,
             uint _queuedOiLong,
             uint _queuedOiShort ) = _oi(_compoundings);
-        
+
         if (_compounding < _tCompounding) {
 
             if (_isLong) ( oi_ = _oiLong, oiShares_ = _oiLongShares );
@@ -446,7 +446,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         uint _entryIndex,
         uint _updatesThen,
         uint _tUpdate
-    ) internal view returns (
+    ) internal returns (
         uint256 priceFrame_
     ) {
 

@@ -19,9 +19,6 @@ compiler:
           "*":
             - "storageLayout"
 
-hypothesis:
-  max_examples: 1
-
 autofetch_sources: True
 dependencies:
   - OpenZeppelin/openzeppelin-contracts@4.2.0
