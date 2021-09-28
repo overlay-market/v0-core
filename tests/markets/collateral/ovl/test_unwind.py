@@ -99,7 +99,6 @@ def test_unwind_from_queued_oi (
     assert q_oi_after_unwind == 0
 
 
-
 @given(
     collateral=strategy('uint256', min_value=1e16, max_value=1e24),
     leverage=strategy('uint256', min_value=1, max_value=100),

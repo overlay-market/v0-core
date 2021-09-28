@@ -289,13 +289,7 @@ def test_entry_update_compounding(
 
     _ = ovl_collateral.build(
         market, collateral, leverage, is_long, {"from": bob})
-    oi2 = market.oiLong() if is_long else market.oiShort()
-
-    queued_oi = market.queuedOiLong() if is_long else market.queuedOiShort()
-
-    k = market.k() / 1e18
-    funding_factor = (1 - 2*k)
-    expected_oi = queued_oi * funding_factor
+    oi2 = market.queuedOiLong() if is_long else market.queuedOiShort()
 
     oi = collateral * leverage
     trade_fee = oi * mothership.fee() / FEE_RESOLUTION
@@ -311,8 +305,10 @@ def test_entry_update_compounding(
     _ = ovl_collateral.build(
         market, collateral, leverage, is_long, {"from": bob})
     oi_after_funding = market.oiLong() if is_long else market.oiShort()
-    queued_oi = market.queuedOiLong() if is_long else market.queuedOiShort()
 
-    expected_oi += queued_oi
+    k = market.k() / 1e18
+    funding_factor = (1 - 2*k)
+    expected_oi = oi2 * funding_factor
+    # expected_oi += queued_oi
 
     assert int(expected_oi) == approx(oi_after_funding)
