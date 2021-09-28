@@ -41,9 +41,9 @@ contract OverlayV1OI {
 
         if (0 == _epochs) return ( _oiLong, _oiShort, 0 );
 
-        uint _fundingFactor = ONE.sub(_k*2);
+        uint _fundingFactor = ONE.sub(_k.mulUp(ONE*2));
 
-        _fundingFactor = _fundingFactor.powDown(_epochs);
+        _fundingFactor = _fundingFactor.powUp(ONE*_epochs);
 
         uint _funder = _oiLong;
         uint _funded = _oiShort;
@@ -102,8 +102,8 @@ contract OverlayV1OI {
 
     /// @notice Adds to queued open interest to prep for T+1 price settlement
     function queueOi(
-        bool _isLong, 
-        uint256 _oi, 
+        bool _isLong,
+        uint256 _oi,
         uint256 _oiCap
     ) internal {
 
@@ -133,7 +133,7 @@ contract OverlayV1OI {
 
             payFunding(k, _epochs); // WARNING: must pay funding before updating OI to avoid free rides
 
-            updateOi(); 
+            updateOi();
 
             updated_ = true;
 
@@ -156,6 +156,6 @@ contract OverlayV1OI {
 
         __queuedOiLong__ = 0;
         __queuedOiShort__ = 0;
-        
+
     }
 }
