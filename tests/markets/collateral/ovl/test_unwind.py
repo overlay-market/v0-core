@@ -3,7 +3,10 @@ import brownie
 from brownie.test import given, strategy
 from hypothesis import settings
 from brownie import chain
+from pytest import approx
 from decimal import *
+
+OI_CAP = 800000e18
 
 def print_logs(tx):
     for i in range(len(tx.events['log'])):
@@ -100,7 +103,7 @@ def test_unwind_from_queued_oi (
 
 
 @given(
-    collateral=strategy('uint256', min_value=1e16, max_value=1e24),
+    oi=strategy('uint256', min_value=1e16, max_value=OI_CAP),
     leverage=strategy('uint256', min_value=1, max_value=100),
     is_long=strategy('bool'))
 def test_unwind_from_active_oi(
@@ -108,7 +111,7 @@ def test_unwind_from_active_oi(
         market,
         token,
         bob,
-        collateral,
+        oi,
         leverage,
         is_long
 ):
@@ -117,6 +120,11 @@ def test_unwind_from_active_oi(
     update period, not further into the compounding period. Then we unwind and 
     verify that the queued oi at zero.
     '''
+
+    collateral = oi / leverage
+
+    print("oi cap", market.oiCap())
+    print(collateral*leverage)
 
     # Build
     token.approve(ovl_collateral, collateral, {"from": bob})
@@ -127,6 +135,8 @@ def test_unwind_from_active_oi(
         is_long,
         {"from": bob}
     )
+
+    print_logs(tx_build)
 
     # Position info
     pid = tx_build.events['Build']['positionId']
@@ -146,13 +156,12 @@ def test_unwind_from_active_oi(
 
     oi_before_unwind = market.oiLong() if is_long else market.oiShort()
 
-    ovl_collateral.unwind(pid, pshares, { 'from': bob })
+    tx = ovl_collateral.unwind(pid, pshares, { 'from': bob })
 
     oi_after_unwind = market.oiLong() if is_long else market.oiShort()
 
     assert oi_before_unwind == build_oi
-    assert oi_after_unwind == 0
-
+    assert oi_after_unwind == 0 or 1
 
 @given(thing=strategy('uint'))
 @settings(max_examples=1)
