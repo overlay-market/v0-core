@@ -1,9 +1,10 @@
 import math 
-import random
 
 from brownie import reverts, chain
 from brownie.test import given, strategy 
 from hypothesis import settings
+from pytest import approx
+
 from decimal import *
 
 def print_logs(tx):
@@ -143,11 +144,16 @@ def test_roller_cardinality_two_rolls_index_rolls_over_to_0_with_single_rolls(co
     assert roller[0] == chain[-1].timestamp
     assert Decimal(roller[1]) / Decimal(1e18) == pressure * 2
 
+
 def test_roller_cardinality_increments_to_5_with_single_rolls(comptroller):
 
     ( cap, _, __ ) = comptroller.oiCap()
 
-    pressure = Decimal(1e18) / Decimal(cap)
+    print("cap", cap)
+
+    pressure = 1e18 / cap
+
+    print("pressure", pressure)
 
     comptroller.expand(5)
     chain.mine(timedelta=10)
@@ -165,12 +171,12 @@ def test_roller_cardinality_increments_to_5_with_single_rolls(comptroller):
     assert comptroller.cardinality() == 5
     assert comptroller.index() == 0
 
-    assert Decimal(comptroller.rollers(0)[0]) / Decimal(1e18) == chain[-1].timestamp
-    assert Decimal(comptroller.rollers(0)[1]) / Decimal(1e18) == 5 * pressure
-    assert Decimal(comptroller.rollers(1)[1]) / Decimal(1e18) == 1 * pressure
-    assert Decimal(comptroller.rollers(2)[1]) / Decimal(1e18) == 2 * pressure
-    assert Decimal(comptroller.rollers(3)[1]) / Decimal(1e18) == 3 * pressure
-    assert Decimal(comptroller.rollers(4)[1]) / Decimal(1e18) == 4 * pressure
+    assert comptroller.rollers(0)[0] == chain[-1].timestamp
+    assert comptroller.rollers(0)[1] / 1e18 == approx(5 * pressure)
+    assert comptroller.rollers(1)[1] / 1e18 == approx(1 * pressure)
+    assert comptroller.rollers(2)[1] / 1e18 == approx(2 * pressure)
+    assert comptroller.rollers(3)[1] / 1e18 == approx(3 * pressure)
+    assert comptroller.rollers(4)[1] / 1e18 == approx(4 * pressure)
     assert comptroller.rollers(5)[0] == 0
 
 def test_roller_cardinality_increments_to_5_with_many_rolls(comptroller):
