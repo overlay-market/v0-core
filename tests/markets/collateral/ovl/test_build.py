@@ -145,7 +145,7 @@ def test_build_min_collateral(
 
     # lower than min collateral fails
     with brownie.reverts(EXPECTED_ERROR_MESSAGE):
-        ovl_collateral.build(market, trade_amt - 1,
+        ovl_collateral.build(market, trade_amt - 2,
                              leverage, is_long, {'from': bob})
 
 
