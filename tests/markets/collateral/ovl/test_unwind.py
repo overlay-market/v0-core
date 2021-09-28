@@ -7,10 +7,20 @@ from pytest import approx
 from decimal import *
 
 OI_CAP = 800000e18
+MIN_COLLATERAL=1e14
+FEE_RESOLUTION=1e18
 
 def print_logs(tx):
     for i in range(len(tx.events['log'])):
         print(tx.events['log'][i]['k'] + ": " + str(tx.events['log'][i]['v']))
+
+def get_collateral(collateral, leverage, fee):
+    FL = fee*leverage
+    fee_offset = MIN_COLLATERAL*(FL/(FEE_RESOLUTION - FL))
+    if collateral - fee_offset <= MIN_COLLATERAL:
+        return int(MIN_COLLATERAL + fee_offset)
+    else:
+        return collateral
 
 def test_unwind(ovl_collateral, market, token, bob):
 
@@ -65,11 +75,17 @@ def test_unwind_revert_position_was_liquidated(
 
     pass
 
-@given(is_long=strategy('bool'))
+@given(
+    is_long=strategy('bool'),
+    oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
+    leverage=strategy('uint256', min_value=1, max_value=100))
 def test_unwind_from_queued_oi (
     ovl_collateral, 
     bob,
     token,
+    mothership,
+    oi,
+    leverage,
     market,
     is_long
 ):
@@ -79,11 +95,15 @@ def test_unwind_from_queued_oi (
     queued oi instead of the non queued oi.
     '''
 
+    oi *= 1e16
+
+    collateral = get_collateral(oi / leverage, leverage, mothership.fee())
+
     is_long = True
 
     update_period = market.updatePeriod()
 
-    tx = ovl_collateral.build(market, 1e18, 1, is_long, { 'from': bob })
+    tx = ovl_collateral.build(market, collateral, leverage, is_long, { 'from': bob })
 
     pos_id = tx.events['Build']['positionId']
     pos_oi = tx.events['Build']['oi']
@@ -99,17 +119,18 @@ def test_unwind_from_queued_oi (
     q_oi_after_unwind = market.queuedOiLong() if is_long else market.queuedOiShort()
 
     assert q_oi_after_update_period == pos_shares
-    assert q_oi_after_unwind == 0
+    assert approx(q_oi_after_unwind/1e18) == 0
 
 
 @given(
-    oi=strategy('uint256', min_value=1e16, max_value=OI_CAP),
+    oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
     leverage=strategy('uint256', min_value=1, max_value=100),
     is_long=strategy('bool'))
 def test_unwind_from_active_oi(
         ovl_collateral,
         market,
         token,
+        mothership,
         bob,
         oi,
         leverage,
@@ -120,11 +141,9 @@ def test_unwind_from_active_oi(
     update period, not further into the compounding period. Then we unwind and 
     verify that the queued oi at zero.
     '''
+    oi *= 1e16
 
-    collateral = oi / leverage
-
-    print("oi cap", market.oiCap())
-    print(collateral*leverage)
+    collateral = get_collateral(oi/leverage, leverage, mothership.fee())
 
     # Build
     token.approve(ovl_collateral, collateral, {"from": bob})
@@ -135,8 +154,6 @@ def test_unwind_from_active_oi(
         is_long,
         {"from": bob}
     )
-
-    print_logs(tx_build)
 
     # Position info
     pid = tx_build.events['Build']['positionId']
