@@ -182,7 +182,8 @@ def test_roller_cardinality_increments_to_5_with_single_rolls(comptroller):
 def test_roller_cardinality_increments_to_5_with_many_rolls(comptroller):
 
     ( cap, _, __ ) = comptroller.oiCap()
-    pressure = Decimal(1e18) / Decimal(cap)
+
+    pressure = int(( 1e18 / cap ) * 1e18)
 
     comptroller.expand(5)
     chain.mine(timedelta=10)
@@ -216,11 +217,11 @@ def test_roller_cardinality_increments_to_5_with_many_rolls(comptroller):
     assert comptroller.index() == 0
 
     assert comptroller.rollers(0)[0] == chain[-1].timestamp
-    assert comptroller.rollers(0)[1] == 22e18
-    assert comptroller.rollers(1)[1] == 4e18
-    assert comptroller.rollers(2)[1] == 7e18
-    assert comptroller.rollers(3)[1] == 11e18
-    assert comptroller.rollers(4)[1] == 16e18
+    assert comptroller.rollers(0)[1] == 22 * pressure
+    assert comptroller.rollers(1)[1] == 4 * pressure
+    assert comptroller.rollers(2)[1] == 7 * pressure
+    assert comptroller.rollers(3)[1] == 11 * pressure
+    assert comptroller.rollers(4)[1] == 16 * pressure
     assert comptroller.rollers(5)[0] == 0
 
 def test_roller_cardinality_two_index_rolls_over(comptroller):
