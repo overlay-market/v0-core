@@ -22,3 +22,6 @@ compiler:
 autofetch_sources: True
 dependencies:
   - OpenZeppelin/openzeppelin-contracts@4.2.0
+
+hypotheses:
+  max_examples: 1
