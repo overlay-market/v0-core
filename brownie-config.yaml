@@ -1,10 +1,9 @@
 networks:
-  default: mainnet-fork
-
-autofetch_sources: True
-
-dependencies:
-  - OpenZeppelin/openzeppelin-contracts@4.2.0
+  default: development
+  development:
+    gas_limit: max
+    cmd_settings:
+      gas_limit: 9007199254740991
 
 compiler:
   evm_version: "london"
@@ -16,9 +15,13 @@ compiler:
       enabled: true
       runs: 400
     outputSelection:
-        "*": 
-          "*": 
+        "*":
+          "*":
             - "storageLayout"
 
 hypothesis:
   max_examples: 1
+
+autofetch_sources: True
+dependencies:
+  - OpenZeppelin/openzeppelin-contracts@4.2.0
