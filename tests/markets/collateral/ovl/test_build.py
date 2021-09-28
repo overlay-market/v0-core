@@ -97,7 +97,7 @@ def test_build_when_market_not_supported(
             notamarket,
             bob,
             leverage=1,  # doesn't matter
-            is_long=1  # doesn't matter
+            is_long=True  # doesn't matter
         ):
 
     EXPECTED_ERROR_MESSAGE = 'OVLV1:!market'
@@ -155,7 +155,7 @@ def test_build_max_leverage(
             market,
             bob,
             collateral=1e18,
-            is_long=1
+            is_long=True
         ):
 
     EXPECTED_ERROR_MESSAGE = 'OVLV1:lev>max'
@@ -179,7 +179,7 @@ def test_build_cap(
             market,
             bob,
             leverage=1,
-            is_long=1
+            is_long=True
         ):
 
     # NOTE error msg should be 'OVLV1:collat>cap'
@@ -272,7 +272,8 @@ def test_entry_update_price_fetching(
     collateral=strategy('uint256', min_value=1e18,
                         max_value=(OI_CAP - 1e4)/300),
     leverage=strategy('uint8', min_value=1, max_value=100),
-    is_long=strategy('bool')
+    is_long=strategy('bool'),
+    compoundings=strategy('uint16', min_value=1, max_value=144),  # max=1d
     )
 def test_entry_update_compounding(
             ovl_collateral,
@@ -282,7 +283,8 @@ def test_entry_update_compounding(
             bob,
             collateral,
             leverage,
-            is_long
+            is_long,
+            compoundings
         ):
 
     token.approve(ovl_collateral, collateral*3, {"from": bob})
@@ -301,17 +303,14 @@ def test_entry_update_compounding(
     oi_adjusted = collateral_adjusted * leverage
     assert approx(oi2) == int(2*oi_adjusted)
 
-    # breakpoint()
-    brownie.chain.mine(timedelta=2*market.compoundingPeriod()+1)
+    brownie.chain.mine(timedelta=(compoundings+1)*market.compoundingPeriod()+1)
 
-    # #TODO COMPLETE
     _ = ovl_collateral.build(
         market, collateral, leverage, is_long, {"from": bob})
     oi_after_funding = market.oiLong() if is_long else market.oiShort()
 
     k = market.k() / 1e18
-    funding_factor = (1 - 2*k)
+    funding_factor = (1 - 2*k)**(compoundings)
     expected_oi = oi2 * funding_factor
-    # expected_oi += queued_oi
 
     assert int(expected_oi) == approx(oi_after_funding)
