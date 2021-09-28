@@ -101,4 +101,14 @@ interface IOverlayV1Market is IERC1155 {
         uint _antibrrrr
     ) external;
 
+    function positionInfo (
+        bool _isLong,
+        uint _entryIndex,
+        uint _compounding
+    ) external view returns (
+        uint256 oi_,
+        uint256 oiShares_,
+        uint256 priceFrame_
+    );
+
 }

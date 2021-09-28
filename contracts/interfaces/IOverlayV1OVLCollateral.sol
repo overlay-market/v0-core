@@ -1,3 +1,5 @@
+
+
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
@@ -25,7 +27,7 @@ interface IOverlayV1OVLCollateral is IERC1155 {
     function mothership () external view returns (IOverlayV1Mothership);
     function marketInfo(address) external view returns (MarketInfo memory);
     function fees () external view returns (uint);
-    function liquidation () external view returns (uint);
+    function liquidations () external view returns (uint);
 
     event Build(uint256 positionId, uint256 oi, uint256 debt);
     event Unwind(uint256 positionId, uint256 oi, uint256 debt);
@@ -64,5 +66,9 @@ interface IOverlayV1OVLCollateral is IERC1155 {
         uint256 _positionId,
         address _rewardsTo
     ) external;
+
+    function value (
+        uint _positionId
+    ) external view returns (uint);
 
 }
