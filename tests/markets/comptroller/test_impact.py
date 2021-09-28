@@ -229,6 +229,10 @@ def test_roller_cardinality_two_index_rolls_over(comptroller):
 
     chain.mine(timedelta=10)
 
+    ( cap,_,__ ) = comptroller.oiCap()
+
+    pressure = int(( 1e18 / cap ) * 1e18)
+
     tx = comptroller.impactBatch([True,True],[1e18, 1e18])
 
     chain.mine(timedelta=10)
@@ -236,8 +240,8 @@ def test_roller_cardinality_two_index_rolls_over(comptroller):
     tx = comptroller.impactBatch([True,True],[1e18, 1e18])
 
     assert comptroller.rollers(0)[0] == chain[-1].timestamp
-    assert comptroller.rollers(0)[1] == 4e18
-    assert comptroller.rollers(1)[1] == 2e18
+    assert comptroller.rollers(0)[1] == 4 * pressure
+    assert comptroller.rollers(1)[1] == 2 * pressure
 
     chain.mine(timedelta=10)
 
@@ -247,13 +251,13 @@ def test_roller_cardinality_two_index_rolls_over(comptroller):
     )
 
     assert comptroller.rollers(1)[0] == chain[-1].timestamp
-    assert comptroller.rollers(1)[1] == 10e18
+    assert comptroller.rollers(1)[1] == 10 * pressure
 
     chain.mine(timedelta=10)
     tx = comptroller.impactBatch([True,True,True],[2e18, 5e18, 3e18])
 
     assert comptroller.rollers(0)[0] == chain[-1].timestamp
-    assert comptroller.rollers(0)[1] == 20e18
+    assert comptroller.rollers(0)[1] == 20 * pressure
 
 
 @given(time_diff=strategy('uint', min_value=1, max_value=1000),
@@ -273,12 +277,12 @@ def test_scry_interpolated_roller(comptroller, time_diff, brrrr):
 
     chain.mine(timedelta=window+time_diff)
 
-    tx = comptroller.impactBatch([True],[brrrr])
+    _ = comptroller.impactBatch([True],[brrrr])
     time1 = Decimal(chain[-1].timestamp)
 
     chain.mine(timedelta=(window/4))
 
-    tx = comptroller.impactBatch([True],[brrrr])
+    _ = comptroller.impactBatch([True],[brrrr])
     time2 = Decimal(chain[-1].timestamp)
 
     ( roller_now, roller_then ) = comptroller.viewScry(window)
