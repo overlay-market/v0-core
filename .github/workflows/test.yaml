@@ -50,4 +50,4 @@ jobs:
         run: brownie compile --size
 
       - name: Run Tests
-        run: brownie test --gas
+        run: brownie test -vv -s --gas
