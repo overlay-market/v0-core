@@ -273,9 +273,9 @@ def test_entry_update_price_fetching(
                         max_value=(OI_CAP - 1e4)/300),
     leverage=strategy('uint8', min_value=1, max_value=100),
     is_long=strategy('bool'),
-    compoundings=strategy('uint16', min_value=1, max_value=144),  # max=1d
+    compoundings=strategy('uint16', min_value=1, max_value=36),
     )
-def test_entry_update_compounding(
+def test_entry_update_compounding_oi_onesided(
             ovl_collateral,
             token,
             market,
@@ -287,8 +287,7 @@ def test_entry_update_compounding(
             compoundings
         ):
 
-    token.approve(ovl_collateral, collateral*3, {"from": bob})
-
+    token.approve(ovl_collateral, collateral*2, {"from": bob})
     _ = ovl_collateral.build(
         market, collateral, leverage, is_long, {"from": bob})
 
@@ -304,9 +303,8 @@ def test_entry_update_compounding(
     assert approx(oi2) == int(2*oi_adjusted)
 
     brownie.chain.mine(timedelta=(compoundings+1)*market.compoundingPeriod()+1)
+    _ = market.update({"from": bob})
 
-    _ = ovl_collateral.build(
-        market, collateral, leverage, is_long, {"from": bob})
     oi_after_funding = market.oiLong() if is_long else market.oiShort()
 
     k = market.k() / 1e18
@@ -314,3 +312,67 @@ def test_entry_update_compounding(
     expected_oi = oi2 * funding_factor
 
     assert int(expected_oi) == approx(oi_after_funding)
+
+
+@given(
+    # bc we build multiple positions w leverage take care not to hit CAP
+    collateral=strategy('uint256', min_value=1e18,
+                        max_value=(OI_CAP - 1e4)/300),
+    leverage=strategy('uint8', min_value=1, max_value=100),
+    is_long=strategy('bool'),
+    compoundings=strategy('uint16', min_value=1, max_value=36),
+    )
+def test_entry_update_compounding_oi_imbalance(
+            ovl_collateral,
+            token,
+            market,
+            mothership,
+            alice,
+            bob,
+            collateral,
+            leverage,
+            is_long,
+            compoundings
+        ):
+
+    # transfer alice some tokens first given the conftest
+    token.transfer(alice, collateral, {"from": bob})
+
+    token.approve(ovl_collateral, collateral, {"from": alice})
+    token.approve(ovl_collateral, 2*collateral, {"from": bob})
+
+    _ = ovl_collateral.build(
+        market, collateral, leverage, not is_long, {"from": alice})
+    _ = ovl_collateral.build(
+        market, 2*collateral, leverage, is_long, {"from": bob})
+
+    queued_oi_long = market.queuedOiLong()
+    queued_oi_short = market.queuedOiShort()
+
+    collateral_adjusted = collateral - collateral * \
+        leverage*mothership.fee()/FEE_RESOLUTION
+    oi_adjusted = collateral_adjusted*leverage
+
+    if is_long:
+        assert approx(queued_oi_long) == int(2*oi_adjusted)
+        assert approx(queued_oi_short) == int(oi_adjusted)
+    else:
+        assert approx(queued_oi_long) == int(oi_adjusted)
+        assert approx(queued_oi_short) == int(2*oi_adjusted)
+
+    queued_oi_imbalance = queued_oi_long - queued_oi_short
+
+    brownie.chain.mine(timedelta=(compoundings+1)*market.compoundingPeriod()+1)
+    _ = market.update({"from": bob})
+
+    oi_long_after_funding = market.oiLong()
+    oi_short_after_funding = market.oiShort()
+    oi_imbalance_after_funding = oi_long_after_funding - oi_short_after_funding
+
+    k = market.k() / 1e18
+    funding_factor = (1 - 2*k)**(compoundings)
+    expected_oi_imbalance = queued_oi_imbalance * funding_factor
+
+    assert int(expected_oi_imbalance) == approx(oi_imbalance_after_funding)
+    assert int(queued_oi_long + queued_oi_short) == approx(
+        oi_long_after_funding + oi_short_after_funding)
