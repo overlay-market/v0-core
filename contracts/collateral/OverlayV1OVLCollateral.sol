@@ -227,7 +227,12 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         (   uint _oi,
             uint _oiShares,
             uint _priceFrame,
-            uint _tCompounding ) = IOverlayV1Market(pos.market).exitData(pos.isLong, pos.pricePoint);
+            bool _fromQueued ) = IOverlayV1Market(pos.market)
+                .exitData(
+                    pos.isLong, 
+                    pos.pricePoint,
+                    pos.compounding
+                );
 
         uint _totalPosShares = totalSupply(_positionId);
 
@@ -271,8 +276,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         ovl.transfer(msg.sender, _userValueAdjusted);
 
         IOverlayV1Market(pos.market).exitOI(
-            pos.compounding > _tCompounding,
             pos.isLong,
+            _fromQueued,
             _userOi,
             _userOiShares,
             _userCost < _userValueAdjusted ? _userValueAdjusted - _userCost : 0,
@@ -300,7 +305,12 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         (   uint _oi,
             uint _oiShares,
             uint _priceFrame,
-            uint _tCompounding ) = IOverlayV1Market(pos.market).exitData(_isLong, pos.pricePoint);
+            bool _fromQueued ) = IOverlayV1Market(pos.market)
+                .exitData(
+                    _isLong, 
+                    pos.pricePoint,
+                    pos.compounding
+                );
 
         MarketInfo memory _marketInfo = marketInfo[pos.market];
 
@@ -314,8 +324,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         uint _value = pos.value(_priceFrame, _oi, _oiShares);
 
         IOverlayV1Market(pos.market).exitOI(
-            pos.compounding <= _tCompounding,
             _isLong,
+            _fromQueued,
             pos.oi(_oi, _oiShares),
             pos.oiShares,
             0,
@@ -346,14 +356,14 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         IOverlayV1Market _market = IOverlayV1Market(pos.market);
 
-        uint _priceFrame = _market.priceFrame(
-            pos.isLong,
-            pos.pricePoint
-        );
-
-        ( uint _oi, uint _oiShares ) = pos.isLong
-            ? ( _market.oiLong(), _market.oiLongShares() )
-            : ( _market.oiShort(), _market.oiShortShares() );
+        (   uint _oi, 
+            uint _oiShares,
+            uint _priceFrame ) = _market
+            .positionInfo(
+                pos.isLong,
+                pos.pricePoint,
+                pos.compounding
+            );
 
         value_ = pos.value(
             _priceFrame,

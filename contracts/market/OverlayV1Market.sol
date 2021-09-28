@@ -76,15 +76,17 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
     function exitData (
         bool _isLong,
-        uint256 _pricePoint
+        uint256 _pricePoint,
+        uint256 _compounding
     ) public onlyCollateral returns (
         uint oi_,
         uint oiShares_,
         uint priceFrame_,
-        uint compoundedEpoch_
+        bool fromQueued_
     ) {
 
-        compoundedEpoch_ = exitUpdate();
+        // exitUpdate returns the present compounding period
+        fromQueued_ = _compounding > exitUpdate();
 
         uint _latestPrice = pricePoints.length - 1;
 
@@ -98,8 +100,22 @@ abstract contract OverlayV1Market is OverlayV1Governance {
             ? Math.min(priceExit.bid.divDown(priceEntry.ask), priceFrameCap)
             : priceExit.ask.divUp(priceEntry.bid);
 
-        if (_isLong) ( oiShares_ = oiLongShares, oi_ = __oiLong__ + queuedOiLong );
-        else ( oiShares_ = oiShortShares, oi_ = __oiShort__ + queuedOiShort );
+
+        if (fromQueued_){
+
+            uint _queuedOiLong = __queuedOiLong__;
+            uint _queuedOiShort = __queuedOiShort__;
+
+            if (_isLong) ( oi_ = _queuedOiLong, oiShares_ = _queuedOiLong );
+            else ( oi_ = _queuedOiShort, oiShares_ = _queuedOiShort );
+
+
+        } else {
+
+            if (_isLong) ( oi_ = __oiLong__, oiShares_ = __oiLongShares__ );
+            else ( oi_ = __oiShort__, oiShares_ = __oiShortShares__ );
+
+        }
 
     }
 
@@ -110,8 +126,8 @@ abstract contract OverlayV1Market is OverlayV1Governance {
     /// @param _isLong is this from the short or the long side
     /// @param _oiShares the amount of oi in shares to be removed
     function exitOI (
-        bool _fromQueued,
         bool _isLong,
+        bool _fromQueued,
         uint _oi,
         uint _oiShares,
         uint _brrrr,
@@ -126,13 +142,13 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
         if (_fromQueued) {
 
-            if (_isLong) queuedOiLong -= _oi;
-            else queuedOiShort -= _oi;
+            if (_isLong) __queuedOiLong__ -= _oi;
+            else __queuedOiShort__ -= _oi;
 
         } else {
 
-            if (_isLong) ( __oiLong__ -= _oi, oiLongShares -= _oiShares );
-            else ( __oiShort__ -= _oi, oiShortShares -= _oiShares );
+            if (_isLong) ( __oiLong__ -= _oi, __oiLongShares__ -= _oiShares );
+            else ( __oiShort__ -= _oi, __oiShortShares__ -= _oiShares );
 
         }
 

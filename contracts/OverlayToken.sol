@@ -10,9 +10,8 @@ contract OverlayToken is AccessControlEnumerable, ERC20("Overlay", "OVL") {
   bytes32 public constant MINTER_ROLE = keccak256("MINTER");
   bytes32 public constant BURNER_ROLE = keccak256("BURNER");
 
-  constructor(address mothership) {
+  constructor() {
 
-    _setupRole(ADMIN_ROLE, mothership);
     _setupRole(ADMIN_ROLE, msg.sender);
     _setupRole(MINTER_ROLE, msg.sender);
     _setRoleAdmin(MINTER_ROLE, ADMIN_ROLE);

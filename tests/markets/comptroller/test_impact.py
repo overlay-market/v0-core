@@ -6,7 +6,7 @@ from brownie.test import given, strategy
 from hypothesis import settings
 from decimal import *
 
-def print_events(tx):
+def print_logs(tx):
     for i in range(len(tx.events['log'])):
         print(
             tx.events['log'][i]['k'] + ": " 
@@ -62,8 +62,6 @@ def test_impact(comptroller):
     print(roller1)
     print(roller2)
 
-    print_events(tx)
-
     tx = comptroller.impactBatch([True],[1e18])
 
     roller0 = comptroller.rollers(0)
@@ -73,8 +71,6 @@ def test_impact(comptroller):
     print(roller0)
     print(roller1)
     print(roller2)
-
-    print_events(tx)
 
 def test_impact_cardinality_one_one_per_block_overwrites_roller(comptroller):
 
@@ -338,12 +334,6 @@ def test_impact_pressure_full_cooldown (comptroller, entry, rand):
     comptroller.expand(10)
     impact_window = comptroller.impactWindow()
     chain.mine(timedelta=10)
-
-    entry *= 1e18
-    rand = float(rand) / 100
-    cap = entry * rand
-
-    comptroller.set_TEST_CAP(cap)
 
     comptroller.impactBatch([True], [entry])
 

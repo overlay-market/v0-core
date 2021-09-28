@@ -260,33 +260,22 @@ abstract contract OverlayV1Comptroller {
 
         }
 
-        // emit log("hello", 0);
-
         (   Roller memory _beforeOrAt,
             Roller memory _atOrAfter ) = scryRollers(_target);
 
-
         if (_beforeOrAt.time == _target) {
-
-            // emit log("zang", 0);
 
             rollerThen_ = _beforeOrAt;
 
         } else if (_target == _atOrAfter.time) {
 
-            // emit log("zling", 0);
-
             rollerThen_ = _atOrAfter;
 
         } else if (_atOrAfter.time == _beforeOrAt.time) {
 
-            // emit log("zlung", 0);
-
             rollerThen_ = _beforeOrAt;
 
         } else {
-
-            // emit log("here", 0);
 
             uint _longPressureDiff = _atOrAfter.longPressure - _beforeOrAt.longPressure;
             uint _shortPressureDiff = _atOrAfter.shortPressure - _beforeOrAt.shortPressure;

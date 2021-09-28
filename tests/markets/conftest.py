@@ -18,6 +18,9 @@ AMOUNT_IN = 1
 PRICE_POINTS_START = 50
 PRICE_POINTS_END = 100
 
+@pytest.fixture(autouse=True)
+def isolation(fn_isolation):
+    pass
 
 @pytest.fixture(scope="module")
 def gov(accounts):
@@ -53,14 +56,18 @@ def fees(accounts):
 def create_token(gov, alice, bob):
     sup = TOKEN_TOTAL_SUPPLY
 
-    def create_token(mothership, supply=sup):
-        tok = gov.deploy(OverlayToken, mothership)
+    def create_token(supply=sup):
+        tok = gov.deploy(OverlayToken)
         tok.mint(gov, supply, {"from": gov})
-        ts = tok.totalSupply()
         tok.transfer(bob, supply, {"from": gov})
         return tok
 
     yield create_token
+
+
+@pytest.fixture(scope="module")
+def token(create_token):
+    yield create_token()
 
 
 def get_uni_feeds(feed_owner):
@@ -132,7 +139,7 @@ def comptroller(gov):
             .5e18,         # fee burn rate
             .5e18,         # margin burn rate
         ],
-         "OverlayV1UniswapV3MarketZeroComptrollerShim", [
+         "OverlayV1UniswapV3MarketZeroLambdaShim", [
             1e18,                # amount in
             600,                 # macro window
             60,                  # micro window
@@ -154,7 +161,7 @@ def comptroller(gov):
          get_uni_feeds,
         ),
     ])
-def create_mothership(create_token, fees, alice, bob, gov, rewards, feed_owner, request):
+def create_mothership(token, fees, alice, bob, gov, rewards, feed_owner, request):
     ovlms_name, ovlms_args, ovlm_name, ovlm_args, ovlc_name, ovlc_args, get_feed = request.param
 
     chain.mine(timestamp=int(time.time()))
@@ -163,12 +170,12 @@ def create_mothership(create_token, fees, alice, bob, gov, rewards, feed_owner, 
     ovlm = getattr(brownie, ovlm_name)
     ovlc = getattr(brownie, ovlc_name)
 
-    ovlms_args.insert(0, fees)
+    ovlms_args_w_feeto = [fees] + ovlms_args
 
     def create_mothership(
-        c_tok=create_token,
+        tok=token,
         ovlms_type=ovlms,
-        ovlms_args=ovlms_args,
+        ovlms_args=ovlms_args_w_feeto,
         ovlm_type=ovlm,
         ovlm_args=ovlm_args,
         ovlc_type=ovlc,
@@ -181,7 +188,7 @@ def create_mothership(create_token, fees, alice, bob, gov, rewards, feed_owner, 
 
         eth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 
-        tok = c_tok(mothership)
+        tok.grantRole(tok.ADMIN_ROLE(), mothership, {"from": gov})
 
         mothership.setOVL(tok, {'from': gov})
 
@@ -211,11 +218,6 @@ def mothership(create_mothership):
     yield create_mothership()
 
 
-@pytest.fixture(scope="module")
-def token(mothership):
-    yield getattr(interface, 'IOverlayToken')(mothership.ovl())
-
-
 @pytest.fixture(
     scope="module",
     params=['IOverlayV1OVLCollateral'])
@@ -233,6 +235,7 @@ def market(mothership, request):
     market = getattr(interface, request.param)(addr)
     yield market
 
+
 @pytest.fixture(
     scope="module",
     params=["IOverlayV1Market"])
@@ -241,6 +244,7 @@ def notamarket(accounts):
     And we cannot copy or deepcopy contract objects owing to RecursionError: maximum recursion depth exceeded while calling a Python object
     '''
     yield accounts[5]
+
 
 @pytest.fixture(scope="module")
 def uni_test(gov, rewards, accounts):

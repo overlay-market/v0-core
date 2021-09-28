@@ -307,15 +307,45 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
-    function oi () public view returns (uint oiLong_, uint oiShort_) {
+    function oi () public view returns (
+        uint oiLong_, 
+        uint oiShort_, 
+        uint oiLongShares_, 
+        uint oiShortShares_,
+        uint queuedOiLong_,
+        uint queuedOiShort_
+    ) {
 
         ( ,,,,uint _compoundings,, ) = epochs(block.timestamp, updated, toUpdate);
 
+        (   oiLong_, 
+            oiShort_,
+            oiLongShares_,
+            oiShortShares_,
+            queuedOiLong_,
+            queuedOiShort_ ) = _oi(_compoundings);
+
+    }
+
+    function _oi (
+        uint _compoundings
+    ) internal view returns (
+        uint oiLong_, 
+        uint oiShort_,
+        uint oiLongShares_,
+        uint oiShortShares_,
+        uint queuedOiLong_,
+        uint queuedOiShort_
+    ) {
+
         oiLong_ = __oiLong__;
         oiShort_ = __oiShort__;
+        oiLongShares_ = __oiLongShares__;
+        oiShortShares_ = __oiShortShares__;
+        queuedOiLong_ = __queuedOiLong__;
+        queuedOiShort_ = __queuedOiShort__;
+
         uint _k = k;
-        uint _queuedOiLong = queuedOiLong;
-        uint _queuedOiShort = queuedOiShort;
 
         if (0 < _compoundings) {
 
@@ -327,63 +357,119 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             );
 
             ( oiLong_, oiShort_, ) = computeFunding(
-                oiLong_ += _queuedOiLong,
-                oiShort_ += _queuedOiShort,
+                oiLong_ += queuedOiLong_,
+                oiShort_ += queuedOiShort_,
                 _compoundings - 1,
                 _k
             );
 
+            oiLongShares_ += queuedOiLong_;
+            oiShortShares_ += queuedOiShort_;
+
+            queuedOiLong_ = 0;
+            queuedOiShort_ = 0;
+
+        } 
+
+    }
+
+    function oiLong () external view returns (uint oiLong_) {
+        (   oiLong_,,,,, ) = oi();
+    }
+
+    function oiShort () external view returns (uint oiShort_) {
+        (  ,oiShort_,,,, ) = oi();
+    }
+
+    function queuedOiLong () external view returns (uint256 queuedOiLong_) {
+        ( ,,,,queuedOiLong_, ) = oi();
+    }
+
+    function queuedOiShort () external view returns (uint256 queuedOiShort_) {
+        ( ,,,,,queuedOiShort_ ) = oi();
+    }
+
+    function oiLongShares () external view returns (uint256 oiLongShares_) {
+        ( ,,oiLongShares_,,, ) = oi();
+    }
+
+    function oiShortShares () external view returns (uint256 oiShortShares_) {
+        ( ,,,oiShortShares_,, ) = oi();
+    }
+
+    function positionInfo (
+        bool _isLong,
+        uint _entryIndex,
+        uint _compounding
+    ) external view returns (
+        uint256 oi_,
+        uint256 oiShares_,
+        uint256 priceFrame_
+    ) {
+
+        (   uint _updatesThen,,
+            uint _tUpdate,,
+            uint _compoundings,
+            uint _tCompounding, ) = epochs(block.timestamp, updated, toUpdate);
+
+
+        priceFrame_ = priceFrame(
+            _isLong,
+            _entryIndex,
+            _updatesThen,
+            _tUpdate
+        );
+
+        (   uint _oiLong, 
+            uint _oiShort, 
+            uint _oiLongShares, 
+            uint _oiShortShares,
+            uint _queuedOiLong,
+            uint _queuedOiShort ) = _oi(_compoundings);
+        
+        if (_compounding < _tCompounding) {
+
+            if (_isLong) ( oi_ = _oiLong, oiShares_ = _oiLongShares );
+            else ( oi_ = _oiShort, oiShares_ = _oiShortShares );
+
         } else {
 
-            oiLong_ += _queuedOiLong;
-            oiShort_ += _queuedOiShort;
+            if (_isLong) oi_ = oiShares_ = _queuedOiLong;
+            else oi_ = oiShares_ = _queuedOiShort;
 
         }
 
     }
 
-    function oiLong () external view returns (uint oiLong_) {
-        (   oiLong_, ) = oi();
-    }
-
-    function oiShort () external view returns (uint oiShort_) {
-        (  ,oiShort_ ) = oi();
-    }
-
     function priceFrame (
         bool _isLong,
-        uint _entryIndex
-    ) external view returns (
+        uint _entryIndex,
+        uint _updatesThen,
+        uint _tUpdate
+    ) internal view returns (
         uint256 priceFrame_
     ) {
-
-        uint _toUpdate = toUpdate;
-
-        uint _now = block.timestamp;
-
-        uint256 _currentIndex = pricePoints.length;
-
-        (   uint _updatesThen,,
-            uint _tUpdate,,,, ) = epochs(_now, updated, _toUpdate);
 
         PricePoint memory _priceEntry;
         PricePoint memory _priceExit;
 
-        if (_entryIndex < _currentIndex) {
+        if (_entryIndex < pricePoints.length - 1) {
 
             _priceEntry = pricePoints[_entryIndex];
 
         } else if (0 < _updatesThen ) {
 
-            _priceEntry = price(_now - _toUpdate);
+            _priceEntry = price(block.timestamp - toUpdate);
 
+        // TODO: do we allow exit without settlement
         } else revert("OVLV1:!settled");
 
-        _priceExit = price(_now - _tUpdate);
+        // TODO: what if price has settled
+        _priceExit = price(block.timestamp - _tUpdate);
 
         priceFrame_ = _isLong
-            ? Math.min(_priceExit.bid / _priceEntry.ask, priceFrameCap)
-            : _priceExit.ask / _priceEntry.bid;
+            ? Math.min(_priceExit.bid.divDown(_priceEntry.ask), priceFrameCap)
+            : _priceExit.ask.divUp(_priceEntry.bid);
 
     }
 
