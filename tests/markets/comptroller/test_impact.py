@@ -75,6 +75,10 @@ def test_impact(comptroller):
 
 def test_impact_cardinality_one_one_per_block_overwrites_roller(comptroller):
 
+    ( cap,_,__ ) = comptroller.oiCap()
+
+    pressure = int( ( 1e18 / cap ) * 1e18 )
+
     tx = comptroller.impactBatch([True],[1e18])
     assert comptroller.rollers(0)[0] == chain[-1].timestamp
 
@@ -84,7 +88,7 @@ def test_impact_cardinality_one_one_per_block_overwrites_roller(comptroller):
 
     roller = comptroller.rollers(0)
     assert roller[0] == chain[-1].timestamp
-    assert roller[1] == 2e18
+    assert roller[1] == 2 * pressure
 
 def test_impact_cardinality_one_many_per_block_overwrites_roller(comptroller):
 
