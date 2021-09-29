@@ -1,4 +1,3 @@
-
 import brownie
 from brownie.test import given, strategy
 from hypothesis import settings
@@ -39,10 +38,9 @@ def test_unwind_revert_insufficient_shares(ovl_collateral, bob):
 
 
 @given(
-    collateral=strategy('uint256', min_value=1e18, max_value=OI_CAP - 1e4),
-    leverage=strategy('uint8', min_value=1, max_value=100),
-    is_long=strategy('bool')
-    )
+    is_long=strategy('bool'),
+    oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
+    leverage=strategy('uint256', min_value=1, max_value=100))
 def test_unwind_oi_removed(
         ovl_collateral,
         mothership,
@@ -50,10 +48,14 @@ def test_unwind_oi_removed(
         token,
         bob,
         alice,
-        collateral,
+        oi,
         leverage,
         is_long
         ):
+    
+    # Build parameters
+    oi *= 1e16
+    collateral = get_collateral(oi / leverage, leverage, mothership.fee())
 
     # Build
     token.approve(ovl_collateral, collateral, {"from": bob})
@@ -67,23 +69,18 @@ def test_unwind_oi_removed(
 
     # Position info
     pid = tx_build.events['Build']['positionId']
+    poi_build = tx_build.events['Build']['oi']
+    # breakpoint()
     (_, _, _, price_point, oi_shares_build,
         debt_build, cost_build, p_compounding) = ovl_collateral.positions(pid)
 
     chain.mine(timedelta=market.updatePeriod()+1)
-    # oi_long, oi_short = market.oi()
 
-    # if is_long:
-    #     assert oi_shares_build > 0
-    #     assert oi_long > 0
-    #     assert oi_short == 0
-    # else:
-    #     assert oi_shares_build > 0
-    #     assert oi_short > 0
-    #     assert oi_long == 0
-
+    assert oi_shares_build > 0
+    assert poi_build > 0
+    
     # Unwind
-    ovl_collateral.unwind(
+    tx_unwind = ovl_collateral.unwind(
         pid,
         oi_shares_build,
         {"from": bob}
@@ -92,11 +89,10 @@ def test_unwind_oi_removed(
     (_, _, _, _, oi_shares_unwind, debt_unwind, cost_unwind, _) =\
         ovl_collateral.positions(pid)
 
-    # oi_long, oi_short = market.oi()
+    poi_unwind = tx_unwind.events['Unwind']['oi']
 
     assert oi_shares_unwind == 0
-    # assert oi_long == 0
-    # assert oi_short == 0
+    assert poi_unwind == poi_build
 
 
 # WIP
