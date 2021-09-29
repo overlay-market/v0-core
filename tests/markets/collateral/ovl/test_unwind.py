@@ -92,7 +92,7 @@ def test_unwind_oi_removed(
     poi_unwind = tx_unwind.events['Unwind']['oi']
 
     assert oi_shares_unwind == 0
-    assert poi_unwind == poi_build
+    assert int(poi_unwind) == approx(int(poi_build))
 
 
 # WIP
