@@ -108,12 +108,17 @@ def test_impact_cardinality_two_increments_cardinality_once(comptroller):
 
     assert comptroller.cardinalityNext() == 2
 
+    chain.mine(timedelta=10)
+
     comptroller.impactBatch([True], [1e18])
 
-    roller = comptroller.rollers(1)
+    roller1 = comptroller.rollers(1)
 
-    assert roller[0] == chain[-1].timestamp
-    assert roller[1] == 1e18
+    ( cap,_,__ ) = comptroller.oiCap()
+    pressure = int((1e18 / cap)*1e18)
+
+    assert roller1[0] == chain[-1].timestamp
+    assert roller1[1] == pressure
 
     assert comptroller.index() == 1
     assert comptroller.cardinality() == 2
@@ -121,6 +126,7 @@ def test_impact_cardinality_two_increments_cardinality_once(comptroller):
 def test_roller_cardinality_two_rolls_index_rolls_over_to_0_with_single_rolls(comptroller):
 
     ( cap, _, __ ) = comptroller.oiCap()
+
     pressure = Decimal(1e18) / Decimal(cap)
 
     comptroller.expand(2)
