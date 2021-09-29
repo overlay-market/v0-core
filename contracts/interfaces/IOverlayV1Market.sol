@@ -5,9 +5,17 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "../libraries/Position.sol";
 
 interface IOverlayV1Market is IERC1155 {    
-    event NewPrice(uint price);
-    event FundingPaid(uint oiLong, uint oiShort, int fundingPaid);
+
     event log(string k, uint v);
+
+    struct PricePoint {
+        uint256 bid;
+        uint256 ask;
+        uint256 price;
+    }
+
+    event NewPrice(uint bid, uint ask, uint price);
+    event FundingPaid(uint oiLong, uint oiShort, int fundingPaid);
 
     function ovl() external view returns (address);
     function factory() external view returns (address);
@@ -50,7 +58,11 @@ interface IOverlayV1Market is IERC1155 {
     );
 
     function pricePointCurrentIndex() external view returns (uint256);
-    function pricePoints(uint256 index) external view returns (uint256 price );
+    function pricePoints(
+        uint256 index
+    ) external view returns (
+        PricePoint memory price 
+    );
 
     function MAX_FUNDING_COMPOUND() external view returns (uint16);
 

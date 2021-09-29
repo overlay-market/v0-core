@@ -453,9 +453,9 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         PricePoint memory _priceEntry;
         PricePoint memory _priceExit;
 
-        if (_entryIndex < pricePoints.length - 1) {
+        if (_entryIndex < _pricePoints.length - 1) {
 
-            _priceEntry = pricePoints[_entryIndex];
+            _priceEntry = _pricePoints[_entryIndex];
 
         } else if (0 < _updatesThen ) {
 
