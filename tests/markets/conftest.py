@@ -71,8 +71,10 @@ def create_token(gov, alice, bob):
 def token(create_token):
     yield create_token()
 
+@pytest.fixture(scope="module")
+def feed_infos():
 
-def get_uni_feeds(feed_owner):
+    chain.mine(timestamp=int(time.time()))
 
     base = os.path.dirname(os.path.abspath(__file__))
     # TODO: fix this relative path fetch
@@ -89,6 +91,7 @@ def get_uni_feeds(feed_owner):
 
     obs = []  # blockTimestamp, tickCumulative, liquidityCumulative,initialized
     shims = []  # timestamp, liquidity, tick, cardinality
+    price_times = []
 
     feed = feed[:300]
 
@@ -98,10 +101,20 @@ def get_uni_feeds(feed_owner):
         obs.append([])
         shims.append([])
         for f in fd:
+            price = 1.0001 ** f['shim'][2]
             diff = f['shim'][0] - earliest
-            f['observation'][0] = f['shim'][0] = now + diff
+            _time = now + diff
+            f['observation'][0] = f['shim'][0] = _time
             obs[len(obs)-1].append(f['observation'])
             shims[len(shims)-1].append(f['shim'])
+            price_times.append({'price':price,'time':_time})
+
+    yield (obs,shims,price_times)
+
+def get_uni_feeds(feed_owner, feed_info):
+
+    obs = feed_info[0]
+    shims = feed_info[1]
 
     UniswapV3MockFactory = getattr(brownie, 'UniswapV3FactoryMock')
     IUniswapV3OracleMock = getattr(interface, 'IUniswapV3OracleMock')
@@ -112,10 +125,7 @@ def get_uni_feeds(feed_owner):
     token1 = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 
     # TODO: place token0 and token1 into the json
-    uniswapv3_factory.createPool(
-        token0,
-        token1,
-    )
+    uniswapv3_factory.createPool( token0, token1 )
 
     uniswapv3_mock = IUniswapV3OracleMock(uniswapv3_factory.allPools(0))
 
@@ -163,10 +173,8 @@ def comptroller(gov):
          get_uni_feeds,
         ),
     ])
-def create_mothership(token, fees, alice, bob, gov, rewards, feed_owner, request):
+def create_mothership(token, feed_infos, fees, alice, bob, gov, feed_owner, request):
     ovlms_name, ovlms_args, ovlm_name, ovlm_args, ovlc_name, ovlc_args, get_feed = request.param
-
-    chain.mine(timestamp=int(time.time()))
 
     ovlms = getattr(brownie, ovlms_name)
     ovlm = getattr(brownie, ovlm_name)
@@ -184,7 +192,7 @@ def create_mothership(token, fees, alice, bob, gov, rewards, feed_owner, request
         ovlc_args=ovlc_args,
         fd_getter=get_feed
     ):
-        feed_factory, ovl_feed, market_feed, quote = fd_getter(feed_owner)
+        _, ovl_feed, market_feed, quote = fd_getter(feed_owner, feed_infos)
 
         mothership = gov.deploy(ovlms_type, *ovlms_args)
 
@@ -194,8 +202,16 @@ def create_mothership(token, fees, alice, bob, gov, rewards, feed_owner, request
 
         mothership.setOVL(tok, {'from': gov})
 
-        market = gov.deploy(ovlm_type, mothership, ovl_feed,
-                            market_feed, quote, eth, *ovlm_args[:3])
+        market = gov.deploy(
+            ovlm_type, 
+            mothership, 
+            ovl_feed,
+            market_feed, 
+            quote, 
+            eth, 
+            *ovlm_args[:3]
+        )
+
         market.setEverything(*ovlm_args[3:], {"from": gov})
         mothership.initializeMarket(market, {"from": gov})
 
