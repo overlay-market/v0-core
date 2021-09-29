@@ -65,9 +65,44 @@ def test_update_funding_burn():
     pass
 
 
-def test_update_funding_k():
+def test_update_funding_k(
+  mothership,
+  token,
+  market,
+  ovl_collateral,
+  bob
+):
     # TODO: test for different k values via an adjust
-    pass
+    # grab current t0 = k value
+    token.approve(ovl_collateral, 1e70, {"from": bob})
+
+    initial_k_value = market.k()
+    print('initial market K value: ', market.k())
+
+    # update _k value
+    update_period = market.updatePeriod()
+    compounding_period = market.compoundingPeriod()
+    oi_cap = market.oiCap()
+    new_k_value = 343454218783269
+    fundingKDenominator = 1
+    leverage_max = market.leverageMax()
+
+    market.adjustParams(
+      update_period,
+      compounding_period,
+      oi_cap,
+      new_k_value,
+      fundingKDenominator,
+      leverage_max,
+    )
+
+    # grab updated t1 = _k value
+    updated_k_value = market.k()
+    print('after market:', market.k())
+
+    # test if t1 = _k value
+    assert int(updated_k_value) == int(new_k_value)
+
 
 
 def test_update_early():
