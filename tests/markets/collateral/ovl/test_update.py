@@ -61,42 +61,6 @@ def test_update(mothership,
     assert int(fee_to_balance_now) == int(Decimal(fees) - burn_amount)
 
 
-def test_update_funding_burn():
-    pass
-
-
-def test_update_funding_k(
-  mothership,
-  token,
-  market,
-  ovl_collateral,
-  gov,
-  bob
-):
-    # TODO: test for different k values via an adjust
-    # grab current t0 = k value
-    initial_k_value = market.k()
-    print('initial market K value: ', market.k())
-
-    # update _k value
-    new_k_value = 343454218783269
-    market.setK(new_k_value, {"from": gov})
-
-    # grab updated t1 = _k value
-    updated_k_value = market.k()
-    print('after market:', market.k())
-
-    # test if t1 = _k value
-    assert int(updated_k_value) == int(new_k_value)
-
-
-
-def test_update_early():
-    # TODO: number of update periods have gone by is zero so nothing
-    # should happen to state
-    pass
-
-
 def test_update_between_periods(token, factory, ovl_collateral, market,
                                 alice, rewards):
     update_period = market.updatePeriod()
