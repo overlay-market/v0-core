@@ -70,31 +70,17 @@ def test_update_funding_k(
   token,
   market,
   ovl_collateral,
+  gov,
   bob
 ):
     # TODO: test for different k values via an adjust
     # grab current t0 = k value
-    token.approve(ovl_collateral, 1e70, {"from": bob})
-
     initial_k_value = market.k()
     print('initial market K value: ', market.k())
 
     # update _k value
-    update_period = market.updatePeriod()
-    compounding_period = market.compoundingPeriod()
-    oi_cap = market.oiCap()
     new_k_value = 343454218783269
-    fundingKDenominator = 1
-    leverage_max = market.leverageMax()
-
-    market.adjustParams(
-      update_period,
-      compounding_period,
-      oi_cap,
-      new_k_value,
-      fundingKDenominator,
-      leverage_max,
-    )
+    market.setK(new_k_value, {"from": gov})
 
     # grab updated t1 = _k value
     updated_k_value = market.k()
