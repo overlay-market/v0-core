@@ -22,7 +22,6 @@ def get_collateral(collateral, leverage, fee):
     else:
         return collateral
 
-def test_unwind(ovl_collateral, market, token, bob):
 
 def test_unwind(ovl_collateral, token, bob):
     pass
@@ -44,7 +43,6 @@ def test_unwind_revert_insufficient_shares(ovl_collateral, bob):
     leverage=strategy('uint8', min_value=1, max_value=100),
     is_long=strategy('bool')
     )
-@settings(max_examples=1)
 def test_unwind_oi_removed(
         ovl_collateral,
         mothership,
@@ -73,16 +71,16 @@ def test_unwind_oi_removed(
         debt_build, cost_build, p_compounding) = ovl_collateral.positions(pid)
 
     chain.mine(timedelta=market.updatePeriod()+1)
-    oi_long, oi_short = market.oi()
+    # oi_long, oi_short = market.oi()
 
-    if is_long:
-        assert oi_shares_build > 0
-        assert oi_long > 0
-        assert oi_short == 0
-    else:
-        assert oi_shares_build > 0
-        assert oi_short > 0
-        assert oi_long == 0
+    # if is_long:
+    #     assert oi_shares_build > 0
+    #     assert oi_long > 0
+    #     assert oi_short == 0
+    # else:
+    #     assert oi_shares_build > 0
+    #     assert oi_short > 0
+    #     assert oi_long == 0
 
     # Unwind
     ovl_collateral.unwind(
@@ -94,11 +92,11 @@ def test_unwind_oi_removed(
     (_, _, _, _, oi_shares_unwind, debt_unwind, cost_unwind, _) =\
         ovl_collateral.positions(pid)
 
-    oi_long, oi_short = market.oi()
+    # oi_long, oi_short = market.oi()
 
     assert oi_shares_unwind == 0
-    assert oi_long == 0
-    assert oi_short == 0
+    # assert oi_long == 0
+    # assert oi_short == 0
 
 
 # WIP
@@ -137,7 +135,6 @@ def test_unwind_fee_applied(
         debt_build, cost_build, p_compounding) = ovl_collateral.positions(pid)
 
     chain.mine(timedelta=market.updatePeriod()+1)
-    oi_long, oi_short = market.oi()
 
     breakpoint()
     # Unwind
@@ -150,8 +147,6 @@ def test_unwind_fee_applied(
     breakpoint()
     (_, _, _, _, oi_shares_unwind, debt_unwind, cost_unwind, _) =\
         ovl_collateral.positions(pid)
-
-    oi_long, oi_short = market.oi()
 
     assert oi_shares_unwind == 0
     assert oi_long == 0
