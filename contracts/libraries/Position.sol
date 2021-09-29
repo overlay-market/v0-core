@@ -38,8 +38,8 @@ library Position {
     ) private pure returns (uint256 oi_) {
 
         oi_ = _self.oiShares
-            .mulUp(totalOi)
-            .divDown(totalOiShares);
+            .mulDown(totalOi)
+            .divUp(totalOiShares);
 
     }
 
