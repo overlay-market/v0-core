@@ -5,9 +5,18 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "../libraries/Position.sol";
 
 interface IOverlayV1Market is IERC1155 {    
-    event NewPrice(uint price);
-    event FundingPaid(uint oiLong, uint oiShort, int fundingPaid);
+
     event log(string k, uint v);
+
+    struct PricePoint {
+        uint256 bid;
+        uint256 ask;
+        uint256 price;
+    }
+
+
+    event NewPrice(uint bid, uint ask, uint price);
+    event FundingPaid(uint oiLong, uint oiShort, int fundingPaid);
 
     function ovl() external view returns (address);
     function factory() external view returns (address);
@@ -50,7 +59,12 @@ interface IOverlayV1Market is IERC1155 {
     );
 
     function pricePointCurrentIndex() external view returns (uint256);
-    function pricePoints(uint256 index) external view returns (uint256 price );
+
+    function pricePoints(
+        uint256 index
+    ) external view returns (
+        PricePoint memory price 
+    );
 
     function MAX_FUNDING_COMPOUND() external view returns (uint16);
 
@@ -110,5 +124,48 @@ interface IOverlayV1Market is IERC1155 {
         uint256 oiShares_,
         uint256 priceFrame_
     );
+
+    // adding new functions below 9.29.21
+
+    function setComptrollerParams (
+        uint256 _impactWindow,
+        uint256 _staticCap,
+        uint256 _lmbda,
+        uint256 _brrrrFade
+    ) external;
+
+    function setPeriods(
+        uint256 _updatePeriod,
+        uint256 _compoundingPeriod
+    ) external;
+
+    function setLeverageMax (
+        uint256 _leverageMax
+    ) external;
+
+    function setK (
+        uint256 _k
+    ) external;
+
+    function setSpread(
+        uint256 _pbnj
+    ) external;
+
+    function setPriceFrameCap (
+        uint256 _priceFrameCap
+    ) external;
+
+    function setEverything (
+        uint256 _k,
+        uint256 _leverageMax,
+        uint256 _priceFrameCap,
+        uint256 _pbnj,
+        uint256 _updatePeriod,
+        uint256 _compoundPeriod,
+        uint256 _impactWindow,
+        uint256 _staticCap,
+        uint256 _lmbda,
+        uint256 _brrrrFade
+    ) external;
 
 }
