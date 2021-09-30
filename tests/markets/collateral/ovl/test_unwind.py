@@ -70,7 +70,7 @@ def test_unwind_oi_removed(
     # Position info
     pid = tx_build.events['Build']['positionId']
     poi_build = tx_build.events['Build']['oi']
-    # breakpoint()
+
     (_, _, _, price_point, oi_shares_build,
         debt_build, cost_build, p_compounding) = ovl_collateral.positions(pid)
 
@@ -142,6 +142,7 @@ def test_unwind_fee_applied(
         {"from": ovl_collateral}
         )
     (open_interest, oishares, price_frame,_) = exit_data_tx.return_value
+    fees_prior = ovl_collateral.fees()
 
     # Unwind
     tx_unwind = ovl_collateral.unwind(
@@ -167,7 +168,69 @@ def test_unwind_fee_applied(
     (_, _, _, _, oi_shares_unwind, debt_unwind, cost_unwind, _) =\
         ovl_collateral.positions(pid)
 
-    assert int(fee/FEE_RESOLUTION) == approx(int(ovl_collateral.fees()))
+    # assert int(fee/FEE_RESOLUTION) == approx(int(ovl_collateral.fees()))
+    assert int(fee/FEE_RESOLUTION) + fees_prior == approx(ovl_collateral.fees())
+
+
+@given(
+    is_long=strategy('bool'),
+    oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
+    leverage=strategy('uint256', min_value=1, max_value=100))
+def test_unwind_after_transfer(
+        ovl_collateral,
+        mothership,
+        market,
+        token,
+        bob,
+        alice,
+        oi,
+        leverage,
+        is_long
+        ):
+    
+    # Build parameters
+    oi *= 1e16
+    collateral = get_collateral(oi / leverage, leverage, mothership.fee())
+
+    # Build
+    token.approve(ovl_collateral, collateral, {"from": bob})
+    tx_build = ovl_collateral.build(
+        market,
+        collateral,
+        leverage,
+        is_long,
+        {"from": bob}
+    )
+
+    # Position info
+    pid = tx_build.events['Build']['positionId']
+    poi_build = tx_build.events['Build']['oi']
+    
+    (_, _, _, price_point, oi_shares_build,
+        debt_build, cost_build, p_compounding) = ovl_collateral.positions(pid)
+
+    chain.mine(timedelta=market.updatePeriod()+1)
+
+    assert oi_shares_build > 0
+    assert poi_build > 0
+
+    token.transfer(alice, oi_shares_build, from)
+    
+    # Unwind
+    tx_unwind = ovl_collateral.unwind(
+        pid,
+        oi_shares_build,
+        {"from": bob}
+    )
+
+    (_, _, _, _, oi_shares_unwind, debt_unwind, cost_unwind, _) =\
+        ovl_collateral.positions(pid)
+
+    poi_unwind = tx_unwind.events['Unwind']['oi']
+
+    assert oi_shares_unwind == 0
+    assert int(poi_unwind) == approx(int(poi_build))
+
 
 # WIP
 # warning, dependent on what the price/mocks do
