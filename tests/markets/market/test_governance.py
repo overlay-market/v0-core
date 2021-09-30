@@ -18,6 +18,7 @@ BRRRR_FADE = 1e18 * 1.01
 STATIC_CAP = 800000 * 1e18 * 1.01
 LMBDA = 0.1
 
+
 @given(
   impact_window=strategy('uint256',
                          min_value=IMPACT_WINDOW,
@@ -394,7 +395,7 @@ def test_set_price_frame_cap(
   assert int(current_price_frame_cap) == int(price_frame_cap)
 
 
-def test_set_everything(
+@given(
   k=strategy('uint256',
              min_value = K,
              max_value = K * 1.05),
@@ -413,5 +414,77 @@ def test_set_everything(
   compounding_period=strategy('uint256',
                               min_value = COMPOUND_PERIOD,
                               max_value = COMPOUND_PERIOD + 100),
+  impact_window=strategy('uint256',
+                         min_value=IMPACT_WINDOW,
+                         max_value=IMPACT_WINDOW * 1.05),
+  static_cap=strategy('uint256',
+                      min_value=STATIC_CAP,
+                      max_value=STATIC_CAP * 1.05),
+  lmbda=strategy('uint256',
+                 min_value=LMBDA,
+                 max_value=1),
+  brrrr_fade=strategy('uint256',
+                      min_value=BRRRR_FADE,
+                      max_value=BRRRR_FADE * 1.05))
+@settings(max_examples = 3)
+def test_set_everything(
+  market,
+  gov,
+  k,
+  leverage_max,
+  price_frame_cap,
+  spread,
+  update_period,
+  compounding_period,
+  impact_window,
+  static_cap,
+  lmbda,
+  brrrr_fade
 ):
-  pass
+  # pass in inputs into setEverything function
+  market.setEverything(
+    k,
+    leverage_max,
+    price_frame_cap,
+    spread,
+    update_period,
+    compounding_period,
+    impact_window,
+    static_cap,
+    lmbda,
+    brrrr_fade,
+    {"from": gov}
+  )
+
+  # grab all current variables
+  current_k = market.k()
+  current_leverage_max = market.leverageMax()
+  current_price_frame_cap = market.priceFrameCap()
+  current_spread = market.pbnj()
+  current_update_period = market.updatePeriod()
+  current_compounding_period = market.compoundingPeriod()
+  current_impact_window = market.impactWindow()
+  current_static_cap = market.oiCap()
+  current_lmbda = market.lmbda()
+  current_brrrr_fade = market.brrrrFade()
+
+  # test all current values to be updated
+  assert int(current_k) == int(k)
+
+  assert int(current_leverage_max) == int(leverage_max)
+
+  assert int(current_price_frame_cap) == int(price_frame_cap)
+
+  assert int(current_spread) == int(spread)
+
+  assert int(current_update_period) == int(update_period)
+
+  assert int(current_compounding_period) == int(compounding_period)
+
+  assert int(current_impact_window) == int(impact_window)
+
+  assert int(current_static_cap) == int(static_cap)
+
+  assert int(current_lmbda) == int(lmbda)
+
+  assert int(current_brrrr_fade) == int(brrrr_fade)
