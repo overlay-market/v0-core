@@ -98,7 +98,7 @@ def test_set_static_cap(
   lmbda=strategy('uint256',
                  min_value=LMBDA,
                  max_value=1))
-@settings(max_examples = 3)
+@settings(max_examples = 1)
 def test_set_lmbda(
   market,
   gov,
@@ -119,6 +119,8 @@ def test_set_lmbda(
 
   current_impact_window = market.impactWindow()
   current_static_cap = market.oiCap()
+  print('current_static_cap: ', current_static_cap)
+  print('initial_static_cap: ', initial_static_cap)
   current_lmbda = market.lmbda()
   current_brrrrFade = market.brrrrFade()
 
