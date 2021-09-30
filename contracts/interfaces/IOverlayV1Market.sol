@@ -14,6 +14,7 @@ interface IOverlayV1Market is IERC1155 {
         uint256 price;
     }
 
+
     event NewPrice(uint bid, uint ask, uint price);
     event FundingPaid(uint oiLong, uint oiShort, int fundingPaid);
 
@@ -58,6 +59,7 @@ interface IOverlayV1Market is IERC1155 {
     );
 
     function pricePointCurrentIndex() external view returns (uint256);
+
     function pricePoints(
         uint256 index
     ) external view returns (
@@ -122,6 +124,8 @@ interface IOverlayV1Market is IERC1155 {
         uint256 oiShares_,
         uint256 priceFrame_
     );
+
+    // adding new functions below 9.29.21
 
     function setComptrollerParams (
         uint256 _impactWindow,
