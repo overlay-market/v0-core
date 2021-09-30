@@ -192,7 +192,7 @@ def test_unwind_after_transfer(
     oi *= 1e16
     collateral = get_collateral(oi / leverage, leverage, mothership.fee())
 
-    # Build
+    # Bob builds a position
     token.approve(ovl_collateral, collateral, {"from": bob})
     tx_build = ovl_collateral.build(
         market,
@@ -211,25 +211,21 @@ def test_unwind_after_transfer(
 
     chain.mine(timedelta=market.updatePeriod()+1)
 
+    # Confirm that Bob holds a position
     assert oi_shares_build > 0
     assert poi_build > 0
 
-    # token.transfer(alice, oi_shares_build, from)
+    # Transfer Bob's position to Alice
+    ovl_collateral.safeTransferFrom(bob, alice, pid, ovl_collateral.totalSupply(pid), 1, {"from": bob})
     
-    # Unwind
-    tx_unwind = ovl_collateral.unwind(
-        pid,
-        oi_shares_build,
-        {"from": bob}
-    )
-
-    (_, _, _, _, oi_shares_unwind, debt_unwind, cost_unwind, _) =\
-        ovl_collateral.positions(pid)
-
-    poi_unwind = tx_unwind.events['Unwind']['oi']
-
-    assert oi_shares_unwind == 0
-    assert int(poi_unwind) == approx(int(poi_build))
+    # Bob's unwind attempt should fail
+    EXPECTED_ERROR_MESSAGE = "OVLV1:!shares"
+    with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+        ovl_collateral.unwind(
+            pid,
+            oi_shares_build,
+            {"from": bob}
+        )
 
 
 # WIP
