@@ -101,17 +101,16 @@ def test_unwind_oi_removed(
     oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
     leverage=strategy('uint256', min_value=1, max_value=100))
 @settings(max_examples=1)
-def test_unwind_fee_applied(
-        ovl_collateral,
-        mothership,
-        market,
-        token,
-        bob,
-        alice,
-        oi,
-        leverage,
-        is_long
-        ):
+def test_unwind_expected_fee(
+    ovl_collateral,
+    mothership,
+    market,
+    token,
+    bob,
+    oi,
+    leverage,
+    is_long
+):
 
     # Build parameters
     oi *= 1e16
@@ -127,49 +126,58 @@ def test_unwind_fee_applied(
         {"from": bob}
     )
 
+    fees_prior = ovl_collateral.fees() / 1e18
+
     # Position info
     pid = tx_build.events['Build']['positionId']
-    (_, _, _, price_point, oi_shares_build,
-        debt_build, cost_build, p_compounding) = ovl_collateral.positions(pid)
+    pos_shares = tx_build.events['Build']['oi']
+    (_, _, _, price_point, oi_shares_pos, debt_pos, _, p_compounding) = ovl_collateral.positions(pid)
+
+    _pos_shares = ovl_collateral.balanceOf(bob, pid)
+
+    print("pos shares", pos_shares)
+    print("_pos_shares", _pos_shares)
+    print("oi_shares", oi_shares_pos)
 
     chain.mine(timedelta=market.updatePeriod()+1)
     build_fees = ovl_collateral.fees()
     
-    exit_data_tx = market.exitData(
-        is_long,
-        price_point,
-        p_compounding,
-        {"from": ovl_collateral}
-        )
-    (open_interest, oishares, price_frame,_) = exit_data_tx.return_value
-    fees_prior = ovl_collateral.fees()
+    ( oi, oi_shares, price_frame ) = market.positionInfo(is_long, price_point, p_compounding)
+
+    oi /= 1e18
+    debt_pos /= 1e18
+    oi_shares /= 1e18
+    price_frame /= 1e18
+    oi_shares_pos /= 1e18
+
+
+    # Fee calculation
+    pos_oi = ( oi_shares_pos * oi ) / oi_shares 
+
+    if is_long:
+        val = pos_oi * price_frame 
+        val = val - min(val, debt_pos)
+    else:
+        val = pos_oi *2
+        val = val - min(val, debt_pos + pos_oi * price_frame )
+
+    notional = val + debt_pos 
+
+    fee = notional * ( mothership.fee() / 1e18 )
 
     # Unwind
     tx_unwind = ovl_collateral.unwind(
         pid,
-        oi_shares_build,
+        oi_shares_pos * 1e18,
         {"from": bob}
     )
-
-    # Fee calculation
-    pos_oi = (oi_shares_build * open_interest)/oishares
-    if is_long:
-        val = pos_oi * price_frame
-        val = val - min(val, debt_build)
-    else:
-        val = pos_oi *2
-        val = val - min(val, debt_build, (pos_oi * price_frame))
-    notional = val + debt_build
-    user_notional =\
-        (oi_shares_build * notional)/oi_shares_build
-    
-    fee = user_notional * mothership.fee()
 
     (_, _, _, _, oi_shares_unwind, debt_unwind, cost_unwind, _) =\
         ovl_collateral.positions(pid)
 
-    # assert int(fee/FEE_RESOLUTION) == approx(int(ovl_collateral.fees()))
-    assert int(fee/FEE_RESOLUTION) + fees_prior == approx(ovl_collateral.fees())
+    fees_now = ovl_collateral.fees() / 1e18
+
+    assert fee + fees_prior == approx(fees_now), "fees not expected amount"
 
 
 @given(
