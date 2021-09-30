@@ -12,13 +12,40 @@ TOKEN_TOTAL_SUPPLY = 8000000
 OI_CAP = 800000
 FEE_RESOLUTION = 1e18
 
-def test_update_funding_k(
-  mothership,
-  token,
+def set_comptroller_params():
+  pass
+
+
+def set_update_period_only():
+  pass
+
+
+def set_compounding_period_only():
+  pass
+
+
+def set_both_update_compounding_period():
+  pass
+
+
+def test_set_leverage_max(market, gov):
+  # test updating for new leverage max
+  # grab initial leverage max value
+  initial_leverage_max = market.leverageMax()
+
+  # set new leverage max
+  new_leverage_max = 97
+  market.setLeverageMax(new_leverage_max, {"from": gov})
+
+  updated_leverage_max = market.leverageMax()
+
+  # test if updated leverage max = new one
+  assert int(updated_leverage_max) == int(new_leverage_max)
+
+
+def test_set_k(
   market,
-  ovl_collateral,
   gov,
-  bob
 ):
     # TODO: test for different k values via an adjust
     # grab current t0 = k value
@@ -33,3 +60,28 @@ def test_update_funding_k(
 
     # test if t1 = _k value
     assert int(updated_k_value) == int(new_k_value)
+
+
+def test_set_spread(
+  mothership,
+  token,
+  market,
+  ovl_collateral,
+  gov
+):
+  # test for when spread value is updated
+  # grab initial spread value
+  pass
+
+
+def test_set_price_frame_cap(
+  market,
+  gov
+):
+  # test updating price frame cap
+  # grab initial _priceFrameCap
+  pass
+
+
+def test_set_everything():
+  pass
