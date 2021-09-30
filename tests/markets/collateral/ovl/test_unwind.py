@@ -19,7 +19,7 @@ def get_collateral(collateral, leverage, fee):
     if collateral - fee_offset <= MIN_COLLATERAL:
         return int(MIN_COLLATERAL + fee_offset)
     else:
-        return collateral
+        return int(collateral)
 
 
 def test_unwind(ovl_collateral, token, bob):
@@ -100,7 +100,7 @@ def test_unwind_oi_removed(
     is_long=strategy('bool'),
     oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
     leverage=strategy('uint256', min_value=1, max_value=100))
-@settings(max_examples=1)
+@settings(max_examples=100)
 def test_unwind_expected_fee(
     ovl_collateral,
     mothership,
@@ -114,7 +114,10 @@ def test_unwind_expected_fee(
 
     # Build parameters
     oi *= 1e16
+
     collateral = get_collateral(oi / leverage, leverage, mothership.fee())
+
+    print("collateral", collateral)
 
     # Build
     token.approve(ovl_collateral, collateral, {"from": bob})
@@ -133,10 +136,9 @@ def test_unwind_expected_fee(
     pos_shares = tx_build.events['Build']['oi']
     (_, _, _, price_point, oi_shares_pos, debt_pos, _, p_compounding) = ovl_collateral.positions(pid)
 
-    _pos_shares = ovl_collateral.balanceOf(bob, pid)
+    bob_balance = ovl_collateral.balanceOf(bob, pid)
 
     print("pos shares", pos_shares)
-    print("_pos_shares", _pos_shares)
     print("oi_shares", oi_shares_pos)
 
     chain.mine(timedelta=market.updatePeriod()+1)
@@ -168,7 +170,7 @@ def test_unwind_expected_fee(
     # Unwind
     tx_unwind = ovl_collateral.unwind(
         pid,
-        oi_shares_pos * 1e18,
+        bob_balance,
         {"from": bob}
     )
 
@@ -340,6 +342,7 @@ def test_unwind_from_active_oi(
     update period, not further into the compounding period. Then we unwind and 
     verify that the queued oi at zero.
     '''
+
     oi *= 1e16
 
     collateral = get_collateral(oi/leverage, leverage, mothership.fee())
