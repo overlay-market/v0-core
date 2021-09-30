@@ -9,8 +9,28 @@ def print_logs(tx):
 
 UPDATE_PERIOD = 101
 COMPOUND_PERIOD = 601
+LEVERAGE_MAX = 99
+K = 343454218783234
+PRICE_FRAME_CAP = 5e18 * 1.01
+SPREAD = .00573e18 * 1.01
 
-def set_comptroller_params():
+def test_set_impact_window():
+  pass
+
+
+def test_set_static_cap():
+  pass
+
+
+def test_set_lmbda():
+  pass
+
+
+def test_brrrr_fade():
+  pass
+
+
+def test_set_comptroller_params():
   pass
 
 
@@ -18,7 +38,7 @@ def set_comptroller_params():
   update_period=strategy('uint256',
                          min_value = UPDATE_PERIOD,
                          max_value = UPDATE_PERIOD + 100))
-@settings(max_examples=3)
+@settings(max_examples = 3)
 def test_set_update_period_only(
   market,
   gov,
@@ -46,7 +66,7 @@ def test_set_update_period_only(
   compounding_period=strategy('uint256',
                               min_value = COMPOUND_PERIOD,
                               max_value = COMPOUND_PERIOD + 100))
-@settings(max_examples=3)
+@settings(max_examples = 3)
 def test_set_compounding_period_only(
   market,
   gov,
@@ -71,13 +91,13 @@ def test_set_compounding_period_only(
 
 
 @given(
-    update_period=strategy('uint256',
-                           min_value = UPDATE_PERIOD,
-                           max_value = UPDATE_PERIOD + 100),
-    compounding_period=strategy('uint256',
-                                min_value = COMPOUND_PERIOD,
-                                max_value = COMPOUND_PERIOD + 100))
-@settings(max_examples=3)
+  update_period=strategy('uint256',
+                          min_value = UPDATE_PERIOD,
+                          max_value = UPDATE_PERIOD + 100),
+  compounding_period=strategy('uint256',
+                              min_value = COMPOUND_PERIOD,
+                              max_value = COMPOUND_PERIOD + 100))
+@settings(max_examples = 3)
 def test_set_update_and_compounding_period(
   market,
   gov,
@@ -102,66 +122,118 @@ def test_set_update_and_compounding_period(
   assert int(current_compounding_period) == int(compounding_period)
 
 
-def test_set_leverage_max(market, gov):
+@given(
+  leverage_max=strategy('uint256',
+                        min_value = 1,
+                        max_value = LEVERAGE_MAX))
+@settings(max_examples = 3)
+def test_set_leverage_max(
+  market, 
+  gov,
+  leverage_max
+):
   # test updating for new leverage max
   # grab initial leverage max value
   initial_leverage_max = market.leverageMax()
 
   # set new leverage max
-  new_leverage_max = 97
-  market.setLeverageMax(new_leverage_max, {"from": gov})
+  market.setLeverageMax(leverage_max, {"from": gov})
 
   updated_leverage_max = market.leverageMax()
 
   # test if updated leverage max = new one
-  assert int(updated_leverage_max) == int(new_leverage_max)
+  assert int(updated_leverage_max) == int(leverage_max)
 
-
+@given(
+  k=strategy('uint256',
+             min_value = K,
+             max_value = K * 1.05))
+@settings(max_examples = 3)
 def test_set_k(
   market,
   gov,
+  k
 ):
-    # TODO: test for different k values via an adjust
-    # grab current t0 = k value
-    initial_k_value = market.k()
+  # TODO: test for different k values via an adjust
+  # grab current t0 = k value
+  initial_k_value = market.k()
 
-    # update _k value
-    new_k_value = 343454218783269
-    market.setK(new_k_value, {"from": gov})
+  # update _k value
+  market.setK(k, {"from": gov})
 
-    # grab updated t1 = _k value
-    updated_k_value = market.k()
+  # grab updated k value
+  updated_k_value = market.k()
 
-    # test if t1 = _k value
-    assert int(updated_k_value) == int(new_k_value)
+  # test if updated k value equals new k value
+  assert int(updated_k_value) == int(k)
 
 
+@given(
+  spread=strategy('uint256',
+                  min_value = SPREAD,
+                  max_value = SPREAD * 1.5))
+@settings(max_examples = 3)
 def test_set_spread(
-  mothership,
-  token,
   market,
-  ovl_collateral,
-  gov
+  gov,
+  spread
 ):
   # test for when spread value is updated
   # grab initial spread value
   initial_spread = market.pbnj()
-  print('initial_spread: ', initial_spread)
 
-  pass
+  # set new spread value
+  market.setSpread(spread, {"from": gov})
+
+  # grab current spread value
+  current_spread = market.pbnj()
+
+  # test current spread equals updated input value
+  assert int(current_spread) == int(spread)
 
 
+@given(
+  price_frame_cap=strategy('uint256',
+                           min_value = PRICE_FRAME_CAP,
+                           max_value = PRICE_FRAME_CAP * 1.05))
+@settings(max_example = 3)
 def test_set_price_frame_cap(
   market,
-  gov
+  gov,
+  price_frame_cap
 ):
   # test updating price frame cap
   # grab initial _priceFrameCap
   initial_price_frame_cap = market.priceFrameCap()
-  print('initial priceFrameCap: ', initial_price_frame_cap)
-  pass
+
+  # set new price frame cap
+  market.setPriceFrameCap(price_frame_cap, {"from": gov})
+
+  # grab current price frame cap
+  current_price_frame_cap = market.priceFrameCap()
+
+  # test current price frame cap equals updated input value
+  assert int(current_price_frame_cap) == int(price_frame_cap)
 
 
-
-def test_set_everything():
+def test_set_everything(
+  k=strategy('uint256',
+             min_value = K,
+             max_value = K * 1.05),
+  leverage_max=strategy('uint256',
+                        min_value = 1,
+                        max_value = LEVERAGE_MAX),
+  price_frame_cap=strategy('uint256',
+                           min_value = PRICE_FRAME_CAP,
+                           max_value = PRICE_FRAME_CAP * 1.05),
+  spread=strategy('uint256',
+                  min_value = SPREAD,
+                  max_value = SPREAD * 1.5),
+  update_period=strategy('uint256',
+                          min_value = UPDATE_PERIOD,
+                          max_value = UPDATE_PERIOD + 100),
+  compounding_period=strategy('uint256',
+                              min_value = COMPOUND_PERIOD,
+                              max_value = COMPOUND_PERIOD + 100),
+):
   pass

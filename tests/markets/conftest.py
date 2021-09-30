@@ -157,7 +157,7 @@ def comptroller(gov):
             60,                  # micro window
             343454218783234,     # k
             100,                 # levmax
-            5e18,                # payoff cap
+            5e18,                # price frame cap
             .00573e18,           # spread
             100,                 # update period
             600,                 # compound period
