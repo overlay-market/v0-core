@@ -95,45 +95,6 @@ def test_set_static_cap(
 
 
 @given(
-  lmbda=strategy('uint256',
-                 min_value=LMBDA,
-                 max_value=1))
-@settings(max_examples = 1)
-def test_set_lmbda(
-  market,
-  gov,
-  lmbda
-):
-  # test updating _lmbda only in setComptrollerParams func
-  initial_impact_window = market.impactWindow()
-  initial_static_cap = market.oiCap()
-  initial_brrrrFade = market.brrrrFade()
-
-  market.setComptrollerParams(
-    initial_impact_window,
-    initial_static_cap,
-    lmbda,
-    initial_brrrrFade,
-    {"from": gov}
-  )
-
-  current_impact_window = market.impactWindow()
-  current_static_cap = market.oiCap()
-  print('current_static_cap: ', current_static_cap)
-  print('initial_static_cap: ', initial_static_cap)
-  current_lmbda = market.lmbda()
-  current_brrrrFade = market.brrrrFade()
-
-  # test current _lmbda equals input value
-  assert int(current_lmbda) == int(lmbda)
-
-  # test other params are unchanged
-  assert int(current_impact_window) == int(initial_impact_window)
-  assert int(current_static_cap) == int(initial_static_cap)
-  assert int(current_brrrrFade) == int(initial_brrrrFade)
-
-
-@given(
   brrrr_fade=strategy('uint256',
                       min_value=BRRRR_FADE,
                       max_value=BRRRR_FADE * 1.05))
@@ -422,9 +383,6 @@ def test_set_price_frame_cap(
   static_cap=strategy('uint256',
                       min_value=STATIC_CAP,
                       max_value=STATIC_CAP * 1.05),
-  lmbda=strategy('uint256',
-                 min_value=LMBDA,
-                 max_value=1),
   brrrr_fade=strategy('uint256',
                       min_value=BRRRR_FADE,
                       max_value=BRRRR_FADE * 1.05))
@@ -440,10 +398,11 @@ def test_set_everything(
   compounding_period,
   impact_window,
   static_cap,
-  lmbda,
   brrrr_fade
 ):
   # pass in inputs into setEverything function
+  initial_lmbda = market.lmbda()
+
   market.setEverything(
     k,
     leverage_max,
@@ -453,7 +412,7 @@ def test_set_everything(
     compounding_period,
     impact_window,
     static_cap,
-    lmbda,
+    initial_lmbda,
     brrrr_fade,
     {"from": gov}
   )
@@ -486,7 +445,5 @@ def test_set_everything(
   assert int(current_impact_window) == int(impact_window)
 
   assert int(current_static_cap) == int(static_cap)
-
-  assert int(current_lmbda) == int(lmbda)
 
   assert int(current_brrrr_fade) == int(brrrr_fade)
