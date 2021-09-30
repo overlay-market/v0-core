@@ -132,7 +132,7 @@ def get_uni_feeds(feed_owner, feed_info):
     for i in range(len(obs)):
         uniswapv3_mock.loadObservations(obs[i], shims[i], {'from': feed_owner})
 
-    chain.mine(1, timestamp=chain[-1].timestamp + 1200)
+    chain.mine(1, timedelta=601)
 
     return uniswapv3_factory.address, uniswapv3_mock.address, uniswapv3_mock.address, token1
 
