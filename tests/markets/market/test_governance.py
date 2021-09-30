@@ -7,17 +7,13 @@ def print_logs(tx):
     for i in range(len(tx.events['log'])):
         print(tx.events['log'][i]['k'] + ": " + str(tx.events['log'][i]['v']))
 
-UPDATE_PERIOD = 100 * 1.01
-COMPOUND_PERIOD = 600 * 1.01
-LEVERAGE_MAX = 100 * .99
-K = 343454218783234 * 1.01
+
 PRICE_FRAME_CAP = 5e18 * 1.01
 SPREAD = .00573e18 * 1.01
 IMPACT_WINDOW = 600 * 1.01
 BRRRR_FADE = 1e18 * 1.01
 STATIC_CAP = 800000 * 1e18 * 1.01
 LMBDA = 0.1
-
 
 @given(
   impact_window=strategy('uint256',
@@ -185,59 +181,52 @@ def test_set_update_period_only(
   gov,
   update_period
 ):
+    
+  
   # grab initial _updatePeriod _compoundingPeriod values
   initial_update_period = market.updatePeriod()
   initial_compounding_period = market.compoundingPeriod()
 
   # set_updatePeriod only, without _compoundingPeriod
-  market.setPeriods(update_period, initial_compounding_period, {"from": gov})
+  market.setPeriods(input_update_period, initial_compounding_period, {"from": gov})
 
   # grab current _updatePeriod _compoundingPeriod values
   current_update_period = market.updatePeriod()
   current_compounding_period = market.compoundingPeriod()
 
   # test _updatePeriod for updated value
-  assert int(current_update_period) == int(update_period)
+  assert int(current_update_period) == int(input_update_period)
 
   # test _compoundingPeriod did not change
   assert int(current_compounding_period) == int(initial_compounding_period)
 
 
-@given(
-  compounding_period=strategy('uint256',
-                              min_value = COMPOUND_PERIOD,
-                              max_value = COMPOUND_PERIOD + 100))
-@settings(max_examples = 3)
 def test_set_compounding_period_only(
   market,
   gov,
   compounding_period
 ):
+    
+  input_compounding_period = 660
+
   # grab initial _compoundingPeriod, _updatePeriod values
   initial_compounding_period = market.compoundingPeriod()
   initial_update_period = market.updatePeriod()
 
   # set _compoundingPeriod only, without _updatePeriod
-  market.setPeriods(initial_update_period, compounding_period, {"from": gov})
+  market.setPeriods(initial_update_period, input_compounding_period, {"from": gov})
 
   # grab current _compoundingPeriod, _updatePeriod values
   current_compounding_period = market.compoundingPeriod()
   current_update_period = market.updatePeriod()
 
   # test _compoundingPeriod updated to input value
-  assert int(current_compounding_period) == int(compounding_period)
+  assert int(current_compounding_period) == int(input_compounding_period)
 
   # test _updatePeriod is same as initial
   assert int(current_update_period) == int(initial_update_period)
 
 
-@given(
-  update_period=strategy('uint256',
-                          min_value = UPDATE_PERIOD,
-                          max_value = UPDATE_PERIOD + 100),
-  compounding_period=strategy('uint256',
-                              min_value = COMPOUND_PERIOD,
-                              max_value = COMPOUND_PERIOD + 100))
 @settings(max_examples = 3)
 def test_set_update_and_compounding_period(
   market,
@@ -245,40 +234,41 @@ def test_set_update_and_compounding_period(
   update_period,
   compounding_period
 ):
+    
+  input_update_period = 110
+  input_compounding_period = 660
+
   # grab initial _updatePeriod, _compoundingPeriod values
   initial_update_period = market.updatePeriod()
   initial_compounding_period = market.compoundingPeriod()
 
   # set new _updatePeriod, _compoundingPeriod values
-  market.setPeriods(update_period, compounding_period, {"from": gov})
+  market.setPeriods(input_update_period, input_compounding_period, {"from": gov})
 
   # grab updated _updatePeriod, _compoundingPeriod values
   current_update_period = market.updatePeriod()
   current_compounding_period = market.compoundingPeriod()
 
   # test _updatePeriod is updated
-  assert int(current_update_period) == int(update_period)
+  assert int(current_update_period) == int(input_update_period)
 
   # test _compoundingPeriod is updated
-  assert int(current_compounding_period) == int(compounding_period)
+  assert int(current_compounding_period) == int(input_compounding_period)
 
 
-@given(
-  leverage_max=strategy('uint256',
-                        min_value = 1,
-                        max_value = LEVERAGE_MAX))
-@settings(max_examples = 3)
 def test_set_leverage_max(
   market, 
-  gov,
-  leverage_max
+  gov
 ):
+    
+  input_leverage_max = 100 * .99
+
   # test updating for new leverage max
   # grab initial leverage max value
   initial_leverage_max = market.leverageMax()
 
   # set new leverage max
-  market.setLeverageMax(leverage_max, {"from": gov})
+  market.setLeverageMax(input_leverage_max, {"from": gov})
 
   updated_leverage_max = market.leverageMax()
 
@@ -286,22 +276,19 @@ def test_set_leverage_max(
   assert int(updated_leverage_max) == int(leverage_max)
 
 
-@given(
-  k=strategy('uint256',
-             min_value = K,
-             max_value = K * 1.05))
-@settings(max_examples = 3)
 def test_set_k(
   market,
-  gov,
-  k
+  gov
 ):
+    
+  input_k = 346888760971066
+
   # TODO: test for different k values via an adjust
   # grab current t0 = k value
   initial_k_value = market.k()
 
   # update _k value
-  market.setK(k, {"from": gov})
+  market.setK(input_k, {"from": gov})
 
   # grab updated k value
   updated_k_value = market.k()
