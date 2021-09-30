@@ -114,7 +114,6 @@ def test_unwind_fee_applied(
         is_long
         ):
 
-    breakpoint()
     # Build
     token.approve(ovl_collateral, collateral, {"from": bob})
     tx_build = ovl_collateral.build(
@@ -131,22 +130,41 @@ def test_unwind_fee_applied(
         debt_build, cost_build, p_compounding) = ovl_collateral.positions(pid)
 
     chain.mine(timedelta=market.updatePeriod()+1)
+    build_fees = ovl_collateral.fees()
+    
+    exit_data_tx = market.exitData(
+        is_long,
+        price_point,
+        p_compounding,
+        {"from": ovl_collateral}
+        )
+    (oi, oishares, price_frame,_) = exit_data_tx.return_value
 
-    breakpoint()
     # Unwind
-    ovl_collateral.unwind(
+    tx_unwind = ovl_collateral.unwind(
         pid,
         oi_shares_build,
         {"from": bob}
     )
 
-    breakpoint()
+    # Fee calculation
+    pos_oi = (oi_shares_build * oi)/oishares
+    if is_long:
+        val = pos_oi * price_frame
+        val = val - min(val, debt_build)
+    else:
+        val = pos_oi *2
+        val = val - min(val, debt_build, (pos_oi * price_frame))
+    notional = val + debt_build
+    user_notional =\
+        (oi_shares_build * notional)/token.totalSupply()
+    
+    fee = user_notional * mothership.fee()
+
     (_, _, _, _, oi_shares_unwind, debt_unwind, cost_unwind, _) =\
         ovl_collateral.positions(pid)
 
-    assert oi_shares_unwind == 0
-    assert oi_long == 0
-    assert oi_short == 0
+    assert fee == ovl_collateral.fees()
 
 # WIP
 # warning, dependent on what the price/mocks do
