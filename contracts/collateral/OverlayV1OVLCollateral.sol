@@ -94,7 +94,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
 
     /// @notice Updates funding payments, cumulative fees, queued position builds, and price points
-    function update(
+    function update (
         address _market
     ) public {
 
@@ -162,7 +162,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     }
 
-    function build(
+    function build (
         address _market,
         uint256 _collateral,
         uint256 _leverage,
@@ -211,7 +211,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     }
 
     /// @notice Unwinds shares of an existing position
-    function unwind(
+    function unwind (
         uint256 _positionId,
         uint256 _shares
     ) external {
@@ -291,7 +291,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     }
 
     /// @notice Liquidates an existing position
-    function liquidate(
+    function liquidate (
         uint256 _positionId,
         address _rewardsTo
     ) external {
