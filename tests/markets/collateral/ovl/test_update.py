@@ -61,21 +61,6 @@ def test_update(mothership,
     assert int(fee_to_balance_now) == int(Decimal(fees) - burn_amount)
 
 
-def test_update_funding_burn():
-    pass
-
-
-def test_update_funding_k():
-    # TODO: test for different k values via an adjust
-    pass
-
-
-def test_update_early():
-    # TODO: number of update periods have gone by is zero so nothing
-    # should happen to state
-    pass
-
-
 def test_update_between_periods(token, factory, ovl_collateral, market,
                                 alice, rewards):
     update_period = market.updatePeriod()
