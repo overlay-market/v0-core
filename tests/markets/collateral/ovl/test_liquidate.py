@@ -34,17 +34,23 @@ def test_liquidate_success_zero_impact(
     position
 ):
 
-    # TODO: make a param passed in via hypothesis to loop through
-    collateral = position["collateral"]
-    leverage = position["leverage"]
-    is_long = position["is_long"]
+    price_index = market.pricePointCurrentIndex()
+    price_point = market.pricePoints(price_index-1)
 
-    entry_time = position["entry"]["timestamp"]
-    exit_time = position["exit"]["timestamp"]
+    print("price index", price_index)
+    print("price_point", price_point)
+
+    # TODO: make a param passed in via hypothesis to loop through
+    # collateral = position["collateral"]
+    # leverage = position["leverage"]
+    # is_long = position["is_long"]
+
+    # entry_time = position["entry"]["timestamp"]
+    # exit_time = position["exit"]["timestamp"]
 
     # fast forward to time we want for entry
     # TODO: timestamp=entry_time
-    brownie.chain.mine(timestamp=entry_time)
+    # brownie.chain.mine(timestamp=entry_time)
 
     # # market constants
     # maintenance_margin, maintenance_margin_reward = ovl_collateral.marketInfo(

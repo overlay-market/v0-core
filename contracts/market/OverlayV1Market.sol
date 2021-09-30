@@ -52,7 +52,7 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
         t1Compounding_ = entryUpdate();
 
-        pricePointCurrent_ = pricePoints.length;
+        pricePointCurrent_ = _pricePoints.length;
 
         uint _oi = _collateral * _leverage;
 
@@ -88,13 +88,13 @@ abstract contract OverlayV1Market is OverlayV1Governance {
         // exitUpdate returns the present compounding period
         fromQueued_ = _compounding > exitUpdate();
 
-        uint _latestPrice = pricePoints.length - 1;
+        uint _latestPrice = _pricePoints.length - 1;
 
         require(_pricePoint <= _latestPrice, "OVLV1:!settled");
 
-        PricePoint storage priceEntry = pricePoints[_pricePoint];
+        PricePoint storage priceEntry = _pricePoints[_pricePoint];
 
-        PricePoint storage priceExit = pricePoints[_latestPrice];
+        PricePoint storage priceExit = _pricePoints[_latestPrice];
 
         priceFrame_ = _isLong
             ? Math.min(priceExit.bid.divDown(priceEntry.ask), priceFrameCap)
