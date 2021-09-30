@@ -214,7 +214,7 @@ def test_unwind_after_transfer(
     assert oi_shares_build > 0
     assert poi_build > 0
 
-    token.transfer(alice, oi_shares_build, from)
+    # token.transfer(alice, oi_shares_build, from)
     
     # Unwind
     tx_unwind = ovl_collateral.unwind(
