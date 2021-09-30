@@ -97,10 +97,9 @@ def test_unwind_oi_removed(
 
 # WIP
 @given(
-    collateral=strategy('uint256', min_value=1e18, max_value=OI_CAP - 1e4),
-    leverage=strategy('uint8', min_value=1, max_value=100),
-    is_long=strategy('bool')
-    )
+    is_long=strategy('bool'),
+    oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
+    leverage=strategy('uint256', min_value=1, max_value=100))
 @settings(max_examples=1)
 def test_unwind_fee_applied(
         ovl_collateral,
@@ -109,10 +108,14 @@ def test_unwind_fee_applied(
         token,
         bob,
         alice,
-        collateral,
+        oi,
         leverage,
         is_long
         ):
+
+    # Build parameters
+    oi *= 1e16
+    collateral = get_collateral(oi / leverage, leverage, mothership.fee())
 
     # Build
     token.approve(ovl_collateral, collateral, {"from": bob})
@@ -138,7 +141,7 @@ def test_unwind_fee_applied(
         p_compounding,
         {"from": ovl_collateral}
         )
-    (oi, oishares, price_frame,_) = exit_data_tx.return_value
+    (open_interest, oishares, price_frame,_) = exit_data_tx.return_value
 
     # Unwind
     tx_unwind = ovl_collateral.unwind(
@@ -148,7 +151,7 @@ def test_unwind_fee_applied(
     )
 
     # Fee calculation
-    pos_oi = (oi_shares_build * oi)/oishares
+    pos_oi = (oi_shares_build * open_interest)/oishares
     if is_long:
         val = pos_oi * price_frame
         val = val - min(val, debt_build)
