@@ -7,25 +7,99 @@ def print_logs(tx):
     for i in range(len(tx.events['log'])):
         print(tx.events['log'][i]['k'] + ": " + str(tx.events['log'][i]['v']))
 
-TOKEN_DECIMALS = 18
-TOKEN_TOTAL_SUPPLY = 8000000
-OI_CAP = 800000
-FEE_RESOLUTION = 1e18
+UPDATE_PERIOD = 101
+COMPOUND_PERIOD = 601
 
 def set_comptroller_params():
   pass
 
 
-def set_update_period_only():
-  pass
+@given(
+  update_period=strategy('uint256',
+                         min_value = UPDATE_PERIOD,
+                         max_value = UPDATE_PERIOD + 100))
+@settings(max_examples=3)
+def test_set_update_period_only(
+  market,
+  gov,
+  update_period
+):
+  # grab initial _updatePeriod _compoundingPeriod values
+  initial_update_period = market.updatePeriod()
+  initial_compounding_period = market.compoundingPeriod()
+
+  # set_updatePeriod only, without _compoundingPeriod
+  market.setPeriods(update_period, initial_compounding_period, {"from": gov})
+
+  # grab current _updatePeriod _compoundingPeriod values
+  current_update_period = market.updatePeriod()
+  current_compounding_period = market.compoundingPeriod()
+
+  # test _updatePeriod for updated value
+  assert int(current_update_period) == int(update_period)
+
+  # test _compoundingPeriod did not change
+  assert int(current_compounding_period) == int(initial_compounding_period)
 
 
-def set_compounding_period_only():
-  pass
+@given(
+  compounding_period=strategy('uint256',
+                              min_value = COMPOUND_PERIOD,
+                              max_value = COMPOUND_PERIOD + 100))
+@settings(max_examples=3)
+def test_set_compounding_period_only(
+  market,
+  gov,
+  compounding_period
+):
+  # grab initial _compoundingPeriod, _updatePeriod values
+  initial_compounding_period = market.compoundingPeriod()
+  initial_update_period = market.updatePeriod()
+
+  # set _compoundingPeriod only, without _updatePeriod
+  market.setPeriods(initial_update_period, compounding_period, {"from": gov})
+
+  # grab current _compoundingPeriod, _updatePeriod values
+  current_compounding_period = market.compoundingPeriod()
+  current_update_period = market.updatePeriod()
+
+  # test _compoundingPeriod updated to input value
+  assert int(current_compounding_period) == int(compounding_period)
+
+  # test _updatePeriod is same as initial
+  assert int(current_update_period) == int(initial_update_period)
 
 
-def set_both_update_compounding_period():
-  pass
+@given(
+    update_period=strategy('uint256',
+                           min_value = UPDATE_PERIOD,
+                           max_value = UPDATE_PERIOD + 100),
+    compounding_period=strategy('uint256',
+                                min_value = COMPOUND_PERIOD,
+                                max_value = COMPOUND_PERIOD + 100))
+@settings(max_examples=3)
+def test_set_update_and_compounding_period(
+  market,
+  gov,
+  update_period,
+  compounding_period
+):
+  # grab initial _updatePeriod, _compoundingPeriod values
+  initial_update_period = market.updatePeriod()
+  initial_compounding_period = market.compoundingPeriod()
+
+  # set new _updatePeriod, _compoundingPeriod values
+  market.setPeriods(update_period, compounding_period, {"from": gov})
+
+  # grab updated _updatePeriod, _compoundingPeriod values
+  current_update_period = market.updatePeriod()
+  current_compounding_period = market.compoundingPeriod()
+
+  # test _updatePeriod is updated
+  assert int(current_update_period) == int(update_period)
+
+  # test _compoundingPeriod is updated
+  assert int(current_compounding_period) == int(compounding_period)
 
 
 def test_set_leverage_max(market, gov):
@@ -71,6 +145,9 @@ def test_set_spread(
 ):
   # test for when spread value is updated
   # grab initial spread value
+  initial_spread = market.pbnj()
+  print('initial_spread: ', initial_spread)
+
   pass
 
 
@@ -80,7 +157,10 @@ def test_set_price_frame_cap(
 ):
   # test updating price frame cap
   # grab initial _priceFrameCap
+  initial_price_frame_cap = market.priceFrameCap()
+  print('initial priceFrameCap: ', initial_price_frame_cap)
   pass
+
 
 
 def test_set_everything():
