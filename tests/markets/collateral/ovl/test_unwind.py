@@ -160,14 +160,14 @@ def test_unwind_fee_applied(
         val = val - min(val, debt_build, (pos_oi * price_frame))
     notional = val + debt_build
     user_notional =\
-        (oi_shares_build * notional)/token.totalSupply()
+        (oi_shares_build * notional)/oi_shares_build
     
     fee = user_notional * mothership.fee()
 
     (_, _, _, _, oi_shares_unwind, debt_unwind, cost_unwind, _) =\
         ovl_collateral.positions(pid)
 
-    assert fee == ovl_collateral.fees()
+    assert int(fee/FEE_RESOLUTION) == approx(int(ovl_collateral.fees()))
 
 # WIP
 # warning, dependent on what the price/mocks do
