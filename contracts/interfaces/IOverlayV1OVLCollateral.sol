@@ -12,12 +12,14 @@ import "./IOverlayToken.sol";
 interface IOverlayV1OVLCollateral is IERC1155 {
 
     event log(string k, uint v);
+    event log(string k, address v);
+
     struct MarketInfo {
         uint marginMaintenance;
         uint marginRewardRate;
     }
 
-    function totalPositionShares (uint positionId) external view returns (uint256 shares);
+    function totalSupply(uint256 positionId) external view returns (uint256 totalSupply);
     function marginAdjustments (address market) external view returns (uint256 marginAdjustment);
     function supportedMarket (address market) external view returns (bool supported);
     function queuedPositionLongs (address market, uint leverage) external view returns (uint queuedPositionId);

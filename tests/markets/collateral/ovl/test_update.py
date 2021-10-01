@@ -60,29 +60,3 @@ def test_update(mothership,
     # test fee amount
     assert int(fee_to_balance_now) == int(Decimal(fees) - burn_amount)
 
-
-def test_update_between_periods(token, factory, ovl_collateral, market,
-                                alice, rewards):
-    update_period = market.updatePeriod()
-    window_size = market.windowSize()
-    prior_update_block = market.updateBlockLast()
-
-    latest_block = chain[-1]['number']
-    if int((latest_block - prior_update_block) / update_period) > 0:
-        ovl_collateral.update(market, {"from": alice})
-        latest_block = chain[-1]['number']
-        prior_update_block = market.updateBlockLast()
-
-    blocks_to_mine = update_period - (latest_block - prior_update_block) - 2
-
-    chain.mine(blocks_to_mine, timestamp=chain[-1].timestamp - window_size)
-
-    # Should not update since update period hasn't passed yet
-    ovl_collateral.update(market, {"from": alice})
-
-    curr_update_block = market.updateBlockLast()
-    assert curr_update_block == prior_update_block
-
-
-def test_update_max_compound(token, factory, market, alice, rewards):
-    pass

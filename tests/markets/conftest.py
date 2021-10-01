@@ -109,12 +109,29 @@ def feed_infos():
             shims[len(shims)-1].append(f['shim'])
             price_times.append({'price':price,'time':_time})
 
-    yield (obs,shims,price_times)
+    class FeedSmuggler:
+        def __init__(self, obs, shims, price_times):
+            self.obs = obs
+            self.shims = shims
+            self.price_times = price_times
+
+        def obs(self):
+            return self.obs
+
+        def shims(self):
+            return self.shims
+        
+        def price_times(self):
+            return self.price_times
+
+    smuggler = FeedSmuggler(obs, shims, price_times)
+
+    yield smuggler
 
 def get_uni_feeds(feed_owner, feed_info):
 
-    obs = feed_info[0]
-    shims = feed_info[1]
+    obs = feed_info.obs
+    shims = feed_info.shims
 
     UniswapV3MockFactory = getattr(brownie, 'UniswapV3FactoryMock')
     IUniswapV3OracleMock = getattr(interface, 'IUniswapV3OracleMock')
