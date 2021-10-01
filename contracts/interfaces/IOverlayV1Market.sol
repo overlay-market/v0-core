@@ -128,8 +128,6 @@ interface IOverlayV1Market is IERC1155 {
         uint256 priceFrame_
     );
 
-    // adding new functions below 9.29.21
-
     function setComptrollerParams (
         uint256 _impactWindow,
         uint256 _staticCap,
