@@ -96,7 +96,6 @@ def test_unwind_oi_removed(
     assert int(poi_unwind) == approx(int(poi_build))
 
 
-# WIP
 @given(
     is_long=strategy('bool'),
     oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
@@ -395,7 +394,7 @@ def test_unwind_from_active_oi(
     assert oi_before_unwind == build_oi
     assert oi_after_unwind == 0 or 1
 
-@given(thing=strategy('uint'))
+
 @settings(max_examples=1)
 def test_comptroller_recorded_mint_or_burn (
     ovl_collateral, 
@@ -449,3 +448,113 @@ def test_comptroller_recorded_mint_or_burn (
         assert brrrrd == -burnt
     else:
         assert minted == brrrrd
+
+
+@given(
+    is_long=strategy('bool'),
+    oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
+    leverage=strategy('uint256', min_value=1, max_value=100),
+    time_delta=strategies.floats(min_value=0.1, max_value=1),
+)
+@settings(max_examples=10)
+def test_unwind_pnl_mint_burn (
+    ovl_collateral,
+    token,
+    market, 
+    bob,
+    feed_infos,
+    is_long,
+    time_delta,
+    leverage,
+    oi,
+    mothership
+    ):
+    '''
+    Check if whatever was minted/burnt is equal to the PnL
+    '''
+    
+    price_cap = market.priceFrameCap() / 1e18
+    
+    # mine_time parameter to test over multiple time frames
+    mine_ix = int(( len(feed_infos.price_times) - 1 ) * time_delta)
+    mine_time = feed_infos.price_times[mine_ix]['time']
+
+    oi *= 1e16
+    collateral = get_collateral(oi / leverage, leverage, mothership.fee())
+
+    token.approve(ovl_collateral, 1e50, { 'from': bob })
+
+    # Build position
+    tx_build = ovl_collateral.build(
+        market,
+        collateral,
+        leverage,
+        is_long,
+        {"from": bob}
+    )
+    
+    # Build position info
+    pid = tx_build.events['Build']['positionId']
+    pos_shares = tx_build.events['Build']['oi']
+    (_, _, _, price_point, oi_shares_pos, debt_pos, cost_pos, p_compounding) = ovl_collateral.positions(pid)
+
+    bob_balance = ovl_collateral.balanceOf(bob, pid)
+    chain.mine(timestamp=mine_time+1)
+    ( oi, oi_shares, price_frame ) = market.positionInfo(is_long, price_point, p_compounding)
+    total_pos_shares = ovl_collateral.totalSupply(pid)
+    
+    # Unwind position
+    tx_unwind = ovl_collateral.unwind(
+        pid,
+        bob_balance,
+        {"from": bob}
+    )
+
+    # Fee calculation
+    price_entry = market.pricePoints(market.pricePointCurrentIndex()-2)
+    entry_bid = price_entry[0]
+    entry_ask = price_entry[1]
+
+    price_exit = market.pricePoints(market.pricePointCurrentIndex()-1)
+    exit_bid = price_exit[0]
+    exit_ask = price_exit[1]
+
+    price_frame = min(exit_bid / entry_ask, price_cap) if is_long else exit_ask / entry_bid
+
+    # oi /= 1e18
+    # debt_pos /= 1e18
+    # oi_shares /= 1e18
+    # oi_shares_pos /= 1e18
+
+    pos_oi = ( oi_shares_pos * oi ) / oi_shares 
+
+    if is_long:
+        val = pos_oi * price_frame 
+        val = val - min(val, debt_pos)
+    else:
+        val = pos_oi *2
+        val = val - min(val, debt_pos + pos_oi * price_frame )
+
+    notional = val + debt_pos
+
+    fee = notional * ( mothership.fee() / 1e18 )
+    
+    # Other metrics
+    debt = bob_balance * (debt_pos/total_pos_shares)
+    cost = bob_balance * (cost_pos/total_pos_shares)
+    
+    value_adjusted = notional - fee
+    if value_adjusted > debt:
+        value_adjusted = value_adjusted - debt
+    else:
+        value_adjusted = 0
+
+    exp_pnl = value_adjusted - cost
+    
+    for _, v in enumerate(tx_unwind.events['Transfer']):
+        if v['to'] == '0x0000000000000000000000000000000000000000':
+            act_pnl = -v['value']
+        elif v['from'] == '0x0000000000000000000000000000000000000000':
+            act_pnl = v['value']
+
+    assert exp_pnl == approx(act_pnl)
