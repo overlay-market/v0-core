@@ -120,9 +120,9 @@ def test_set_comptroller_params(
 ):
   # set all params of setComptrollerParams func
   input_impact_window = 601
-  input_static_cap = 800001 * 1e18
-  input_brrrr_fade = 1e19
+  input_static_cap = 800000 * 1e18 * 1.01
   initial_lmbda = market.lmbda()
+  input_brrrr_fade = 1e19
 
   market.setComptrollerParams(
     input_impact_window,
@@ -314,7 +314,7 @@ def test_set_everything(
   input_update_period = 110
   input_compounding_period = 660
   input_impact_window = 601
-  input_static_cap = 800000 * 1e19
+  input_static_cap = 800000 * 1e18 * 1.01
   input_brrrr_fade = 1e19
 
   initial_lmbda = market.lmbda()
