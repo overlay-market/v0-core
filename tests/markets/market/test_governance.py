@@ -53,7 +53,8 @@ def test_set_static_cap(
   gov
 ):
   # test updating _staticCap only in setComptrollerParams func
-  input_static_cap = 800000 * 1e19
+  input_static_cap = int(800000 * 1e19)
+  print('input_static_cap: ', input_static_cap)
 
   initial_impact_window = market.impactWindow()
   initial_lmbda = market.lmbda()
@@ -69,6 +70,7 @@ def test_set_static_cap(
 
   current_impact_window = market.impactWindow()
   current_static_cap = market.oiCap()
+  print('current_static_cap: ', current_static_cap)
   current_lmbda = market.lmbda()
   current_brrrrFade = market.brrrrFade()
 
@@ -120,7 +122,7 @@ def test_set_comptroller_params(
 ):
   # set all params of setComptrollerParams func
   input_impact_window = 601
-  input_static_cap = 800000 * 1e18 * 1.01
+  input_static_cap = int(800000 * 1e19)
   initial_lmbda = market.lmbda()
   input_brrrr_fade = 1e19
 
@@ -314,7 +316,7 @@ def test_set_everything(
   input_update_period = 110
   input_compounding_period = 660
   input_impact_window = 601
-  input_static_cap = 800000 * 1e18 * 1.01
+  input_static_cap = int(800000 * 1e19)
   input_brrrr_fade = 1e19
 
   initial_lmbda = market.lmbda()
