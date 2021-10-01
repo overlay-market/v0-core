@@ -1,9 +1,10 @@
 import brownie
 from brownie.test import given, strategy
-from hypothesis import settings
+from hypothesis import settings, strategies
 from brownie import chain
 from pytest import approx
 from decimal import *
+import random
 
 OI_CAP = 800000e18
 MIN_COLLATERAL=1e14
@@ -99,8 +100,10 @@ def test_unwind_oi_removed(
 @given(
     is_long=strategy('bool'),
     oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
-    leverage=strategy('uint256', min_value=1, max_value=100))
-@settings(max_examples=100)
+    leverage=strategy('uint256', min_value=1, max_value=100),
+    time_delta=strategies.floats(min_value=0.1, max_value=1),
+)
+@settings(max_examples=10)
 def test_unwind_expected_fee(
     ovl_collateral,
     mothership,
@@ -109,18 +112,21 @@ def test_unwind_expected_fee(
     bob,
     oi,
     leverage,
-    is_long
+    is_long,
+    feed_infos,
+    time_delta
 ):
 
-    # Build parameters
+    mine_ix = int(( len(feed_infos.price_times) - 1 ) * time_delta)
+
+    mine_time = feed_infos.price_times[mine_ix]['time']
+
     oi *= 1e16
 
     collateral = get_collateral(oi / leverage, leverage, mothership.fee())
 
-    print("collateral", collateral)
-
-    # Build
     token.approve(ovl_collateral, collateral, {"from": bob})
+
     tx_build = ovl_collateral.build(
         market,
         collateral,
@@ -128,6 +134,8 @@ def test_unwind_expected_fee(
         is_long,
         {"from": bob}
     )
+
+    price_cap = market.priceFrameCap() / 1e18
 
     fees_prior = ovl_collateral.fees() / 1e18
 
@@ -138,20 +146,30 @@ def test_unwind_expected_fee(
 
     bob_balance = ovl_collateral.balanceOf(bob, pid)
 
-    print("pos shares", pos_shares)
-    print("oi_shares", oi_shares_pos)
+    chain.mine(timestamp=mine_time+1)
 
-    chain.mine(timedelta=market.updatePeriod()+1)
-    build_fees = ovl_collateral.fees()
-    
     ( oi, oi_shares, price_frame ) = market.positionInfo(is_long, price_point, p_compounding)
+
+    tx_unwind = ovl_collateral.unwind(
+        pid,
+        bob_balance,
+        {"from": bob}
+    )
+
+    price_entry = market.pricePoints(market.pricePointCurrentIndex()-2)
+    entry_bid = price_entry[0]
+    entry_ask = price_entry[1]
+
+    price_exit = market.pricePoints(market.pricePointCurrentIndex()-1)
+    exit_bid = price_exit[0]
+    exit_ask = price_exit[1]
+
+    price_frame = min(exit_bid / entry_ask, price_cap) if is_long else exit_ask / entry_bid
 
     oi /= 1e18
     debt_pos /= 1e18
     oi_shares /= 1e18
-    price_frame /= 1e18
     oi_shares_pos /= 1e18
-
 
     # Fee calculation
     pos_oi = ( oi_shares_pos * oi ) / oi_shares 
@@ -168,11 +186,6 @@ def test_unwind_expected_fee(
     fee = notional * ( mothership.fee() / 1e18 )
 
     # Unwind
-    tx_unwind = ovl_collateral.unwind(
-        pid,
-        bob_balance,
-        {"from": bob}
-    )
 
     (_, _, _, _, oi_shares_unwind, debt_unwind, cost_unwind, _) =\
         ovl_collateral.positions(pid)
