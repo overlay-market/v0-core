@@ -10,29 +10,24 @@ def print_logs(tx):
 
 PRICE_FRAME_CAP = 5e18 * 1.01
 SPREAD = .00573e18 * 1.01
-IMPACT_WINDOW = 600 * 1.01
 BRRRR_FADE = 1e18 * 1.01
 STATIC_CAP = 800000 * 1e18 * 1.01
 LMBDA = 0.1
 
-@given(
-  impact_window=strategy('uint256',
-                         min_value=IMPACT_WINDOW,
-                         max_value=IMPACT_WINDOW * 1.05))
-@settings(max_examples = 3)
 def test_set_impact_window(
   market,
   gov,
-  impact_window
 ):
   # test updating _impactWindow only in setComptrollerParams func
-  initial_impact_window = market.impactWindow()
+  input_impact_window = 601
+
+  # record initial values
   initial_static_cap = market.oiCap()
   initial_lmbda = market.lmbda()
   initial_brrrrFade = market.brrrrFade()
 
   market.setComptrollerParams(
-    impact_window,
+    input_impact_window,
     initial_static_cap,
     initial_lmbda,
     initial_brrrrFade,
@@ -45,7 +40,7 @@ def test_set_impact_window(
   current_brrrrFade = market.brrrrFade()
 
   # test current impact window equals input value
-  assert int(current_impact_window) == int(impact_window)
+  assert int(current_impact_window) == int(input_impact_window)
 
   # test other params are unchanged
   assert int(current_static_cap) == int(initial_static_cap)
@@ -53,24 +48,20 @@ def test_set_impact_window(
   assert int(current_brrrrFade) == int(initial_brrrrFade)
 
 
-@given(
-  static_cap=strategy('uint256',
-                      min_value=STATIC_CAP,
-                      max_value=STATIC_CAP * 1.05))
-@settings(max_examples = 3)
 def test_set_static_cap(
   market,
-  gov,
-  static_cap
+  gov
 ):
   # test updating _staticCap only in setComptrollerParams func
+  input_static_cap = 800000 * 1e19
+
   initial_impact_window = market.impactWindow()
   initial_lmbda = market.lmbda()
   initial_brrrrFade = market.brrrrFade()
 
   market.setComptrollerParams(
     initial_impact_window,
-    static_cap,
+    input_static_cap,
     initial_lmbda,
     initial_brrrrFade,
     {"from": gov}
@@ -82,7 +73,7 @@ def test_set_static_cap(
   current_brrrrFade = market.brrrrFade()
 
   # test current static cap equals input value
-  assert int(current_static_cap) == int(static_cap)
+  assert int(current_static_cap) == int(input_static_cap)
 
   # test other params are unchanged
   assert int(current_impact_window) == int(initial_impact_window)
@@ -90,17 +81,13 @@ def test_set_static_cap(
   assert int(current_brrrrFade) == int(initial_brrrrFade)
 
 
-@given(
-  brrrr_fade=strategy('uint256',
-                      min_value=BRRRR_FADE,
-                      max_value=BRRRR_FADE * 1.05))
-@settings(max_examples = 3)
 def test_brrrr_fade(
   market,
-  gov,
-  brrrr_fade
+  gov
 ):
   # test updating _brrrrFade only in setComptrollerParams func
+  input_brrrr_fade = 1e19
+
   initial_impact_window = market.impactWindow()
   initial_static_cap = market.oiCap()
   initial_lmbda = market.lmbda()
@@ -109,7 +96,7 @@ def test_brrrr_fade(
     initial_impact_window,
     initial_static_cap,
     initial_lmbda,
-    brrrr_fade,
+    input_brrrr_fade,
     {"from": gov}
   )
 
@@ -119,7 +106,7 @@ def test_brrrr_fade(
   current_brrrr_fade = market.brrrrFade()
 
   # test current _brrrrFade equals input value
-  assert int(current_brrrr_fade) == int(brrrr_fade)
+  assert int(current_brrrr_fade) == int(input_brrrr_fade)
 
   # test other params are unchanged
   assert int(current_impact_window) == int(initial_impact_window)
@@ -127,34 +114,21 @@ def test_brrrr_fade(
   assert int(current_lmbda) == int(initial_lmbda)
 
 
-@given(
-  impact_window=strategy('uint256',
-                         min_value=IMPACT_WINDOW,
-                         max_value=IMPACT_WINDOW * 1.05),
-  static_cap=strategy('uint256',
-                      min_value=STATIC_CAP,
-                      max_value=STATIC_CAP * 1.05),
-  lmbda=strategy('uint256',
-                 min_value=LMBDA,
-                 max_value=1),
-  brrrr_fade=strategy('uint256',
-                      min_value=BRRRR_FADE,
-                      max_value=BRRRR_FADE * 1.05))
-@settings(max_examples = 3)
 def test_set_comptroller_params(
   market,
-  gov,
-  impact_window,
-  static_cap,
-  lmbda,
-  brrrr_fade
+  gov
 ):
   # set all params of setComptrollerParams func
+  input_impact_window = 601
+  input_static_cap = 800001 * 1e18
+  input_brrrr_fade = 1e19
+  initial_lmbda = market.lmbda()
+
   market.setComptrollerParams(
-    impact_window,
-    static_cap,
-    lmbda,
-    brrrr_fade,
+    input_impact_window,
+    input_static_cap,
+    initial_lmbda,
+    input_brrrr_fade,
     {"from": gov}
   )
   current_impact_window = market.impactWindow()
@@ -163,26 +137,22 @@ def test_set_comptroller_params(
   current_brrrr_fade = market.brrrrFade()
 
   # test all variables updated
-  assert int(current_impact_window) == int(impact_window)
+  assert int(current_impact_window) == int(input_impact_window)
 
-  assert int(current_static_cap) == int(static_cap)
+  assert int(current_static_cap) == int(input_static_cap)
 
-  assert int(current_lmbda) == int(lmbda)
+  assert int(current_lmbda) == int(initial_lmbda)
 
-  assert int(current_brrrr_fade) == int(brrrr_fade)
+  assert int(current_brrrr_fade) == int(input_brrrr_fade)
 
-@given(
-  update_period=strategy('uint256',
-                         min_value = UPDATE_PERIOD,
-                         max_value = UPDATE_PERIOD + 100))
-@settings(max_examples = 3)
+
 def test_set_update_period_only(
   market,
-  gov,
-  update_period
+  gov
 ):
     
-  
+  input_update_period = 110
+
   # grab initial _updatePeriod _compoundingPeriod values
   initial_update_period = market.updatePeriod()
   initial_compounding_period = market.compoundingPeriod()
@@ -203,8 +173,7 @@ def test_set_update_period_only(
 
 def test_set_compounding_period_only(
   market,
-  gov,
-  compounding_period
+  gov
 ):
     
   input_compounding_period = 660
@@ -227,12 +196,9 @@ def test_set_compounding_period_only(
   assert int(current_update_period) == int(initial_update_period)
 
 
-@settings(max_examples = 3)
 def test_set_update_and_compounding_period(
   market,
-  gov,
-  update_period,
-  compounding_period
+  gov
 ):
     
   input_update_period = 110
@@ -260,10 +226,9 @@ def test_set_leverage_max(
   market, 
   gov
 ):
-    
+  # test updating for new leverage max
   input_leverage_max = 100 * .99
 
-  # test updating for new leverage max
   # grab initial leverage max value
   initial_leverage_max = market.leverageMax()
 
@@ -273,7 +238,7 @@ def test_set_leverage_max(
   updated_leverage_max = market.leverageMax()
 
   # test if updated leverage max = new one
-  assert int(updated_leverage_max) == int(leverage_max)
+  assert int(updated_leverage_max) == int(input_leverage_max)
 
 
 def test_set_k(
@@ -294,113 +259,77 @@ def test_set_k(
   updated_k_value = market.k()
 
   # test if updated k value equals new k value
-  assert int(updated_k_value) == int(k)
+  assert int(updated_k_value) == int(input_k)
 
 
-@given(
-  spread=strategy('uint256',
-                  min_value = SPREAD,
-                  max_value = SPREAD * 1.5))
-@settings(max_examples = 3)
 def test_set_spread(
   market,
   gov,
-  spread
 ):
   # test for when spread value is updated
+  input_spread = .00573e19
+
   # grab initial spread value
   initial_spread = market.pbnj()
 
   # set new spread value
-  market.setSpread(spread, {"from": gov})
+  market.setSpread(input_spread, {"from": gov})
 
   # grab current spread value
   current_spread = market.pbnj()
 
   # test current spread equals updated input value
-  assert int(current_spread) == int(spread)
+  assert int(current_spread) == int(input_spread)
 
 
-@given(
-  price_frame_cap=strategy('uint256',
-                           min_value = PRICE_FRAME_CAP,
-                           max_value = PRICE_FRAME_CAP * 1.05))
-@settings(max_examples = 3)
 def test_set_price_frame_cap(
   market,
-  gov,
-  price_frame_cap
+  gov
 ):
   # test updating price frame cap
+  input_price_frame_cap = 5e19
+
   # grab initial _priceFrameCap
   initial_price_frame_cap = market.priceFrameCap()
 
   # set new price frame cap
-  market.setPriceFrameCap(price_frame_cap, {"from": gov})
+  market.setPriceFrameCap(input_price_frame_cap, {"from": gov})
 
   # grab current price frame cap
   current_price_frame_cap = market.priceFrameCap()
 
   # test current price frame cap equals updated input value
-  assert int(current_price_frame_cap) == int(price_frame_cap)
+  assert int(current_price_frame_cap) == int(input_price_frame_cap)
 
 
-@given(
-  k=strategy('uint256',
-             min_value = K,
-             max_value = K * 1.05),
-  leverage_max=strategy('uint256',
-                        min_value = 1,
-                        max_value = LEVERAGE_MAX),
-  price_frame_cap=strategy('uint256',
-                           min_value = PRICE_FRAME_CAP,
-                           max_value = PRICE_FRAME_CAP * 1.05),
-  spread=strategy('uint256',
-                  min_value = SPREAD,
-                  max_value = SPREAD * 1.5),
-  update_period=strategy('uint256',
-                          min_value = UPDATE_PERIOD,
-                          max_value = UPDATE_PERIOD + 100),
-  compounding_period=strategy('uint256',
-                              min_value = COMPOUND_PERIOD,
-                              max_value = COMPOUND_PERIOD + 100),
-  impact_window=strategy('uint256',
-                         min_value=IMPACT_WINDOW,
-                         max_value=IMPACT_WINDOW * 1.05),
-  static_cap=strategy('uint256',
-                      min_value=STATIC_CAP,
-                      max_value=STATIC_CAP * 1.05),
-  brrrr_fade=strategy('uint256',
-                      min_value=BRRRR_FADE,
-                      max_value=BRRRR_FADE * 1.05))
-@settings(max_examples = 3)
 def test_set_everything(
   market,
-  gov,
-  k,
-  leverage_max,
-  price_frame_cap,
-  spread,
-  update_period,
-  compounding_period,
-  impact_window,
-  static_cap,
-  brrrr_fade
+  gov
 ):
   # pass in inputs into setEverything function
+  input_k = 346888760971066
+  input_leverage_max = 100 * .99
+  input_price_frame_cap = 5e19
+  input_spread = .00573e19
+  input_update_period = 110
+  input_compounding_period = 660
+  input_impact_window = 601
+  input_static_cap = 800000 * 1e19
+  input_brrrr_fade = 1e19
+
   initial_lmbda = market.lmbda()
 
   market.setEverything(
-    k,
-    leverage_max,
-    price_frame_cap,
-    spread,
-    update_period,
-    compounding_period,
-    impact_window,
-    static_cap,
+    input_k,
+    input_leverage_max,
+    input_price_frame_cap,
+    input_spread,
+    input_update_period,
+    input_compounding_period,
+    input_impact_window,
+    input_static_cap,
     initial_lmbda,
-    brrrr_fade,
+    input_brrrr_fade,
     {"from": gov}
   )
 
@@ -417,20 +346,22 @@ def test_set_everything(
   current_brrrr_fade = market.brrrrFade()
 
   # test all current values to be updated
-  assert int(current_k) == int(k)
+  assert int(current_k) == int(input_k)
 
-  assert int(current_leverage_max) == int(leverage_max)
+  assert int(current_leverage_max) == int(input_leverage_max)
 
-  assert int(current_price_frame_cap) == int(price_frame_cap)
+  assert int(current_price_frame_cap) == int(input_price_frame_cap)
 
-  assert int(current_spread) == int(spread)
+  assert int(current_spread) == int(input_spread)
 
-  assert int(current_update_period) == int(update_period)
+  assert int(current_update_period) == int(input_update_period)
 
-  assert int(current_compounding_period) == int(compounding_period)
+  assert int(current_compounding_period) == int(input_compounding_period)
 
-  assert int(current_impact_window) == int(impact_window)
+  assert int(current_impact_window) == int(input_impact_window)
 
-  assert int(current_static_cap) == int(static_cap)
+  assert int(current_static_cap) == int(input_static_cap)
 
-  assert int(current_brrrr_fade) == int(brrrr_fade)
+  assert int(current_brrrr_fade) == int(input_brrrr_fade)
+
+  assert int(current_lmbda) == int(initial_lmbda)
