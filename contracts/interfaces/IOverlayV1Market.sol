@@ -14,7 +14,6 @@ interface IOverlayV1Market is IERC1155 {
         uint256 price;
     }
 
-
     event NewPrice(uint bid, uint ask, uint price);
     event FundingPaid(uint oiLong, uint oiShort, int fundingPaid);
 
@@ -23,6 +22,7 @@ interface IOverlayV1Market is IERC1155 {
 
     function feed() external view returns (address);
     function windowSize() external view returns (uint256);
+    function impactWindow() external view returns (uint256);
     function updatePeriod() external view returns (uint256);
     function compoundingPeriod() external view returns (uint256);
     function updated() external view returns (uint256);
@@ -41,9 +41,11 @@ interface IOverlayV1Market is IERC1155 {
     function oiShortShares() external view returns (uint256);
     function oiCap() external view returns (uint256);
     function brrrrd() external view returns (int256);
-    function priceFrameCap () external view returns (uint256);
+    function pbnj() external view returns (uint256);
+    function priceFrameCap() external view returns (int256);
 
     function lmbda() external view returns (uint256);
+    function brrrrFade() external view returns (uint256);
 
     function epochs(
         uint _time,
@@ -61,7 +63,7 @@ interface IOverlayV1Market is IERC1155 {
 
     function pricePointCurrentIndex() external view returns (uint256);
 
-    function pricePoints(
+    function pricePoints (
         uint256 index
     ) external view returns (
         PricePoint memory price 
