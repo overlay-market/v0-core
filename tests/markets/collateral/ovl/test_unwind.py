@@ -220,6 +220,7 @@ def test_partial_unwind(
     alice_collateral = get_collateral(alice_oi / leverage, leverage, mothership.fee())
 
     print('bob balance: ', bob.balance())
+    print('alice balance: ', alice.balance())
     print('bob_collateral: ', bob_collateral)
     print('alice_collateral: ', alice_collateral)
 
@@ -282,6 +283,79 @@ def test_partial_unwind(
 
     pass
 
+
+@given(
+    is_long=strategy('bool'),
+    bob_oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
+    alice_oi=strategy('uint256', min_value=2, max_value=OI_CAP/1e16),
+    leverage=strategy('uint256', min_value=1, max_value=100))
+@settings(max_examples = 3)
+def test_partial_unwind1(
+  ovl_collateral,
+  mothership,
+  market,
+  token,
+  bob,
+  alice,
+  alice_oi,
+  bob_oi,
+  leverage,
+  is_long
+):
+    # Build parameters
+    bob_oi *= 1e16
+    alice_oi *= 1e16
+
+    bob_collateral = get_collateral(bob_oi / leverage, leverage, mothership.fee())
+    alice_collateral = get_collateral(alice_oi / leverage, leverage, mothership.fee())
+
+    # Alice and Bob both builds a position
+    token.approve(ovl_collateral, bob_collateral, {"from": bob})
+    token.approve(ovl_collateral, alice_collateral, {"from": alice})
+    
+    bob_tx_build = ovl_collateral.build(
+        market,
+        bob_collateral,
+        leverage,
+        is_long,
+        {"from": bob}
+    )
+
+    alice_tx_build = ovl_collateral.build(
+      market,
+      alice_collateral,
+      leverage,
+      is_long,
+      {"from": alice}
+    )
+
+    # Position info
+    bob_pid = bob_tx_build.events['Build']['positionId']
+    bob_poi_build = bob_tx_build.events['Build']['oi']
+
+    (_, _, _, price_point, bob_oi_shares_build,
+        bob_debt_build, bob_cost_build, bob_p_compounding) = ovl_collateral.positions(bob_pid)
+
+    chain.mine(timedelta=market.updatePeriod()+1)
+
+    # Confirm that Bob and Alice both hold a position
+    assert bob_oi_shares_build > 0
+    assert bob_poi_build > 0
+
+    # Unwind half of OI
+    unwind_collateral = bob_collateral / 2
+    print('ovl_collateral.positions before unwind: ', ovl_collateral.positions(bob_pid))
+    ovl_collateral.unwind(bob_pid, unwind_collateral, {"from": bob})
+    print('ovl_collateral.positions after unwind: ', ovl_collateral.positions(bob_pid))
+
+    # Confirm Bob still hold a position after partial unwind
+    assert bob_oi_shares_build > 0
+    assert bob_poi_build > 0
+
+
+    # Bob should contain proper amounts of OI remaining
+
+    pass
 
 @given(
     is_long=strategy('bool'),
