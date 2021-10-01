@@ -31,7 +31,7 @@ library Position {
 
     }
 
-    function _oi(
+    function _oi (
         Info memory _self,
         uint256 totalOi,
         uint256 totalOiShares

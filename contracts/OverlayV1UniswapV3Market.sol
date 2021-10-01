@@ -401,7 +401,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         bool _isLong,
         uint _entryIndex,
         uint _compounding
-    ) external returns (
+    ) external view returns (
         uint256 oi_,
         uint256 oiShares_,
         uint256 priceFrame_
@@ -446,7 +446,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         uint _entryIndex,
         uint _updatesThen,
         uint _tUpdate
-    ) internal returns (
+    ) internal view returns (
         uint256 priceFrame_
     ) {
 

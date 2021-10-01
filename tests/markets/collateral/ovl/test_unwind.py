@@ -1,10 +1,10 @@
-
 import brownie
 from brownie.test import given, strategy
-from hypothesis import settings
+from hypothesis import settings, strategies
 from brownie import chain
 from pytest import approx
 from decimal import *
+import random
 
 OI_CAP = 800000e18
 MIN_COLLATERAL=1e14
@@ -20,24 +20,238 @@ def get_collateral(collateral, leverage, fee):
     if collateral - fee_offset <= MIN_COLLATERAL:
         return int(MIN_COLLATERAL + fee_offset)
     else:
-        return collateral
+        return int(collateral)
 
-def test_unwind(ovl_collateral, market, token, bob):
 
+def test_unwind(ovl_collateral, token, bob):
     pass
 
 
-def test_unwind_revert_insufficient_shares(ovl_collateral, market, bob):
-
-    with brownie.reverts("OVLV1:!shares"):
+def test_unwind_revert_insufficient_shares(ovl_collateral, bob):
+    
+    EXPECTED_ERROR_MESSAGE = "OVLV1:!shares"
+    with brownie.reverts(EXPECTED_ERROR_MESSAGE):
         ovl_collateral.unwind(
             1,
             1e18,
-            { "from": bob }
+            {"from": bob}
         );
 
 
+@given(
+    is_long=strategy('bool'),
+    oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
+    leverage=strategy('uint256', min_value=1, max_value=100))
+def test_unwind_oi_removed(
+        ovl_collateral,
+        mothership,
+        market,
+        token,
+        bob,
+        alice,
+        oi,
+        leverage,
+        is_long
+        ):
+    
+    # Build parameters
+    oi *= 1e16
+    collateral = get_collateral(oi / leverage, leverage, mothership.fee())
 
+    # Build
+    token.approve(ovl_collateral, collateral, {"from": bob})
+    tx_build = ovl_collateral.build(
+        market,
+        collateral,
+        leverage,
+        is_long,
+        {"from": bob}
+    )
+
+    # Position info
+    pid = tx_build.events['Build']['positionId']
+    poi_build = tx_build.events['Build']['oi']
+
+    (_, _, _, price_point, oi_shares_build,
+        debt_build, cost_build, p_compounding) = ovl_collateral.positions(pid)
+
+    chain.mine(timedelta=market.updatePeriod()+1)
+
+    assert oi_shares_build > 0
+    assert poi_build > 0
+    
+    # Unwind
+    tx_unwind = ovl_collateral.unwind(
+        pid,
+        oi_shares_build,
+        {"from": bob}
+    )
+
+    (_, _, _, _, oi_shares_unwind, debt_unwind, cost_unwind, _) =\
+        ovl_collateral.positions(pid)
+
+    poi_unwind = tx_unwind.events['Unwind']['oi']
+
+    assert oi_shares_unwind == 0
+    assert int(poi_unwind) == approx(int(poi_build))
+
+
+# WIP
+@given(
+    is_long=strategy('bool'),
+    oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
+    leverage=strategy('uint256', min_value=1, max_value=100),
+    time_delta=strategies.floats(min_value=0.1, max_value=1),
+)
+@settings(max_examples=10)
+def test_unwind_expected_fee(
+    ovl_collateral,
+    mothership,
+    market,
+    token,
+    bob,
+    oi,
+    leverage,
+    is_long,
+    feed_infos,
+    time_delta
+):
+
+    mine_ix = int(( len(feed_infos.price_times) - 1 ) * time_delta)
+
+    mine_time = feed_infos.price_times[mine_ix]['time']
+
+    oi *= 1e16
+
+    collateral = get_collateral(oi / leverage, leverage, mothership.fee())
+
+    token.approve(ovl_collateral, collateral, {"from": bob})
+
+    tx_build = ovl_collateral.build(
+        market,
+        collateral,
+        leverage,
+        is_long,
+        {"from": bob}
+    )
+
+    price_cap = market.priceFrameCap() / 1e18
+
+    fees_prior = ovl_collateral.fees() / 1e18
+
+    # Position info
+    pid = tx_build.events['Build']['positionId']
+    pos_shares = tx_build.events['Build']['oi']
+    (_, _, _, price_point, oi_shares_pos, debt_pos, _, p_compounding) = ovl_collateral.positions(pid)
+
+    bob_balance = ovl_collateral.balanceOf(bob, pid)
+
+    chain.mine(timestamp=mine_time+1)
+
+    ( oi, oi_shares, price_frame ) = market.positionInfo(is_long, price_point, p_compounding)
+
+    tx_unwind = ovl_collateral.unwind(
+        pid,
+        bob_balance,
+        {"from": bob}
+    )
+
+    price_entry = market.pricePoints(market.pricePointCurrentIndex()-2)
+    entry_bid = price_entry[0]
+    entry_ask = price_entry[1]
+
+    price_exit = market.pricePoints(market.pricePointCurrentIndex()-1)
+    exit_bid = price_exit[0]
+    exit_ask = price_exit[1]
+
+    price_frame = min(exit_bid / entry_ask, price_cap) if is_long else exit_ask / entry_bid
+
+    oi /= 1e18
+    debt_pos /= 1e18
+    oi_shares /= 1e18
+    oi_shares_pos /= 1e18
+
+    # Fee calculation
+    pos_oi = ( oi_shares_pos * oi ) / oi_shares 
+
+    if is_long:
+        val = pos_oi * price_frame 
+        val = val - min(val, debt_pos)
+    else:
+        val = pos_oi *2
+        val = val - min(val, debt_pos + pos_oi * price_frame )
+
+    notional = val + debt_pos 
+
+    fee = notional * ( mothership.fee() / 1e18 )
+
+    # Unwind
+
+    (_, _, _, _, oi_shares_unwind, debt_unwind, cost_unwind, _) =\
+        ovl_collateral.positions(pid)
+
+    fees_now = ovl_collateral.fees() / 1e18
+
+    assert fee + fees_prior == approx(fees_now), "fees not expected amount"
+
+
+@given(
+    is_long=strategy('bool'),
+    oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
+    leverage=strategy('uint256', min_value=1, max_value=100))
+def test_unwind_after_transfer(
+        ovl_collateral,
+        mothership,
+        market,
+        token,
+        bob,
+        alice,
+        oi,
+        leverage,
+        is_long
+        ):
+    
+    # Build parameters
+    oi *= 1e16
+    collateral = get_collateral(oi / leverage, leverage, mothership.fee())
+
+    # Bob builds a position
+    token.approve(ovl_collateral, collateral, {"from": bob})
+    tx_build = ovl_collateral.build(
+        market,
+        collateral,
+        leverage,
+        is_long,
+        {"from": bob}
+    )
+
+    # Position info
+    pid = tx_build.events['Build']['positionId']
+    poi_build = tx_build.events['Build']['oi']
+    
+    (_, _, _, price_point, oi_shares_build,
+        debt_build, cost_build, p_compounding) = ovl_collateral.positions(pid)
+
+    chain.mine(timedelta=market.updatePeriod()+1)
+
+    # Confirm that Bob holds a position
+    assert oi_shares_build > 0
+    assert poi_build > 0
+
+    # Transfer Bob's position to Alice
+    ovl_collateral.safeTransferFrom(bob, alice, pid, ovl_collateral.totalSupply(pid), 1, {"from": bob})
+    
+    # Bob's unwind attempt should fail
+    EXPECTED_ERROR_MESSAGE = "OVLV1:!shares"
+    with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+        ovl_collateral.unwind(
+            pid,
+            oi_shares_build,
+            {"from": bob}
+        )
+
+
+# WIP
 # warning, dependent on what the price/mocks do
 @given(collateral=strategy('uint256'))
 def test_unwind_revert_position_was_liquidated(
@@ -141,6 +355,7 @@ def test_unwind_from_active_oi(
     update period, not further into the compounding period. Then we unwind and 
     verify that the queued oi at zero.
     '''
+
     oi *= 1e16
 
     collateral = get_collateral(oi/leverage, leverage, mothership.fee())
