@@ -66,21 +66,14 @@ def create_token(gov, alice, bob):
 
     yield create_token
 
-
 @pytest.fixture(scope="module")
 def token(create_token):
     yield create_token()
 
-@pytest.fixture(scope="module")
-def feed_infos():
-
-    chain.mine(timestamp=int(time.time()))
+def prep_feed(path):
 
     base = os.path.dirname(os.path.abspath(__file__))
-    # TODO: fix this relative path fetch
-    path = '../../feeds/historic_observations/univ3_dai_weth.json'
-
-    with open(os.path.normpath(os.path.join(base, path))) as f:
+    with open(os.path.normpath(os.path.join(base, path))) as f: 
         feed = json.load(f)
 
     now = chain[-1].timestamp
@@ -109,49 +102,64 @@ def feed_infos():
             shims[len(shims)-1].append(f['shim'])
             price_times.append({'price':price,'time':_time})
 
+    return ( obs, shims, price_times )
+
+@pytest.fixture(scope="module")
+def feed_infos():
+
+    chain.mine(timestamp=int(time.time()))
+
+    # TODO: fix this relative path fetch
+    market_path = '../../feeds/historic_observations/univ3_dai_weth.json'
+    depth_path = '../../feeds/historic_observations/univ3_axs_weth.json'
     class FeedSmuggler:
-        def __init__(self, obs, shims, price_times):
-            self.obs = obs
-            self.shims = shims
-            self.price_times = price_times
+        def __init__(self, market_info, depth_info):
+            self.market_info = market_info
+            self.depth_info = depth_info
+        def market_info(self):
+            return self.market_info
+        def depth_info(self):
+            return self.depth_info
 
-        def obs(self):
-            return self.obs
+    yield FeedSmuggler(
+        prep_feed(depth_path),
+        prep_feed(market_path)
+    )
 
-        def shims(self):
-            return self.shims
-        
-        def price_times(self):
-            return self.price_times
-
-    smuggler = FeedSmuggler(obs, shims, price_times)
-
-    yield smuggler
 
 def get_uni_feeds(feed_owner, feed_info):
 
-    obs = feed_info.obs
-    shims = feed_info.shims
+    market_obs = feed_info.market_info[0]
+    market_shims = feed_info.market_info[1]
+    depth_obs = feed_info.depth_info[0]
+    depth_shims = feed_info.depth_info[1]
 
     UniswapV3MockFactory = getattr(brownie, 'UniswapV3FactoryMock')
     IUniswapV3OracleMock = getattr(interface, 'IUniswapV3OracleMock')
 
     uniswapv3_factory = feed_owner.deploy(UniswapV3MockFactory)
 
-    token0 = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
-    token1 = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+    market_token0 = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+    market_token1 = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+    depth_token0 = "0xBB0E17EF65F82Ab018d8EDd776e8DD940327B28b"
+    depth_token1 = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 
     # TODO: place token0 and token1 into the json
-    uniswapv3_factory.createPool( token0, token1 )
+    uniswapv3_factory.createPool( market_token0, market_token1 )
+    uniswapv3_factory.createPool( depth_token0, depth_token1 )
 
-    uniswapv3_mock = IUniswapV3OracleMock(uniswapv3_factory.allPools(0))
+    market_mock = IUniswapV3OracleMock(uniswapv3_factory.allPools(0))
+    depth_mock = IUniswapV3OracleMock(uniswapv3_factory.allPools(1))
 
-    for i in range(len(obs)):
-        uniswapv3_mock.loadObservations(obs[i], shims[i], {'from': feed_owner})
+    for i in range(len(market_obs)):
+        market_mock.loadObservations(market_obs[i], market_shims[i], {'from': feed_owner})
+
+    for i in range(len(depth_obs)):
+        depth_mock.loadObservations(depth_obs[i], depth_shims[i], {'from': feed_owner})
 
     chain.mine(1, timedelta=601)
 
-    return uniswapv3_factory.address, uniswapv3_mock.address, uniswapv3_mock.address, token1
+    return uniswapv3_factory.address, market_mock.address, depth_mock.address, market_token1
 
 
 @pytest.fixture(scope="module")
@@ -209,7 +217,7 @@ def create_mothership(token, feed_infos, fees, alice, bob, gov, feed_owner, requ
         ovlc_args=ovlc_args,
         fd_getter=get_feed
     ):
-        _, ovl_feed, market_feed, quote = fd_getter(feed_owner, feed_infos)
+        _, market_feed, ovl_feed, quote = fd_getter(feed_owner, feed_infos)
 
         mothership = gov.deploy(ovlms_type, *ovlms_args)
 

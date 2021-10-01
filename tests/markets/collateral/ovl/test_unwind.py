@@ -117,9 +117,9 @@ def test_unwind_expected_fee(
     time_delta
 ):
 
-    mine_ix = int(( len(feed_infos.price_times) - 1 ) * time_delta)
+    mine_ix = int(( len(feed_infos.market_info[2]) - 1 ) * time_delta)
 
-    mine_time = feed_infos.price_times[mine_ix]['time']
+    mine_time = feed_infos.market_info[2][mine_ix]['time']
 
     oi *= 1e16
 
