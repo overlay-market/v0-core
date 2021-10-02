@@ -8,12 +8,6 @@ def print_logs(tx):
         print(tx.events['log'][i]['k'] + ": " + str(tx.events['log'][i]['v']))
 
 
-PRICE_FRAME_CAP = 5e18 * 1.01
-SPREAD = .00573e18 * 1.01
-BRRRR_FADE = 1e18 * 1.01
-STATIC_CAP = 800000 * 1e18 * 1.01
-LMBDA = 0.1
-
 def test_set_impact_window(
   market,
   gov,
