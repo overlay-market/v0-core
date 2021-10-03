@@ -18,6 +18,11 @@ AMOUNT_IN = 1
 PRICE_POINTS_START = 50
 PRICE_POINTS_END = 100
 
+MACRO_WINDOW = 3600
+MICRO_WINDOW = 600
+UPDATE_PERIOD = 100
+COMPOUND_PERIOD = 600
+IMPACT_WINDOW = 600
 
 @pytest.fixture(autouse=True)
 def isolation(fn_isolation):
@@ -171,7 +176,7 @@ def get_uni_feeds(feed_owner, feed_info):
     for i in range(len(depth_obs)):
         depth_mock.loadObservations(depth_obs[i], depth_shims[i], {'from': feed_owner})
 
-    chain.mine(1, timedelta=601)
+    chain.mine(1, timedelta=MACRO_WINDOW+1)
 
     return uniswapv3_factory.address, market_mock.address, depth_mock.address, market_token1
 
@@ -192,15 +197,15 @@ def comptroller(gov):
         ],
          "OverlayV1UniswapV3MarketZeroLambdaShim", [
             1e18,                # amount in
-            600,                 # macro window
-            60,                  # micro window
+            MACRO_WINDOW,        # macro window
+            MICRO_WINDOW,        # micro window
             343454218783234,     # k
             100,                 # levmax
             5e18,                # price frame cap
             .00573e18,           # spread
-            100,                 # update period
-            600,                 # compound period
-            600,                 # impact window
+            UPDATE_PERIOD,       # update period
+            COMPOUND_PERIOD,     # compound period
+            IMPACT_WINDOW,       # impact window
             OI_CAP*1e18,         # oi cap
             0,                   # lambda
             1e18,                # brrrr fade
@@ -263,7 +268,7 @@ def create_mothership(token, feed_infos, fees, alice, bob, gov, feed_owner, requ
         tok.approve(ovl_collateral, 1e50, {"from": alice})
         tok.approve(ovl_collateral, 1e50, {"from": bob})
 
-        chain.mine(timedelta=ovlm_args[1])  # mine the update period
+        chain.mine(timedelta=ovlm_args[7]+1)  # mine the update period
 
         return mothership
 
