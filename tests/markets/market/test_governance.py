@@ -8,12 +8,6 @@ def print_logs(tx):
         print(tx.events['log'][i]['k'] + ": " + str(tx.events['log'][i]['v']))
 
 
-PRICE_FRAME_CAP = 5e18 * 1.01
-SPREAD = .00573e18 * 1.01
-BRRRR_FADE = 1e18 * 1.01
-STATIC_CAP = 800000 * 1e18 * 1.01
-LMBDA = 0.1
-
 def test_set_impact_window(
   market,
   gov,
@@ -54,7 +48,6 @@ def test_set_static_cap(
 ):
   # test updating _staticCap only in setComptrollerParams func
   input_static_cap = int(800000 * 1e19)
-  print('input_static_cap: ', input_static_cap)
 
   initial_impact_window = market.impactWindow()
   initial_lmbda = market.lmbda()
@@ -70,7 +63,7 @@ def test_set_static_cap(
 
   current_impact_window = market.impactWindow()
   current_static_cap = market.oiCap()
-  print('current_static_cap: ', current_static_cap)
+
   current_lmbda = market.lmbda()
   current_brrrrFade = market.brrrrFade()
 
