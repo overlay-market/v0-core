@@ -200,7 +200,7 @@ def test_unwind_expected_fee(
     bob_oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
     alice_oi=strategy('uint256', min_value=3, max_value=OI_CAP/1e16),
     leverage=strategy('uint256', min_value=1, max_value=100))
-@settings(max_examples=10)
+@settings(max_examples=100)
 def test_partial_unwind(
   ovl_collateral,
   mothership,
@@ -289,7 +289,7 @@ def test_partial_unwind(
     # Total OI should be accurate including Alice's position
     queued_oi_after_unwind = market.queuedOiLong() if is_long else market.queuedOiShort()
 
-    assert int(queued_oi_after_unwind) == int(bob_poi_build - bob_unwind_shares + alice_poi_build)
+    assert queued_oi_after_unwind / 1e18 == approx( ( bob_poi_build - bob_unwind_shares + alice_poi_build ) / 1e18 )
     
 
 @given(
