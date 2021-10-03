@@ -105,6 +105,8 @@ def prep_feed(path):
 
     latest = obs[-1][-1][0]
 
+    earliest = twaps['timestamp'][0]
+
     for i in range(len(twaps['timestamp'])):
         timestamp = now + twaps['timestamp'][i] - earliest
         if latest < timestamp:
