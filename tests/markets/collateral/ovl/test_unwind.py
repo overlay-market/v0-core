@@ -589,8 +589,8 @@ def test_unwind_pnl_mint_burn (
     price_cap = market.priceFrameCap() / 1e18
     
     # mine_time parameter to test over multiple time frames
-    mine_ix = int(( len(feed_infos.price_times) - 1 ) * time_delta)
-    mine_time = feed_infos.price_times[mine_ix]['time']
+    mine_ix = int(( len(feed_infos.market_info[2]['timestamp']) - 1 ) * time_delta)
+    mine_time = feed_infos.market_info[2]['timestamp'][mine_ix]
 
     oi *= 1e16
     collateral = get_collateral(oi / leverage, leverage, mothership.fee())
