@@ -200,7 +200,7 @@ def test_unwind_expected_fee(
     bob_oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
     alice_oi=strategy('uint256', min_value=3, max_value=OI_CAP/1e16),
     leverage=strategy('uint256', min_value=1, max_value=100))
-@settings(max_examples = 1)
+@settings(max_examples=10)
 def test_partial_unwind(
   ovl_collateral,
   mothership,
@@ -213,6 +213,7 @@ def test_partial_unwind(
   leverage,
   is_long
 ):
+
     # Build parameters
     bob_oi *= 1e16
     alice_oi *= 1e16
@@ -265,12 +266,12 @@ def test_partial_unwind(
     assert alice_poi_build > 0
 
     # Unwind half of OI
-    bob_unwind_collateral = bob_collateral / 2
+    bob_unwind_shares = bob_poi_build / 2
 
     bob_oi_before_unwind = ovl_collateral.positions(bob_pid)['oiShares']
     alice_oi_before_unwind = ovl_collateral.positions(alice_pid)['oiShares']
 
-    ovl_collateral.unwind(bob_pid, bob_unwind_collateral, {"from": bob})
+    ovl_collateral.unwind(bob_pid, bob_unwind_shares, {"from": bob})
 
     bob_oi_after_unwind = ovl_collateral.positions(bob_pid)['oiShares']
     alice_oi_after_unwind = ovl_collateral.positions(alice_pid)['oiShares']
@@ -283,12 +284,12 @@ def test_partial_unwind(
     assert alice_poi_build > 0
 
     # Bob should contain proper amounts of OI remaining
-    assert int(bob_oi_after_unwind) == int(bob_cost_build - bob_unwind_collateral)
+    assert int(bob_oi_after_unwind) == int(bob_poi_build - bob_unwind_shares)
 
     # Total OI should be accurate including Alice's position
     queued_oi_after_unwind = market.queuedOiLong() if is_long else market.queuedOiShort()
 
-    assert int(queued_oi_after_unwind) == int(bob_cost_build - bob_unwind_collateral + alice_cost_build)
+    assert int(queued_oi_after_unwind) == int(bob_poi_build - bob_unwind_shares + alice_poi_build)
     
 
 @given(
