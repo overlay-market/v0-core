@@ -6,10 +6,9 @@ AMOUNT_IN = 1e18
 
 
 def test_balances(token, gov, rewards, alice, bob, feed_owner):
-    assert token.totalSupply() == token.balanceOf(bob)
+    assert token.totalSupply() == token.balanceOf(bob) + token.balanceOf(alice)
     assert token.balanceOf(gov) == 0
     assert token.balanceOf(rewards) == 0
-    assert token.balanceOf(alice) == 0
     assert token.balanceOf(feed_owner) == 0
 
 
