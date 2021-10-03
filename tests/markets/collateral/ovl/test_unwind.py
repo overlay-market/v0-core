@@ -117,9 +117,9 @@ def test_unwind_expected_fee(
     time_delta
 ):
 
-    mine_ix = int(( len(feed_infos.market_info[2]) - 1 ) * time_delta)
+    mine_ix = int(( len(feed_infos.market_info[2]['timestamp']) - 1 ) * time_delta)
 
-    mine_time = feed_infos.market_info[2][mine_ix]['time']
+    mine_time = feed_infos.market_info[2]['timestamp'][mine_ix]
 
     oi *= 1e16
 
@@ -184,8 +184,6 @@ def test_unwind_expected_fee(
     notional = val + debt_pos 
 
     fee = notional * ( mothership.fee() / 1e18 )
-
-    # Unwind
 
     (_, _, _, _, oi_shares_unwind, debt_unwind, cost_unwind, _) =\
         ovl_collateral.positions(pid)

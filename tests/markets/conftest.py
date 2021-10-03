@@ -73,9 +73,12 @@ def token(create_token):
 def prep_feed(path):
 
     base = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.normpath(os.path.join(base, path))) as f: 
+    with open(os.path.normpath(os.path.join(base, path+'.json'))) as f: 
         feed = json.load(f)
 
+    with open(os.path.normpath(os.path.join(base, path+'_twaps.json'))) as f: 
+        twaps = json.load(f)
+    
     now = chain[-1].timestamp
     earliest = feed[-1]['shim'][0]
     diff = 0
@@ -84,9 +87,9 @@ def prep_feed(path):
 
     obs = []  # blockTimestamp, tickCumulative, liquidityCumulative,initialized
     shims = []  # timestamp, liquidity, tick, cardinality
-    price_times = []
 
     feed = feed[:300]
+
 
     feed = [feed[i:i+300] for i in range(0, len(feed), 300)]
 
@@ -94,15 +97,23 @@ def prep_feed(path):
         obs.append([])
         shims.append([])
         for f in fd:
-            price = 1.0001 ** f['shim'][2]
             diff = f['shim'][0] - earliest
-            _time = now + diff
-            f['observation'][0] = f['shim'][0] = _time
+            f['observation'][0] = f['shim'][0] = now + diff
             obs[len(obs)-1].append(f['observation'])
             shims[len(shims)-1].append(f['shim'])
-            price_times.append({'price':price,'time':_time})
 
-    return ( obs, shims, price_times )
+    latest = obs[-1][-1][0]
+
+    for i in range(len(twaps['timestamp'])):
+        timestamp = now + twaps['timestamp'][i] - earliest
+        if latest < timestamp:
+            for k in twaps: 
+                twaps[k] = twaps[k][:i]
+            break
+        else:
+            twaps['timestamp'][i] = timestamp
+
+    return ( obs, shims, twaps )
 
 @pytest.fixture(scope="module")
 def feed_infos():
@@ -110,8 +121,8 @@ def feed_infos():
     chain.mine(timestamp=int(time.time()))
 
     # TODO: fix this relative path fetch
-    market_path = '../../feeds/historic_observations/univ3_dai_weth.json'
-    depth_path = '../../feeds/historic_observations/univ3_axs_weth.json'
+    market_path = '../../feeds/historic_observations/univ3_dai_weth'
+    depth_path = '../../feeds/historic_observations/univ3_axs_weth'
     class FeedSmuggler:
         def __init__(self, market_info, depth_info):
             self.market_info = market_info
