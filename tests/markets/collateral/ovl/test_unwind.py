@@ -217,8 +217,16 @@ def test_partial_unwind(
     # Build parameters
     bob_oi *= 1e16
     alice_oi *= 1e16
+
+    if bob_oi + alice_oi > OI_CAP:
+        reduction = OI_CAP / ( bob_oi + alice_oi )
+        bob_oi *= reduction
+        alice_oi *= reduction
+
+
     bob_collateral = get_collateral(bob_oi / leverage, leverage, mothership.fee())
     alice_collateral = get_collateral(alice_oi / leverage, leverage, mothership.fee())
+
 
     # Alice and Bob both builds a position
     token.approve(ovl_collateral, bob_collateral, {"from": bob})
