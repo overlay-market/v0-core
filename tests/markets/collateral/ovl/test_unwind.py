@@ -395,13 +395,21 @@ def test_unwind_from_active_oi(
     assert oi_after_unwind == 0 or 1
 
 
-@settings(max_examples=1)
+@given(
+    is_long=strategy('bool'),
+    oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
+    leverage=strategy('uint256', min_value=1, max_value=100)
+)
+@settings(max_examples=10)
 def test_comptroller_recorded_mint_or_burn (
     ovl_collateral, 
     token, 
     market, 
     bob,
-    thing
+    is_long,
+    oi,
+    leverage,
+    mothership
 ):
     '''
     When we unwind we want to see that the comptroller included however much 
@@ -410,6 +418,8 @@ def test_comptroller_recorded_mint_or_burn (
     '''
 
     update_period = market.updatePeriod()
+    oi *= 1e16
+    collateral = get_collateral(oi / leverage, leverage, mothership.fee())
 
     token.approve(ovl_collateral, 1e50, { 'from': bob })
 
