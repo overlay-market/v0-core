@@ -18,6 +18,11 @@ AMOUNT_IN = 1
 PRICE_POINTS_START = 50
 PRICE_POINTS_END = 100
 
+MACRO_WINDOW = 3600
+MICRO_WINDOW = 600
+UPDATE_PERIOD = 100
+COMPOUND_PERIOD = 600
+IMPACT_WINDOW = 600
 
 @pytest.fixture(autouse=True)
 def isolation(fn_isolation):
@@ -74,11 +79,11 @@ def token(create_token):
 def prep_feed(path):
 
     base = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.normpath(os.path.join(base, path+'.json'))) as f: 
+    with open(os.path.normpath(os.path.join(base, path+'_raw_uni.json'))) as f: 
         feed = json.load(f)
 
-    with open(os.path.normpath(os.path.join(base, path+'_twaps.json'))) as f: 
-        twaps = json.load(f)
+    with open(os.path.normpath(os.path.join(base, path+'_reflected.json'))) as f: 
+        reflection = json.load(f)
     
     now = chain[-1].timestamp
     earliest = feed[-1]['shim'][0]
@@ -90,7 +95,6 @@ def prep_feed(path):
     shims = []  # timestamp, liquidity, tick, cardinality
 
     feed = feed[:300]
-
 
     feed = [feed[i:i+300] for i in range(0, len(feed), 300)]
 
@@ -105,16 +109,18 @@ def prep_feed(path):
 
     latest = obs[-1][-1][0]
 
-    for i in range(len(twaps['timestamp'])):
-        timestamp = now + twaps['timestamp'][i] - earliest
+    earliest = reflection['timestamp'][0]
+
+    for i in range(len(reflection['timestamp'])):
+        timestamp = now + reflection['timestamp'][i] - earliest
         if latest < timestamp:
-            for k in twaps: 
-                twaps[k] = twaps[k][:i]
+            for k in reflection: 
+                reflection[k] = reflection[k][:i]
             break
         else:
-            twaps['timestamp'][i] = timestamp
+            reflection['timestamp'][i] = timestamp
 
-    return ( obs, shims, twaps )
+    return ( obs, shims, reflection )
 
 @pytest.fixture(scope="module")
 def feed_infos():
@@ -122,8 +128,8 @@ def feed_infos():
     chain.mine(timestamp=int(time.time()))
 
     # TODO: fix this relative path fetch
-    market_path = '../../feeds/historic_observations/univ3_dai_weth'
-    depth_path = '../../feeds/historic_observations/univ3_axs_weth'
+    market_path = '../../feeds/univ3_dai_weth'
+    depth_path = '../../feeds/univ3_axs_weth'
     class FeedSmuggler:
         def __init__(self, market_info, depth_info):
             self.market_info = market_info
@@ -169,7 +175,7 @@ def get_uni_feeds(feed_owner, feed_info):
     for i in range(len(depth_obs)):
         depth_mock.loadObservations(depth_obs[i], depth_shims[i], {'from': feed_owner})
 
-    chain.mine(1, timedelta=601)
+    chain.mine(1, timedelta=MACRO_WINDOW+1)
 
     return uniswapv3_factory.address, market_mock.address, depth_mock.address, market_token1
 
@@ -190,15 +196,15 @@ def comptroller(gov):
         ],
          "OverlayV1UniswapV3MarketZeroLambdaShim", [
             1e18,                # amount in
-            600,                 # macro window
-            60,                  # micro window
+            MACRO_WINDOW,        # macro window
+            MICRO_WINDOW,        # micro window
             343454218783234,     # k
             100,                 # levmax
             5e18,                # price frame cap
             .00573e18,           # spread
-            100,                 # update period
-            600,                 # compound period
-            600,                 # impact window
+            UPDATE_PERIOD,       # update period
+            COMPOUND_PERIOD,     # compound period
+            IMPACT_WINDOW,       # impact window
             OI_CAP*1e18,         # oi cap
             0,                   # lambda
             1e18,                # brrrr fade
@@ -261,7 +267,7 @@ def create_mothership(token, feed_infos, fees, alice, bob, gov, feed_owner, requ
         tok.approve(ovl_collateral, 1e50, {"from": alice})
         tok.approve(ovl_collateral, 1e50, {"from": bob})
 
-        chain.mine(timedelta=ovlm_args[1])  # mine the update period
+        chain.mine(timedelta=ovlm_args[7]+1)  # mine the update period
 
         return mothership
 
