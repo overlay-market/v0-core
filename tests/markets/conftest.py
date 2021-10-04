@@ -79,7 +79,7 @@ def token(create_token):
 def prep_feed(path):
 
     base = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.normpath(os.path.join(base, path+'.json'))) as f: 
+    with open(os.path.normpath(os.path.join(base, path+'_raw_uni.json'))) as f: 
         feed = json.load(f)
 
     with open(os.path.normpath(os.path.join(base, path+'_reflected.json'))) as f: 
@@ -118,7 +118,7 @@ def prep_feed(path):
                 reflection[k] = reflection[k][:i]
             break
         else:
-            reflection['timestamps'][i] = timestamp
+            reflection['timestamp'][i] = timestamp
 
     return ( obs, shims, reflection )
 
@@ -128,8 +128,8 @@ def feed_infos():
     chain.mine(timestamp=int(time.time()))
 
     # TODO: fix this relative path fetch
-    market_path = '../../feeds/historic_observations/univ3_dai_weth'
-    depth_path = '../../feeds/historic_observations/univ3_axs_weth'
+    market_path = '../../feeds/univ3_dai_weth'
+    depth_path = '../../feeds/univ3_axs_weth'
     class FeedSmuggler:
         def __init__(self, market_info, depth_info):
             self.market_info = market_info

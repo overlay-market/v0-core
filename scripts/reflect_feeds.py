@@ -6,11 +6,10 @@ from brownie import \
     interface, \
     accounts
 
-
 def reflect_feed(path):
 
     base = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.normpath(os.path.join(base, path + '.json'))) as f:
+    with open(os.path.normpath(os.path.join(base, path + '_raw_uni.json'))) as f:
         feed = json.load(f)
 
     now = chain[-1].timestamp
@@ -64,6 +63,8 @@ def reflect_feed(path):
 
         time = brownie.chain.time()
 
+        print("time", time, "end", end)
+
         if time < end:
             timestamps.append(time)
             obs = mock.observe([3600, 600, 0])
@@ -85,6 +86,9 @@ def reflect_feed(path):
 
 def main():
 
-    dai_weth_path = '../feeds/historic_observations/univ3_dai_weth'
+    axs_weth_path = '../feeds/univ3_axs_weth'
 
-    reflect_feed(dai_weth_path)
+    dai_weth_path = '../feeds/univ3_dai_weth'
+
+    # reflect_feed(dai_weth_path)
+    reflect_feed(axs_weth_path)
