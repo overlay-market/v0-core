@@ -1,7 +1,10 @@
+import os 
 import brownie
 import datetime
 import pytest
+import json
 from brownie.test import given, strategy
+from pytest import approx
 
 MIN_COLLATERAL = 1e14  # min amount to build
 COLLATERAL = 10*1e18
@@ -12,14 +15,15 @@ OI_CAP = 800000e18
 
 POSITIONS = [
     {
-        "entry": {"timestamp": 1630074634, "price": 3209262108349973397504},
-        "exit": {"timestamp": 1630663957, "price": 3974624759966388977664},
+        "entrySeconds": 15000, 
+        "entryPrice": 318889092879897,
+        "exitSeconds": 30000,
+        "exitPrice": 304687017011120,
         "collateral": COLLATERAL,
         "leverage": 5,
         "is_long": True,
     },
 ]
-
 
 @pytest.mark.parametrize('position', POSITIONS)
 def test_liquidate_success_zero_impact(
@@ -31,14 +35,70 @@ def test_liquidate_success_zero_impact(
     alice, 
     bob, 
     rewards,
-    position
+    position,
 ):
 
+    update_period = market.updatePeriod()
+
+    brownie.chain.mine(timedelta=position['entrySeconds'])
+
+    print("build time", brownie.chain.time())
+
+    tx_build = ovl_collateral.build(
+        market, 
+        1e18, 
+        1, 
+        True, 
+        { 'from': bob }
+    )
+
+    def value(
+        total_oi, 
+        total_oi_shares, 
+        pos_oi_shares, 
+        debt,
+        price_frame,
+        is_long
+    ):
+        pos_oi = pos_oi_shares * total_oi / total_oi_shares
+
+        if is_long:
+            val = pos_oi * price_frame
+            val -= min(val, debt)
+        else:
+            val = pos_oi * 2
+            val -= min(val, debt + pos_oi * price_frame )
+        
+        return val
+
+    pos_id = tx_build.events['Build']['positionId']
+    pos_oi = tx_build.events['Build']['oi']
+
+    brownie.chain.mine(timedelta=position['exitSeconds'])
+
+    oi = market.oiLong() if position['is_long'] else market.oiShort()
+    oiShares = market.oiLongShares() if position['is_long'] else market.oiShortShares()
+
+    tx_liq = ovl_collateral.liquidate( pos_id, bob, { 'from': bob } )
+
     price_index = market.pricePointCurrentIndex()
-    price_point = market.pricePoints(price_index-1)
 
     print("price index", price_index)
+
+    price_point = market.pricePoints(price_index-1)
+
     print("price_point", price_point)
+
+    print("liquidate time", brownie.chain.time())
+
+    price_index = market.pricePointCurrentIndex()
+    print("price index", price_index)
+    price_point = market.pricePoints(price_index-1)
+    print("price_point", price_point)
+
+    # print("price index", price_index)
+    # print("price_point", price_point)
+    # print("y/x Avg 10M start", feed_infos.market_info[2]['y/x Avg 10M'][0])
 
     # TODO: make a param passed in via hypothesis to loop through
     # collateral = position["collateral"]
