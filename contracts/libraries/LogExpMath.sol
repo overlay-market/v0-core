@@ -93,18 +93,6 @@ library LogExpMath {
     function pow(uint256 x, uint256 y) internal pure returns (uint256) {
         unchecked {
 
-        if (y == 0) {
-            // We solve the 0^0 indetermination by making it equal one.
-            return uint256(ONE_18);
-        }
-
-        if (y == 1){
-            return x;
-        }
-
-        if (x == 0) {
-            return 0;
-        }
 
         // Instead of computing x^y directly, we instead rely on the properties of logarithms and exponentiation to
         // arrive at that result. In particular, exp(ln(x)) = x, and ln(x^y) = y * ln(x). This means
