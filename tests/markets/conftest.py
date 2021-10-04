@@ -82,8 +82,8 @@ def prep_feed(path):
     with open(os.path.normpath(os.path.join(base, path+'.json'))) as f: 
         feed = json.load(f)
 
-    with open(os.path.normpath(os.path.join(base, path+'_twaps.json'))) as f: 
-        twaps = json.load(f)
+    with open(os.path.normpath(os.path.join(base, path+'_reflected.json'))) as f: 
+        reflection = json.load(f)
     
     now = chain[-1].timestamp
     earliest = feed[-1]['shim'][0]
@@ -95,7 +95,6 @@ def prep_feed(path):
     shims = []  # timestamp, liquidity, tick, cardinality
 
     feed = feed[:300]
-
 
     feed = [feed[i:i+300] for i in range(0, len(feed), 300)]
 
@@ -110,18 +109,18 @@ def prep_feed(path):
 
     latest = obs[-1][-1][0]
 
-    earliest = twaps['timestamp'][0]
+    earliest = reflection['timestamp'][0]
 
-    for i in range(len(twaps['timestamp'])):
-        timestamp = now + twaps['timestamp'][i] - earliest
+    for i in range(len(reflection['timestamp'])):
+        timestamp = now + reflection['timestamp'][i] - earliest
         if latest < timestamp:
-            for k in twaps: 
-                twaps[k] = twaps[k][:i]
+            for k in reflection: 
+                reflection[k] = reflection[k][:i]
             break
         else:
-            twaps['timestamp'][i] = timestamp
+            reflection['timestamps'][i] = timestamp
 
-    return ( obs, shims, twaps )
+    return ( obs, shims, reflection )
 
 @pytest.fixture(scope="module")
 def feed_infos():
