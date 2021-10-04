@@ -140,8 +140,8 @@ def feed_infos():
             return self.depth_info
 
     yield FeedSmuggler(
-        prep_feed(depth_path),
-        prep_feed(market_path)
+        prep_feed(market_path),
+        prep_feed(depth_path)
     )
 
 
