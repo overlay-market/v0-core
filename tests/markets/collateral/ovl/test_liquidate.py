@@ -6,6 +6,10 @@ import json
 from brownie.test import given, strategy
 from pytest import approx
 
+def print_logs(tx):
+    for i in range(len(tx.events['log'])):
+        print(tx.events['log'][i]['k'] + ": " + str(tx.events['log'][i]['v']))
+
 MIN_COLLATERAL = 1e14  # min amount to build
 COLLATERAL = 10*1e18
 TOKEN_DECIMALS = 18
@@ -14,15 +18,35 @@ OI_CAP = 800000e18
 
 POSITIONS = [
     {
-        "entrySeconds": 15000, 
+        "entrySeconds": 15000,              # seconds after test begins 
         "entryPrice": 318889092879897,
-        "exitSeconds": 25775,
+        # "exitSeconds": 1633485143 - 3600,               # seconds after entry
+        "exitSeconds": 30000,               # seconds after entry
         "exitPrice": 304687017011120,
         "collateral": COLLATERAL,
-        "leverage": 20,
+        "leverage": 10,
         "is_long": True,
     },
 ]
+
+def value(
+    total_oi, 
+    total_oi_shares, 
+    pos_oi_shares, 
+    debt,
+    price_frame,
+    is_long
+):
+    pos_oi = pos_oi_shares * total_oi / total_oi_shares
+
+    if is_long:
+        val = pos_oi * price_frame
+        val -= min(val, debt)
+    else:
+        val = pos_oi * 2
+        val -= min(val, debt + pos_oi * price_frame )
+    
+    return val
 
 @pytest.mark.parametrize('position', POSITIONS)
 def test_liquidate_success_zero_impact_zero_funding(
@@ -107,24 +131,6 @@ def test_liquidate_success_zero_impact_zero_funding(
     # print("price_point", price_point)
 
 
-    # def value(
-    #     total_oi, 
-    #     total_oi_shares, 
-    #     pos_oi_shares, 
-    #     debt,
-    #     price_frame,
-    #     is_long
-    # ):
-    #     pos_oi = pos_oi_shares * total_oi / total_oi_shares
-
-    #     if is_long:
-    #         val = pos_oi * price_frame
-    #         val -= min(val, debt)
-    #     else:
-    #         val = pos_oi * 2
-    #         val -= min(val, debt + pos_oi * price_frame )
-        
-    #     return val
 
     # print("price index", price_index)
     # print("price_point", price_point)
