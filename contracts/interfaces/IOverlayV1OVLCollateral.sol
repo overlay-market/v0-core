@@ -31,6 +31,13 @@ interface IOverlayV1OVLCollateral is IERC1155 {
     function fees () external view returns (uint);
     function liquidations () external view returns (uint);
 
+    function setMarketInfo(
+        address _market,
+        uint _marginMaintenance,
+        uint _marginRewardRate,
+        uint _maxLeverage
+    ) external;
+
     function marginMaintenance(
         address _market
     ) external view returns (
