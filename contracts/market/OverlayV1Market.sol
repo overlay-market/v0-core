@@ -26,11 +26,7 @@ abstract contract OverlayV1Market is OverlayV1Governance {
     function entryUpdate () internal virtual returns (uint256 t1Compounding_);
     function exitUpdate () internal virtual returns (uint256 tCompounding_);
 
-    function update () external returns (bool updated_) {
-
-        return staticUpdate();
-
-    }
+    function update () external { staticUpdate(); }
 
     /// @notice Adds open interest to the market
     /// @dev invoked by an overlay position contract
