@@ -389,14 +389,14 @@ def test_unwind_revert_position_was_liquidated(
     max_ask = max(feed_infos.market_info[2]['asks'])
     min_bid = min(feed_infos.market_info[2]['bids'])
 
-    margin_maintenance = ovl_collateral.marketInfo(market)[0]/1e18
-    margin_reward = ovl_collateral.marketInfo(market)[1]/1e18
+    margin_maintenance = ovl_collateral.marginMaintenance(market) / 1e18
+    margin_reward = ovl_collateral.marginRewardRate(market) / 1e18
 
     # bid = ask * (MM + 1 - 1/L)
     
     entry_ask = 318889092879897 / 1e18
     exit_bid = entry_ask * ( margin_maintenance + 1 - 1/10)
-    breakpoint()
+
 
     for i in range(len(feed_infos.market_info[2]['bids'])):
         bid = feed_infos.market_info[2]['bids'][i]
@@ -404,7 +404,7 @@ def test_unwind_revert_position_was_liquidated(
             print("~~~ ~~~~ ~~~~ bid", bid)
             exit_index = i
             break
-    
+    breakpoint()
     print("now", brownie.chain.time())
     print("timestamp", feed_infos.market_info[2]['timestamp'][491])
     print("~~~ exit index ~~~", exit_index)
