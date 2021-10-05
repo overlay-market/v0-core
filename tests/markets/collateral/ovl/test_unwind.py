@@ -404,7 +404,7 @@ def test_unwind_revert_position_was_liquidated(
             print("~~~ ~~~~ ~~~~ bid", bid)
             exit_index = i
             break
-    breakpoint()
+    
     print("now", brownie.chain.time())
     print("timestamp", feed_infos.market_info[2]['timestamp'][491])
     print("~~~ exit index ~~~", exit_index)
@@ -413,7 +413,24 @@ def test_unwind_revert_position_was_liquidated(
     print("ask", entry_ask)
     print("bid", exit_bid)
     print("margin_maintenance", margin_maintenance)
+
+    tx_build = ovl_collateral.build(
+        market,
+        position['collateral'],
+        position['leverage'],
+        position['is_long'],
+        {"from": bob}
+    )
+
+    pid = tx_build.events['Build']['positionId']
+    liq_timestamp = feed_infos.market_info[2]['timestamp'][491]
+    chain.mine(timedelta = liq_timestamp)
     breakpoint()
+
+    tx_liq = ovl_collateral.liquidate(pid, alice, {"from": alice})
+    
+    
+    
 
 
 
