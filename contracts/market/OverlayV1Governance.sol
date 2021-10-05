@@ -73,7 +73,6 @@ abstract contract OverlayV1Governance is
 
     function setEverything (
         uint256 _k,
-        uint256 _leverageMax,
         uint256 _priceFrameCap,
         uint256 _pbnj,
         uint256 _updatePeriod,
@@ -85,8 +84,6 @@ abstract contract OverlayV1Governance is
     ) public onlyGovernor {
 
         setK(_k);
-
-        setLeverageMax(_leverageMax);
 
         setPriceFrameCap(_priceFrameCap);
 
@@ -128,14 +125,6 @@ abstract contract OverlayV1Governance is
         uint256 _k
     ) public onlyGovernor {
         k = _k;
-    }
-
-    function setLeverageMax (
-        uint256 _leverageMax
-    ) public onlyGovernor {
-
-        leverageMax = _leverageMax;
-
     }
 
     function setPeriods(

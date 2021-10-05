@@ -48,8 +48,6 @@ abstract contract OverlayV1Market is OverlayV1Governance {
         uint t1Compounding_
     ) {
 
-        require(_leverage <= leverageMax, "OVLV1:lev>max");
-
         t1Compounding_ = entryUpdate();
 
         pricePointCurrent_ = _pricePoints.length;

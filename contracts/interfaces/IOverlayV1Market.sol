@@ -140,10 +140,6 @@ interface IOverlayV1Market is IERC1155 {
         uint256 _compoundingPeriod
     ) external;
 
-    function setLeverageMax (
-        uint256 _leverageMax
-    ) external;
-
     function setK (
         uint256 _k
     ) external;
@@ -158,7 +154,6 @@ interface IOverlayV1Market is IERC1155 {
 
     function setEverything (
         uint256 _k,
-        uint256 _leverageMax,
         uint256 _priceFrameCap,
         uint256 _pbnj,
         uint256 _updatePeriod,
