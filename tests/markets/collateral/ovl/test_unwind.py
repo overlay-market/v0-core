@@ -370,8 +370,6 @@ POSITIONS = [
     },
 ]
 
-# WIP
-# warning, dependent on what the price/mocks do
 @pytest.mark.parametrize('position', POSITIONS)
 def test_unwind_revert_position_was_liquidated(
     mothership,
@@ -391,7 +389,7 @@ def test_unwind_revert_position_was_liquidated(
 
     # bid = ask * (MM + 1 - 1/L)
     
-    entry_ask = 318889092879897 / 1e18
+    entry_ask = position['entryPrice'] / 1e18
     exit_bid = entry_ask * ( margin_maintenance + 1 - 1/10)
 
 
