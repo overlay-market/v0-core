@@ -47,7 +47,12 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         uint256 debt
     );
 
-    event Liquidate(uint256 positionId, address rewarded, uint256 reward);
+    event Liquidate(
+        uint256 positionId, 
+        address rewarded, 
+        uint256 reward
+    );
+
     event Update(
         uint feesCollected,
         uint feesBurned,
@@ -90,6 +95,26 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         marketInfo[_market].marginMaintenance = _marginMaintenance;
         marketInfo[_market].marginRewardRate = _marginRewardRate;
+
+    }
+
+    function marginMaintenance(
+        address _market
+    ) external view returns (
+        uint marginMaintenance_
+    ) {
+
+        marginMaintenance_ = marketInfo[_market].marginMaintenance;
+
+    }
+
+    function marginRewardRate(
+        address _market
+    ) external view returns (
+        uint marginRewardRate_
+    ) {
+
+        marginRewardRate_ = marketInfo[_market].marginRewardRate;
 
     }
 

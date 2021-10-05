@@ -100,7 +100,6 @@ abstract contract OverlayV1Market is OverlayV1Governance {
             ? Math.min(priceExit.bid.divDown(priceEntry.ask), priceFrameCap)
             : priceExit.ask.divUp(priceEntry.bid);
 
-
         if (fromQueued_){
 
             uint _queuedOiLong = __queuedOiLong__;
@@ -108,7 +107,6 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
             if (_isLong) ( oi_ = _queuedOiLong, oiShares_ = _queuedOiLong );
             else ( oi_ = _queuedOiShort, oiShares_ = _queuedOiShort );
-
 
         } else {
 
