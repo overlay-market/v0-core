@@ -9,8 +9,8 @@ from decimal import *
   oi=strategy('uint256', min_value=1, max_value=10000),
   is_long=strategy('bool')
 )
-@settings(max_examples=1)
-def test_funding_one_side(
+@settings(max_examples=20)
+def test_funding_total_imbalance(
   bob,
   market,
   oi,
@@ -28,19 +28,11 @@ def test_funding_one_side(
 
   expected_oi = ( oi / 1e18 ) - ( ( oi / 1e18 ) * FEE )
 
-  print("k", K)
-
-  print("expected oi", expected_oi)
-
   expected_funding_factor = ( 1 - (2 * K) ) ** compoundings
-
-  print("expected funding factor", expected_funding_factor)
 
   expected_oi_after_payment = expected_oi * expected_funding_factor
 
   expected_funding_payment = expected_oi - expected_oi_after_payment
-
-  print("expected funding payment", expected_funding_payment)
 
   tx_build = ovl_collateral.build(
     market,
@@ -50,27 +42,17 @@ def test_funding_one_side(
     { 'from': bob }
   )
 
-  print("tx build events", tx_build.events)
-
   oi_queued = ( market.queuedOiLong() if is_long else market.queuedOiShort() ) / 1e18
 
-  print("oi queued", oi_queued)
-
-  oiLong, oiShort, oiLongShares, oiShortShares, queuedOiLong, queuedOiShort = market.oi()
-
-  print("thing", oiLong, oiShort, oiLongShares, oiShortShares, queuedOiLong, queuedOiShort )
-
-  assert oi_queued == expected_oi, 'queued oi different to expected'
+  assert oi_queued == approx(expected_oi), 'queued oi different to expected'
 
   chain.mine(timedelta=COMPOUND_PERIOD)
 
-  update_tx = market.update({ 'from': bob })
-
-  print("update_tx_events", update_tx.events)
+  market.update({ 'from': bob })
 
   oi_unqueued = ( market.oiLong() if is_long else market.oiShort() ) / 1e18
 
-  assert oi_unqueued == expected_oi, 'unequeued oi different than expected'
+  assert oi_unqueued == approx(expected_oi), 'unequeued oi different than expected'
 
   chain.mine(timedelta=COMPOUND_PERIOD * compoundings)
 
