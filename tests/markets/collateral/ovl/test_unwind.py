@@ -5,10 +5,15 @@ from brownie import chain
 from pytest import approx
 from decimal import *
 import random
+import pytest
 
-OI_CAP = 800000e18
-MIN_COLLATERAL=1e14
 FEE_RESOLUTION=1e18
+MIN_COLLATERAL = 1e14  # min amount to build
+COLLATERAL = 10*1e18
+TOKEN_DECIMALS = 18
+TOKEN_TOTAL_SUPPLY = 8000000
+OI_CAP = 800000e18
+
 
 def print_logs(tx):
     for i in range(len(tx.events['log'])):
@@ -353,30 +358,67 @@ def test_unwind_after_transfer(
         )
 
 
+POSITIONS = [
+    {
+        "entrySeconds": 15000, 
+        "entryPrice": 318889092879897,
+        "exitSeconds": 25775,
+        "exitPrice": 304687017011120,
+        "collateral": COLLATERAL,
+        "leverage": 20,
+        "is_long": True,
+    },
+]
+
 # WIP
 # warning, dependent on what the price/mocks do
-@given(collateral=strategy('uint256'))
+@pytest.mark.parametrize('position', POSITIONS)
 def test_unwind_revert_position_was_liquidated(
-        ovl_collateral,
-        mothership,
-        market,
-        collateral,
-        token,
-        bob,
-        alice):
+    mothership,
+    feed_infos,
+    ovl_collateral, 
+    token, 
+    market, 
+    alice, 
+    gov,
+    bob,
+    rewards,
+    position,
+    ):
 
-    collateral = 2e18
-    leverage = 1
-    is_long = True
+    max_ask = max(feed_infos.market_info[2]['asks'])
+    min_bid = min(feed_infos.market_info[2]['bids'])
 
-    # token.approve(ovl_collateral, collateral, {"from": bob})
-    # tx_build = ovl_collateral.build(
-    #     market,
-    #     collateral,
-    #     leverage,
-    #     is_long,
-    #     {"from": bob}
-    # )
+    margin_maintenance = ovl_collateral.marketInfo(market)[0]/1e18
+    margin_reward = ovl_collateral.marketInfo(market)[1]/1e18
+
+    # bid = ask * (MM + 1 - 1/L)
+    
+    entry_ask = 318889092879897 / 1e18
+    exit_bid = entry_ask * ( margin_maintenance + 1 - 1/10)
+    breakpoint()
+
+    for i in range(len(feed_infos.market_info[2]['bids'])):
+        bid = feed_infos.market_info[2]['bids'][i]
+        if bid < exit_bid:
+            print("~~~ ~~~~ ~~~~ bid", bid)
+            exit_index = i
+            break
+    
+    print("now", brownie.chain.time())
+    print("timestamp", feed_infos.market_info[2]['timestamp'][491])
+    print("~~~ exit index ~~~", exit_index)
+    print("max", max_ask)
+    print("min", min_bid)
+    print("ask", entry_ask)
+    print("bid", exit_bid)
+    print("margin_maintenance", margin_maintenance)
+    breakpoint()
+
+
+
+
+
 
     # with brownie.reverts("OVLV1:!shares"):
     #     ovl_collateral.unwind(
