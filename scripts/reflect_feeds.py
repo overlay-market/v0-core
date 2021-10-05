@@ -1,3 +1,4 @@
+import math
 import os
 import json
 import brownie
@@ -56,8 +57,11 @@ def reflect_feed(path):
     # set end after adjusting the timestamps
 
     timestamps = []
-    obs_10_min = []
-    obs_1_hr = []
+    ten_mins = []
+    one_hrs = []
+    spots = []
+    bids = []
+    asks = []
 
     for x in range(0, breadth, 60):
 
@@ -65,20 +69,35 @@ def reflect_feed(path):
 
         print("time", time, "end", end)
 
+        pbnj = .00573
+
         if time < end:
             timestamps.append(time)
-            obs = mock.observe([3600, 600, 0])
-            obs_10_min.append(1.0001 ** (( obs[0][2] - obs[0][1] ) / 600))
-            obs_1_hr.append(1.0001 ** (( obs[0][2] - obs[0][0] ) / 3600))
-        else: break
+            obs = mock.observe([3600, 600, 1, 0])
 
+            ten_min = 1.0001 ** (( obs[0][3] - obs[0][1] ) / 600)
+            one_hr = 1.0001 ** (( obs[0][3] - obs[0][0] ) / 3600)
+            spot = 1.0001 ** (( obs[0][3] - obs[0][2] ))
+            bid = min(ten_min, one_hr) * math.exp(-pbnj)
+            ask = max(ten_min, one_hr) * math.exp(pbnj)
+
+            ten_mins.append(ten_min)
+            one_hrs.append(one_hr)
+            spots.append(spot)
+            bids.append(bid)
+            asks.append(ask)
+
+        else: break
         
         brownie.chain.mine(timedelta=60)
 
     reflected = {
         'timestamp': timestamps,
-        '1 hr': obs_1_hr,
-        '10 min': obs_10_min,
+        'one_hr': one_hrs,
+        'ten_min': ten_mins,
+        'spot': spots,
+        'bids': bids,
+        'asks': asks
     }
 
     with open(os.path.normpath(os.path.join(base, path + '_reflected.json')), 'w+') as f:
@@ -90,5 +109,6 @@ def main():
 
     dai_weth_path = '../feeds/univ3_dai_weth'
 
-    # reflect_feed(dai_weth_path)
+    reflect_feed(dai_weth_path)
+
     reflect_feed(axs_weth_path)

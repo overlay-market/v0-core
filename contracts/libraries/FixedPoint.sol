@@ -102,6 +102,9 @@ library FixedPoint {
      * the true value (that is, the error function expected - actual is always positive).
      */
     function powDown(uint256 x, uint256 y) internal pure returns (uint256) {
+
+        if (0 == y || x == ONE) return ONE;
+
         uint256 raw = LogExpMath.pow(x, y);
         uint256 maxError = add(mulUp(raw, MAX_POW_RELATIVE_ERROR), 1);
 
@@ -110,6 +113,7 @@ library FixedPoint {
         } else {
             return sub(raw, maxError);
         }
+
     }
 
     /**
@@ -118,7 +122,7 @@ library FixedPoint {
      */
     function powUp(uint256 x, uint256 y) internal pure returns (uint256) {
 
-        if (y == 0) return ONE;
+        if (ONE == x || y == 0) return ONE;
 
         uint256 raw = LogExpMath.pow(x, y);
         uint256 maxError = add(mulUp(raw, MAX_POW_RELATIVE_ERROR), 1);
