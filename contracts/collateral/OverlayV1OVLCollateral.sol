@@ -209,7 +209,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     ) external {
 
         require(mothership.marketActive(_market), "OVLV1:!market");
-        require(_leverage <= marketInfo[_market].maxLeverage, "OVLV1:lev<max");
+        require(_leverage <= marketInfo[_market].maxLeverage, "OVLV1:lev>max");
 
         (   uint _oiAdjusted,
             uint _collateralAdjusted,
