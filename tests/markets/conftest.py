@@ -211,6 +211,7 @@ def comptroller(gov):
          "OverlayV1OVLCollateral", [
              .06e18,             # margin maintenance
              .5e18,              # margin reward rate
+             100,                # max leverage
          ],
          get_uni_feeds,
         ),
