@@ -420,9 +420,13 @@ def test_unwind_revert_position_was_liquidated(
 
     tx_liq = ovl_collateral.liquidate(pid, alice, {"from": alice})
 
-    tx_unwind = ovl_collateral.unwind(pid, oi_shares_build, {"from": alice})
-
-    pass
+    EXPECTED_ERROR_MESSAGE = "OVLV1:liquidated"
+    with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+        ovl_collateral.unwind(
+            pid,
+            oi_shares_build,
+            {"from": bob}
+            )
 
 
 @given(
