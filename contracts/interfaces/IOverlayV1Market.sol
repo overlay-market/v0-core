@@ -26,19 +26,28 @@ interface IOverlayV1Market is IERC1155 {
     function updatePeriod() external view returns (uint256);
     function compoundingPeriod() external view returns (uint256);
     function updated() external view returns (uint256);
-    function update() external returns (bool);
+    function update() external;
     function toUpdate() external view returns (uint256);
     function compounded() external view returns (uint256);
     function leverageMax() external view returns (uint8);
     function k() external view returns (uint256);
 
-    function queuedOiLong() external view returns (uint256);
-    function queuedOiShort() external view returns (uint256);
-    function oi() external view returns (uint256, uint256);
+    function oi () external view returns (
+        uint oiLong_,
+        uint oiShort_,
+        uint oiLongShares_,
+        uint oiShortShares_,
+        uint queuedOiLong_,
+        uint queuedOiShort_
+    );
+
     function oiLong() external view returns (uint256);
     function oiShort() external view returns (uint256);
     function oiLongShares() external view returns (uint256);
     function oiShortShares() external view returns (uint256);
+    function queuedOiLong() external view returns (uint256);
+    function queuedOiShort() external view returns (uint256);
+
     function oiCap() external view returns (uint256);
     function brrrrd() external view returns (int256);
     function pbnj() external view returns (uint256);
