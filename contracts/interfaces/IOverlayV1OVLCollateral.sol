@@ -14,6 +14,18 @@ interface IOverlayV1OVLCollateral is IERC1155 {
     event log(string k, uint v);
     event log(string k, address v);
 
+    event Build(uint256 positionId, uint256 oi, uint256 debt);
+    event Unwind(uint256 positionId, uint256 oi, uint256 debt);
+    event Liquidate(address rewarded, uint256 reward);
+    event Update(
+        address rewarded,
+        uint rewardAmount,
+        uint feesCollected,
+        uint feesBurned,
+        uint liquidationsCollected,
+        uint liquidationsBurned
+    );
+
     struct MarketInfo {
         uint marginMaintenance;
         uint marginRewardRate;
@@ -31,16 +43,29 @@ interface IOverlayV1OVLCollateral is IERC1155 {
     function fees () external view returns (uint);
     function liquidations () external view returns (uint);
 
-    event Build(uint256 positionId, uint256 oi, uint256 debt);
-    event Unwind(uint256 positionId, uint256 oi, uint256 debt);
-    event Liquidate(address rewarded, uint256 reward);
-    event Update(
-        address rewarded,
-        uint rewardAmount,
-        uint feesCollected,
-        uint feesBurned,
-        uint liquidationsCollected,
-        uint liquidationsBurned
+    function setMarketInfo(
+        address _market,
+        uint _marginMaintenance,
+        uint _marginRewardRate,
+        uint _maxLeverage
+    ) external;
+
+    function marginMaintenance(
+        address _market
+    ) external view returns (
+        uint marginMaintenance_
+    );
+
+    function marginRewardRate(
+        address _market
+    ) external view returns (
+        uint marginRewardRate_
+    );
+
+    function maxLeverage(
+        address _market
+    ) external view returns (
+        uint maxLeverage_
     );
 
     function addMarket (

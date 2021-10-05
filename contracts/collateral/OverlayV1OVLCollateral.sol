@@ -25,6 +25,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     struct MarketInfo {
         uint marginMaintenance;
         uint marginRewardRate;
+        uint maxLeverage;
     }
 
     Position.Info[] public positions;
@@ -47,7 +48,12 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         uint256 debt
     );
 
-    event Liquidate(uint256 positionId, address rewarded, uint256 reward);
+    event Liquidate(
+        uint256 positionId, 
+        address rewarded, 
+        uint256 reward
+    );
+
     event Update(
         uint feesCollected,
         uint feesBurned,
@@ -85,11 +91,43 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     function setMarketInfo (
         address _market,
         uint _marginMaintenance,
-        uint _marginRewardRate
+        uint _marginRewardRate,
+        uint _maxLeverage
     ) external onlyGovernor {
 
         marketInfo[_market].marginMaintenance = _marginMaintenance;
         marketInfo[_market].marginRewardRate = _marginRewardRate;
+        marketInfo[_market].maxLeverage = _maxLeverage;
+
+    }
+
+    function marginMaintenance(
+        address _market
+    ) external view returns (
+        uint marginMaintenance_
+    ) {
+
+        marginMaintenance_ = marketInfo[_market].marginMaintenance;
+
+    }
+
+    function maxLeverage(
+        address _market
+    ) external view returns (
+        uint maxLeverage_
+    ) {
+
+        maxLeverage_ = marketInfo[_market].maxLeverage;
+
+    }
+
+    function marginRewardRate(
+        address _market
+    ) external view returns (
+        uint marginRewardRate_
+    ) {
+
+        marginRewardRate_ = marketInfo[_market].marginRewardRate;
 
     }
 
@@ -171,6 +209,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     ) external {
 
         require(mothership.marketActive(_market), "OVLV1:!market");
+        require(_leverage <= marketInfo[_market].maxLeverage, "OVLV1:lev>max");
 
         (   uint _oiAdjusted,
             uint _collateralAdjusted,
