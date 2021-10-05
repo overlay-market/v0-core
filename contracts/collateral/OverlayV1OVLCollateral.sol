@@ -12,7 +12,7 @@ import "../interfaces/IOverlayToken.sol";
 contract OverlayV1OVLCollateral is ERC1155Supply {
 
     event log(string k, uint v);
-    event log(string k, address v);
+    event log_addr(string k, address v);
 
     using Position for Position.Info;
     using FixedPoint for uint256;
@@ -406,9 +406,9 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             );
 
         value_ = pos.value(
-            _priceFrame,
             _oi,
-            _oiShares
+            _oiShares,
+            _priceFrame
         );
 
     }
