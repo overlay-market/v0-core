@@ -386,9 +386,6 @@ def test_unwind_revert_position_was_liquidated(
     position,
     ):
 
-    max_ask = max(feed_infos.market_info[2]['asks'])
-    min_bid = min(feed_infos.market_info[2]['bids'])
-
     margin_maintenance = ovl_collateral.marginMaintenance(market) / 1e18
     margin_reward = ovl_collateral.marginRewardRate(market) / 1e18
 
@@ -405,14 +402,7 @@ def test_unwind_revert_position_was_liquidated(
             exit_index = i
             break
     
-    print("now", brownie.chain.time())
-    print("timestamp", feed_infos.market_info[2]['timestamp'][491])
-    print("~~~ exit index ~~~", exit_index)
-    print("max", max_ask)
-    print("min", min_bid)
-    print("ask", entry_ask)
-    print("bid", exit_bid)
-    print("margin_maintenance", margin_maintenance)
+    liq_timestamp = feed_infos.market_info[2]['timestamp'][exit_index]
 
     tx_build = ovl_collateral.build(
         market,
@@ -423,32 +413,17 @@ def test_unwind_revert_position_was_liquidated(
     )
 
     pid = tx_build.events['Build']['positionId']
-    liq_timestamp = feed_infos.market_info[2]['timestamp'][491]
-    chain.mine(timedelta = liq_timestamp)
-    breakpoint()
+    (_, _, _, price_point, oi_shares_build,
+        debt_build, cost_build, p_compounding) = ovl_collateral.positions(pid)
+
+    chain.mine(timestamp = liq_timestamp)
 
     tx_liq = ovl_collateral.liquidate(pid, alice, {"from": alice})
-    
-    
-    
 
-
-
-
-
-
-    # with brownie.reverts("OVLV1:!shares"):
-    #     ovl_collateral.unwind(
-    #         1,
-    #         1e18,
-    #         { "from": bob }
-    #     );
-
-    # build a position
-    # liquidate a position
-    # try to unwind it and get a revert
+    tx_unwind = ovl_collateral.unwind(pid, oi_shares_build, {"from": alice})
 
     pass
+
 
 @given(
     is_long=strategy('bool'),
