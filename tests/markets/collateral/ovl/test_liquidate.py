@@ -12,89 +12,119 @@ TOKEN_DECIMALS = 18
 TOKEN_TOTAL_SUPPLY = 8000000
 OI_CAP = 800000e18
 
-
 POSITIONS = [
     {
         "entrySeconds": 15000, 
         "entryPrice": 318889092879897,
-        "exitSeconds": 30000,
+        "exitSeconds": 25775,
         "exitPrice": 304687017011120,
         "collateral": COLLATERAL,
-        "leverage": 5,
+        "leverage": 20,
         "is_long": True,
     },
 ]
 
 @pytest.mark.parametrize('position', POSITIONS)
-def test_liquidate_success_zero_impact(
+def test_liquidate_success_zero_impact_zero_funding(
     mothership,
     feed_infos,
     ovl_collateral, 
     token, 
     market, 
     alice, 
+    gov,
     bob, 
     rewards,
     position,
 ):
 
-    update_period = market.updatePeriod()
+    max_ask = max(feed_infos.market_info[2]['asks'])
+    min_bid = min(feed_infos.market_info[2]['bids'])
 
-    brownie.chain.mine(timedelta=position['entrySeconds'])
+    margin_maintenance = ovl_collateral.marginMaintenance(market) / 1e18
+    margin_reward = ovl_collateral.marginRewardRate(market) / 1e18
 
-    print("build time", brownie.chain.time())
+    # bid = ask * (MM + 1 - 1/L)
+    
+    entry_ask = 318889092879897 / 1e18
+    exit_bid = entry_ask * ( margin_maintenance + 1 - 1/10)
 
-    tx_build = ovl_collateral.build(
-        market, 
-        1e18, 
-        1, 
-        True, 
-        { 'from': bob }
-    )
+    for i in range(len(feed_infos.market_info[2]['bids'])):
+        bid = feed_infos.market_info[2]['bids'][i]
+        if bid < exit_bid:
+            print("~~~ ~~~~ ~~~~ bid", bid)
+            exit_index = i
+            break
 
-    def value(
-        total_oi, 
-        total_oi_shares, 
-        pos_oi_shares, 
-        debt,
-        price_frame,
-        is_long
-    ):
-        pos_oi = pos_oi_shares * total_oi / total_oi_shares
+    print("now", brownie.chain.time())
+    print("timestamp", feed_infos.market_info[2]['timestamp'][491])
+    print("~~~ exit index ~~~", exit_index)
+    print("max", max_ask)
+    print("min", min_bid)
+    print("ask", entry_ask)
+    print("bid", exit_bid)
+    print("margin_maintenance", margin_maintenance)
 
-        if is_long:
-            val = pos_oi * price_frame
-            val -= min(val, debt)
-        else:
-            val = pos_oi * 2
-            val -= min(val, debt + pos_oi * price_frame )
+    # market.setK(0, { 'from': gov })
+
+    # update_period = market.updatePeriod()
+
+    # brownie.chain.mine(timedelta=position['entrySeconds'])
+
+    # tx_build = ovl_collateral.build(
+    #     market, 
+    #     position['collateral'], 
+    #     position['leverage'], 
+    #     position['is_long'], 
+    #     { 'from': bob }
+    # )
+
+
+    # pos_id = tx_build.events['Build']['positionId']
+    # pos_oi = tx_build.events['Build']['oi']
+    # ( _, _, _, _, pos_oi_shares , pos_debt, pos_cost, _ ) = ovl_collateral.positions(pos_id)
+
+    # brownie.chain.mine(timedelta=position['exitSeconds'])
+
+    # oi = market.oiLong() if position['is_long'] else market.oiShort()
+    # oi_shares = market.oiLongShares() if position['is_long'] else market.oiShortShares()
+
+    # tx_liq = ovl_collateral.liquidate( pos_id, bob, { 'from': bob } )
+
+    # price_index = market.pricePointCurrentIndex()
+
+    # print("price index", price_index)
+
+    # price_point = market.pricePoints(price_index-1)
+
+    # print("price_point", price_point)
+
+    # print("liquidate time", brownie.chain.time())
+
+    # price_index = market.pricePointCurrentIndex()
+    # print("price index", price_index)
+    # price_point = market.pricePoints(price_index-1)
+    # print("price_point", price_point)
+
+
+    # def value(
+    #     total_oi, 
+    #     total_oi_shares, 
+    #     pos_oi_shares, 
+    #     debt,
+    #     price_frame,
+    #     is_long
+    # ):
+    #     pos_oi = pos_oi_shares * total_oi / total_oi_shares
+
+    #     if is_long:
+    #         val = pos_oi * price_frame
+    #         val -= min(val, debt)
+    #     else:
+    #         val = pos_oi * 2
+    #         val -= min(val, debt + pos_oi * price_frame )
         
-        return val
-
-    pos_id = tx_build.events['Build']['positionId']
-    pos_oi = tx_build.events['Build']['oi']
-
-    brownie.chain.mine(timedelta=position['exitSeconds'])
-
-    oi = market.oiLong() if position['is_long'] else market.oiShort()
-    oiShares = market.oiLongShares() if position['is_long'] else market.oiShortShares()
-
-    tx_liq = ovl_collateral.liquidate( pos_id, bob, { 'from': bob } )
-
-    price_index = market.pricePointCurrentIndex()
-
-    print("price index", price_index)
-
-    price_point = market.pricePoints(price_index-1)
-
-    print("price_point", price_point)
-
-    print("liquidate time", brownie.chain.time())
-
-    price_index = market.pricePointCurrentIndex()
-    print("price index", price_index)
-    price_point = market.pricePoints(price_index-1)
-    print("price_point", price_point)
+    #     return val
 
     # print("price index", price_index)
     # print("price_point", price_point)
