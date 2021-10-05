@@ -199,7 +199,6 @@ def comptroller(gov):
             MACRO_WINDOW,        # macro window
             MICRO_WINDOW,        # micro window
             343454218783234,     # k
-            100,                 # levmax
             5e18,                # price frame cap
             .00573e18,           # spread
             UPDATE_PERIOD,       # update period
@@ -212,6 +211,7 @@ def comptroller(gov):
          "OverlayV1OVLCollateral", [
              .06e18,             # margin maintenance
              .5e18,              # margin reward rate
+             100,                # max leverage
          ],
          get_uni_feeds,
         ),

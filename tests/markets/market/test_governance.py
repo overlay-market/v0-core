@@ -217,25 +217,6 @@ def test_set_update_and_compounding_period(
   assert int(current_compounding_period) == int(input_compounding_period)
 
 
-def test_set_leverage_max(
-  market, 
-  gov
-):
-  # test updating for new leverage max
-  input_leverage_max = 100 * .99
-
-  # grab initial leverage max value
-  initial_leverage_max = market.leverageMax()
-
-  # set new leverage max
-  market.setLeverageMax(input_leverage_max, {"from": gov})
-
-  updated_leverage_max = market.leverageMax()
-
-  # test if updated leverage max = new one
-  assert int(updated_leverage_max) == int(input_leverage_max)
-
-
 def test_set_k(
   market,
   gov
@@ -303,7 +284,6 @@ def test_set_everything(
 ):
   # pass in inputs into setEverything function
   input_k = 346888760971066
-  input_leverage_max = 100 * .99
   input_price_frame_cap = 5e19
   input_spread = .00573e19
   input_update_period = 110
@@ -316,7 +296,6 @@ def test_set_everything(
 
   market.setEverything(
     input_k,
-    input_leverage_max,
     input_price_frame_cap,
     input_spread,
     input_update_period,
@@ -330,7 +309,6 @@ def test_set_everything(
 
   # grab all current variables
   current_k = market.k()
-  current_leverage_max = market.leverageMax()
   current_price_frame_cap = market.priceFrameCap()
   current_spread = market.pbnj()
   current_update_period = market.updatePeriod()
@@ -342,8 +320,6 @@ def test_set_everything(
 
   # test all current values to be updated
   assert int(current_k) == int(input_k)
-
-  assert int(current_leverage_max) == int(input_leverage_max)
 
   assert int(current_price_frame_cap) == int(input_price_frame_cap)
 

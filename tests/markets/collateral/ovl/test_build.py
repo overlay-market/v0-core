@@ -165,11 +165,11 @@ def test_build_max_leverage(
     trade_amt = MIN_COLLATERAL*2
 
     tx = ovl_collateral.build(
-        market, trade_amt, market.leverageMax(), is_long, {'from': bob})
+        market, trade_amt, ovl_collateral.maxLeverage(market), is_long, {'from': bob})
     assert isinstance(tx, brownie.network.transaction.TransactionReceipt)
 
     with brownie.reverts(EXPECTED_ERROR_MESSAGE):
-        ovl_collateral.build(market, trade_amt, market.leverageMax() + 1,
+        ovl_collateral.build(market, trade_amt, ovl_collateral.maxLeverage(market) + 1,
                              is_long, {'from': bob})
 
 
