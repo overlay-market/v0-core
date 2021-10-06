@@ -130,8 +130,6 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
         brrrr( _brrrr, _antiBrrrr );
 
-        brrrrdWhen = _now;
-
         if (_fromQueued) {
 
             if (_isLong) __queuedOiLong__ -= _oi;
