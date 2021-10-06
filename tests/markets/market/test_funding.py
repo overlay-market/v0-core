@@ -80,14 +80,16 @@ def test_funding_total_imbalance(
 @given(
     compoundings=strategy('uint256', min_value=1, max_value=100),
     bob_oi=strategy('uint256', min_value=1, max_value=10000),
-    bob_oi=strategy('uint256', min_value=1, max_value=10000),
+    alice_oi=strategy('uint256', min_value=1, max_value=10000),
     is_long=strategy('bool')
 )
 @settings(max_examples=3)
 def test_funding_partial_imbalance(
+    market,
     bob,
     alice,
-    oi,
+    bob_oi,
+    alice_oi,
     ovl_collateral,
     is_long,
     mothership,
@@ -98,12 +100,34 @@ def test_funding_partial_imbalance(
     FEE = mothership.fee() / 1e18
     K = market.k() / 1e18
 
-    oi *= 1e16
+    bob_oi *= 1e16
+    alice_oi *= 1e16
+
+    opposite_position_side = True if is_long != True else False
 
     # calculate expected values before queueing up
+    expected_funding_factor = (1 - (2 * K)) ** compoundings
+
+    bob_expected_oi = (bob_oi / 1e18) - ((bob_oi / 1e18) * FEE)
+
+    alice_expected_oi = (alice_oi / 1e18) - ((alice_oi / 1e18) * FEE)
 
     # Bob & Alice both take opposing positions
+    bob_tx_build = ovl_collateral.build(
+        market,
+        bob_oi,
+        1,
+        is_long,
+        {'from': bob}
+    )
 
+    alice_tx_build = ovl_collateral.build(
+        market,
+        alice_oi,
+        1,
+        opposite_position_side,
+        {'from': bob}
+    )
     # move forward a few blocks
 
     # test proper funding payments made to correct side
