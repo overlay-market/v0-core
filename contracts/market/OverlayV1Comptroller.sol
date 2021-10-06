@@ -150,7 +150,7 @@ abstract contract OverlayV1Comptroller {
         brrrrdWhen = _now;
 
         roll(
-            brrrrdRollers,
+            impactRollers,
             _rollerImpact, 
             _lastMoment,
             impactCycloid
