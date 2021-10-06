@@ -18,9 +18,9 @@ abstract contract OverlayV1Comptroller {
     uint24 public index;
     uint24 public cardinality;
     uint24 public cardinalityNext;
-    Roller[216000] public rollers;
+    ImpactRoller[60] public rollers;
 
-    struct Roller {
+    struct ImpactRoller {
         uint time;
         uint longPressure;
         uint shortPressure;
@@ -39,7 +39,7 @@ abstract contract OverlayV1Comptroller {
         cardinality = 1;
         cardinalityNext = 1;
 
-        rollers[0] = Roller({
+        rollers[0] = ImpactRoller({
             time: block.timestamp,
             longPressure: 0,
             shortPressure: 0
@@ -108,7 +108,7 @@ abstract contract OverlayV1Comptroller {
         uint cap_
     ) {
 
-        (   Roller memory _rollerImpact,
+        (   ImpactRoller memory _rollerImpact,
             uint _lastMoment,
             uint _impact,
             uint _cap,
@@ -131,7 +131,7 @@ abstract contract OverlayV1Comptroller {
         bool _isLong,
         uint _oi
     ) internal view returns (
-        Roller memory rollerNow_,
+        ImpactRoller memory rollerNow_,
         uint lastMoment_,
         uint impact_,
         uint cap_,
@@ -140,8 +140,8 @@ abstract contract OverlayV1Comptroller {
     ) {
 
         (   uint _lastMoment,
-            Roller memory _rollerNow,
-            Roller memory _rollerImpact ) = scry(impactWindow);
+            ImpactRoller memory _rollerNow,
+            ImpactRoller memory _rollerImpact ) = scry(impactWindow);
 
         ( cap_, now_, brrrrd_ ) = oiCap();
 
@@ -191,7 +191,7 @@ abstract contract OverlayV1Comptroller {
     }
 
     function roll (
-        Roller memory _roller,
+        ImpactRoller memory _roller,
         uint _lastMoment
     ) internal {
 
@@ -234,8 +234,8 @@ abstract contract OverlayV1Comptroller {
         uint _ago
     ) internal view returns (
         uint lastMoment_,
-        Roller memory rollerNow_,
-        Roller memory rollerThen_
+        ImpactRoller memory rollerNow_,
+        ImpactRoller memory rollerThen_
     ) {
 
         uint _time = block.timestamp;
@@ -260,8 +260,8 @@ abstract contract OverlayV1Comptroller {
 
         }
 
-        (   Roller memory _beforeOrAt,
-            Roller memory _atOrAfter ) = scryRollers(_target);
+        (   ImpactRoller memory _beforeOrAt,
+            ImpactRoller memory _atOrAfter ) = scryRollers(_target);
 
         if (_beforeOrAt.time == _target) {
 
@@ -295,8 +295,8 @@ abstract contract OverlayV1Comptroller {
     function scryRollers (
         uint target
     ) internal view returns (
-        Roller memory beforeOrAt,
-        Roller memory atOrAfter
+        ImpactRoller memory beforeOrAt,
+        ImpactRoller memory atOrAfter
     ) {
 
         beforeOrAt = rollers[index];
@@ -340,13 +340,13 @@ abstract contract OverlayV1Comptroller {
     }
 
     function binarySearch(
-        Roller[216000] storage self,
+        ImpactRoller[216000] storage self,
         uint32 target,
         uint16 _index,
         uint16 _cardinality
     ) private view returns (
-        Roller memory beforeOrAt,
-        Roller memory atOrAfter
+        ImpactRoller memory beforeOrAt,
+        ImpactRoller memory atOrAfter
     ) {
 
         uint256 l = (_index + 1) % _cardinality; // oldest print
