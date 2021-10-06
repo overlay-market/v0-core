@@ -18,12 +18,18 @@ abstract contract OverlayV1Comptroller {
     uint24 public index;
     uint24 public cardinality;
     uint24 public cardinalityNext;
-    ImpactRoller[60] public rollers;
+    ImpactRoller[60] public impactRollers;
+    BrrrrRoller[40] public brrrrRollers;
 
     struct ImpactRoller {
         uint time;
         uint longPressure;
         uint shortPressure;
+    }
+
+    struct BrrrrRoller {
+        uint time;
+        int brrrr;
     }
 
     uint256 internal staticCap;
@@ -39,7 +45,7 @@ abstract contract OverlayV1Comptroller {
         cardinality = 1;
         cardinalityNext = 1;
 
-        rollers[0] = ImpactRoller({
+        impactRollers[0] = ImpactRoller({
             time: block.timestamp,
             longPressure: 0,
             shortPressure: 0
@@ -55,7 +61,7 @@ abstract contract OverlayV1Comptroller {
 
         require(cardinalityNext < next, 'OVLV1:next<curr');
 
-        for (uint24 i = cardinalityNext; i < next; i++) rollers[i].time = 1;
+        for (uint24 i = cardinalityNext; i < next; i++) impactRollers[i].time = 1;
 
         cardinalityNext = next;
 
@@ -205,17 +211,17 @@ abstract contract OverlayV1Comptroller {
 
             if (_index < _cardinality) {
 
-                rollers[_index] = _roller;
+                impactRollers[_index] = _roller;
 
             } else if (_cardinality < _cardinalityNext) {
 
                 _cardinality += 1;
-                rollers[_index] = _roller;
+                impactRollers[_index] = _roller;
 
             } else {
 
                 _index = 0;
-                rollers[_index] = _roller;
+                impactRollers[_index] = _roller;
 
             }
 
@@ -224,7 +230,7 @@ abstract contract OverlayV1Comptroller {
 
         } else {
 
-            rollers[_index] = _roller;
+            impactRollers[_index] = _roller;
 
         }
 
@@ -240,7 +246,7 @@ abstract contract OverlayV1Comptroller {
 
         uint _time = block.timestamp;
 
-        rollerNow_ = rollers[index];
+        rollerNow_ = impactRollers[index];
 
         lastMoment_ = rollerNow_.time;
 
@@ -299,7 +305,7 @@ abstract contract OverlayV1Comptroller {
         ImpactRoller memory atOrAfter
     ) {
 
-        beforeOrAt = rollers[index];
+        beforeOrAt = impactRollers[index];
 
         // if the target is at or after the newest roller, we can return early
         if (beforeOrAt.time <= target) {
@@ -322,16 +328,16 @@ abstract contract OverlayV1Comptroller {
 
         // now, set before to the oldest roller
         uint _index = ( index + 1 ) % cardinality;
-        beforeOrAt = rollers[_index];
+        beforeOrAt = impactRollers[_index];
         if ( beforeOrAt.time <= 1 ) {
 
-            beforeOrAt = rollers[0];
+            beforeOrAt = impactRollers[0];
 
         }
 
         if (target <= beforeOrAt.time) return ( beforeOrAt, beforeOrAt);
         else return binarySearch(
-            rollers,
+            impactRollers,
             uint32(target),
             uint16(index),
             uint16(cardinality)
