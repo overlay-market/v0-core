@@ -364,12 +364,12 @@ abstract contract OverlayV1Comptroller {
         while (true) {
             i = (l + r) / 2;
 
-            beforeOrAt_ = self[i % CHORD];
+            beforeOrAt_ = self[ i % CHORD ];
 
             // we've landed on an uninitialized roller, keep searching
             if (beforeOrAt_.time <= 1) { l = i + 1; continue; }
 
-            atOrAfter_ = self[(i + 1) % _cycloid];
+            atOrAfter_ = self[ (i + 1) % CHORD ];
 
             bool _targetAtOrAfter = beforeOrAt_.time <= _target;
 
