@@ -50,8 +50,9 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     event Liquidate(
         uint256 positionId,
-        address rewarded,
-        uint256 reward
+        uint256 oi,
+        uint256 reward,
+        address rewarded
     );
 
     event Update(
@@ -277,7 +278,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         uint _totalPosShares = totalSupply(_positionId);
 
         uint _userOiShares = _shares;
-        uint _userNotional = _shares * pos.notional(_priceFrame, _oi, _oiShares) / _totalPosShares;
+        uint _userNotional = _shares * pos.notional(_oi, _oiShares, _priceFrame) / _totalPosShares;
         uint _userDebt = _shares * pos.debt / _totalPosShares;
         uint _userCost = _shares * pos.cost / _totalPosShares;
         uint _userOi = _shares * pos.oi(_oi, _oiShares) / _totalPosShares;
@@ -355,13 +356,13 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         MarketInfo memory _marketInfo = marketInfo[pos.market];
 
         require(pos.isLiquidatable(
-            _priceFrame,
             _oi,
             _oiShares,
+            _priceFrame,
             _marketInfo.marginMaintenance
         ), "OverlayV1: position not liquidatable");
 
-        uint _value = pos.value(_priceFrame, _oi, _oiShares);
+        uint _value = pos.value(_oi, _oiShares, _priceFrame);
 
         IOverlayV1Market(pos.market).exitOI(
             _isLong,
@@ -381,7 +382,12 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         liquidations += _value - _toReward;
 
-        emit Liquidate(_positionId, _rewardsTo, _toReward);
+        emit Liquidate(
+            _positionId,
+            _oi,
+            _toReward,
+            _rewardsTo
+        );
 
         ovl.burn(address(this), pos.cost - _value);
         ovl.transfer(_rewardsTo, _toReward);
