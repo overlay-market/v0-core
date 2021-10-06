@@ -136,7 +136,44 @@ def test_liquidate_revert_unwind_after_liquidation(
     rewards,
     position,
 ):
-    pass
+    market.setK(0, {'from': gov})
+
+    margin_maintenance = ovl_collateral.marginMaintenance(market) / 1e18
+
+    # Mine to the entry time then build
+    brownie.chain.mine(timestamp=position["entry"]["timestamp"])
+    tx_build = ovl_collateral.build(
+        market,
+        position['collateral'],
+        position['leverage'],
+        position['is_long'],
+        {'from': bob}
+    )
+    pos_id = tx_build.events['Build']['positionId']
+    (_, _, _, pos_price_idx, pos_oi_shares, pos_debt, pos_cost,
+     pos_compounding) = ovl_collateral.positions(pos_id)
+
+    # mine a bit more then update to settle
+    brownie.chain.mine(timedelta=market.updatePeriod()+1)
+    market.update({"from": gov})
+    entry_bid, entry_ask, entry_price = market.pricePoints(pos_price_idx)
+
+    brownie.chain.mine(timestamp=position["liquidation"]["timestamp"])
+
+    tx_liq = ovl_collateral.liquidate(pos_id, alice, {'from': alice})
+
+    (_, _, _, _, pos_oi_shares_after, _, _,
+     _) = ovl_collateral.positions(pos_id)
+
+    assert pos_oi_shares_after == 0
+
+    EXPECTED_ERROR_MESSAGE = "OVLV1:liquidated"
+    with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+        ovl_collateral.unwind(
+            pos_id,
+            pos_oi_shares,
+            {"from": bob}
+            )
 
 
 @pytest.mark.parametrize('position', POSITIONS)
