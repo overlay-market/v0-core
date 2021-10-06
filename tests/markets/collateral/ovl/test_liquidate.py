@@ -1,8 +1,5 @@
-import os
 import brownie
-import datetime
 import pytest
-import json
 from brownie.test import given, strategy
 from pytest import approx
 
@@ -25,6 +22,13 @@ POSITIONS = [
         "collateral": COLLATERAL,
         "leverage": 10,
         "is_long": False,
+    },
+    {
+        "entry": {"timestamp": 1633504052, "price": 319655307482755},
+        "liquidation": {"timestamp": 1633508492, "price": 312165042505384},
+        "collateral": COLLATERAL,
+        "leverage": 12,
+        "is_long": True,
     },
 ]
 
@@ -103,5 +107,65 @@ def test_liquidate_success_zero_impact_zero_funding(
     assert expected_value < pos_oi_shares * margin_maintenance
 
 
-def test_no_unwind_after_liquidate():
+@pytest.mark.parametrize('position', POSITIONS)
+def test_liquidate_revert_not_liquidatable(
+    mothership,
+    feed_infos,
+    ovl_collateral,
+    token,
+    market,
+    alice,
+    gov,
+    bob,
+    rewards,
+    position,
+):
+    pass
+
+
+@pytest.mark.parametrize('position', POSITIONS)
+def test_liquidate_revert_unwind_after_liquidation(
+    mothership,
+    feed_infos,
+    ovl_collateral,
+    token,
+    market,
+    alice,
+    gov,
+    bob,
+    rewards,
+    position,
+):
+    pass
+
+
+@pytest.mark.parametrize('position', POSITIONS)
+def test_liquidate_pnl_burned(
+    mothership,
+    feed_infos,
+    ovl_collateral,
+    token,
+    market,
+    alice,
+    gov,
+    bob,
+    rewards,
+    position,
+):
+    pass
+
+
+@pytest.mark.parametrize('position', POSITIONS)
+def test_liquidate_rewards_and_fees(
+    mothership,
+    feed_infos,
+    ovl_collateral,
+    token,
+    market,
+    alice,
+    gov,
+    bob,
+    rewards,
+    position,
+):
     pass
