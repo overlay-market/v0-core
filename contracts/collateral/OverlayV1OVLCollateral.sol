@@ -49,8 +49,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     );
 
     event Liquidate(
-        uint256 positionId, 
-        address rewarded, 
+        uint256 positionId,
+        address rewarded,
         uint256 reward
     );
 
@@ -269,7 +269,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             uint _priceFrame,
             bool _fromQueued ) = IOverlayV1Market(pos.market)
                 .exitData(
-                    pos.isLong, 
+                    pos.isLong,
                     pos.pricePoint,
                     pos.compounding
                 );
@@ -347,7 +347,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             uint _priceFrame,
             bool _fromQueued ) = IOverlayV1Market(pos.market)
                 .exitData(
-                    _isLong, 
+                    _isLong,
                     pos.pricePoint,
                     pos.compounding
                 );
@@ -381,6 +381,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         liquidations += _value - _toReward;
 
+        emit Liquidate(_positionId, _rewardsTo, _toReward);
+
         ovl.burn(address(this), pos.cost - _value);
         ovl.transfer(_rewardsTo, _toReward);
 
@@ -396,7 +398,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         IOverlayV1Market _market = IOverlayV1Market(pos.market);
 
-        (   uint _oi, 
+        (   uint _oi,
             uint _oiShares,
             uint _priceFrame ) = _market
             .positionInfo(
