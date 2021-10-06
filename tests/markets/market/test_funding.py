@@ -44,6 +44,7 @@ def test_funding_total_imbalance(
     )
 
     oi_queued = (market.queuedOiLong()
+
                  if is_long else market.queuedOiShort()) / 1e18
 
     assert oi_queued == approx(expected_oi), 'queued oi different to expected'
@@ -76,6 +77,13 @@ def test_funding_total_imbalance(
         expected_oi_after_payment), 'oi after funding payment different than expected'
 
 
+@given(
+    compoundings=strategy('uint256', min_value=1, max_value=100),
+    bob_oi=strategy('uint256', min_value=1, max_value=10000),
+    bob_oi=strategy('uint256', min_value=1, max_value=10000),
+    is_long=strategy('bool')
+)
+@settings(max_examples=3)
 def test_funding_partial_imbalance(
     bob,
     alice,
