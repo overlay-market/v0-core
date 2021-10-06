@@ -21,7 +21,7 @@ POSITIONS = [
         "entrySeconds": 15000,              # seconds after test begins 
         "entryPrice": 318889092879897,
         # "exitSeconds": 1633485143 - 3600,               # seconds after entry
-        "exitSeconds": 30000,               # seconds after entry
+        "exitSeconds": 13978,               # seconds after entry
         "exitPrice": 304687017011120,
         "collateral": COLLATERAL,
         "leverage": 10,
@@ -62,6 +62,9 @@ def test_liquidate_success_zero_impact_zero_funding(
     position,
 ):
 
+    now = brownie.chain.time()
+    print("now", now)
+
     market.setK(0, { 'from': gov })
 
     margin_maintenance = ovl_collateral.marginMaintenance(market) / 1e18
@@ -71,6 +74,26 @@ def test_liquidate_success_zero_impact_zero_funding(
     # bidExit = askEntry * (MM + 1 - 1/L) 
     # find short liquidation price
     # askExit = bidEntry * ( 1 - MM + 1/L )
+
+    start = 318920981789185 / 1e18
+    liquidation_price = start * ( margin_maintenance + 1 - 1 / position['leverage'] )
+
+    liq_ix = None
+    for i in range(len(feed_infos.market_info[2]['bids'])):
+        bid = feed_infos.market_info[2]['bids'][i]
+        if bid < liquidation_price:
+            liq_ix = i
+            break
+    
+    liq_time = feed_infos.market_info[2]['timestamp'][liq_ix]
+
+    next = feed_infos.market_info[2]['bids'][liq_ix+1]
+    print("next", next)
+
+    print("liquidation price", liquidation_price)
+    print("liquidation index", liq_ix)
+    print("liquidation time", liq_time, liq_time - now)
+
     
 
     brownie.chain.mine(timedelta=position['entrySeconds'])
@@ -116,22 +139,38 @@ def test_liquidate_success_zero_impact_zero_funding(
 
     tx_liq = ovl_collateral.liquidate( pos_id, bob, { 'from': bob } )
 
-    burn = None
-    reward = None
-    for i in range(len(tx_liq.events['Transfer'])):
-        transfer = tx_liq.events['Transfer'][i]
-        if transfer['to'] == bob:
-            reward = transfer['value'] / 1e18
-        if transfer['to'] == '0x0000000000000000000000000000000000000000':
-            burn = transfer['value'] / 1e18
+    price_index = market.pricePointCurrentIndex()
 
-    assert burn == approx(expected_burn), 'liquidate burn amount different than expected'
+    print("price index", price_index)
 
-    assert reward == approx(), 'liquidate reward differen than expected'
+    price_point = market.pricePoints(price_index-2)
 
-    liquidations = ovl_collateral.liquidations() / 1e18
+    print("price_point", price_point)
 
-    assert liquidations == approx(expected_liquidations)
+    price_point = market.pricePoints(price_index-1)
+
+    print("price_point", price_point)
+
+    _, _, _, pos_price_ix, pos_oi_shares , pos_debt, pos_cost, pos_compounding = ovl_collateral.positions(pos_id)
+
+    print("pos shares", pos_oi_shares)
+
+    # burn = None
+    # reward = None
+    # for i in range(len(tx_liq.events['Transfer'])):
+    #     transfer = tx_liq.events['Transfer'][i]
+    #     if transfer['to'] == bob 
+    #         reward = transfer['value'] / 1e18
+    #     if transfer['to'] == '0x0000000000000000000000000000000000000000':
+    #         burn = transfer['value'] / 1e18
+
+    # assert burn == approx(expected_burn), 'liquidate burn amount different than expected'
+
+    # assert reward == approx(), 'liquidate reward differen than expected'
+
+    # liquidations = ovl_collateral.liquidations() / 1e18
+
+    # assert liquidations == approx(expected_liquidations)
 
 
     # price_index = market.pricePointCurrentIndex()
