@@ -61,11 +61,7 @@ contract ComptrollerShim is OverlayV1Comptroller {
 
             ( int _brrrrd, uint _now ) = getBrrrrd();
 
-            brrrr(
-                _brrrr[i], 
-                _antiBrrrr[i], 
-                _brrrrd
-            );
+            brrrr( _brrrr[i], _antiBrrrr[i] );
 
             brrrrdWhen = _now;
 

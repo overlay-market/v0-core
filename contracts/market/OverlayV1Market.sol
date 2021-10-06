@@ -128,7 +128,7 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
         ( int _brrrrd, uint _now )= getBrrrrd();
 
-        brrrr(_brrrr, _antiBrrrr, _brrrrd);
+        brrrr( _brrrr, _antiBrrrr );
 
         brrrrdWhen = _now;
 

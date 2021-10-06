@@ -47,8 +47,13 @@ abstract contract OverlayV1Comptroller {
     uint256 public impactWindow;
     uint256 public lmbda;
 
+    uint256[2] public brrrrdAccumulatooor;
+    uint256 constant brrrrdWindowMicro = 1 days;
+    uint256 public brrrrdWindowMacro;
     uint256 public brrrrdWhen;
-    uint256 public expectedBrrrr;
+    uint256 public brrrrdExpected;
+    uint256 public brrrrdFiling;
+
 
     constructor () {
 
@@ -72,9 +77,41 @@ abstract contract OverlayV1Comptroller {
 
     function brrrr (
         uint _brrrr,
-        uint _antiBrrrr,
-        int _brrrrd
-    ) internal { }
+        uint _antiBrrrr
+    ) internal { 
+
+        uint _now = block.timestamp;
+        uint _brrrrdFiling = brrrrdFiling;
+
+        if ( _now > _brrrrdFiling ) { // time to roll in the brrrrr
+
+            uint _brrrrdCycloid = brrrrdCycloid;
+
+            Roller memory _roller = brrrrdRollers[_brrrrdCycloid];
+
+            uint _lastMoment = _roller.time;
+
+            _roller.time = _brrrrdFiling;
+            _roller.ying += _brrrr;
+            _roller.yang += _brrrr;
+
+            brrrrdCycloid = roll(brrrrdRollers, _roller, _lastMoment, _brrrrdCycloid);
+
+            brrrrdAccumulatooor[0] = _brrrr;
+            brrrrdAccumulatooor[1] = _antiBrrrr;
+
+            uint _brrrrdWindowMicro = brrrrdWindowMicro;
+
+            brrrrdFiling += ( ( _now - _brrrrdFiling ) / _brrrrdWindowMicro ) * _brrrrdWindowMicro;
+
+        } else { // add to the brrrr accumulator
+
+            brrrrdAccumulatooor[0] += _brrrr;
+            brrrrdAccumulatooor[1] += _antiBrrrr;
+
+        }
+
+    }
 
     function getBrrrrd () internal view returns (
         int brrrrd_,
@@ -121,7 +158,7 @@ abstract contract OverlayV1Comptroller {
 
         impact_ = _oi.mulUp(_impact);
 
-        brrrr(0, impact_, _brrrrd);
+        brrrr( 0, impact_ );
 
         cap_ = _cap;
 

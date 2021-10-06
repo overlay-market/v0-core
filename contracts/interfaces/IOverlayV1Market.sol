@@ -141,7 +141,7 @@ interface IOverlayV1Market is IERC1155 {
         uint256 _impactWindow,
         uint256 _staticCap,
         uint256 _lmbda,
-        uint256 _brrrrFade
+        uint256 _brrrrExpected
     ) external;
 
     function setPeriods(
@@ -170,7 +170,7 @@ interface IOverlayV1Market is IERC1155 {
         uint256 _impactWindow,
         uint256 _staticCap,
         uint256 _lmbda,
-        uint256 _brrrrFade
+        uint256 _brrrrExpected
     ) external;
 
 }
