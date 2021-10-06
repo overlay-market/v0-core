@@ -381,20 +381,20 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         (  ,oiShort_,,,, ) = oi();
     }
 
-    function queuedOiLong () external view returns (uint256 queuedOiLong_) {
-        ( ,,,,queuedOiLong_, ) = oi();
-    }
-
-    function queuedOiShort () external view returns (uint256 queuedOiShort_) {
-        ( ,,,,,queuedOiShort_ ) = oi();
-    }
-
     function oiLongShares () external view returns (uint256 oiLongShares_) {
         ( ,,oiLongShares_,,, ) = oi();
     }
 
     function oiShortShares () external view returns (uint256 oiShortShares_) {
         ( ,,,oiShortShares_,, ) = oi();
+    }
+
+    function queuedOiLong () external view returns (uint256 queuedOiLong_) {
+        ( ,,,,queuedOiLong_, ) = oi();
+    }
+
+    function queuedOiShort () external view returns (uint256 queuedOiShort_) {
+        ( ,,,,,queuedOiShort_ ) = oi();
     }
 
     function positionInfo (
