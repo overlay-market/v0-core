@@ -258,9 +258,9 @@ library Position {
     /// @dev is true when position value <= 0
     function isUnderwater(
         Info storage self,
-        uint256 priceFrame,
         uint256 totalOi,
-        uint256 totalOiShares
+        uint256 totalOiShares,
+        uint256 priceFrame
     ) internal view returns (bool) {
 
         Info memory _self = self;
@@ -275,12 +275,12 @@ library Position {
     }
 
     /// @notice Computes the notional of a position
-    /// @dev Floors to _self.debt, so won't properly compute if _self is underwater
+    /// @dev Floors to _self.debt if value <= 0
     function notional(
         Info storage self,
-        uint256 priceFrame,
         uint256 totalOi,
-        uint256 totalOiShares
+        uint256 totalOiShares,
+        uint256 priceFrame
     ) internal view returns (uint256) {
 
         Info memory _self = self;
@@ -298,9 +298,9 @@ library Position {
     /// @dev ceils uint256.max if position value <= 0
     function openLeverage(
         Info storage self,
-        uint256 priceFrame,
         uint256 totalOi,
-        uint256 totalOiShares
+        uint256 totalOiShares,
+        uint256 priceFrame
     ) internal view returns (uint) {
 
         Info memory _self = self;
@@ -315,12 +315,12 @@ library Position {
     }
 
     /// @notice Computes the open margin of a position
-    /// @dev floors zero if position value <= 0; equiv to 1 / open leverage
+    /// @dev floors zero if position value <= 0
     function openMargin(
         Info storage self,
-        uint256 priceFrame,
         uint256 totalOi,
-        uint256 totalOiShares
+        uint256 totalOiShares,
+        uint256 priceFrame
     ) internal view returns (uint) {
 
         Info memory _self = self;
@@ -335,7 +335,7 @@ library Position {
     }
 
     /// @notice Whether a position can be liquidated
-    /// @dev is true when open margin < maintenance margin
+    /// @dev is true when value < maintenance margin
     function isLiquidatable(
         Info storage self,
         uint256 totalOi,
@@ -357,8 +357,7 @@ library Position {
     }
 
     /// @notice Computes the liquidation price of a position
-    /// @dev TODO: ... function liquidationPrice()
-
+    /// @dev price when value < maintenance margin
     function liquidationPrice(
         Info storage self,
         uint256 totalOi,

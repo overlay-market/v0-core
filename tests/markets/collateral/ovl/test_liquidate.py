@@ -25,9 +25,9 @@ POSITIONS = [
     },
     {
         "entry": {"timestamp": 1633504052, "price": 319655307482755},
-        "liquidation": {"timestamp": 1633508492, "price": 312165042505384},
+        "liquidation": {"timestamp": 1633504112, "price": 314983505945323},
         "collateral": COLLATERAL,
-        "leverage": 12,
+        "leverage": 14,
         "is_long": True,
     },
 ]
@@ -141,6 +141,60 @@ def test_liquidate_revert_unwind_after_liquidation(
 
 @pytest.mark.parametrize('position', POSITIONS)
 def test_liquidate_pnl_burned(
+    mothership,
+    feed_infos,
+    ovl_collateral,
+    token,
+    market,
+    alice,
+    gov,
+    bob,
+    rewards,
+    position,
+):
+    market.setK(0, {'from': gov})
+
+    # Mine to the entry time then build
+    brownie.chain.mine(timestamp=position["entry"]["timestamp"])
+    tx_build = ovl_collateral.build(
+        market,
+        position['collateral'],
+        position['leverage'],
+        position['is_long'],
+        {'from': bob}
+    )
+    pos_id = tx_build.events['Build']['positionId']
+    (_, _, _, pos_price_idx, pos_oi_shares, pos_debt, pos_cost,
+     _) = ovl_collateral.positions(pos_id)
+
+    # mine a bit more then update to settle
+    brownie.chain.mine(timedelta=market.updatePeriod()+1)
+    market.update({"from": gov})
+    entry_bid, entry_ask, _ = market.pricePoints(pos_price_idx)
+
+    brownie.chain.mine(timestamp=position["liquidation"]["timestamp"])
+    tx_liq = ovl_collateral.liquidate(pos_id, alice, {'from': alice})
+
+    # Check the price we liquidated at ...
+    liq_bid, liq_ask, _ = market.pricePoints(
+        market.pricePointCurrentIndex()-1)
+
+    # calculate value and make sure it should have been liquidatable
+    price_frame = liq_bid/entry_ask if position["is_long"] \
+        else liq_ask/entry_bid
+    expected_value = value(pos_oi_shares, pos_oi_shares, pos_oi_shares,
+                           pos_debt, price_frame, position["is_long"])
+
+    expected_burn = pos_cost - expected_value
+    for _, v in enumerate(tx_liq.events['Transfer']):
+        if v['to'] == '0x0000000000000000000000000000000000000000':
+            act_burn = v['value']
+
+    assert int(expected_burn) == approx(act_burn)
+
+
+@pytest.mark.parametrize('position', POSITIONS)
+def test_liquidate_oi_removed(
     mothership,
     feed_infos,
     ovl_collateral,
