@@ -60,7 +60,7 @@ library Position {
 
         } else { // oi * (2 - priceFrame) - debt
 
-            val_ = __oi * 2;
+            val_ = __oi.mulDown(2e18);
             val_ -= Math.min(val_, _self.debt + __oi.mulDown(priceFrame)); // floor to 0
 
         }
@@ -238,9 +238,9 @@ library Position {
     /// @dev Floors to zero, so won't properly compute if self is underwater
     function value(
         Info storage self,
-        uint256 priceFrame,
         uint256 totalOi,
-        uint256 totalOiShares
+        uint256 totalOiShares,
+        uint256 priceFrame
     ) internal view returns (uint256) {
 
         Info memory _self = self;
@@ -338,9 +338,9 @@ library Position {
     /// @dev is true when open margin < maintenance margin
     function isLiquidatable(
         Info storage self,
-        uint256 priceFrame,
         uint256 totalOi,
         uint256 totalOiShares,
+        uint256 priceFrame,
         uint256 marginMaintenance
     ) internal view returns (bool) {
 
