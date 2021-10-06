@@ -30,17 +30,17 @@ contract ComptrollerShim is OverlayV1Comptroller {
         uint __shortPressure
     ) public {
 
-        rollers[index].time = __timestamp;
-        rollers[index].longPressure = __longPressure;
-        rollers[index].shortPressure = __shortPressure;
+        impactRollers[index].time = __timestamp;
+        impactRollers[index].longPressure = __longPressure;
+        impactRollers[index].shortPressure = __shortPressure;
 
     }
 
     function viewScry(
         uint _ago
     ) public view returns (
-        Roller memory rollerNow_,
-        Roller memory rollerThen_
+        ImpactRoller memory rollerNow_,
+        ImpactRoller memory rollerThen_
     ) {
 
         uint lastMoment;
