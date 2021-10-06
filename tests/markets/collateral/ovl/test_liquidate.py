@@ -206,7 +206,35 @@ def test_liquidate_oi_removed(
     rewards,
     position,
 ):
-    pass
+    market.setK(0, {'from': gov})
+
+    # Mine to the entry time then build
+    brownie.chain.mine(timestamp=position["entry"]["timestamp"])
+    tx_build = ovl_collateral.build(
+        market,
+        position['collateral'],
+        position['leverage'],
+        position['is_long'],
+        {'from': bob}
+    )
+    pos_id = tx_build.events['Build']['positionId']
+    (_, _, _, pos_price_idx, pos_oi_shares, pos_debt, pos_cost,
+     _) = ovl_collateral.positions(pos_id)
+
+    qoi_before = market.queuedOiLong() if position["is_long"] \
+        else market.queuedOiShort()
+
+    assert qoi_before == pos_oi_shares
+
+    brownie.chain.mine(timestamp=position["liquidation"]["timestamp"])
+    _ = ovl_collateral.liquidate(pos_id, alice, {'from': alice})
+
+    oi_after = market.oiLong() if position["is_long"] else market.oiShort()
+    qoi_after = market.queuedOiLong() if position["is_long"] \
+        else market.queuedOiShort()
+
+    assert qoi_after == 0
+    assert oi_after == 0
 
 
 @pytest.mark.parametrize('position', POSITIONS)
