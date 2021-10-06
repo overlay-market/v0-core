@@ -63,8 +63,6 @@ contract ComptrollerShim is OverlayV1Comptroller {
 
             brrrr( _brrrr[i], _antiBrrrr[i] );
 
-            brrrrdWhen = _now;
-
         }
 
     }

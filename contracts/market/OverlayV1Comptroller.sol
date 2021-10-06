@@ -50,7 +50,6 @@ abstract contract OverlayV1Comptroller {
     uint256[2] public brrrrdAccumulatooor;
     uint256 constant brrrrdWindowMicro = 1 days;
     uint256 public brrrrdWindowMacro;
-    uint256 public brrrrdWhen;
     uint256 public brrrrdExpected;
     uint256 public brrrrdFiling;
 
@@ -68,8 +67,6 @@ abstract contract OverlayV1Comptroller {
             ying: 0,
             yang: 0
         });
-
-        brrrrdWhen = block.timestamp;
 
     }
 
@@ -146,8 +143,6 @@ abstract contract OverlayV1Comptroller {
             uint _cap,
             uint _now,
             int _brrrrd ) = _intake(_isLong, _oi);
-
-        brrrrdWhen = _now;
 
         roll(
             impactRollers,
