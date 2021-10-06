@@ -7,34 +7,39 @@ from brownie import \
     interface, \
     accounts
 
+START = chain.time()
+ONE_DAY = 86400
+
 def reflect_feed(path):
 
     base = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.normpath(os.path.join(base, path + '_raw_uni.json'))) as f:
         feed = json.load(f)
 
-    now = chain[-1].timestamp
-    earliest = feed[-1]['observation'][0]
-    latest = feed[0]['observation'][0]
-    diff = 0
-
     feed.reverse()
+
+    chain.mine(timestamp=START)
+    now = chain.time()
+    earliest = feed[0]['observation'][0]
+
+    diff = 0
+    print("len feed", len(feed))
+
+    print("feed12",feed[311])
 
     obs = []
     shims = []
 
-    feed = feed[:300]
+    mock_start = now - 3600
 
-    # bite sized pieces to feed solidity
-    feed = [feed[i:i+300] for i in range(0, len(feed), 300)]
-    for fd in feed:
-        obs.append([])
-        shims.append([])
-        for f in fd:
-            diff = f['shim'][0] - earliest
-            f['observation'][0] = f['shim'][0] = now + diff
-            obs[len(obs)-1].append(f['observation'])
-            shims[len(shims)-1].append(f['shim'])
+    for f in feed:
+        ob = f['observation']
+        shim = f['shim']
+        if earliest + ONE_DAY < ob[0]: break
+        time_diff = ob[0] - earliest
+        ob[0] = shim[0] = mock_start + time_diff
+        obs.append(ob)
+        shims.append(shim)
 
     factory = accounts[6].deploy(getattr(brownie, 'UniswapV3FactoryMock'))
 
@@ -45,16 +50,9 @@ def reflect_feed(path):
 
     mock = IUniswapV3OracleMock(factory.allPools(0))
 
-    for i in range(len(obs)): mock.loadObservations( obs[i], shims[i], { 'from': accounts[0] } )
+    mock.loadObservations( obs, shims, { 'from': accounts[0] } )
 
-    chain.mine(timedelta=3601)
-
-
-    start = obs[0][0][0]
-    end = obs[-1][-1][0]
-    breadth = end - start - 3600
-
-    # set end after adjusting the timestamps
+    breadth = obs[-1][0] - obs[0][0] - 3600
 
     timestamps = []
     ten_mins = []
@@ -65,32 +63,30 @@ def reflect_feed(path):
 
     for x in range(0, breadth, 60):
 
-        time = brownie.chain.time()
+        time = START + x
 
-        print("time", time, "end", end)
+        print("time", time, "x", x, "breadth", breadth)
+        
+        brownie.chain.mine(timestamp=time)
 
         pbnj = .00573
 
-        if time < end:
-            timestamps.append(time)
-            obs = mock.observe([3600, 600, 1, 0])
+        ob = mock.observe([3600, 600, 1, 0])
 
-            ten_min = 1.0001 ** (( obs[0][3] - obs[0][1] ) / 600)
-            one_hr = 1.0001 ** (( obs[0][3] - obs[0][0] ) / 3600)
-            spot = 1.0001 ** (( obs[0][3] - obs[0][2] ))
-            bid = min(ten_min, one_hr) * math.exp(-pbnj)
-            ask = max(ten_min, one_hr) * math.exp(pbnj)
+        ten_min = 1.0001 ** (( ob[0][3] - ob[0][1] ) / 600)
+        one_hr = 1.0001 ** (( ob[0][3] - ob[0][0] ) / 3600)
+        spot = 1.0001 ** (( ob[0][3] - ob[0][2] ))
+        bid = min(ten_min, one_hr) * math.exp(-pbnj)
+        ask = max(ten_min, one_hr) * math.exp(pbnj)
 
-            ten_mins.append(ten_min)
-            one_hrs.append(one_hr)
-            spots.append(spot)
-            bids.append(bid)
-            asks.append(ask)
+        timestamps.append(time)
+        ten_mins.append(ten_min)
+        one_hrs.append(one_hr)
+        spots.append(spot)
+        bids.append(bid)
+        asks.append(ask)
 
-        else: break
         
-        brownie.chain.mine(timedelta=60)
-
     reflected = {
         'timestamp': timestamps,
         'one_hr': one_hrs,
@@ -100,8 +96,16 @@ def reflect_feed(path):
         'asks': asks
     }
 
+    mock = {
+        'observations': obs,
+        'shims': shims
+    }
+
     with open(os.path.normpath(os.path.join(base, path + '_reflected.json')), 'w+') as f:
         json.dump(reflected, f) 
+
+    with open(os.path.normpath(os.path.join(base, path + '_raw_uni_framed.json')), 'w+') as f:
+        json.dump(mock, f) 
 
 def main():
 

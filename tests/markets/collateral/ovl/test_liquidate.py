@@ -6,6 +6,10 @@ import json
 from brownie.test import given, strategy
 from pytest import approx
 
+def print_logs(tx):
+    for i in range(len(tx.events['log'])):
+        print(tx.events['log'][i]['k'] + ": " + str(tx.events['log'][i]['v']))
+
 MIN_COLLATERAL = 1e14  # min amount to build
 COLLATERAL = 10*1e18
 TOKEN_DECIMALS = 18
@@ -14,15 +18,35 @@ OI_CAP = 800000e18
 
 POSITIONS = [
     {
-        "entrySeconds": 15000, 
+        "entrySeconds": 15000,              # seconds after test begins 
         "entryPrice": 318889092879897,
-        "exitSeconds": 25775,
+        # "exitSeconds": 1633485143 - 3600,               # seconds after entry
+        "exitSeconds": 13978,               # seconds after entry
         "exitPrice": 304687017011120,
         "collateral": COLLATERAL,
-        "leverage": 20,
+        "leverage": 10,
         "is_long": True,
     },
 ]
+
+def value(
+    total_oi, 
+    total_oi_shares, 
+    pos_oi_shares, 
+    debt,
+    price_frame,
+    is_long
+):
+    pos_oi = pos_oi_shares * total_oi / total_oi_shares
+
+    if is_long:
+        val = pos_oi * price_frame
+        val -= min(val, debt)
+    else:
+        val = pos_oi * 2
+        val -= min(val, debt + pos_oi * price_frame )
+    
+    return val
 
 @pytest.mark.parametrize('position', POSITIONS)
 def test_liquidate_success_zero_impact_zero_funding(
@@ -38,58 +62,116 @@ def test_liquidate_success_zero_impact_zero_funding(
     position,
 ):
 
-    max_ask = max(feed_infos.market_info[2]['asks'])
-    min_bid = min(feed_infos.market_info[2]['bids'])
+    now = brownie.chain.time()
+    print("now", now)
+
+    market.setK(0, { 'from': gov })
 
     margin_maintenance = ovl_collateral.marginMaintenance(market) / 1e18
     margin_reward = ovl_collateral.marginRewardRate(market) / 1e18
 
-    # bid = ask * (MM + 1 - 1/L)
-    
-    entry_ask = 318889092879897 / 1e18
-    exit_bid = entry_ask * ( margin_maintenance + 1 - 1/10)
+    # find long liquidation price 
+    # bidExit = askEntry * (MM + 1 - 1/L) 
+    # find short liquidation price
+    # askExit = bidEntry * ( 1 - MM + 1/L )
 
+    start = 318920981789185 / 1e18
+    liquidation_price = start * ( margin_maintenance + 1 - 1 / position['leverage'] )
+
+    liq_ix = None
     for i in range(len(feed_infos.market_info[2]['bids'])):
         bid = feed_infos.market_info[2]['bids'][i]
-        if bid < exit_bid:
-            print("~~~ ~~~~ ~~~~ bid", bid)
-            exit_index = i
+        if bid < liquidation_price:
+            liq_ix = i
             break
+    
+    liq_time = feed_infos.market_info[2]['timestamp'][liq_ix]
 
-    print("now", brownie.chain.time())
-    print("timestamp", feed_infos.market_info[2]['timestamp'][491])
-    print("~~~ exit index ~~~", exit_index)
-    print("max", max_ask)
-    print("min", min_bid)
-    print("ask", entry_ask)
-    print("bid", exit_bid)
-    print("margin_maintenance", margin_maintenance)
+    next = feed_infos.market_info[2]['bids'][liq_ix+1]
+    print("next", next)
 
-    # market.setK(0, { 'from': gov })
+    print("liquidation price", liquidation_price)
+    print("liquidation index", liq_ix)
+    print("liquidation time", liq_time, liq_time - now)
 
-    # update_period = market.updatePeriod()
+    
 
-    # brownie.chain.mine(timedelta=position['entrySeconds'])
+    brownie.chain.mine(timedelta=position['entrySeconds'])
 
-    # tx_build = ovl_collateral.build(
-    #     market, 
-    #     position['collateral'], 
-    #     position['leverage'], 
-    #     position['is_long'], 
-    #     { 'from': bob }
-    # )
+    tx_build = ovl_collateral.build(
+        market, 
+        position['collateral'], 
+        position['leverage'], 
+        position['is_long'], 
+        { 'from': bob }
+    )
 
+    pos_id = tx_build.events['Build']['positionId']
+    _, _, _, pos_price_ix, pos_oi_shares , pos_debt, pos_cost, pos_compounding = ovl_collateral.positions(pos_id)
 
-    # pos_id = tx_build.events['Build']['positionId']
-    # pos_oi = tx_build.events['Build']['oi']
-    # ( _, _, _, _, pos_oi_shares , pos_debt, pos_cost, _ ) = ovl_collateral.positions(pos_id)
+    brownie.chain.mine(timedelta=position['exitSeconds'])
 
-    # brownie.chain.mine(timedelta=position['exitSeconds'])
+    total_oi, total_oi_shares, price_frame = market.positionInfo(
+        position['is_long'],
+        pos_price_ix,
+        pos_compounding
+    )
 
-    # oi = market.oiLong() if position['is_long'] else market.oiShort()
-    # oi_shares = market.oiLongShares() if position['is_long'] else market.oiShortShares()
+    total_oi /= 1e18
+    total_oi_shares /= 1e18
+    pos_oi_shares /= 1e18
+    pos_debt /= 1e18
+    pos_cost /= 1e18
+    price_frame /= 1e18
 
-    # tx_liq = ovl_collateral.liquidate( pos_id, bob, { 'from': bob } )
+    expected_value = value(
+        total_oi,
+        total_oi_shares,
+        pos_oi_shares,
+        pos_debt,
+        price_frame,
+        position['is_long']
+    )
+
+    expected_reward = expected_value * margin_reward
+    expected_liquidations = expected_value - expected_reward
+    expected_burn = pos_cost - expected_value
+
+    tx_liq = ovl_collateral.liquidate( pos_id, bob, { 'from': bob } )
+
+    price_index = market.pricePointCurrentIndex()
+
+    print("price index", price_index)
+
+    price_point = market.pricePoints(price_index-2)
+
+    print("price_point", price_point)
+
+    price_point = market.pricePoints(price_index-1)
+
+    print("price_point", price_point)
+
+    _, _, _, pos_price_ix, pos_oi_shares , pos_debt, pos_cost, pos_compounding = ovl_collateral.positions(pos_id)
+
+    print("pos shares", pos_oi_shares)
+
+    # burn = None
+    # reward = None
+    # for i in range(len(tx_liq.events['Transfer'])):
+    #     transfer = tx_liq.events['Transfer'][i]
+    #     if transfer['to'] == bob 
+    #         reward = transfer['value'] / 1e18
+    #     if transfer['to'] == '0x0000000000000000000000000000000000000000':
+    #         burn = transfer['value'] / 1e18
+
+    # assert burn == approx(expected_burn), 'liquidate burn amount different than expected'
+
+    # assert reward == approx(), 'liquidate reward differen than expected'
+
+    # liquidations = ovl_collateral.liquidations() / 1e18
+
+    # assert liquidations == approx(expected_liquidations)
+
 
     # price_index = market.pricePointCurrentIndex()
 
@@ -105,26 +187,6 @@ def test_liquidate_success_zero_impact_zero_funding(
     # print("price index", price_index)
     # price_point = market.pricePoints(price_index-1)
     # print("price_point", price_point)
-
-
-    # def value(
-    #     total_oi, 
-    #     total_oi_shares, 
-    #     pos_oi_shares, 
-    #     debt,
-    #     price_frame,
-    #     is_long
-    # ):
-    #     pos_oi = pos_oi_shares * total_oi / total_oi_shares
-
-    #     if is_long:
-    #         val = pos_oi * price_frame
-    #         val -= min(val, debt)
-    #     else:
-    #         val = pos_oi * 2
-    #         val -= min(val, debt + pos_oi * price_frame )
-        
-    #     return val
 
     # print("price index", price_index)
     # print("price_point", price_point)
