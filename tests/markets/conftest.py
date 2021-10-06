@@ -76,60 +76,22 @@ def create_token(gov, alice, bob):
 def token(create_token):
     yield create_token()
 
-def prep_feed(path):
-
-    base = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.normpath(os.path.join(base, path+'_raw_uni.json'))) as f: 
-        feed = json.load(f)
-
-    with open(os.path.normpath(os.path.join(base, path+'_reflected.json'))) as f: 
-        reflection = json.load(f)
-    
-    now = chain[-1].timestamp
-    earliest = feed[-1]['shim'][0]
-    diff = 0
-
-    feed.reverse()
-
-    obs = []  # blockTimestamp, tickCumulative, liquidityCumulative,initialized
-    shims = []  # timestamp, liquidity, tick, cardinality
-
-    feed = feed[:300]
-
-    feed = [feed[i:i+300] for i in range(0, len(feed), 300)]
-
-    for fd in feed:
-        obs.append([])
-        shims.append([])
-        for f in fd:
-            diff = f['shim'][0] - earliest
-            f['observation'][0] = f['shim'][0] = now + diff
-            obs[len(obs)-1].append(f['observation'])
-            shims[len(shims)-1].append(f['shim'])
-
-    latest = obs[-1][-1][0]
-
-    earliest = reflection['timestamp'][0]
-
-    for i in range(len(reflection['timestamp'])):
-        timestamp = now + reflection['timestamp'][i] - earliest
-        if latest < timestamp:
-            for k in reflection: 
-                reflection[k] = reflection[k][:i]
-            break
-        else:
-            reflection['timestamp'][i] = timestamp
-
-    return ( obs, shims, reflection )
-
 @pytest.fixture(scope="module")
 def feed_infos():
 
-    chain.mine(timestamp=int(time.time()))
-
-    # TODO: fix this relative path fetch
+    base = os.path.dirname(os.path.abspath(__file__))
     market_path = '../../feeds/univ3_dai_weth'
     depth_path = '../../feeds/univ3_axs_weth'
+
+    with open(os.path.normpath(os.path.join(base, market_path + '_raw_uni_framed.json'))) as f: 
+        market_mock = json.load(f)
+    with open(os.path.normpath(os.path.join(base, market_path + '_reflected.json'))) as f: 
+        market_reflection = json.load(f)
+    with open(os.path.normpath(os.path.join(base, depth_path + '_raw_uni_framed.json'))) as f: 
+        depth_mock = json.load(f)
+    with open(os.path.normpath(os.path.join(base, depth_path + '_reflected.json'))) as f: 
+        depth_reflection = json.load(f)
+        
     class FeedSmuggler:
         def __init__(self, market_info, depth_info):
             self.market_info = market_info
@@ -140,8 +102,8 @@ def feed_infos():
             return self.depth_info
 
     yield FeedSmuggler(
-        prep_feed(market_path),
-        prep_feed(depth_path)
+        (market_mock['observations'], market_mock['shims'], market_reflection),
+        (depth_mock['observations'], depth_mock['shims'], depth_reflection)
     )
 
 
@@ -169,22 +131,18 @@ def get_uni_feeds(feed_owner, feed_info):
     market_mock = IUniswapV3OracleMock(uniswapv3_factory.allPools(0))
     depth_mock = IUniswapV3OracleMock(uniswapv3_factory.allPools(1))
 
-    for i in range(len(market_obs)):
-        market_mock.loadObservations(market_obs[i], market_shims[i], {'from': feed_owner})
+    market_mock.loadObservations(market_obs, market_shims, {'from': feed_owner})
 
-    for i in range(len(depth_obs)):
-        depth_mock.loadObservations(depth_obs[i], depth_shims[i], {'from': feed_owner})
+    depth_mock.loadObservations(depth_obs, depth_shims, {'from': feed_owner})
 
-    chain.mine(1, timedelta=MACRO_WINDOW+1)
+    chain.mine(timestamp=feed_info.market_info[2]['timestamp'][0])
 
     return uniswapv3_factory.address, market_mock.address, depth_mock.address, market_token1
-
 
 @pytest.fixture(scope="module")
 def comptroller(gov):
     comptroller = gov.deploy(ComptrollerShim, 1e24, 600, 1653439153439, 1e18)
     yield comptroller
-
 
 @pytest.fixture(
     scope="module",
