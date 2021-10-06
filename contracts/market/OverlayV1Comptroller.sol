@@ -89,8 +89,8 @@ abstract contract OverlayV1Comptroller {
             uint _lastMoment = _roller.time;
 
             _roller.time = _brrrrdFiling;
-            _roller.ying += _brrrr;
-            _roller.yang += _brrrr;
+            _roller.ying += brrrrdAccumulator[0];
+            _roller.yang += brrrrdAccumulator[1];
 
             brrrrdCycloid = roll(brrrrdRollers, _roller, _lastMoment, _brrrrdCycloid);
 
