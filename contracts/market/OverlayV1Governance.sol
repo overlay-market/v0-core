@@ -80,7 +80,7 @@ abstract contract OverlayV1Governance is
         uint256 _impactWindow,
         uint256 _staticCap,
         uint256 _lmbda,
-        uint256 _brrrrFade
+        uint256 _expectedBrrrr
     ) public onlyGovernor {
 
         setK(_k);
@@ -98,7 +98,7 @@ abstract contract OverlayV1Governance is
             _impactWindow,
             _staticCap,
             _lmbda,
-            _brrrrFade
+            _expectedBrrrr
         );
 
     }
@@ -145,13 +145,13 @@ abstract contract OverlayV1Governance is
         uint256 _impactWindow,
         uint256 _staticCap,
         uint256 _lmbda,
-        uint256 _brrrrFade
+        uint256 _expectedBrrrr
     ) public onlyGovernor {
 
         impactWindow = _impactWindow;
         staticCap = _staticCap;
         lmbda = _lmbda;
-        brrrrFade = _brrrrFade;
+        expectedBrrrr = _expectedBrrrr;
 
     }
 

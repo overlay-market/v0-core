@@ -8,12 +8,10 @@ contract ComptrollerShim is OverlayV1Comptroller {
     constructor (
         uint _staticCap,
         uint _impactWindow,
-        uint _brrrrFade,
         uint _lmbda
     ) {
         staticCap = _staticCap;
         impactWindow = _impactWindow;
-        brrrrFade = _brrrrFade;
         lmbda = _lmbda;
     }
 
@@ -31,23 +29,23 @@ contract ComptrollerShim is OverlayV1Comptroller {
     ) public {
 
         impactRollers[index].time = __timestamp;
-        impactRollers[index].longPressure = __longPressure;
-        impactRollers[index].shortPressure = __shortPressure;
+        impactRollers[index].ying = __longPressure;
+        impactRollers[index].yang = __shortPressure;
 
     }
 
     function viewScry(
         uint _ago
     ) public view returns (
-        ImpactRoller memory rollerNow_,
-        ImpactRoller memory rollerThen_
+        Roller memory rollerNow_,
+        Roller memory rollerThen_
     ) {
 
         uint lastMoment;
 
         (   lastMoment,
             rollerNow_,
-            rollerThen_ ) = scry(_ago);
+            rollerThen_ ) = scry(impactRollers, impactCycloid, _ago);
 
 
     }
