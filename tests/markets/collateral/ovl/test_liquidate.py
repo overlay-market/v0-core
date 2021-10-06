@@ -67,32 +67,25 @@ def test_liquidate_success_zero_impact_zero_funding(
     margin_maintenance = ovl_collateral.marginMaintenance(market) / 1e18
     margin_reward = ovl_collateral.marginRewardRate(market) / 1e18
 
-    # find long liquidation price 
-    # bidExit = askEntry * (MM + 1 - 1/L) 
-    # find short liquidation price
-    # askExit = bidEntry * ( 1 - MM + 1/L )
+    start_time = brownie.chain.time()
+
+    tx_build = ovl_collateral.build(market, position['collateral'], position['leverage'], position['is_long'], { 'from': bob })
     
-
-    brownie.chain.mine(timedelta=position['entrySeconds'])
-
-    tx_build = ovl_collateral.build(
-        market, 
-        position['collateral'], 
-        position['leverage'], 
-        position['is_long'], 
-        { 'from': bob }
-    )
-
     pos_id = tx_build.events['Build']['positionId']
-    _, _, _, pos_price_ix, pos_oi_shares , pos_debt, pos_cost, pos_compounding = ovl_collateral.positions(pos_id)
+    pos_oi = tx_build.events['Build']['oi']
+    (_, _, _, pos_price_idx, pos_oi_shares, pos_debt, pos_cost, pos_compounding) = \
+        ovl_collateral.positions(pos_id)
 
-    brownie.chain.mine(timedelta=position['exitSeconds'])
+    curr_price_idx = market.pricePointCurrentIndex()
+    breakpoint()
 
     total_oi, total_oi_shares, price_frame = market.positionInfo(
         position['is_long'],
-        pos_price_ix,
+        pos_price_idx,
         pos_compounding
     )
+
+    # breakpoint()
 
     total_oi /= 1e18
     total_oi_shares /= 1e18
