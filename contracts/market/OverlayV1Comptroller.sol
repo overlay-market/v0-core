@@ -89,8 +89,8 @@ abstract contract OverlayV1Comptroller {
             uint _lastMoment = _roller.time;
 
             _roller.time = _brrrrdFiling;
-            _roller.ying += brrrrdAccumulator[0];
-            _roller.yang += brrrrdAccumulator[1];
+            _roller.ying += brrrrdAccumulatooor[0];
+            _roller.yang += brrrrdAccumulatooor[1];
 
             brrrrdCycloid = roll(brrrrdRollers, _roller, _lastMoment, _brrrrdCycloid);
 
@@ -110,22 +110,50 @@ abstract contract OverlayV1Comptroller {
 
     }
 
-    function getBrrrrd () internal view returns (
-        int brrrrd_,
-        uint now_
-    ) { }
+    function getBrrrrd () internal view returns ( 
+        uint brrrrd_,
+        uint antiBrrrrd_
+    ) { 
 
-    function oiCap () public view returns (
-        uint cap_,
-        uint now_,
-        int brrrrd_
-    ) {
+        (  ,Roller memory _rollerNow,
+            Roller memory _rollerThen ) = scry(
+                brrrrdRollers, 
+                brrrrdCycloid,
+                brrrrdWindowMacro 
+            );
 
-        ( brrrrd_, now_ ) = getBrrrrd();
+        brrrrd_ = brrrrdAccumulatooor[0] + _rollerNow.ying - _rollerThen.ying;
 
-        cap_ = brrrrd_ < 0
-            ? Math.min(staticCap, depth())
-            : Math.min(staticCap - uint(brrrrd_), depth());
+        antiBrrrrd_ = brrrrdAccumulatooor[1] + _rollerNow.yang - _rollerThen.yang;
+
+    }
+
+    function oiCap () public view returns ( uint cap_) {
+
+        (   uint _brrrrd,
+            uint _antiBrrrrd ) = getBrrrrd();
+
+        uint _brrrrdExpected = brrrrdExpected;
+
+        if (_antiBrrrrd > _brrrrd) {
+
+            return Math.min(staticCap, depth());
+
+        }
+
+        _brrrrd -= _antiBrrrrd;
+
+        if ( _brrrrd > _brrrrdExpected * 2 ) {
+
+            return 0;
+
+        } else {
+
+            uint _dynamicCap = ( 2e18 - _brrrrd.divDown(_brrrrdExpected) ).mulDown(staticCap);
+
+            cap_= Math.min( _dynamicCap, depth() );
+
+        } 
 
     }
 
@@ -140,9 +168,7 @@ abstract contract OverlayV1Comptroller {
         (   Roller memory _rollerImpact,
             uint _lastMoment,
             uint _impact,
-            uint _cap,
-            uint _now,
-            int _brrrrd ) = _intake(_isLong, _oi);
+            uint _cap ) = _intake(_isLong, _oi);
 
         roll(
             impactRollers,
@@ -166,9 +192,7 @@ abstract contract OverlayV1Comptroller {
         Roller memory rollerNow_,
         uint lastMoment_,
         uint impact_,
-        uint cap_,
-        uint now_,
-        int brrrrd_
+        uint cap_
     ) {
 
         (   uint _lastMoment,
@@ -178,7 +202,7 @@ abstract contract OverlayV1Comptroller {
                 impactCycloid, 
                 impactWindow );
 
-        ( cap_, now_, brrrrd_ ) = oiCap();
+        cap_ = oiCap();
 
         uint _pressure = _oi.divDown(cap_);
 
@@ -223,7 +247,6 @@ abstract contract OverlayV1Comptroller {
                 rollers[_cycloid] = _roller;
 
             }
-
 
         } else {
 
