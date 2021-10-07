@@ -360,7 +360,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             _oiShares,
             _priceFrame,
             _marketInfo.marginMaintenance
-        ), "OverlayV1: position not liquidatable");
+        ), "OVLV1:!liquidatable");
 
         uint _value = pos.value(_oi, _oiShares, _priceFrame);
 
