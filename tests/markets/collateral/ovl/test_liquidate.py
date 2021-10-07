@@ -327,7 +327,7 @@ def test_liquidate_oi_removed(
 
 
 @pytest.mark.parametrize('position', POSITIONS)
-def test_liquidate_rewards_and_fees(
+def test_liquidate_zero_value(
     mothership,
     feed_infos,
     ovl_collateral,
@@ -346,6 +346,63 @@ def test_liquidate_rewards_and_fees(
     tx_build = ovl_collateral.build(
         market,
         position['collateral'],
+        3*position['leverage'],  # 3x so it effectively turns negative
+        position['is_long'],
+        {'from': bob}
+    )
+    pos_id = tx_build.events['Build']['positionId']
+    (_, _, _, pos_price_idx, pos_oi_shares, pos_debt, pos_cost,
+     _) = ovl_collateral.positions(pos_id)
+
+    qoi_before = market.queuedOiLong() if position["is_long"] \
+        else market.queuedOiShort()
+
+    assert qoi_before == pos_oi_shares
+
+    brownie.chain.mine(timestamp=position["liquidation"]["timestamp"])
+
+    value_prior = ovl_collateral.value(pos_id)
+    assert value_prior == 0
+
+    tx_liq = ovl_collateral.liquidate(pos_id, alice, {'from': alice})
+
+    oi_after = market.oiLong() if position["is_long"] else market.oiShort()
+    qoi_after = market.queuedOiLong() if position["is_long"] \
+        else market.queuedOiShort()
+
+    assert qoi_after == 0
+    assert oi_after == 0
+
+    expected_burn = pos_cost
+    for _, v in enumerate(tx_liq.events['Transfer']):
+        if v['to'] == '0x0000000000000000000000000000000000000000':
+            act_burn = v['value']
+
+    assert int(expected_burn) == approx(act_burn)
+
+
+@pytest.mark.parametrize('position', POSITIONS)
+def test_liquidate_rewards_and_fees(
+    mothership,
+    feed_infos,
+    ovl_collateral,
+    token,
+    market,
+    alice,
+    gov,
+    bob,
+    rewards,
+    position,
+):
+    market.setK(0, {'from': gov})
+
+    margin_reward_rate = ovl_collateral.marginRewardRate(market) / 1e18
+
+    # Mine to the entry time then build
+    brownie.chain.mine(timestamp=position["entry"]["timestamp"])
+    tx_build = ovl_collateral.build(
+        market,
+        position['collateral'],
         position['leverage'],
         position['is_long'],
         {'from': bob}
@@ -354,5 +411,25 @@ def test_liquidate_rewards_and_fees(
     (_, _, _, pos_price_idx, pos_oi_shares, pos_debt, pos_cost,
      _) = ovl_collateral.positions(pos_id)
 
+    liquidations_prior = ovl_collateral.liquidations()
+    alice_balance_prior = token.balanceOf(alice)
+
     brownie.chain.mine(timestamp=position["liquidation"]["timestamp"])
+    value_prior = ovl_collateral.value(pos_id)
+
     tx_liq = ovl_collateral.liquidate(pos_id, alice, {'from': alice})
+
+    liquidations_post = ovl_collateral.liquidations()
+    alice_balance_post = token.balanceOf(alice)
+
+    to_rewards = alice_balance_post - alice_balance_prior
+    exp_rewards = margin_reward_rate * value_prior
+
+    assert int(exp_rewards) == approx(to_rewards)
+    assert tx_liq.events['Liquidate']['reward'] == to_rewards
+    assert tx_liq.events['Liquidate']['rewarded'] == alice
+
+    to_liquidations = liquidations_post - liquidations_prior
+    exp_liquidations = value_prior * (1-margin_reward_rate)
+
+    assert int(exp_liquidations) == approx(to_liquidations)
