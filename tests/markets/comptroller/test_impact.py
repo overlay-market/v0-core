@@ -76,11 +76,11 @@ def test_impact_roller_expected_impact(comptroller):
     assert comptroller.impactRollers(5)[0] == chain[-1].timestamp
     assert comptroller.impactRollers(6)[0] == 0
 
-def test_roller_cardinality_increments_to_5_with_many_rolls(comptroller):
+def test_impact_roller_expected_impact_many_batched(comptroller):
 
     cap = comptroller.oiCap()
 
-    pressure = int(( 1e18 / cap ) * 1e18)
+    pressure = 1e18 / cap 
 
     chain.mine(timedelta=ONE_BLOCK)
 
@@ -189,15 +189,18 @@ def test_impact_pressure(comptroller, entry):
     assert abs(expected - impact) < 1e6
 
 @given(
-    entry=strategy('uint256', min_value=1, max_value=1e6),
+    entry=strategy('uint256', min_value=1, max_value=.370400e6),
     rand=strategy('int', min_value=100, max_value=1000))
 @settings(max_examples=20)
-def test_impact_pressure_full_cooldown (comptroller, entry, rand):
+def test_impact_pressure_full_cooldown_entry_within_cap (comptroller, entry, rand):
+
+    entry *= 1e16
 
     impact_window = comptroller.impactWindow()
+
     chain.mine(timedelta=ONE_BLOCK)
 
-    comptroller.impactBatch([True], [entry])
+    tx = comptroller.impactBatch([True], [entry])
 
     chain.mine(timedelta=impact_window+1)
 
