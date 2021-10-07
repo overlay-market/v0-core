@@ -52,32 +52,28 @@ def test_impact_roller_expected_impact(comptroller):
 
     cap = comptroller.oiCap()
 
-    print("cap", cap)
-
     pressure = 1e18 / cap
 
-    print("pressure", pressure)
-
-    chain.mine(timedelta=10)
+    chain.mine(timedelta=ONE_BLOCK)
 
     tx = comptroller.impactBatch([True],[1e18])
-    chain.mine(timedelta=10)
+    chain.mine(timedelta=ONE_BLOCK)
     tx = comptroller.impactBatch([True],[1e18])
-    chain.mine(timedelta=10)
+    chain.mine(timedelta=ONE_BLOCK)
     tx = comptroller.impactBatch([True],[1e18])
-    chain.mine(timedelta=10)
+    chain.mine(timedelta=ONE_BLOCK)
     tx = comptroller.impactBatch([True],[1e18])
-    chain.mine(timedelta=10)
+    chain.mine(timedelta=ONE_BLOCK)
     tx = comptroller.impactBatch([True],[1e18])
 
-    assert comptroller.impactCycloid() == 6 
+    assert comptroller.impactCycloid() == 5
 
     assert comptroller.impactRollers(1)[1] / 1e18 == approx(1 * pressure)
     assert comptroller.impactRollers(2)[1] / 1e18 == approx(2 * pressure)
     assert comptroller.impactRollers(3)[1] / 1e18 == approx(3 * pressure)
     assert comptroller.impactRollers(4)[1] / 1e18 == approx(4 * pressure)
-    assert comptroller.impactRollers(5)[0] == chain[-1].timestamp
     assert comptroller.impactRollers(5)[1] / 1e18 == approx(5 * pressure)
+    assert comptroller.impactRollers(5)[0] == chain[-1].timestamp
     assert comptroller.impactRollers(6)[0] == 0
 
 def test_roller_cardinality_increments_to_5_with_many_rolls(comptroller):
