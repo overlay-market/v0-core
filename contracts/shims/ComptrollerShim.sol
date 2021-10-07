@@ -59,8 +59,6 @@ contract ComptrollerShim is OverlayV1Comptroller {
 
         for (uint i = 0; i < len; i++) {
 
-            ( int _brrrrd, uint _now ) = getBrrrrd();
-
             brrrr( _brrrr[i], _antiBrrrr[i] );
 
         }
@@ -91,7 +89,7 @@ contract ComptrollerShim is OverlayV1Comptroller {
         uint impact_
     ) {
 
-        ( ,,impact_,,, ) = _intake(_isLong, _oi);
+        ( ,,impact_, ) = _intake(_isLong, _oi);
 
     }
 
