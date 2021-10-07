@@ -48,13 +48,16 @@ interface IOverlayV1Market is IERC1155 {
     function queuedOiLong() external view returns (uint256);
     function queuedOiShort() external view returns (uint256);
 
-    function oiCap() external view returns (uint256);
-    function brrrrd() external view returns (int256);
-    function pbnj() external view returns (uint256);
+    function oiCap () external view returns (uint256);
+
+    // TODO: make brrrrd() function ?
+    function brrrrd () external view returns (int256);
+
+    function pbnj () external view returns (uint256);
     function priceFrameCap() external view returns (int256);
 
     function lmbda() external view returns (uint256);
-    function brrrrFade() external view returns (uint256);
+    function brrrrExpected() external view returns (uint256);
 
     function epochs(
         uint _time,
