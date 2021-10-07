@@ -6,9 +6,13 @@ from pytest import approx
 from decimal import *
 import random
 
-OI_CAP = 800000e18
-MIN_COLLATERAL=1e14
 FEE_RESOLUTION=1e18
+MIN_COLLATERAL = 1e14  # min amount to build
+COLLATERAL = 10*1e18
+TOKEN_DECIMALS = 18
+TOKEN_TOTAL_SUPPLY = 8000000
+OI_CAP = 800000e18
+
 
 def print_logs(tx):
     for i in range(len(tx.events['log'])):
@@ -352,44 +356,6 @@ def test_unwind_after_transfer(
             {"from": bob}
         )
 
-
-# WIP
-# warning, dependent on what the price/mocks do
-@given(collateral=strategy('uint256'))
-def test_unwind_revert_position_was_liquidated(
-        ovl_collateral,
-        mothership,
-        market,
-        collateral,
-        token,
-        bob,
-        alice):
-
-    collateral = 2e18
-    leverage = 1
-    is_long = True
-
-    # token.approve(ovl_collateral, collateral, {"from": bob})
-    # tx_build = ovl_collateral.build(
-    #     market,
-    #     collateral,
-    #     leverage,
-    #     is_long,
-    #     {"from": bob}
-    # )
-
-    # with brownie.reverts("OVLV1:!shares"):
-    #     ovl_collateral.unwind(
-    #         1,
-    #         1e18,
-    #         { "from": bob }
-    #     );
-
-    # build a position
-    # liquidate a position
-    # try to unwind it and get a revert
-
-    pass
 
 @given(
     is_long=strategy('bool'),
