@@ -6,13 +6,21 @@ import "../market/OverlayV1Comptroller.sol";
 contract ComptrollerShim is OverlayV1Comptroller {
 
     constructor (
-        uint _staticCap,
         uint _impactWindow,
-        uint _lmbda
+        uint _lmbda,
+        uint _staticCap,
+        uint _brrrrdExpected,
+        uint _brrrrdWindowMacro,
+        uint _brrrrdWindowMicro
     ) {
-        staticCap = _staticCap;
+
         impactWindow = _impactWindow;
         lmbda = _lmbda;
+        staticCap = _staticCap;
+        brrrrdExpected = _brrrrdExpected;
+        brrrrdWindowMacro = _brrrrdWindowMacro;
+        brrrrdWindowMicro = _brrrrdWindowMicro;
+
     }
 
     function depth () internal view override returns (uint256) {
