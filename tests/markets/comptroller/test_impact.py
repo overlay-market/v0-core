@@ -208,18 +208,14 @@ def test_impact_pressure_full_cooldown_entry_within_cap (comptroller, entry, ran
 
     assert impact == 0
 
-def test_brrrr_when_before_roller_must_interpolate_over_long_timeframe(comptroller):
+def test_impact_when_before_roller_must_interpolate_over_long_timeframe(comptroller):
     pass
 
-def test_brrrr_when_earliest_roller_is_more_contemporary_than_brrrr_window(comptroller):
+def test_impact_when_earliest_roller_is_more_contemporary_than_impact_window(comptroller):
     pass
 
-def test_brrrr_when_before_roller_must_interpolate_over_small_timeframe(comptroller):
+def test_impact_when_before_roller_must_interpolate_over_small_timeframe(comptroller):
     pass
 
-def test_brrrr_when_earliest_roller_is_much_older_than_brrrr_window(comptroller):
+def test_impact_when_earliest_roller_is_much_older_than_impact_window(comptroller):
     pass
-
-def test_roller(comptroller):
-
-    print(comptroller)
