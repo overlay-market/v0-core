@@ -25,9 +25,9 @@ POSITIONS = [
     },
     {
         "entry": {"timestamp": 1633504052, "price": 319655307482755},
-        "liquidation": {"timestamp": 1633504112, "price": 314983505945323},
+        "liquidation": {"timestamp": 1633512812, "price": 306336694541566},
         "collateral": COLLATERAL,
-        "leverage": 14,
+        "leverage": 10,
         "is_long": True,
     },
 ]
