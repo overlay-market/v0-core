@@ -5,7 +5,6 @@ from brownie import chain
 from pytest import approx
 from decimal import *
 import random
-import pytest
 
 FEE_RESOLUTION=1e18
 MIN_COLLATERAL = 1e14  # min amount to build
@@ -356,75 +355,6 @@ def test_unwind_after_transfer(
             oi_shares_build,
             {"from": bob}
         )
-
-
-POSITIONS = [
-    {
-        "entrySeconds": 15000, 
-        "entryPrice": 318889092879897,
-        "exitSeconds": 25775,
-        "exitPrice": 304687017011120,
-        "collateral": COLLATERAL,
-        "leverage": 20,
-        "is_long": True,
-    },
-]
-
-@pytest.mark.parametrize('position', POSITIONS)
-def test_unwind_revert_position_was_liquidated(
-    mothership,
-    feed_infos,
-    ovl_collateral, 
-    token, 
-    market, 
-    alice, 
-    gov,
-    bob,
-    rewards,
-    position,
-    ):
-
-    margin_maintenance = ovl_collateral.marginMaintenance(market) / 1e18
-    margin_reward = ovl_collateral.marginRewardRate(market) / 1e18
-
-    # bid = ask * (MM + 1 - 1/L)
-    
-    entry_ask = position['entryPrice'] / 1e18
-    exit_bid = entry_ask * ( margin_maintenance + 1 - 1/10)
-
-
-    for i in range(len(feed_infos.market_info[2]['bids'])):
-        bid = feed_infos.market_info[2]['bids'][i]
-        if bid < exit_bid:
-            print("~~~ ~~~~ ~~~~ bid", bid)
-            exit_index = i
-            break
-    
-    liq_timestamp = feed_infos.market_info[2]['timestamp'][exit_index]
-
-    tx_build = ovl_collateral.build(
-        market,
-        position['collateral'],
-        position['leverage'],
-        position['is_long'],
-        {"from": bob}
-    )
-
-    pid = tx_build.events['Build']['positionId']
-    (_, _, _, price_point, oi_shares_build,
-        debt_build, cost_build, p_compounding) = ovl_collateral.positions(pid)
-
-    chain.mine(timestamp = liq_timestamp)
-
-    tx_liq = ovl_collateral.liquidate(pid, alice, {"from": alice})
-
-    EXPECTED_ERROR_MESSAGE = "OVLV1:liquidated"
-    with brownie.reverts(EXPECTED_ERROR_MESSAGE):
-        ovl_collateral.unwind(
-            pid,
-            oi_shares_build,
-            {"from": bob}
-            )
 
 
 @given(
