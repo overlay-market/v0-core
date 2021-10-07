@@ -57,7 +57,10 @@ interface IOverlayV1Market is IERC1155 {
     function priceFrameCap() external view returns (int256);
 
     function lmbda() external view returns (uint256);
-    function brrrrExpected() external view returns (uint256);
+    function brrrrdExpected() external view returns (uint256);
+    function brrrrdWindowMacro() external view returns (uint256);
+    function brrrrdWindowMicro() external view returns (uint256);
+
 
     function epochs(
         uint _time,
