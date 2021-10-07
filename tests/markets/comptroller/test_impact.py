@@ -110,12 +110,12 @@ def test_impact_roller_expected_impact_many_batched(comptroller):
         [1e18, 1e18, 1e18, 1e18, 1e18, 1e18]
     )
 
-    assert comptroller.impactRollers(1)[1] == 4 * pressure
-    assert comptroller.impactRollers(2)[1] == 7 * pressure
-    assert comptroller.impactRollers(3)[1] == 11 * pressure
-    assert comptroller.impactRollers(4)[1] == 16 * pressure
+    assert comptroller.impactRollers(1)[1] / 1e18 == approx(4 * pressure)
+    assert comptroller.impactRollers(2)[1] / 1e18 == approx(7 * pressure)
+    assert comptroller.impactRollers(3)[1] / 1e18 == approx(11 * pressure)
+    assert comptroller.impactRollers(4)[1] / 1e18 == approx(16 * pressure)
+    assert comptroller.impactRollers(5)[1] / 1e18 == approx(22 * pressure)
     assert comptroller.impactRollers(5)[0] == chain[-1].timestamp
-    assert comptroller.impactRollers(5)[1] == 22 * pressure
 
 @given(time_diff=strategy('uint', min_value=1, max_value=100),
        brrrr=strategy('uint', min_value=100, max_value=100000))
