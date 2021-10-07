@@ -180,9 +180,11 @@ def comptroller(gov):
             UPDATE_PERIOD,       # update period
             COMPOUND_PERIOD,     # compound period
             IMPACT_WINDOW,       # impact window
-            OI_CAP*1e18,         # oi cap
             0,                   # lambda
-            1e18,                # brrrr fade
+            OI_CAP*1e18,         # oi cap
+            BRRRR_EXPECTED,      # brrrr expected
+            BRRRR_WINDOW_MACRO,  # brrrr window macro - roller window
+            BRRRR_WINDOW_MICRO   # brrrr window micro - accumulator window
          ],
          "OverlayV1OVLCollateral", [
              .06e18,             # margin maintenance

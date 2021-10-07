@@ -78,9 +78,11 @@ abstract contract OverlayV1Governance is
         uint256 _updatePeriod,
         uint256 _compoundPeriod,
         uint256 _impactWindow,
-        uint256 _staticCap,
         uint256 _lmbda,
-        uint256 _brrrrdExpected
+        uint256 _staticCap,
+        uint256 _brrrrdExpected,
+        uint256 _brrrrdWindowMacro,
+        uint256 _brrrrdWindowMicro
     ) public onlyGovernor {
 
         setK(_k);
@@ -96,9 +98,11 @@ abstract contract OverlayV1Governance is
 
         setComptrollerParams(
             _impactWindow,
-            _staticCap,
             _lmbda,
-            _brrrrdExpected
+            _staticCap,
+            _brrrrdExpected,
+            _brrrrdWindowMacro,
+            _brrrrdWindowMicro
         );
 
     }
@@ -143,15 +147,19 @@ abstract contract OverlayV1Governance is
 
     function setComptrollerParams (
         uint256 _impactWindow,
-        uint256 _staticCap,
         uint256 _lmbda,
-        uint256 _brrrrExpected
+        uint256 _staticCap,
+        uint256 _brrrrExpected,
+        uint256 _brrrrdWindowMacro,
+        uint256 _brrrrdWindowMicro
     ) public onlyGovernor {
 
         impactWindow = _impactWindow;
-        staticCap = _staticCap;
         lmbda = _lmbda;
+        staticCap = _staticCap;
         brrrrdExpected = _brrrrExpected;
+        brrrrdWindowMacro = _brrrrdWindowMacro;
+        brrrrdWindowMicro = _brrrrdWindowMicro;
 
     }
 
