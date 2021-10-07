@@ -6,15 +6,21 @@ import "../market/OverlayV1Comptroller.sol";
 contract ComptrollerShim is OverlayV1Comptroller {
 
     constructor (
-        uint _staticCap,
         uint _impactWindow,
-        uint _brrrrFade,
-        uint _lmbda
+        uint _lmbda,
+        uint _staticCap,
+        uint _brrrrdExpected,
+        uint _brrrrdWindowMacro,
+        uint _brrrrdWindowMicro
     ) {
-        staticCap = _staticCap;
+
         impactWindow = _impactWindow;
-        brrrrFade = _brrrrFade;
         lmbda = _lmbda;
+        staticCap = _staticCap;
+        brrrrdExpected = _brrrrdExpected;
+        brrrrdWindowMacro = _brrrrdWindowMacro;
+        brrrrdWindowMicro = _brrrrdWindowMicro;
+
     }
 
     function depth () internal view override returns (uint256) {
@@ -30,9 +36,9 @@ contract ComptrollerShim is OverlayV1Comptroller {
         uint __shortPressure
     ) public {
 
-        rollers[index].time = __timestamp;
-        rollers[index].longPressure = __longPressure;
-        rollers[index].shortPressure = __shortPressure;
+        impactRollers[index].time = __timestamp;
+        impactRollers[index].ying = __longPressure;
+        impactRollers[index].yang = __shortPressure;
 
     }
 
@@ -47,7 +53,7 @@ contract ComptrollerShim is OverlayV1Comptroller {
 
         (   lastMoment,
             rollerNow_,
-            rollerThen_ ) = scry(_ago);
+            rollerThen_ ) = scry(impactRollers, impactCycloid, _ago);
 
 
     }
@@ -61,15 +67,7 @@ contract ComptrollerShim is OverlayV1Comptroller {
 
         for (uint i = 0; i < len; i++) {
 
-            ( int _brrrrd, uint _now ) = getBrrrrd();
-
-            brrrr(
-                _brrrr[i], 
-                _antiBrrrr[i], 
-                _brrrrd
-            );
-
-            brrrrdWhen = _now;
+            brrrr( _brrrr[i], _antiBrrrr[i] );
 
         }
 
@@ -99,7 +97,7 @@ contract ComptrollerShim is OverlayV1Comptroller {
         uint impact_
     ) {
 
-        ( ,,impact_,,, ) = _intake(_isLong, _oi);
+        ( ,,impact_, ) = _intake(_isLong, _oi);
 
     }
 

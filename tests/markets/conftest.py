@@ -18,11 +18,20 @@ AMOUNT_IN = 1
 PRICE_POINTS_START = 50
 PRICE_POINTS_END = 100
 
-MACRO_WINDOW = 3600
-MICRO_WINDOW = 600
+PRICE_WINDOW_MACRO = 3600
+PRICE_WINDOW_MICRO = 600
+
 UPDATE_PERIOD = 100
 COMPOUND_PERIOD = 600
+
 IMPACT_WINDOW = 600
+
+LAMBDA = .6e18
+STATIC_CAP = 370400e18
+BRRRR_EXPECTED = 26320e18
+BRRRR_WINDOW_MACRO = 2592000
+BRRRR_WINDOW_MICRO = 86400
+
 
 @pytest.fixture(autouse=True)
 def isolation(fn_isolation):
@@ -141,7 +150,16 @@ def get_uni_feeds(feed_owner, feed_info):
 
 @pytest.fixture(scope="module")
 def comptroller(gov):
-    comptroller = gov.deploy(ComptrollerShim, 1e24, 600, 1653439153439, 1e18)
+
+    comptroller = gov.deploy(ComptrollerShim, 
+        IMPACT_WINDOW, 
+        LAMBDA,
+        STATIC_CAP, 
+        BRRRR_EXPECTED, 
+        BRRRR_WINDOW_MACRO,
+        BRRRR_WINDOW_MICRO
+    )
+
     yield comptroller
 
 @pytest.fixture(
@@ -154,17 +172,19 @@ def comptroller(gov):
         ],
          "OverlayV1UniswapV3MarketZeroLambdaShim", [
             1e18,                # amount in
-            MACRO_WINDOW,        # macro window
-            MICRO_WINDOW,        # micro window
+            PRICE_WINDOW_MACRO,  # macro window
+            PRICE_WINDOW_MICRO,  # micro price window
             343454218783234,     # k
             5e18,                # price frame cap
             .00573e18,           # spread
             UPDATE_PERIOD,       # update period
             COMPOUND_PERIOD,     # compound period
             IMPACT_WINDOW,       # impact window
-            OI_CAP*1e18,         # oi cap
             0,                   # lambda
-            1e18,                # brrrr fade
+            OI_CAP*1e18,         # oi cap
+            BRRRR_EXPECTED,      # brrrr expected
+            BRRRR_WINDOW_MACRO,  # brrrr window macro - roller window
+            BRRRR_WINDOW_MICRO   # brrrr window micro - accumulator window
          ],
          "OverlayV1OVLCollateral", [
              .06e18,             # margin maintenance

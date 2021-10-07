@@ -5,6 +5,9 @@ from brownie.test import given, strategy
 from hypothesis import settings
 from pytest import approx
 
+ONE_BLOCK = 13
+
+
 from decimal import *
 
 def print_logs(tx):
@@ -16,48 +19,20 @@ def print_logs(tx):
 
 
 def test_sanity(comptroller):
+    pass
 
-    cardinality = comptroller.cardinality()
-    cardinality_next = comptroller.cardinalityNext()
-    index = comptroller.index()
-
-    assert cardinality == 1
-    assert cardinality_next == 1
-    assert index == 0
-
-def test_expand_cardinality_next(comptroller):
-
-    prior_index = comptroller.index()
-    prior_cardinality = comptroller.cardinality()
-    prior_cardinality_next = comptroller.cardinalityNext()
-
-    comptroller.expand(prior_cardinality_next + 1)
-
-    next_index = comptroller.index() 
-    next_cardinality = comptroller.cardinality()
-    next_cardinality_next = comptroller.cardinalityNext()
-
-    assert next_index == prior_index
-    assert next_cardinality == prior_cardinality
-    assert next_cardinality_next == prior_cardinality_next + 1
 
 def test_impact(comptroller):
 
     chain.mine(timedelta=1200)
 
-    comptroller.expand(50)
-
-    index = comptroller.index()
-    cardinality = comptroller.cardinality()
-    cardinality_n = comptroller.cardinalityNext()
-
     tx = comptroller.impactBatch([True],[1e18])
 
     tx = comptroller.impactBatch([True],[1e18])
 
-    roller0 = comptroller.rollers(0)
-    roller1 = comptroller.rollers(1)
-    roller2 = comptroller.rollers(2)
+    roller0 = comptroller.impactRollers(0)
+    roller1 = comptroller.impactRollers(1)
+    roller2 = comptroller.impactRollers(2)
 
     print(roller0)
     print(roller1)
@@ -65,224 +40,94 @@ def test_impact(comptroller):
 
     tx = comptroller.impactBatch([True],[1e18])
 
-    roller0 = comptroller.rollers(0)
-    roller1 = comptroller.rollers(1)
-    roller2 = comptroller.rollers(2)
+    roller0 = comptroller.impactRollers(0)
+    roller1 = comptroller.impactRollers(1)
+    roller2 = comptroller.impactRollers(2)
 
     print(roller0)
     print(roller1)
     print(roller2)
 
-def test_impact_cardinality_one_one_per_block_overwrites_roller(comptroller):
+def test_impact_roller_expected_impact(comptroller):
 
-    ( cap,_,__ ) = comptroller.oiCap()
-
-    pressure = int( ( 1e18 / cap ) * 1e18 )
-
-    tx = comptroller.impactBatch([True],[1e18])
-    assert comptroller.rollers(0)[0] == chain[-1].timestamp
-
-    chain.mine(timedelta=10)
-
-    tx = comptroller.impactBatch([True],[1e18])
-
-    roller = comptroller.rollers(0)
-    assert roller[0] == chain[-1].timestamp
-    assert roller[1] == 2 * pressure
-
-def test_impact_cardinality_one_many_per_block_overwrites_roller(comptroller):
-
-    ( cap, _, __ ) = comptroller.oiCap()
-
-    pressure = Decimal(1e18) / Decimal(cap)
-
-    tx = comptroller.impactBatch([True,True],[1e18,1e18])
-
-    chain.mine(timedelta=10)
-
-    tx = comptroller.impactBatch([True,True,True],[1e18,1e18,1e18])
-
-    roller = comptroller.rollers(0)
-    assert roller[0] == chain[-1].timestamp
-    assert Decimal(roller[1]) / Decimal(1e18) == pressure * 5
-
-def test_impact_cardinality_two_increments_cardinality_once(comptroller):
-
-    comptroller.expand(2)
-
-    assert comptroller.cardinalityNext() == 2
-
-    chain.mine(timedelta=10)
-
-    comptroller.impactBatch([True], [1e18])
-
-    roller1 = comptroller.rollers(1)
-
-    ( cap,_,__ ) = comptroller.oiCap()
-    pressure = int((1e18 / cap)*1e18)
-
-    assert roller1[0] == chain[-1].timestamp
-    assert roller1[1] == pressure
-
-    assert comptroller.index() == 1
-    assert comptroller.cardinality() == 2
-
-def test_roller_cardinality_two_rolls_index_rolls_over_to_0_with_single_rolls(comptroller):
-
-    ( cap, _, __ ) = comptroller.oiCap()
-
-    pressure = Decimal(1e18) / Decimal(cap)
-
-    comptroller.expand(2)
-
-    chain.mine(timedelta=10)
-
-    assert comptroller.cardinalityNext() == 2
-
-    comptroller.impactBatch([True],[1e18])
-
-    chain.mine(timedelta=10)
-
-    assert comptroller.index() == 1
-    assert comptroller.cardinality() == 2
-
-    comptroller.impactBatch([True],[1e18])
-
-    assert comptroller.index() == 0
-
-    roller = comptroller.rollers(0)
-    assert roller[0] == chain[-1].timestamp
-    assert Decimal(roller[1]) / Decimal(1e18) == pressure * 2
-
-
-def test_roller_cardinality_increments_to_5_with_single_rolls(comptroller):
-
-    ( cap, _, __ ) = comptroller.oiCap()
-
-    print("cap", cap)
+    cap = comptroller.oiCap()
 
     pressure = 1e18 / cap
 
-    print("pressure", pressure)
-
-    comptroller.expand(5)
-    chain.mine(timedelta=10)
+    chain.mine(timedelta=ONE_BLOCK)
 
     tx = comptroller.impactBatch([True],[1e18])
-    chain.mine(timedelta=10)
+    chain.mine(timedelta=ONE_BLOCK)
     tx = comptroller.impactBatch([True],[1e18])
-    chain.mine(timedelta=10)
+    chain.mine(timedelta=ONE_BLOCK)
     tx = comptroller.impactBatch([True],[1e18])
-    chain.mine(timedelta=10)
+    chain.mine(timedelta=ONE_BLOCK)
     tx = comptroller.impactBatch([True],[1e18])
-    chain.mine(timedelta=10)
+    chain.mine(timedelta=ONE_BLOCK)
     tx = comptroller.impactBatch([True],[1e18])
 
-    assert comptroller.cardinality() == 5
-    assert comptroller.index() == 0
+    assert comptroller.impactCycloid() == 5
 
-    assert comptroller.rollers(0)[0] == chain[-1].timestamp
-    assert comptroller.rollers(0)[1] / 1e18 == approx(5 * pressure)
-    assert comptroller.rollers(1)[1] / 1e18 == approx(1 * pressure)
-    assert comptroller.rollers(2)[1] / 1e18 == approx(2 * pressure)
-    assert comptroller.rollers(3)[1] / 1e18 == approx(3 * pressure)
-    assert comptroller.rollers(4)[1] / 1e18 == approx(4 * pressure)
-    assert comptroller.rollers(5)[0] == 0
+    assert comptroller.impactRollers(1)[1] / 1e18 == approx(1 * pressure)
+    assert comptroller.impactRollers(2)[1] / 1e18 == approx(2 * pressure)
+    assert comptroller.impactRollers(3)[1] / 1e18 == approx(3 * pressure)
+    assert comptroller.impactRollers(4)[1] / 1e18 == approx(4 * pressure)
+    assert comptroller.impactRollers(5)[1] / 1e18 == approx(5 * pressure)
+    assert comptroller.impactRollers(5)[0] == chain[-1].timestamp
+    assert comptroller.impactRollers(6)[0] == 0
 
-def test_roller_cardinality_increments_to_5_with_many_rolls(comptroller):
+def test_impact_roller_expected_impact_many_batched(comptroller):
 
-    ( cap, _, __ ) = comptroller.oiCap()
+    cap = comptroller.oiCap()
 
-    pressure = int(( 1e18 / cap ) * 1e18)
+    pressure = 1e18 / cap 
 
-    comptroller.expand(5)
-    chain.mine(timedelta=10)
+    chain.mine(timedelta=ONE_BLOCK)
 
     tx = comptroller.impactBatch(
         [True,True,True,True ],
         [1e18, 1e18, 1e18, 1e18]
     )
-    chain.mine(timedelta=10)
+    chain.mine(timedelta=ONE_BLOCK)
     tx = comptroller.impactBatch(
         [True,True,True],
         [1e18, 1e18, 1e18]
     )
-    chain.mine(timedelta=10)
+    chain.mine(timedelta=ONE_BLOCK)
     tx = comptroller.impactBatch(
         [True,True,True,True],
         [1e18, 1e18, 1e18, 1e18]
     )
-    chain.mine(timedelta=10)
+    chain.mine(timedelta=ONE_BLOCK)
     tx = comptroller.impactBatch(
         [True,True,True,True,True],
         [1e18, 1e18, 1e18, 1e18, 1e18]
     )
-    chain.mine(timedelta=10)
+
+    chain.mine(timedelta=ONE_BLOCK)
     tx = comptroller.impactBatch(
         [True,True,True,True,True,True],
         [1e18, 1e18, 1e18, 1e18, 1e18, 1e18]
     )
 
-    assert comptroller.cardinality() == 5
-    assert comptroller.index() == 0
+    assert comptroller.impactRollers(1)[1] / 1e18 == approx(4 * pressure)
+    assert comptroller.impactRollers(2)[1] / 1e18 == approx(7 * pressure)
+    assert comptroller.impactRollers(3)[1] / 1e18 == approx(11 * pressure)
+    assert comptroller.impactRollers(4)[1] / 1e18 == approx(16 * pressure)
+    assert comptroller.impactRollers(5)[1] / 1e18 == approx(22 * pressure)
+    assert comptroller.impactRollers(5)[0] == chain[-1].timestamp
 
-    assert comptroller.rollers(0)[0] == chain[-1].timestamp
-    assert comptroller.rollers(0)[1] == 22 * pressure
-    assert comptroller.rollers(1)[1] == 4 * pressure
-    assert comptroller.rollers(2)[1] == 7 * pressure
-    assert comptroller.rollers(3)[1] == 11 * pressure
-    assert comptroller.rollers(4)[1] == 16 * pressure
-    assert comptroller.rollers(5)[0] == 0
-
-def test_roller_cardinality_two_index_rolls_over(comptroller):
-
-    comptroller.expand(2)
-
-    chain.mine(timedelta=10)
-
-    ( cap,_,__ ) = comptroller.oiCap()
-
-    pressure = int(( 1e18 / cap ) * 1e18)
-
-    tx = comptroller.impactBatch([True,True],[1e18, 1e18])
-
-    chain.mine(timedelta=10)
-
-    tx = comptroller.impactBatch([True,True],[1e18, 1e18])
-
-    assert comptroller.rollers(0)[0] == chain[-1].timestamp
-    assert comptroller.rollers(0)[1] == 4 * pressure
-    assert comptroller.rollers(1)[1] == 2 * pressure
-
-    chain.mine(timedelta=10)
-
-    tx = comptroller.impactBatch(
-        [True,True,True,True,True,True],
-        [1e18,1e18,1e18,1e18,1e18,1e18]
-    )
-
-    assert comptroller.rollers(1)[0] == chain[-1].timestamp
-    assert comptroller.rollers(1)[1] == 10 * pressure
-
-    chain.mine(timedelta=10)
-    tx = comptroller.impactBatch([True,True,True],[2e18, 5e18, 3e18])
-
-    assert comptroller.rollers(0)[0] == chain[-1].timestamp
-    assert comptroller.rollers(0)[1] == 20 * pressure
-
-
-@given(time_diff=strategy('uint', min_value=1, max_value=1000),
+@given(time_diff=strategy('uint', min_value=1, max_value=100),
        brrrr=strategy('uint', min_value=100, max_value=100000))
 @settings(max_examples=100)
 def test_scry_interpolated_roller(comptroller, time_diff, brrrr):
 
-    brrrr = brrrr * 1e16
+    time_diff *= ONE_BLOCK
+    brrrr *= 1e16
 
-    ( cap,_,__ ) = comptroller.oiCap()
+    cap = comptroller.oiCap()
 
     time0 = Decimal(chain[-1].timestamp)
-
-    comptroller.expand(3)
 
     window = comptroller.impactWindow()
 
@@ -313,18 +158,15 @@ def test_scry_interpolated_roller(comptroller, time_diff, brrrr):
     assert abs(expected_pressure - interpolated_pressure) <= Decimal(1/10**17)
     assert abs(expected_pressure_total - interpolated_pressure_total) <= Decimal(1/10**17)
 
-@given(
-    entry=strategy('uint256', min_value=1, max_value=1e6),
-    rand=strategy('int', min_value=100, max_value=1000))
+@given(entry=strategy('uint256', min_value=1, max_value=1e6))
 @settings(max_examples=20)
-def test_impact_pressure(comptroller, entry, rand):
-
-    comptroller.expand(10)
-    chain.mine(timedelta=10)
+def test_impact_pressure(comptroller, entry):
 
     entry *= 1e18
-    rand = float(rand) / 100
-    ( cap, _, __ ) = comptroller.oiCap()
+
+    chain.mine(timedelta=ONE_BLOCK)
+
+    cap = comptroller.oiCap()
 
     _lambda = comptroller.lmbda()
 
@@ -347,16 +189,18 @@ def test_impact_pressure(comptroller, entry, rand):
     assert abs(expected - impact) < 1e6
 
 @given(
-    entry=strategy('uint256', min_value=1, max_value=1e6),
+    entry=strategy('uint256', min_value=1, max_value=.370400e6),
     rand=strategy('int', min_value=100, max_value=1000))
 @settings(max_examples=20)
-def test_impact_pressure_full_cooldown (comptroller, entry, rand):
+def test_impact_pressure_full_cooldown_entry_within_cap (comptroller, entry, rand):
 
-    comptroller.expand(10)
+    entry *= 1e16
+
     impact_window = comptroller.impactWindow()
-    chain.mine(timedelta=10)
 
-    comptroller.impactBatch([True], [entry])
+    chain.mine(timedelta=ONE_BLOCK)
+
+    tx = comptroller.impactBatch([True], [entry])
 
     chain.mine(timedelta=impact_window+1)
 
@@ -364,18 +208,14 @@ def test_impact_pressure_full_cooldown (comptroller, entry, rand):
 
     assert impact == 0
 
-def test_brrrr_when_before_roller_must_interpolate_over_long_timeframe(comptroller):
+def test_impact_when_before_roller_must_interpolate_over_long_timeframe(comptroller):
     pass
 
-def test_brrrr_when_earliest_roller_is_more_contemporary_than_brrrr_window(comptroller):
+def test_impact_when_earliest_roller_is_more_contemporary_than_impact_window(comptroller):
     pass
 
-def test_brrrr_when_before_roller_must_interpolate_over_small_timeframe(comptroller):
+def test_impact_when_before_roller_must_interpolate_over_small_timeframe(comptroller):
     pass
 
-def test_brrrr_when_earliest_roller_is_much_older_than_brrrr_window(comptroller):
+def test_impact_when_earliest_roller_is_much_older_than_impact_window(comptroller):
     pass
-
-def test_roller(comptroller):
-
-    print(comptroller)

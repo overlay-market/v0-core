@@ -48,13 +48,19 @@ interface IOverlayV1Market is IERC1155 {
     function queuedOiLong() external view returns (uint256);
     function queuedOiShort() external view returns (uint256);
 
-    function oiCap() external view returns (uint256);
-    function brrrrd() external view returns (int256);
-    function pbnj() external view returns (uint256);
+    function oiCap () external view returns (uint256);
+
+    // TODO: make brrrrd() function ?
+    function brrrrd () external view returns (int256);
+
+    function pbnj () external view returns (uint256);
     function priceFrameCap() external view returns (int256);
 
     function lmbda() external view returns (uint256);
-    function brrrrFade() external view returns (uint256);
+    function brrrrdExpected() external view returns (uint256);
+    function brrrrdWindowMacro() external view returns (uint256);
+    function brrrrdWindowMicro() external view returns (uint256);
+
 
     function epochs(
         uint _time,
@@ -137,30 +143,6 @@ interface IOverlayV1Market is IERC1155 {
         uint256 priceFrame_
     );
 
-    function setComptrollerParams (
-        uint256 _impactWindow,
-        uint256 _staticCap,
-        uint256 _lmbda,
-        uint256 _brrrrFade
-    ) external;
-
-    function setPeriods(
-        uint256 _updatePeriod,
-        uint256 _compoundingPeriod
-    ) external;
-
-    function setK (
-        uint256 _k
-    ) external;
-
-    function setSpread(
-        uint256 _pbnj
-    ) external;
-
-    function setPriceFrameCap (
-        uint256 _priceFrameCap
-    ) external;
-
     function setEverything (
         uint256 _k,
         uint256 _priceFrameCap,
@@ -168,9 +150,39 @@ interface IOverlayV1Market is IERC1155 {
         uint256 _updatePeriod,
         uint256 _compoundPeriod,
         uint256 _impactWindow,
-        uint256 _staticCap,
         uint256 _lmbda,
-        uint256 _brrrrFade
+        uint256 _staticCap,
+        uint256 _brrrrExpected,
+        uint256 _brrrrWindowMacro,
+        uint256 _brrrrWindowMicro
     ) external;
+
+    function setK (
+        uint256 _k
+    ) external;
+
+    function setPriceFrameCap (
+        uint256 _priceFrameCap
+    ) external;
+
+    function setSpread(
+        uint256 _pbnj
+    ) external;
+
+    function setPeriods(
+        uint256 _updatePeriod,
+        uint256 _compoundingPeriod
+    ) external;
+
+    function setComptrollerParams (
+        uint256 _impactWindow,
+        uint256 _lmbda,
+        uint256 _staticCap,
+        uint256 _brrrrExpected,
+        uint256 _brrrrWindowMacro,
+        uint256 _brrrrWindowMicro
+    ) external;
+
+
 
 }
