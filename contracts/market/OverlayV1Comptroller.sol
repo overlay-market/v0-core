@@ -48,11 +48,10 @@ abstract contract OverlayV1Comptroller {
     uint256 public lmbda;
 
     uint256[2] public brrrrdAccumulatooor;
-    uint256 constant brrrrdWindowMicro = 1 days;
+    uint256 public brrrrdWindowMicro;
     uint256 public brrrrdWindowMacro;
     uint256 public brrrrdExpected;
     uint256 public brrrrdFiling;
-
 
     constructor () {
 
