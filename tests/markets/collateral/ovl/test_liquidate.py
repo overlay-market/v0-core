@@ -50,7 +50,7 @@ def value(total_oi, total_oi_shares, pos_oi_shares, debt,
 
 
 @pytest.mark.parametrize('position', POSITIONS)
-def test_liquidate_success_zero_impact_zero_funding(
+def test_liquidate_success_zero_funding(
     mothership,
     feed_infos,
     ovl_collateral,
@@ -433,3 +433,62 @@ def test_liquidate_rewards_and_fees(
     exp_liquidations = value_prior * (1-margin_reward_rate)
 
     assert int(exp_liquidations) == approx(to_liquidations)
+
+
+@pytest.mark.parametrize('position', [POSITIONS[0]])
+def test_liquidate_with_funding(
+    mothership,
+    feed_infos,
+    ovl_collateral,
+    token,
+    market,
+    alice,
+    gov,
+    bob,
+    rewards,
+    position,
+):
+    margin_maintenance = ovl_collateral.marginMaintenance(market) / 1e18
+
+    # Mine to the entry time then build
+    brownie.chain.mine(timestamp=position["entry"]["timestamp"])
+    tx_build = ovl_collateral.build(
+        market,
+        position['collateral'],
+        position['leverage'],
+        position['is_long'],
+        {'from': bob}
+    )
+    pos_id = tx_build.events['Build']['positionId']
+    (_, _, _, pos_price_idx, pos_oi_shares, pos_debt, pos_cost,
+     _) = ovl_collateral.positions(pos_id)
+
+    # build a position for alice that take up 1/2 the OI of bob
+    ovl_collateral.build(
+        market,
+        int(position['collateral']/2.0),
+        position['leverage'],
+        not position['is_long'],
+        {'from': alice}
+    )
+    brownie.chain.mine(timestamp=position["liquidation"]["timestamp"]-300)
+
+    # get the pos value now ...
+    pos_val = ovl_collateral.value(pos_id)
+    _ = ovl_collateral.liquidate(pos_id, alice, {'from': alice})
+    exit_bid, exit_ask, _ = market.pricePoints(
+        market.pricePointCurrentIndex()-1)
+    assert pos_val < margin_maintenance * pos_oi_shares
+
+    # check alice oi still there
+    oi_long = market.oiLong()
+    oi_short = market.oiShort()
+
+    if position["is_long"]:
+        assert exit_bid > position["liquidation"]["price"]
+        assert oi_long == 0
+        assert oi_short > 0
+    else:
+        assert exit_ask < position["liquidation"]["price"]
+        assert oi_short == 0
+        assert oi_long > 0
