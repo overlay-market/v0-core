@@ -169,7 +169,7 @@ abstract contract OverlayV1Comptroller {
             uint _impact,
             uint _cap ) = _intake(_isLong, _oi);
 
-        roll(
+        impactCycloid = roll(
             impactRollers,
             _rollerImpact, 
             _lastMoment,
