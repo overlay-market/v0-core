@@ -26,10 +26,10 @@ POSITIONS = [
     },
     {
         "entry": {"timestamp": 1633504052, "price": 319655307482755},
-        "liquidation": {"timestamp": 1633511912, "price": 309506973869322},
+        "liquidation": {"timestamp": 1633512812, "price": 306336694541566},
         "unliquidatable": {"timestamp": 1633504232, "price": 315040205244259},
         "collateral": COLLATERAL,
-        "leverage": 11,
+        "leverage": 10,
         "is_long": True,
     },
 ]
@@ -145,7 +145,7 @@ def test_liquidate_revert_not_liquidatable(
     entry_bid, entry_ask, entry_price = market.pricePoints(pos_price_idx)
 
     brownie.chain.mine(timestamp=position["unliquidatable"]["timestamp"])
-    EXPECTED_ERROR_MESSAGE = "OverlayV1: position not liquidatable"
+    EXPECTED_ERROR_MESSAGE = "OVLV1:!liquidatable"
     with brownie.reverts(EXPECTED_ERROR_MESSAGE):
         tx_liq = ovl_collateral.liquidate(
             pos_id,
