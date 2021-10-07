@@ -136,14 +136,12 @@ def test_funding_partial_imbalance(
 
     alice_expected_oi = (alice_oi / 1e18) - ((alice_oi / 1e18) * FEE)
 
-    expected_funding_factor = (1 - (2 * K)) ** compoundings
+    expected_funding_factor = (1 - (2 * K))
 
     expected_funding_payment = (
-        ((bob_expected_oi - alice_expected_oi) *
-         expected_funding_factor) + (bob_expected_oi * K * 2)
+        bob_expected_oi - (bob_expected_oi * expected_funding_factor)
     ) if (bob_expected_oi > alice_expected_oi) else (
-        ((alice_expected_oi - bob_expected_oi) *
-         expected_funding_factor) + (bob_expected_oi * K * 2)
+        bob_expected_oi - (bob_expected_oi * expected_funding_factor)
     )
 
     # Bob & Alice both take opposing positions
