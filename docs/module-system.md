@@ -64,6 +64,8 @@ Each market has external functions accessible only by approved collateral manage
 - `exitData()`
 - `exitOI()`
 
+and an external `update()` function to be called in the event the market hasn't been interacted with for an extended period of time.
+
 Currently, we have Overlay markets on Uniswap V3 oracles: OverlayV1UniswapV3Market.sol which implements markets/OverlayV1Market.sol
 
 
@@ -87,6 +89,10 @@ Currently, we have Overlay markets on Uniswap V3 oracles: OverlayV1UniswapV3Mark
 
 - Internal calls `OverlayV1Comptroller.brrrr()` which records the amount of OVL minted or burned for trade
 - Removes open interest from the long or short side
+
+`update():`
+
+- Internal calls `OverlayV1UniswapV3Market.staticUpdate()` to update the market
 
 
 ##### OverlayV1Comptroller.sol:
@@ -133,14 +139,38 @@ Currently, we have Overlay markets on Uniswap V3 oracles: OverlayV1UniswapV3Mark
 
 ##### OverlayV1UniswapV3Market.sol:
 
-`price():`
+`price(uint _ago):`
+
+- External calls `IUniswapV3Pool(marketFeed).observe()` for tick cumulative snapshots from `_ago`, `_ago+microWindow`, and `_ago+macroWindow` seconds ago
+- Calculates TWAP values for both the `macroWindow` and `microWindow` window sizes
+- Returns a new price point through internal call to `OverlayV1PricePoint.insertSpread()`
 
 `depth():`
 
+- External calls `IUniswapV3Pool(marketFeed).observe()` for `secondsPerLiquidityCumulativeX128` snapshots from now and `microWindow` seconds ago to calculate amount of virtual ETH reserves in Uniswap V3 pool: `_ethAmount`
+- External calls `IUniswapV3Pool(ovlFeed).observe()` for `tickCumulative` snapshots from now and `microWindow` seconds ago to calculate current OVL price relative to ETH: `_price`
+- Returns bound on open interest cap from virtual liquidity in Uniswap pool: `(lmbda * _ethAmount / _price) / 2`
+
 `entryUpdate():`
+
+- Internal calls `price()` to fetch a new price point if at least one `updatePeriod` has passed since the last fetch
+- Internal calls `OverlayV1PricePoint.setPricePointCurrent()` to store fetched price
+- Internal calls `updateFunding()` if at least one `compoundingPeriod` has passed since the last funding
 
 `exitUpdate():`
 
+- Internal calls `price()` to fetch a new price point for the last position built, `entryPrice`, if at least one `updatePeriod` has passed since the last fetch
+- Internal calls `OverlayV1PricePoint.setPricePointCurrent()` to store the fetched price for last position built
+- Internal calls `price()` again to fetch the latest price point for an `exitPrice`, if more than one `updatePeriod` has passed
+- Internal calls `OverlayV1PricePoint.setPricePointCurrent()` again to store the fetched price for exit
+- Internal calls `updateFunding()` if at least one `compoundingPeriod` has passed since the last funding
+
+`staticUpdate():`
+
+- Internal calls `price()` to fetch a new price point if at least one `updatePeriod` has passed since the last fetch
+- Internal calls `OverlayV1PricePoint.setPricePointCurrent()` to store fetched price
+- Internal calls `updateFunding()` if at least one `compoundingPeriod` has passed since the last funding
+- Needed to update the market in the event no recent trading activity has occurred, since Uniswap V3 pools only store a limited number of historical snapshots for the tick and liquidity oracle
 
 
 ### Nuances:
@@ -151,3 +181,8 @@ Queued open interest:
 
 
 Price updates:
+
+- Positions settle at the price that occurs one `updatePeriod` after the block in which the position was built: what we call `t+1`. This is to prevent front-running within the update period
+- Positions exit, however, at the last price available from the oracle. As there isn't a front-running issue on exit.
+- `OverlayV1UniswapV3Market.entryUpdate()` fetches the price for previously built positions one `updatePeriod` after they were built using historical tick cumulative snapshots from Uniswap V3
+- `OverlayV1UniswapV3Market.exitUpdate()` also needs the latest price for the position exiting. Performs a double fetch if more than one update period has passed: 1. Fetches price for the last position built several update periods ago; 2. Fetches latest price for position exiting at current time.
