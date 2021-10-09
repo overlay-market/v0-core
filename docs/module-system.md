@@ -7,9 +7,10 @@ The module system has two key components:
 
 ### Collaterals Module
 
-Collaterals Module consists of collateral managers specializing in different types of collateral. Trader interactions with the system occur through collateral managers.
+Collaterals Module consists of collateral managers specializing in different types of collateral. Trader interactions with the system occur through collateral managers. Collateral managers are given mint and burn permissions on the OVL token by the mothership contract.
 
 Each manager has external functions:
+
 - `build()`
 - `unwind()`
 - `liquidate()`
@@ -21,25 +22,25 @@ Currently, we have an OVL Collateral Manager that accepts OVL: collateral/Overla
 
 `build(address _market, uint256 _collateral, uint256 _leverage, bool _isLong):`
 
-- Auth calls `IOverlayV1Market(_market).enterOI()` which queues open interest on market contract, adjusted for trading and impact fees
-- Transfers OVL collateral amount to manager from msg.sender
+- Auth calls `IOverlayV1Market(_market).enterOI()` which queues open interest on the market contract, adjusted for trading and impact fees
+- Transfers OVL collateral amount to manager from `msg.sender`
 - Returns ERC1155 position token for user's share of the position
 
 `unwind(uint256 _positionId, uint256 _shares):`
 
-- Auth calls `IOverlayV1Market(_market).exitData()` which returns open interest occupied by position & change in price since entry
-- Calculates current value of position being unwound given `_shares` less fees
-- Mints `PnL = value - cost` in OVL to collateral manager if PnL > 0 or burns PnL if < 0 from collateral manager
-- Transfers value to msg.sender
+- Auth calls `IOverlayV1Market(_market).exitData()` view which returns open interest occupied by position & change in price since entry
+- Calculates current value less fees of position being unwound given ERC1155 `_shares`
+- Mints `PnL = value - cost` in OVL to collateral manager if PnL > 0 or burns if PnL < 0 from collateral manager
+- Transfers value to `msg.sender`
 - Auth calls `IOverlayV1Market(_market).exitOI()` which removes open interest from market contract
 - Burns ERC1155 position token shares
 
 `liquidate(uint256 _positionId):`
 
-- Auth calls `IOverlayV1Market(_market).exitData()` which returns open interest occupied by position & change in price since entry
+- Auth calls `IOverlayV1Market(_market).exitData()` view which returns open interest occupied by position & change in price since entry
 - Checks if position value is less than initial open interest times maintenance margin
 - Auth calls `IOverlayV1Market(_market).exitOI()` which removes open interest from market contract
-- Zeroes the position's shares of total open interest on long or short side
+- Zeroes the position's share of total open interest on long or short side
 - Burns `loss = cost - value` in OVL from collateral manager
 - Transfers reward to liquidator
 
@@ -58,6 +59,7 @@ Each market tracks:
 - Collateral managers approved by governance to add/remove open interest: `OverlayV1Governance.isCollateral`
 
 Each market has external functions accessible only by approved collateral managers:
+
 - `enterOI()`
 - `exitData()`
 - `exitOI()`
@@ -70,62 +72,76 @@ Currently, we have Overlay markets on Uniswap V3 oracles: OverlayV1UniswapV3Mark
 
 `enterOI(bool _isLong, uint256 _collateral, uint256 _leverage):`
 
-- Internal calls OverlayV1UniswapV3Market.entryUpdate() which fetches and stores a new price from the oracle and applies funding to the open interest
-- Internal calls OverlayV1Comptroller.intake() which calculates and records the market impact
-- Internal calls OverlayV1OI.queueOi() to add the adjusted open interest to the market
+- Internal calls `OverlayV1UniswapV3Market.entryUpdate()` which fetches and stores a new price from the oracle and applies funding to the open interest
+- Internal calls `OverlayV1Comptroller.intake()` which calculates and records the market impact
+- Internal calls `OverlayV1OI.queueOi()` to add the adjusted open interest to the market
 
 
 `exitData(bool _isLong, uint256 _pricePoint, uint256 _compounding):`
 
-- Internal calls OverlayV1UniswapV3Market.exitUpdate() which fetches current and last settlement prices from the oracle and applies funding
+- Internal calls `OverlayV1UniswapV3Market.exitUpdate()` which fetches current and last settlement prices from the oracle and applies funding
 - Returns total open interest on side of trade and ratio between exit and entry prices
 
 
 `exitOI(bool _isLong, bool _fromQueued, uint _oi, uint _oiShares, uint _brrrr, uint _antiBrrrr):`
 
-- Internal calls OverlayV1Comptroller.brrrr() which records the amount of OVL minted or burned for trade
+- Internal calls `OverlayV1Comptroller.brrrr()` which records the amount of OVL minted or burned for trade
 - Removes open interest from the long or short side
-
 
 
 ##### OverlayV1Comptroller.sol:
 
-intake():
+`intake(bool _isLong, uint _oi):`
 
+- Stores in accumulator snapshots `impactRollers` the amount of open interest cap occupied by the trade: `oi/oiCap()`
+- Calculates market impact fee `_oi * (1 - e**(-lmbda * (impactRollers[now] - impactRollers[now-impactWindow])))` in OVL burned from collateral manager
+- Internal calls `brrrr()` to record the impact fee to be burned
 
-brrrr():
+`brrrr():`
 
+- c
+- d
 
+`oiCap():`
+
+- a
+- b
 
 
 ##### OverlayV1OI.sol:
 
-updateFunding():
+`updateFunding():`
 
-queueOi():
+- e
+- f
 
-updateOi():
+`queueOi():`
 
+- g
+- h
+
+`updateOi():`
+
+- i
+- j
 
 
 ##### OverlayV1PricePoint.sol:
 
-setPricePoint():
+`setPricePoint():`
 
+`insertSpread()`
 
 
 ##### OverlayV1UniswapV3Market.sol:
 
-price():
+`price():`
 
-depth():
+`depth():`
 
-entryUpdate():
+`entryUpdate():`
 
-exitUpdate():
-
-
-
+`exitUpdate():`
 
 
 
@@ -133,7 +149,7 @@ exitUpdate():
 
 Queued open interest:
 
-- Queued open interest (__queuedOiLong__, __queuedOiShort__) is open interest that is not yet eligible for funding. It is transferred over to (__oiLong__, __oiShort__) after the last compoundingPeriod has passed through updateOi()
+- Queued open interest (`__queuedOiLong__`, `__queuedOiShort__`) is open interest that is not yet eligible for funding. It is transferred over to (`__oiLong__`, `__oiShort__`) after the last `compoundingPeriod` has passed through an internal call to `updateOi()`
 
 
 Price updates:
