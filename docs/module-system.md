@@ -121,9 +121,14 @@ Currently, we have Overlay markets on Uniswap V3 oracles: OverlayV1UniswapV3Mark
 
 ##### OverlayV1PricePoint.sol:
 
-`setPricePoint():`
+`setPricePointCurrent(PricePoint memory _pricePoint):`
 
-`insertSpread()`
+- Stores a new historical price in the `_pricePoints` array. Price points include bid and ask values used for entry and exit: `PricePoint{ uint bid; uint ask; uint price }`. Longs receive the ask on entry, bid on exit. Shorts receive the bid on entry, ask on exit.
+
+`insertSpread(uint _microPrice, uint _macroPrice)`
+
+- Calculates bid and ask values given shorter and longer TWAP values fetched from the oracle
+- Applies the static spread `pbnj` to bid `e**(-pbnj)` and ask `e**(pbnj)`
 
 
 ##### OverlayV1UniswapV3Market.sol:
