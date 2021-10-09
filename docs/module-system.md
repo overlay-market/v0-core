@@ -93,37 +93,30 @@ Currently, we have Overlay markets on Uniswap V3 oracles: OverlayV1UniswapV3Mark
 
 `intake(bool _isLong, uint _oi):`
 
-- Stores in accumulator snapshots `impactRollers` the amount of open interest cap occupied by the trade: `oi/oiCap()`
+- Records in accumulator snapshots `impactRollers` the amount of open interest cap occupied by the trade: `oi / oiCap()`
 - Calculates market impact fee `_oi * (1 - e**(-lmbda * (impactRollers[now] - impactRollers[now-impactWindow])))` in OVL burned from collateral manager
-- Internal calls `brrrr()` to record the impact fee to be burned
+- Internal calls `brrrr()` to record the impact fee that will be burned
 
-`brrrr():`
+`brrrr(uint _brrrr, _antiBrrrr):`
 
-- c
-- d
+- Records in accumulator snapshots `brrrrdRollers` an amount of OVL minted `_brrrr` or burned `_antiBrrrr`
 
 `oiCap():`
 
-- a
-- b
+- Returns the current dynamic cap on open interest for the market, if less than constraint from `OverlayV1UniswapV3Market.depth()`: `staticCap * min(1, 2 - (brrrrdRollers[now] - brrrrdRollers[now-brrrrdWindowMacro]) / brrrrdExpected)`
 
 
 ##### OverlayV1OI.sol:
 
-`updateFunding():`
+`updateFunding(uint _epochs):`
 
-- e
-- f
+- Internal calls `payFunding()` which pays funding between `__oiLong__` and `__oiShort__`: open interest imbalance is drawn down by `(1-2*k)**(epochs)`
+- Internal calls `updateOi()` which transfers queued open interest into `__oiLong__` and `__oiShort__` since now eligible for funding
 
-`queueOi():`
+`queueOi(bool _isLong, uint256 _oi, uint256 _oiCap):`
 
-- g
-- h
-
-`updateOi():`
-
-- i
-- j
+- Add open interest to either `__queuedOiLong__` or `__queuedOiShort__`
+- Checks current open interest cap has not been exceeded: `_oiLong__ + __queuedOiLong__ <= _oiCap` or `_oiShort__ + __queuedOiShort__ <= _oiCap`
 
 
 ##### OverlayV1PricePoint.sol:
