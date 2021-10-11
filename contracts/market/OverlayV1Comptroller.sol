@@ -3,7 +3,7 @@ pragma solidity ^0.8.7;
 
 import "../libraries/FixedPoint.sol";
 import "./OverlayV1Governance.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
+import "../utils/math/Math.sol";
 
 abstract contract OverlayV1Comptroller {
 

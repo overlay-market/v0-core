@@ -4,7 +4,8 @@ pragma solidity ^0.8.7;
 
 import "../libraries/Position.sol";
 import "../libraries/FixedPoint.sol";
-import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
+// import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
+import "../ERC1155/extensions/ERC1155Supply.sol";
 import "../interfaces/IOverlayV1Market.sol";
 import "../interfaces/IOverlayV1Mothership.sol";
 import "../interfaces/IOverlayToken.sol";

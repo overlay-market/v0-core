@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import "@openzeppelin/contracts/utils/math/Math.sol";
+// import "@openzeppelin/contracts/utils/math/Math.sol";
+import "../utils/math/Math.sol";
 import "../libraries/FixedPoint.sol";
 
 abstract contract OverlayV1PricePoint {

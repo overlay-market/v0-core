@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
+// import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+// import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
+import "./access/AccessControlEnumerable.sol";
+import "./ERC20/extensions/ERC20Votes.sol";
 
 contract OverlayToken is AccessControlEnumerable, ERC20("Overlay", "OVL") {
 
