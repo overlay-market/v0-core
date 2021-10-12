@@ -3,6 +3,7 @@ from brownie import interface
 from brownie import \
     UniswapV3FactoryMock, \
     OverlayV1Mothership, \
+    OverlayV1OVLCollateral, \
     OverlayV1UniswapV3Market, \
     OverlayToken, \
     chain, \
@@ -113,6 +114,8 @@ def deploy_mothership(ovl):
 
     mothership.setOVL(ovl, { "from": GOV })
 
+    ovl.grantRole(ovl.ADMIN_ROLE(), mothership, { "from": GOV })
+
     return mothership
 
 
@@ -138,7 +141,7 @@ def deploy_market(mothership, feed_depth, feed_market):
         COMPOUND_PERIOD,
         IMPACT_WINDOW,
         LAMBDA,
-        OI_CAP,
+        STATIC_CAP,
         BRRRR_EXPECTED,
         BRRRR_WINDOW_MACRO,
         BRRRR_WINDOW_MICRO,
@@ -148,6 +151,32 @@ def deploy_market(mothership, feed_depth, feed_market):
     mothership.initializeMarket(market, { "from": GOV })
 
     return market
+
+
+def deploy_ovl_collateral(mothership, market, ovl):
+
+    ovl_collateral = GOV.deploy(
+        OverlayV1OVLCollateral,
+        "uri",
+        mothership
+    )
+
+    ovl_collateral.setMarketInfo(
+        market,
+        MARGIN_MAINTENANCE,
+        MARGIN_REWARD_RATE,
+        MAX_LEVERAGE,
+        { "from": GOV }
+    )
+
+    market.addCollateral(ovl_collateral, { "from": GOV })
+
+    mothership.initializeCollateral(ovl_collateral, { "from": GOV })
+
+    ovl.approve(ovl_collateral, 1e50, { "from": ALICE })
+    ovl.approve(ovl_collateral, 1e50, { "from": BOB })
+
+    return ovl_collateral
 
 
 def main():
@@ -163,5 +192,7 @@ def main():
     mothership = deploy_mothership(ovl)
 
     market = deploy_market(mothership, feed_depth, feed_market)
+
+    ovl_collateral = deploy_ovl_collateral(mothership, market, ovl)
 
 
