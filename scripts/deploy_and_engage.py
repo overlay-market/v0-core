@@ -271,6 +271,15 @@ def main():
 
     chain.mine( timedelta=market.updatePeriod() * 2 )
 
+    position_two = build_position(
+        ovl_collateral,
+        market,
+        5e18,
+        5,
+        True,
+        ALICE
+    )
+
     transfer_position_shares(
         ovl_collateral, 
         ALICE, 
