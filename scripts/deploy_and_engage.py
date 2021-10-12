@@ -88,18 +88,21 @@ def deploy_ovl():
     return ovl
 
 
-def deploy_mothership():
+def deploy_mothership(ovl):
 
     mothership = GOV.deploy(OverlayV1Mothership, FEE_TO, FEE, FEE_BURN_RATE, MARGIN_BURN_RATE)
 
+    mothership.setOVL(ovl, { "from": GOV })
+
     return mothership
+
 
 def main():
 
     uni_factory = deploy_uni_factory()
 
-    uni_market = deploy_uni_pool(uni_factory, DAI, WETH, '../feeds/univ3_dai_weth')
+    feed_market = deploy_uni_pool(uni_factory, DAI, WETH, '../feeds/univ3_dai_weth')
 
     ovl = deploy_ovl()
 
-    mothership = deploy_mothership()
+    mothership = deploy_mothership(ovl)
