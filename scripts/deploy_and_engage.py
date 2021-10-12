@@ -3,6 +3,7 @@ from brownie import interface
 from brownie import \
     UniswapV3FactoryMock, \
     OverlayV1Mothership, \
+    OverlayV1UniswapV3Market, \
     OverlayToken, \
     chain, \
     accounts
@@ -18,6 +19,10 @@ PRICE_POINTS_END = 100
 
 PRICE_WINDOW_MACRO = 3600
 PRICE_WINDOW_MICRO = 600
+
+K = 343454218783234
+PRICE_FRAME_CAP = 5e18
+SPREAD = .00573e18
 
 UPDATE_PERIOD = 100
 COMPOUND_PERIOD = 600
@@ -79,6 +84,9 @@ def deploy_uni_pool(factory, token0, token1, path):
 
     chain.mine(timestamp=beginning)
 
+    return uniswapv3_pool
+
+
 def deploy_ovl():
 
     ovl = GOV.deploy(OverlayToken)
@@ -90,19 +98,65 @@ def deploy_ovl():
 
 def deploy_mothership(ovl):
 
-    mothership = GOV.deploy(OverlayV1Mothership, FEE_TO, FEE, FEE_BURN_RATE, MARGIN_BURN_RATE)
+    mothership = GOV.deploy(
+        OverlayV1Mothership, 
+        FEE_TO, 
+        FEE, 
+        FEE_BURN_RATE, 
+        MARGIN_BURN_RATE
+    )
 
     mothership.setOVL(ovl, { "from": GOV })
 
     return mothership
 
 
+def deploy_market(mothership, feed_depth, feed_market):
+
+    market = GOV.deploy(
+        OverlayV1UniswapV3Market,
+        mothership,
+        feed_depth,
+        feed_market,
+        WETH,
+        WETH,
+        AMOUNT_IN,
+        PRICE_WINDOW_MACRO,
+        PRICE_WINDOW_MICRO
+    )
+
+    market.setEverything(
+        K,
+        PRICE_FRAME_CAP,
+        SPREAD,
+        UPDATE_PERIOD,
+        COMPOUND_PERIOD,
+        IMPACT_WINDOW,
+        LAMBDA,
+        OI_CAP,
+        BRRRR_EXPECTED,
+        BRRRR_WINDOW_MACRO,
+        BRRRR_WINDOW_MICRO,
+        { "from": GOV }
+    )
+
+    mothership.initializeMarket(market, { "from": GOV })
+
+    return market
+
+
 def main():
 
     uni_factory = deploy_uni_factory()
+
+    feed_depth = deploy_uni_pool(uni_factory, AXS, WETH, '../feeds/univ3_axs_weth')
 
     feed_market = deploy_uni_pool(uni_factory, DAI, WETH, '../feeds/univ3_dai_weth')
 
     ovl = deploy_ovl()
 
     mothership = deploy_mothership(ovl)
+
+    market = deploy_market(mothership, feed_depth, feed_market)
+
+
