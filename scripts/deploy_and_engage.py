@@ -3,6 +3,7 @@ from brownie import interface
 from brownie import \
     UniswapV3FactoryMock, \
     OverlayV1Mothership, \
+    OverlayToken, \
     chain, \
     accounts
 import os
@@ -40,6 +41,8 @@ WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 AXS = "0xBB0E17EF65F82Ab018d8EDd776e8DD940327B28b"
 USDC = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
 
+ALICE = accounts[2]
+BOB = accounts[3]
 FEED_OWNER = accounts[6]
 GOV = accounts[0]
 FEE_TO = accounts[4]
@@ -76,6 +79,14 @@ def deploy_uni_pool(factory, token0, token1, path):
 
     chain.mine(timestamp=beginning)
 
+def deploy_ovl():
+
+    ovl = GOV.deploy(OverlayToken)
+    ovl.mint(ALICE, TOKEN_TOTAL_SUPPLY / 2, { "from": GOV })
+    ovl.mint(BOB, TOKEN_TOTAL_SUPPLY / 2, { "from": GOV })
+
+    return ovl
+
 
 def deploy_mothership():
 
@@ -83,11 +94,12 @@ def deploy_mothership():
 
     return mothership
 
-
 def main():
 
     uni_factory = deploy_uni_factory()
 
     uni_market = deploy_uni_pool(uni_factory, DAI, WETH, '../feeds/univ3_dai_weth')
+
+    ovl = deploy_ovl()
 
     mothership = deploy_mothership()
