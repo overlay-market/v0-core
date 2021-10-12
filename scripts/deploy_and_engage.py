@@ -178,6 +178,38 @@ def deploy_ovl_collateral(mothership, market, ovl):
 
     return ovl_collateral
 
+def build_position(
+    collateral_manager, 
+    market, 
+    collateral, 
+    leverage, 
+    is_long, 
+    taker
+):
+
+    tx_build = collateral_manager.build(
+        market,
+        collateral,
+        leverage,
+        is_long,
+        { "from": taker }
+    )
+
+    position = tx_build.events['Build']['positionId']
+    oi = tx_build.events['Build']['oi']
+    debt = tx_build.events['Build']['debt']
+    collateral = oi - debt
+
+    return {
+        'market': market,
+        'collateral_manager': collateral_manager,
+        'id': position,
+        'oi': oi,
+        'collateral': collateral,
+        'leverage': leverage,
+        'is_long': is_long
+    }
+    
 
 def main():
 
@@ -194,5 +226,15 @@ def main():
     market = deploy_market(mothership, feed_depth, feed_market)
 
     ovl_collateral = deploy_ovl_collateral(mothership, market, ovl)
+
+    position_one = build_position(
+        ovl_collateral,
+        market,
+        5e18,
+        5,
+        True,
+        ALICE
+    )
+
 
 
