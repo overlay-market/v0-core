@@ -301,3 +301,10 @@ def main():
         2.5e18,
         ALICE
     )
+
+    print("market            :", market)
+    print("ovl_collateral    :", ovl_collateral)
+    print("alice             :", ALICE)
+    print("bob               :", BOB)
+    print("gov               :", GOV)
+    print("fee_to            :", FEE_TO)
