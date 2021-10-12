@@ -210,6 +210,19 @@ def build_position(
         'is_long': is_long
     }
 
+def unwind_position(
+    collateral_manager,
+    position_id,
+    position_shares,
+    unwinder
+):
+
+    tx_unwind = collateral_manager.unwind(
+        position_id,
+        position_shares,
+        { "from": unwinder }
+    )
+
 
 def transfer_position_shares(
     collateral_manager,
@@ -245,6 +258,8 @@ def main():
 
     ovl_collateral = deploy_ovl_collateral(mothership, market, ovl)
 
+    chain.mine( timedelta=market.compoundingPeriod() * 3 )
+
     position_one = build_position(
         ovl_collateral,
         market,
@@ -254,7 +269,26 @@ def main():
         ALICE
     )
 
-    transfer_position_shares(ovl_collateral, ALICE, BOB, position_one['id'], 2.5e18)
+    chain.mine( timedelta=market.updatePeriod() * 2 )
 
+    transfer_position_shares(
+        ovl_collateral, 
+        ALICE, 
+        BOB, 
+        position_one['id'], 
+        2.5e18
+    )
 
+    unwind_position(
+        ovl_collateral,
+        position_one['id'],
+        2.5e18,
+        BOB
+    )
 
+    unwind_position(
+        ovl_collateral,
+        position_one['id'],
+        2.5e18,
+        ALICE
+    )
