@@ -44,6 +44,33 @@ def deploy_uni_factory():
     return uniswapv3_factory
 
 
+def deploy_uni_pool(factory, token0, token1, path):
+
+    base = os.path.dirname(os.path.abspath(__file__))
+
+    with open(os.path.normpath(os.path.join(base, path + '_raw_uni_framed.json'))) as f: 
+        data = json.load(f)
+
+    with open(os.path.normpath(os.path.join(base, path + '_reflected.json'))) as f: 
+        beginning = json.load(f)['timestamp'][0]
+
+    factory.createPool(token0, token1)
+
+    IUniswapV3OracleMock = getattr(interface, 'IUniswapV3OracleMock')
+
+    uniswapv3_pool = IUniswapV3OracleMock(factory.allPools(0))
+
+    uniswapv3_pool.loadObservations(
+        data['observations'],
+        data['shims'],
+        { 'from': FEED_OWNER }
+    )
+
+    chain.mine(timestamp=beginning)
+
+
 def main():
 
     uni_factory = deploy_uni_factory()
+
+    uni_market = deploy_uni_pool(uni_factory, DAI, WETH, '../feeds/univ3_dai_weth')
