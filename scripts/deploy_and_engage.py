@@ -11,7 +11,6 @@ from brownie import \
 import os
 import json
 
-
 ''' OVERLAY TOKEN PARAMETERS '''
 TOKEN_TOTAL_SUPPLY = 8000000e18
 
@@ -209,7 +208,25 @@ def build_position(
         'leverage': leverage,
         'is_long': is_long
     }
-    
+
+
+def transfer_position_shares(
+    collateral_manager,
+    sender,
+    receiver,
+    position_id,
+    amount
+):
+
+    tx_transfer = collateral_manager.safeTransferFrom(
+        sender,
+        receiver,
+        position_id,
+        amount,
+        "",
+        { "from": sender }
+    )
+
 
 def main():
 
@@ -235,6 +252,8 @@ def main():
         True,
         ALICE
     )
+
+    transfer_position_shares(ovl_collateral, ALICE, BOB, position_one['id'], 2.5e18)
 
 
 
