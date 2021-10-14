@@ -302,6 +302,7 @@ def main():
         ALICE
     )
 
+    print("mothership        :", mothership)
     print("market            :", market)
     print("ovl_collateral    :", ovl_collateral)
     print("alice             :", ALICE)
