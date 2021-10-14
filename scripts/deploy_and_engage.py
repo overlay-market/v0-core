@@ -264,7 +264,7 @@ def main():
         ovl_collateral,
         market,
         5e18,
-        5,
+        1,
         True,
         ALICE
     )
@@ -288,19 +288,22 @@ def main():
         2.5e18
     )
 
-    unwind_position(
-        ovl_collateral,
-        position_one['id'],
-        2.5e18,
-        BOB
-    )
+    print("balanceOf alice", ovl_collateral.balanceOf(ALICE, position_one['id']))
+    print("balanceOf bob", ovl_collateral.balanceOf(BOB, position_one['id']))
 
-    unwind_position(
-        ovl_collateral,
-        position_one['id'],
-        2.5e18,
-        ALICE
-    )
+    # unwind_position(
+    #     ovl_collateral,
+    #     position_one['id'],
+    #     2.5e18,
+    #     BOB
+    # )
+
+    # unwind_position(
+    #     ovl_collateral,
+    #     position_one['id'],
+    #     2.5e18,
+    #     ALICE
+    # )
 
     print("mothership        :", mothership)
     print("market            :", market)
@@ -309,3 +312,12 @@ def main():
     print("bob               :", BOB)
     print("gov               :", GOV)
     print("fee_to            :", FEE_TO)
+
+    with open(".subgraph.test.env", "w") as f:
+        f.write('MOTHERSHIP={}\n'.format(mothership))
+        f.write('MARKET={}\n'.format(market))
+        f.write('OVL_COLLATERAL={}\n'.format(ovl_collateral))
+        f.write('ALICE={}\n'.format(ALICE))
+        f.write('BOB={}\n'.format(BOB))
+        f.write('GOV={}\n'.format(GOV))
+        f.write('FEE_TO={}\n'.format(FEE_TO))
