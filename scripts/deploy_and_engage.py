@@ -178,7 +178,7 @@ def deploy_ovl_collateral(mothership, market, ovl):
 
     return ovl_collateral
 
-def build_position(
+def build_position (
     collateral_manager, 
     market, 
     collateral, 
@@ -276,7 +276,7 @@ def main():
         market,
         5e18,
         5,
-        True,
+        False,
         ALICE
     )
 
@@ -285,33 +285,28 @@ def main():
         ALICE, 
         BOB, 
         position_one['id'], 
-        2.5e18
+        position_one['oi'] / 2
     )
 
     print("balanceOf alice", ovl_collateral.balanceOf(ALICE, position_one['id']))
     print("balanceOf bob", ovl_collateral.balanceOf(BOB, position_one['id']))
 
-    # unwind_position(
-    #     ovl_collateral,
-    #     position_one['id'],
-    #     2.5e18,
-    #     BOB
-    # )
+    unwind_position(
+        ovl_collateral,
+        position_one['id'],
+        position_one['oi'] / 2,
+        BOB
+    )
 
-    # unwind_position(
-    #     ovl_collateral,
-    #     position_one['id'],
-    #     2.5e18,
-    #     ALICE
-    # )
+    unwind_position(
+        ovl_collateral,
+        position_one['id'],
+        position_one['oi'] / 2,
+        ALICE
+    )
 
-    print("mothership        :", mothership)
-    print("market            :", market)
-    print("ovl_collateral    :", ovl_collateral)
-    print("alice             :", ALICE)
-    print("bob               :", BOB)
-    print("gov               :", GOV)
-    print("fee_to            :", FEE_TO)
+    print("ALICE", position_two['oi'])
+
 
     with open(".subgraph.test.env", "w") as f:
         f.write('MOTHERSHIP={}\n'.format(mothership))
@@ -321,3 +316,6 @@ def main():
         f.write('BOB={}\n'.format(BOB))
         f.write('GOV={}\n'.format(GOV))
         f.write('FEE_TO={}\n'.format(FEE_TO))
+        f.write('BOB_POSITION_ONE={}\n'.format(ovl_collateral.balanceOf(BOB, position_one[id])))
+        f.write('ALICE_POSITION_ONE={}\n'.format(ovl_collateral.balanceOf(ALICE, position_one[id])))
+        f.write('ALICE_POSITION_TWO={}\n'.format(ovl_collateral.balanceOf(ALICE, position_two[id])))

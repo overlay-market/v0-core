@@ -1,5 +1,6 @@
 from re import I
 import requests
+from pytest import approx
 import json
 import os
 from os import environ
@@ -44,6 +45,9 @@ def test_alice_and_bob_exist():
 
 def test_alice_and_bob_have_zero_position_one_shares():
 
+    global ALICE
+    global BOB
+
     gql = """
         query {
             accounts {
@@ -65,40 +69,27 @@ def test_alice_and_bob_have_zero_position_one_shares():
 
     accounts = result['accounts']
 
-    print("result", result['accounts'])
-
-    balances = [ x['balances'] for x in accounts if 0 < len(x['balances'])]
-
-    shares = { 
+    position_one = { 
         to_address(balance['account']['address']):balance['shares'] 
-        for sublist in balances 
+        for sublist in [ x['balances'] for x in accounts if 0 < len(x['balances'])]
         for balance in sublist 
         if balance['position'] == '1' 
     }
 
-    assert shares[alice] == 0, 'alices shares are not zero'
-    assert shares[bob] == 0, 'bobs shares are not zero'
+    assert position_one[BOB] == environ.get('BOB_POSITION_ONE'), 'bobs position one shares are not zero'
+    assert position_one[ALICE] == environ.get('ALICE_POSITION_ONE'), 'alices position one shares are not zero'
 
-# flatten_planets = [planet 
-#                    for sublist in planets 
-#                    for planet in sublist 
-#                    if len(planet) < 6] 
+    position_two = { 
+        to_address(balance['account']['address']):balance['shares'] 
+        for sublist in [ x['balances'] for x in accounts if 0 < len(x['balances'])]
+        for balance in sublist 
+        if balance['position'] == '2' 
+    }
 
-    print("balances", balances)
-    print("shares", shares)
-    print("shares", shares[alice])
-    print("shares", shares[bob])
-    # print("shares", shares[0])
-    # print("shares", shares[1])
+    assert BOB not in position_two, 'bob has no position two shares'
 
-    # filtered = filter(lambda y: ( print("y", y), y['position'] == 1 ), accounts)
-
-    # shares = list(map(lambda x: list(filter(lambda y: (print("y", y), y['position'] == 1), x['balances'])), accounts) )
-
-    # print("shares", shares)
-
-    # for thing in shares:
-    #     print("thing", thing)
+    assert position_two[ALICE] == environ.get('ALICE_POSITION_TWO')
+    
 
 def set_env():
 
@@ -126,6 +117,6 @@ if __name__ == "__main__":
 
     set_env()
 
-    # test_alice_and_bob_exist()
+    test_alice_and_bob_exist()
 
-    # test_alice_and_bob_have_zero_position_one_shares()
+    test_alice_and_bob_have_zero_position_one_shares()
