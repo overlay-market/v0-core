@@ -81,10 +81,51 @@ def test_alice_and_bob_have_zero_position_1_shares():
     assert ENV('BOB') not in position_2, 'bob is in position 2'
     assert ENV('ALICE_POSITION_2') == position_2[ENV('ALICE')], 'alice has unexpected position 2 shares'
 
+def test_batch_transfer_positions_3_to_5():
+
+    gql = """
+        query {
+            accounts {
+                id
+                balances {
+                    id
+                    account {
+                        id
+                        address
+                    }
+                    position
+                    shares
+                }
+            }
+        }
+    """
+
+    result = query(gql)
+
+    accounts = result['accounts']
+
+    position_3 = get_balances_for_position_in_accounts_dot_balances(accounts, 3)
+
+    assert position_3[ENV('ALICE')] == ENV('ALICE_POSITION_3'), 'alice has unexpected position 3 shares'
+    assert position_3[ENV('BOB')] == ENV('BOB_POSITION_3'), 'bob has unexpected position 3 shares'
+
+    position_4 = get_balances_for_position_in_accounts_dot_balances(accounts, 4)
+
+    assert position_4[ENV('ALICE')] == ENV('ALICE_POSITION_4'), 'alice has unexpected position 4 shares'
+    assert position_4[ENV('BOB')] == ENV('BOB_POSITION_4'), 'bob has unexpected position 4 shares'
+
+    position_5 = get_balances_for_position_in_accounts_dot_balances(accounts, 5)
+
+    assert position_5[ENV('ALICE')] == ENV('ALICE_POSITION_5'), 'alice has unexpected position 5 shares'
+    assert position_5[ENV('BOB')] == ENV('BOB_POSITION_5'), 'bob has unexpected position 5 shares'
+
+
 if __name__ == "__main__":
 
     test_alice_and_bob_exist()
 
     test_alice_and_bob_have_zero_position_1_shares()
+
+    test_batch_transfer_positions_3_to_5()
 
     print("end")
