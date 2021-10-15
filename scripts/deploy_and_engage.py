@@ -288,9 +288,6 @@ def main():
         position_one['oi'] / 2
     )
 
-    print("balanceOf alice", ovl_collateral.balanceOf(ALICE, position_one['id']))
-    print("balanceOf bob", ovl_collateral.balanceOf(BOB, position_one['id']))
-
     unwind_position(
         ovl_collateral,
         position_one['id'],
@@ -305,9 +302,6 @@ def main():
         ALICE
     )
 
-    print("ALICE", position_two['oi'])
-
-
     with open(".subgraph.test.env", "w") as f:
         f.write('MOTHERSHIP={}\n'.format(mothership))
         f.write('MARKET={}\n'.format(market))
@@ -316,6 +310,6 @@ def main():
         f.write('BOB={}\n'.format(BOB))
         f.write('GOV={}\n'.format(GOV))
         f.write('FEE_TO={}\n'.format(FEE_TO))
-        f.write('BOB_POSITION_ONE={}\n'.format(ovl_collateral.balanceOf(BOB, position_one[id])))
-        f.write('ALICE_POSITION_ONE={}\n'.format(ovl_collateral.balanceOf(ALICE, position_one[id])))
-        f.write('ALICE_POSITION_TWO={}\n'.format(ovl_collateral.balanceOf(ALICE, position_two[id])))
+        f.write('BOB_POSITION_ONE={}\n'.format(ovl_collateral.balanceOf(BOB, position_one['id'])))
+        f.write('ALICE_POSITION_ONE={}\n'.format(ovl_collateral.balanceOf(ALICE, position_one['id'])))
+        f.write('ALICE_POSITION_TWO={}\n'.format(ovl_collateral.balanceOf(ALICE, position_two['id'])))
