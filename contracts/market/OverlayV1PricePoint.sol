@@ -45,6 +45,10 @@ abstract contract OverlayV1PricePoint {
 
         uint _len = _pricePoints.length;
 
+        require(_pricePointIndex <  _len ||
+               (_pricePointIndex == _len && toUpdate < block.timestamp),
+               "OVLV1:!settled");
+
         if (_pricePointIndex == _len) {
 
             pricePoint_ = price(toUpdate);
@@ -54,7 +58,6 @@ abstract contract OverlayV1PricePoint {
             pricePoint_ = _pricePoints[_pricePointIndex];
 
         }
-
 
     }
 
