@@ -17,6 +17,15 @@ def ENV(key):
     if "0x" in value: return to_address(value)
     else: return value
 
+def get_balances_for_position_in_accounts_dot_balances(accounts, pos):
+
+    return { 
+        to_address(balance['account']['address']):balance['shares'] 
+        for sublist in [ x['balances'] for x in accounts if 0 < len(x['balances'])]
+        for balance in sublist 
+        if balance['position'] == str(pos)
+    }
+
 def query(gql):
 
     return json.loads(requests.post(subgraph, json={'query': gql}).text)['data']
@@ -39,7 +48,7 @@ def test_alice_and_bob_exist():
     assert ENV("BOB") in accounts, "Bob is not in returned accounts"
 
 
-def test_alice_and_bob_have_zero_position_one_shares():
+def test_alice_and_bob_have_zero_position_1_shares():
 
     gql = """
         query {
@@ -62,32 +71,20 @@ def test_alice_and_bob_have_zero_position_one_shares():
 
     accounts = result['accounts']
 
-    position_one = { 
-        to_address(balance['account']['address']):balance['shares'] 
-        for sublist in [ x['balances'] for x in accounts if 0 < len(x['balances'])]
-        for balance in sublist 
-        if balance['position'] == '1' 
-    }
+    position_1 = get_balances_for_position_in_accounts_dot_balances(accounts, 1)
 
-    assert position_one[ENV('BOB')] == ENV('BOB_POSITION_ONE'), 'bobs position one shares are not zero'
-    assert position_one[ENV('ALICE')] == ENV('ALICE_POSITION_ONE'), 'alices position one shares are not zero'
+    assert position_1[ENV('BOB')] == ENV('BOB_POSITION_1'), 'bobs position one shares are not zero'
+    assert position_1[ENV('ALICE')] == ENV('ALICE_POSITION_1'), 'alices position one shares are not zero'
 
-    position_two = { 
-        to_address(balance['account']['address']):balance['shares'] 
-        for sublist in [ x['balances'] for x in accounts if 0 < len(x['balances'])]
-        for balance in sublist 
-        if balance['position'] == '2' 
-    }
+    position_2 = get_balances_for_position_in_accounts_dot_balances(accounts, 2)
 
-    assert ENV('BOB') not in position_two, 'bob has no position two shares'
-
-    assert position_two[ENV('ALICE')] == ENV('ALICE_POSITION_TWO')
-    
+    assert ENV('BOB') not in position_2, 'bob is in position 2'
+    assert ENV('ALICE_POSITION_2') == position_2[ENV('ALICE')], 'alice has unexpected position 2 shares'
 
 if __name__ == "__main__":
 
     test_alice_and_bob_exist()
 
-    test_alice_and_bob_have_zero_position_one_shares()
+    test_alice_and_bob_have_zero_position_1_shares()
 
     print("end")
