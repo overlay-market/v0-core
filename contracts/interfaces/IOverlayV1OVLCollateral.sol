@@ -14,8 +14,18 @@ interface IOverlayV1OVLCollateral is IERC1155 {
     event log(string k, uint v);
     event log(string k, address v);
 
-    event Build(uint256 positionId, uint256 oi, uint256 debt);
-    event Unwind(uint256 positionId, uint256 oi, uint256 debt);
+    event Build(
+        address market, 
+        uint256 positionId, 
+        uint256 oi, 
+        uint256 debt
+    );
+    event Unwind(
+        address market,
+        uint256 positionId, 
+        uint256 oi, 
+        uint256 debt
+    );
     event Liquidate(
         uint256 positionId,
         uint256 oi,

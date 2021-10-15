@@ -37,12 +37,14 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     uint256 public liquidations;
 
     event Build(
+        address market,
         uint256 positionId,
         uint256 oi,
         uint256 debt
     );
 
     event Unwind(
+        address market,
         uint256 positionId,
         uint256 oi,
         uint256 debt
@@ -241,7 +243,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         fees += _fee;
 
-        emit Build(_positionId, _oiAdjusted, _debtAdjusted);
+        emit Build(_market, _positionId, _oiAdjusted, _debtAdjusted);
 
         ovl.transferFrom(msg.sender, address(this), _collateral);
 
@@ -283,6 +285,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         uint _userCost = _shares * pos.cost / _totalPosShares;
         uint _userOi = _shares * pos.oi(_oi, _oiShares) / _totalPosShares;
 
+        emit Unwind(pos.market, _positionId, _userOi, _userDebt);
+
         // TODO: think through edge case of underwater position ... and fee adjustments ...
         uint _feeAmount = _userNotional.mulUp(mothership.fee());
 
@@ -300,8 +304,6 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         // positions[_positionId].debt -= _userDebt;
         // positions[_positionId].cost -= _userCost;
         // positions[_positionId].oiShares -= _userOiShares;
-
-        emit Unwind(_positionId, _userOi, _userDebt);
 
         // mint/burn excess PnL = valueAdjusted - cost, accounting for need to also burn debt
         if (_userCost < _userValueAdjusted) {
