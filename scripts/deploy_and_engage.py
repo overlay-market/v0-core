@@ -373,7 +373,7 @@ def main():
 
     chain.mine(timedelta=UPDATE_PERIOD)
 
-
+    chain.mine(timedelta=COMPOUND_PERIOD)
 
     with open(".subgraph.test.env", "w") as f:
         f.write('MOTHERSHIP={}\n'.format(mothership))
