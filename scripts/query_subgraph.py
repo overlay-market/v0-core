@@ -10,16 +10,12 @@ from dotenv import load_dotenv
 
 subgraph = "http://localhost:8000/subgraphs/name/overlay-market/overlay-v1"
 
-alice = "0x256F5ff57469492BC3bF5Ea7A70Daa565737dc68"
-bob = "0xdA44bf38D3969931Ad844cB8813423311E68A5c1"
+load_dotenv(".subgraph.test.env")
 
-global ALICE
-global BOB
-global MOTHERSHIP
-global MARKET
-global OVL_COLLATERAL
-
-load_dotenv("./subgraph.test.env")
+def ENV(key): 
+    value = environ.get(key)
+    if "0x" in value: return to_address(value)
+    else: return value
 
 def query(gql):
 
@@ -39,14 +35,11 @@ def test_alice_and_bob_exist():
 
     accounts = [ to_address(x['id']) for x in result['accounts'] ]
 
-    assert alice in accounts, "Alice is not in returned accounts"
-    assert bob in accounts, "Bob is not in returned accounts"
+    assert ENV("ALICE") in accounts, "Alice is not in returned accounts"
+    assert ENV("BOB") in accounts, "Bob is not in returned accounts"
 
 
 def test_alice_and_bob_have_zero_position_one_shares():
-
-    global ALICE
-    global BOB
 
     gql = """
         query {
@@ -76,8 +69,8 @@ def test_alice_and_bob_have_zero_position_one_shares():
         if balance['position'] == '1' 
     }
 
-    assert position_one[BOB] == environ.get('BOB_POSITION_ONE'), 'bobs position one shares are not zero'
-    assert position_one[ALICE] == environ.get('ALICE_POSITION_ONE'), 'alices position one shares are not zero'
+    assert position_one[ENV('BOB')] == ENV('BOB_POSITION_ONE'), 'bobs position one shares are not zero'
+    assert position_one[ENV('ALICE')] == ENV('ALICE_POSITION_ONE'), 'alices position one shares are not zero'
 
     position_two = { 
         to_address(balance['account']['address']):balance['shares'] 
@@ -86,37 +79,15 @@ def test_alice_and_bob_have_zero_position_one_shares():
         if balance['position'] == '2' 
     }
 
-    assert BOB not in position_two, 'bob has no position two shares'
+    assert ENV('BOB') not in position_two, 'bob has no position two shares'
 
-    assert position_two[ALICE] == environ.get('ALICE_POSITION_TWO')
+    assert position_two[ENV('ALICE')] == ENV('ALICE_POSITION_TWO')
     
 
-def set_env():
-
-    env_path = Path('.') / '.subgraph.test.env'
-    load_dotenv(dotenv_path=env_path)
-
-    global MOTHERSHIP 
-    global MARKET
-    global OVL_COLLATERAL
-    global ALICE
-    global BOB
-    global GOV
-    global FEE_TO 
-
-    MOTHERSHIP = to_address(environ.get("MOTHERSHIP"))
-    MARKET = to_address(environ.get("MARKET"))
-    OVL_COLLATERAL = to_address(environ.get("OVL_COLLATERAL"))
-    ALICE = to_address(environ.get("ALICE"))
-    BOB = to_address(environ.get("BOB"))
-    GOV = to_address(environ.get("GOV"))
-    FEE_TO = to_address(environ.get("FEE_TO"))
-
-
 if __name__ == "__main__":
-
-    set_env()
 
     test_alice_and_bob_exist()
 
     test_alice_and_bob_have_zero_position_one_shares()
+
+    print("end")
