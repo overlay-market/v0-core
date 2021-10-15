@@ -241,6 +241,23 @@ def transfer_position_shares(
         { "from": sender }
     )
 
+def transfer_position_shares_batch(
+    collateral_manager,
+    sender,
+    receiver,
+    position_ids,
+    amounts
+):
+
+    tx_transfer = collateral_manager.safeBatchTransferFrom(
+        sender,
+        receiver,
+        position_ids,
+        amounts,
+        "",
+        { "from": sender }
+    )
+
 
 def main():
 
@@ -260,7 +277,7 @@ def main():
 
     chain.mine( timedelta=market.compoundingPeriod() * 3 )
 
-    position_one = build_position(
+    position_1 = build_position(
         ovl_collateral,
         market,
         5e18,
@@ -271,7 +288,7 @@ def main():
 
     chain.mine( timedelta=market.updatePeriod() * 2 )
 
-    position_two = build_position(
+    position_2 = build_position(
         ovl_collateral,
         market,
         5e18,
@@ -284,22 +301,63 @@ def main():
         ovl_collateral, 
         ALICE, 
         BOB, 
-        position_one['id'], 
-        position_one['oi'] / 2
+        position_1['id'], 
+        position_1['oi'] / 2
     )
 
     unwind_position(
         ovl_collateral,
-        position_one['id'],
-        position_one['oi'] / 2,
+        position_1['id'],
+        position_1['oi'] / 2,
         BOB
     )
 
     unwind_position(
         ovl_collateral,
-        position_one['id'],
-        position_one['oi'] / 2,
+        position_1['id'],
+        position_1['oi'] / 2,
         ALICE
+    )
+
+    chain.mine(timedelta=UPDATE_PERIOD)
+
+    position_3 = build_position(
+        ovl_collateral,
+        market,
+        5e18,
+        1,
+        True,
+        ALICE
+    )
+
+    chain.mine(timedelta=UPDATE_PERIOD)
+
+    position_4 = build_position(
+        ovl_collateral,
+        market,
+        5e18,
+        1,
+        True,
+        ALICE
+    )
+
+    chain.mine(timedelta=UPDATE_PERIOD)
+
+    position_5 = build_position(
+        ovl_collateral,
+        market,
+        5e18,
+        1,
+        True,
+        ALICE
+    )
+
+    transfer_position_shares_batch(
+        ovl_collateral, 
+        ALICE, 
+        BOB, 
+        [ position_3['id'], position_4['id'], position_5['id'] ],
+        [ position_3['oi'], position_4['oi'], position_5['oi'] ]
     )
 
     with open(".subgraph.test.env", "w") as f:
@@ -310,6 +368,13 @@ def main():
         f.write('BOB={}\n'.format(BOB))
         f.write('GOV={}\n'.format(GOV))
         f.write('FEE_TO={}\n'.format(FEE_TO))
-        f.write('BOB_POSITION_ONE={}\n'.format(ovl_collateral.balanceOf(BOB, position_one['id'])))
-        f.write('ALICE_POSITION_ONE={}\n'.format(ovl_collateral.balanceOf(ALICE, position_one['id'])))
-        f.write('ALICE_POSITION_TWO={}\n'.format(ovl_collateral.balanceOf(ALICE, position_two['id'])))
+        f.write('BOB_POSITION_1={}\n'.format(ovl_collateral.balanceOf(BOB, position_1['id'])))
+        f.write('BOB_POSITION_2={}\n'.format(ovl_collateral.balanceOf(BOB, position_2['id'])))
+        f.write('BOB_POSITION_3={}\n'.format(ovl_collateral.balanceOf(BOB, position_3['id'])))
+        f.write('BOB_POSITION_4={}\n'.format(ovl_collateral.balanceOf(BOB, position_4['id'])))
+        f.write('BOB_POSITION_5={}\n'.format(ovl_collateral.balanceOf(BOB, position_5['id'])))
+        f.write('ALICE_POSITION_1={}\n'.format(ovl_collateral.balanceOf(ALICE, position_1['id'])))
+        f.write('ALICE_POSITION_2={}\n'.format(ovl_collateral.balanceOf(ALICE, position_2['id'])))
+        f.write('ALICE_POSITION_3={}\n'.format(ovl_collateral.balanceOf(ALICE, position_3['id'])))
+        f.write('ALICE_POSITION_4={}\n'.format(ovl_collateral.balanceOf(ALICE, position_4['id'])))
+        f.write('ALICE_POSITION_5={}\n'.format(ovl_collateral.balanceOf(ALICE, position_5['id'])))
