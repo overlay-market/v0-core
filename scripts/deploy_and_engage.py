@@ -308,14 +308,14 @@ def main():
     unwind_position(
         ovl_collateral,
         position_1['id'],
-        position_1['oi'] / 2,
+        ovl_collateral.balanceOf(BOB, position_1['id']),
         BOB
     )
 
     unwind_position(
         ovl_collateral,
         position_1['id'],
-        position_1['oi'] / 2,
+        ovl_collateral.balanceOf(ALICE, position_1['id']),
         ALICE
     )
 
@@ -357,8 +357,23 @@ def main():
         ALICE, 
         BOB, 
         [ position_3['id'], position_4['id'], position_5['id'] ],
-        [ position_3['oi'], position_4['oi'], position_5['oi'] ]
+        [ position_3['oi'], position_4['oi'] / 2, position_5['oi'] / 4 ]
     )
+
+    chain.mine(timedelta=UPDATE_PERIOD)
+
+    position_6 = build_position(
+        ovl_collateral,
+        market,
+        5e18,
+        1,
+        True,
+        ALICE
+    )
+
+    chain.mine(timedelta=UPDATE_PERIOD)
+
+
 
     with open(".subgraph.test.env", "w") as f:
         f.write('MOTHERSHIP={}\n'.format(mothership))
