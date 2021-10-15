@@ -19,10 +19,16 @@ abstract contract OverlayV1PricePoint {
 
     uint256 public pbnj;
 
+    uint256 public updatePeriod;
+    uint256 public toUpdate;
+    uint256 public updated;
+
     // mapping from price point index to realized historical prices
     PricePoint[] internal _pricePoints;
 
     event NewPrice(uint bid, uint ask, uint price);
+
+    function price (uint _ago) public view virtual returns (PricePoint memory);
 
     /// @notice Get the current price point index
     function pricePointCurrentIndex() external view returns (uint) {
@@ -37,7 +43,18 @@ abstract contract OverlayV1PricePoint {
         PricePoint memory pricePoint_
     ) {
 
-        pricePoint_ = _pricePoints[_pricePointIndex];
+        uint _len = _pricePoints.length;
+
+        if (_pricePointIndex == _len) {
+
+            pricePoint_ = price(toUpdate);
+
+        } else {
+
+            pricePoint_ = _pricePoints[_pricePointIndex];
+
+        }
+
 
     }
 

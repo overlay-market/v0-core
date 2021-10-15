@@ -12,10 +12,6 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     uint256 internal X96 = 0x1000000000000000000000000;
 
-    uint public toUpdate;
-    uint public updated;
-    uint public compounded;
-
     uint256 public immutable macroWindow; // window size for main TWAP
     uint256 public immutable microWindow; // window size for bid/ask TWAP
 
@@ -79,7 +75,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     function price (
         uint _ago
-    ) public view returns (
+    ) public view override returns (
         PricePoint memory
     ) {
 
