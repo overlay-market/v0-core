@@ -47,7 +47,7 @@ abstract contract OverlayV1Comptroller {
     uint256 public impactWindow;
     uint256 public lmbda;
 
-    uint256[2] public brrrrdAccumulatooor;
+    uint256[2] public brrrrdAccumulator;
     uint256 public brrrrdWindowMicro;
     uint256 public brrrrdWindowMacro;
     uint256 public brrrrdExpected;
@@ -88,13 +88,13 @@ abstract contract OverlayV1Comptroller {
             uint _lastMoment = _roller.time;
 
             _roller.time = _brrrrdFiling;
-            _roller.ying += brrrrdAccumulatooor[0];
-            _roller.yang += brrrrdAccumulatooor[1];
+            _roller.ying += brrrrdAccumulator[0];
+            _roller.yang += brrrrdAccumulator[1];
 
             brrrrdCycloid = roll(brrrrdRollers, _roller, _lastMoment, _brrrrdCycloid);
 
-            brrrrdAccumulatooor[0] = _brrrr;
-            brrrrdAccumulatooor[1] = _antiBrrrr;
+            brrrrdAccumulator[0] = _brrrr;
+            brrrrdAccumulator[1] = _antiBrrrr;
 
             uint _brrrrdWindowMicro = brrrrdWindowMicro;
 
@@ -102,8 +102,8 @@ abstract contract OverlayV1Comptroller {
 
         } else { // add to the brrrr accumulator
 
-            brrrrdAccumulatooor[0] += _brrrr;
-            brrrrdAccumulatooor[1] += _antiBrrrr;
+            brrrrdAccumulator[0] += _brrrr;
+            brrrrdAccumulator[1] += _antiBrrrr;
 
         }
 
@@ -121,9 +121,9 @@ abstract contract OverlayV1Comptroller {
                 brrrrdWindowMacro 
             );
 
-        brrrrd_ = brrrrdAccumulatooor[0] + _rollerNow.ying - _rollerThen.ying;
+        brrrrd_ = brrrrdAccumulator[0] + _rollerNow.ying - _rollerThen.ying;
 
-        antiBrrrrd_ = brrrrdAccumulatooor[1] + _rollerNow.yang - _rollerThen.yang;
+        antiBrrrrd_ = brrrrdAccumulator[1] + _rollerNow.yang - _rollerThen.yang;
 
     }
 
