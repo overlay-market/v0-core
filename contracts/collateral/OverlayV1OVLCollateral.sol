@@ -245,9 +245,9 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         emit Build(_market, _positionId, _oiAdjusted, _debtAdjusted);
 
-        ovl.transferFrom(msg.sender, address(this), _collateral);
+        ovl.transferFrom(msg.sender, address(this), _collateralAdjusted + _fee);
 
-        ovl.burn(address(this), _impact);
+        ovl.burn(msg.sender, _impact);
 
         _mint(msg.sender, _positionId, _oiAdjusted, ""); // WARNING: last b/c erc1155 callback
 
@@ -305,18 +305,19 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         // positions[_positionId].cost -= _userCost;
         // positions[_positionId].oiShares -= _userOiShares;
 
-        // mint/burn excess PnL = valueAdjusted - cost, accounting for need to also burn debt
+        ovl.transfer(msg.sender, _userCost);
+
+        // mint/burn excess PnL = valueAdjusted - cost
         if (_userCost < _userValueAdjusted) {
 
-            ovl.mint(address(this), _userValueAdjusted - _userCost);
+            ovl.mint(msg.sender, _userValueAdjusted - _userCost);
 
         } else {
 
-            ovl.burn(address(this), _userCost - _userValueAdjusted);
+            ovl.burn(msg.sender, _userCost - _userValueAdjusted);
 
         }
 
-        ovl.transfer(msg.sender, _userValueAdjusted);
 
         IOverlayV1Market(pos.market).exitOI(
             pos.isLong,
