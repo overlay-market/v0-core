@@ -408,7 +408,6 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             uint _compoundings,
             uint _tCompounding, ) = epochs(block.timestamp, updated, toUpdate);
 
-
         priceFrame_ = priceFrame(
             _isLong,
             _entryIndex,

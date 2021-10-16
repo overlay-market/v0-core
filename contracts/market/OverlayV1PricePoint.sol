@@ -14,7 +14,7 @@ abstract contract OverlayV1PricePoint {
     struct PricePoint {
         uint256 bid;
         uint256 ask;
-        uint256 price;
+        uint256 index;
     }
 
     uint256 public pbnj;
@@ -26,7 +26,7 @@ abstract contract OverlayV1PricePoint {
     // mapping from price point index to realized historical prices
     PricePoint[] internal _pricePoints;
 
-    event NewPrice(uint bid, uint ask, uint price);
+    event NewPrice(uint bid, uint ask, uint index);
 
     function price (uint _ago) public view virtual returns (PricePoint memory);
 
@@ -88,7 +88,7 @@ abstract contract OverlayV1PricePoint {
         emit NewPrice(
             _pricePoint.bid, 
             _pricePoint.ask, 
-            _pricePoint.price
+            _pricePoint.index
         );
 
     }

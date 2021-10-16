@@ -11,10 +11,10 @@ interface IOverlayV1Market is IERC1155 {
     struct PricePoint {
         uint256 bid;
         uint256 ask;
-        uint256 price;
+        uint256 index;
     }
 
-    event NewPrice(uint bid, uint ask, uint price);
+    event NewPrice(uint bid, uint ask, uint index);
     event FundingPaid(uint oiLong, uint oiShort, int fundingPaid);
 
     function ovl() external view returns (address);
