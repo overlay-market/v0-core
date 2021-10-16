@@ -376,6 +376,7 @@ def main():
     chain.mine(timedelta=COMPOUND_PERIOD)
 
     with open(".subgraph.test.env", "w") as f:
+        f.write('OVL={}\n'.format(ovl))
         f.write('MOTHERSHIP={}\n'.format(mothership))
         f.write('MARKET={}\n'.format(market))
         f.write('OVL_COLLATERAL={}\n'.format(ovl_collateral))
