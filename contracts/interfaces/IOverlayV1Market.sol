@@ -17,19 +17,20 @@ interface IOverlayV1Market is IERC1155 {
     event NewPrice(uint bid, uint ask, uint index);
     event FundingPaid(uint oiLong, uint oiShort, int fundingPaid);
 
-    function ovl() external view returns (address);
-    function factory() external view returns (address);
+    function ovl () external view returns (address);
+    function factory () external view returns (address);
 
-    function feed() external view returns (address);
-    function windowSize() external view returns (uint256);
-    function impactWindow() external view returns (uint256);
-    function updatePeriod() external view returns (uint256);
-    function compoundingPeriod() external view returns (uint256);
-    function updated() external view returns (uint256);
-    function update() external;
-    function toUpdate() external view returns (uint256);
-    function compounded() external view returns (uint256);
-    function leverageMax() external view returns (uint8);
+    function feed () external view returns (address);
+    function impactWindow () external view returns (uint256);
+    function updatePeriod () external view returns (uint256);
+    function updated () external view returns (uint256);
+    function update () external;
+    function toUpdate () external view returns (uint256);
+    function compounded () external view returns (uint256);
+    function compoundingPeriod () external view returns (uint256);
+
+    function leverageMax () external view returns (uint8);
+
     function k() external view returns (uint256);
 
     function oi () external view returns (
@@ -57,10 +58,10 @@ interface IOverlayV1Market is IERC1155 {
     function priceFrameCap() external view returns (int256);
 
     function lmbda() external view returns (uint256);
+
     function brrrrdExpected() external view returns (uint256);
     function brrrrdWindowMacro() external view returns (uint256);
     function brrrrdWindowMicro() external view returns (uint256);
-
 
     function epochs(
         uint _time,
