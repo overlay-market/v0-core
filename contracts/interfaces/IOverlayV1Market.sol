@@ -63,6 +63,16 @@ interface IOverlayV1Market is IERC1155 {
     function brrrrdWindowMacro() external view returns (uint256);
     function brrrrdWindowMicro() external view returns (uint256);
 
+    function epochs() external view returns (
+        uint updatesThen_,
+        uint updatesNow_,
+        uint tUpdate_,
+        uint t1Update_,
+        uint compoundings_,
+        uint tCompounding_,
+        uint t1Compounding_
+    );
+
     function epochs(
         uint _time,
         uint _from,

@@ -136,7 +136,7 @@ abstract contract OverlayV1Comptroller {
 
         if (_antiBrrrrd > _brrrrd) {
 
-            return Math.min(staticCap, depth());
+            return Math.min(staticCap, depth() );
 
         }
 

@@ -51,7 +51,7 @@ abstract contract OverlayV1PricePoint {
 
         if (_pricePointIndex == _len) {
 
-            pricePoint_ = price(toUpdate);
+            pricePoint_ = price(block.timestamp - toUpdate);
 
         } else {
 

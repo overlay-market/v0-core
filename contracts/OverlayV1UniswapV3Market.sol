@@ -135,6 +135,20 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
+    function epochs () public view returns (
+        uint updatesThen_,
+        uint updatesNow_,
+        uint tUpdate_,
+        uint t1Update_,
+        uint compoundings_,
+        uint tCompounding_,
+        uint t1Compounding_
+    ) {
+
+        return epochs(block.timestamp, updated, toUpdate);
+
+    }
+
     function epochs (
         uint _time,
         uint _from,
