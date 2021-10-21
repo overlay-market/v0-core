@@ -7,9 +7,7 @@ from decimal import *
 @given(
   compoundings=strategy('uint256', min_value=1, max_value=100),
   oi=strategy('uint256', min_value=1, max_value=10000),
-  is_long=strategy('bool')
-)
-@settings(max_examples=20)
+  is_long=strategy('bool'))
 def test_funding_total_imbalance(
   bob,
   market,
@@ -42,17 +40,9 @@ def test_funding_total_imbalance(
     { 'from': bob }
   )
 
-  oi_queued = ( market.queuedOiLong() if is_long else market.queuedOiShort() ) / 1e18
+  oi = ( market.oiLong() if is_long else market.oiShort() ) / 1e18
 
-  assert oi_queued == approx(expected_oi), 'queued oi different to expected'
-
-  chain.mine(timedelta=COMPOUND_PERIOD)
-
-  market.update({ 'from': bob })
-
-  oi_unqueued = ( market.oiLong() if is_long else market.oiShort() ) / 1e18
-
-  assert oi_unqueued == approx(expected_oi), 'unequeued oi different than expected'
+  assert oi == approx(expected_oi), 'queued oi different to expected'
 
   chain.mine(timedelta=COMPOUND_PERIOD * compoundings)
 
