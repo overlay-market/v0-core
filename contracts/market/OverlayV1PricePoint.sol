@@ -28,12 +28,20 @@ abstract contract OverlayV1PricePoint {
 
     event NewPrice(uint bid, uint ask, uint index);
 
-    function price (uint _ago) public view virtual returns (PricePoint memory);
+    function price () public view virtual returns (PricePoint memory);
 
     /// @notice Get the current price point index
-    function pricePointCurrentIndex() external view returns (uint) {
+    function pricePointCurrentIndex() public view returns (uint) {
 
-        return _pricePoints.length;
+        if (updated != block.timestamp) {
+
+            return _pricePoints.length;
+
+        } else {
+
+            return _pricePoints.length - 1;
+
+        }
 
     }
 
@@ -46,12 +54,12 @@ abstract contract OverlayV1PricePoint {
         uint _len = _pricePoints.length;
 
         require(_pricePointIndex <  _len ||
-               (_pricePointIndex == _len && toUpdate < block.timestamp),
-               "OVLV1:!settled");
+               (_pricePointIndex == _len && updated == block.timestamp),
+               "OVLV1:!price");
 
         if (_pricePointIndex == _len) {
 
-            pricePoint_ = price(block.timestamp - toUpdate);
+            pricePoint_ = price();
 
         } else {
 
@@ -81,15 +89,17 @@ abstract contract OverlayV1PricePoint {
     }
 
     /// @notice Allows inheriting contracts to add the latest realized price
-    function setPricePointCurrent(PricePoint memory _pricePoint) internal {
-
-        _pricePoints.push(_pricePoint);
+    function setPricePointCurrent(
+        PricePoint memory _pricePoint
+    ) internal {
 
         emit NewPrice(
             _pricePoint.bid, 
             _pricePoint.ask, 
             _pricePoint.index
         );
+
+        _pricePoints.push(_pricePoint);
 
     }
 

@@ -49,8 +49,21 @@ interface IOverlayV1OVLCollateral is IERC1155 {
     function totalSupply(uint256 positionId) external view returns (uint256 totalSupply);
     function marginAdjustments (address market) external view returns (uint256 marginAdjustment);
     function supportedMarket (address market) external view returns (bool supported);
-    function queuedPositionLongs (address market, uint leverage) external view returns (uint queuedPositionId);
-    function queuedPositionShorts (address market, uint leverage) external view returns (uint queuedPositionId);
+
+    function currentBlockPositionsLong (
+        address market, 
+        uint leverage
+    ) external view returns (
+        uint positionId
+    );
+
+    function currentBlockPositionsShort (
+        address market, 
+        uint leverage
+    ) external view returns (
+        uint positionId
+    );
+
     function positions (uint positionId) external view returns (Position.Info memory);
     function ovl () external view returns (IOverlayToken);
     function mothership () external view returns (IOverlayV1Mothership);
@@ -88,9 +101,7 @@ interface IOverlayV1OVLCollateral is IERC1155 {
         uint _marginAdjustment
     ) external;
 
-    function update(
-        address _market
-    ) external;
+    function disburse() external;
 
     function build(
         address _market,

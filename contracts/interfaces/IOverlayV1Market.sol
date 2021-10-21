@@ -37,17 +37,13 @@ interface IOverlayV1Market is IERC1155 {
         uint oiLong_,
         uint oiShort_,
         uint oiLongShares_,
-        uint oiShortShares_,
-        uint queuedOiLong_,
-        uint queuedOiShort_
+        uint oiShortShares_
     );
 
     function oiLong() external view returns (uint256);
     function oiShort() external view returns (uint256);
     function oiLongShares() external view returns (uint256);
     function oiShortShares() external view returns (uint256);
-    function queuedOiLong() external view returns (uint256);
-    function queuedOiShort() external view returns (uint256);
 
     function oiCap () external view returns (uint256);
 
@@ -64,27 +60,16 @@ interface IOverlayV1Market is IERC1155 {
     function brrrrdWindowMicro() external view returns (uint256);
 
     function epochs() external view returns (
-        uint updatesThen_,
-        uint updatesNow_,
-        uint tUpdate_,
-        uint t1Update_,
         uint compoundings_,
-        uint tCompounding_,
-        uint t1Compounding_
+        uint tCompounding_
     );
 
     function epochs(
-        uint _time,
-        uint _from,
-        uint _between
+        uint _now,
+        uint _compounded
     ) external view returns (
-        uint updatesThen_,
-        uint updatesNow_,
-        uint tUpdate_,
-        uint t1Update_,
         uint compoundings_,
-        uint tCompounding_,
-        uint t1Compounding_
+        uint tCompounding_
     );
 
     function pricePointCurrentIndex() external view returns (uint256);
@@ -120,24 +105,20 @@ interface IOverlayV1Market is IERC1155 {
         uint debtAdjusted_,
         uint fee_,
         uint impact_,
-        uint pricePointCurrent_,
-        uint t1Compounding_
+        uint pricePointCurrent_
     );
 
     function exitData (
         bool _isLong,
-        uint256 _pricePoint,
-        uint256 _compounding
+        uint256 _pricePoint
     ) external returns (
         uint oi_,
         uint oiShares_,
-        uint priceFrame_,
-        bool fromQueued_
+        uint priceFrame_
     );
 
     function exitOI (
         bool _isLong,
-        bool _fromQueued,
         uint _oi,
         uint _oiShares,
         uint _brrrr,
@@ -146,8 +127,7 @@ interface IOverlayV1Market is IERC1155 {
 
     function positionInfo (
         bool _isLong,
-        uint _entryIndex,
-        uint _compounding
+        uint _entryIndex
     ) external view returns (
         uint256 oi_,
         uint256 oiShares_,

@@ -19,8 +19,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     bytes32 constant private GOVERNOR = keccak256("GOVERNOR");
 
-    mapping (address => mapping(uint => uint)) internal queuedPositionLongs;
-    mapping (address => mapping(uint => uint)) internal queuedPositionShorts;
+    mapping (address => mapping(uint => uint)) internal currentBlockPositionsLong;
+    mapping (address => mapping(uint => uint)) internal currentBlockPositionsShort;
     mapping (address => MarketInfo) public marketInfo;
     struct MarketInfo {
         uint marginMaintenance;
@@ -85,8 +85,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             pricePoint: 0,
             oiShares: 0,
             debt: 0,
-            cost: 0,
-            compounding: 0
+            cost: 0
         }));
 
     }
@@ -135,10 +134,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     }
 
 
-    /// @notice Updates funding payments, cumulative fees, queued position builds, and price points
-    function update (
-        address _market
-    ) public {
+    /// @notice Disburses fees
+    function disburse () public {
 
         (   uint256 _marginBurnRate,
             uint256 _feeBurnRate,
@@ -167,19 +164,20 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     }
 
-    function getQueuedPositionId (
+    function getCurrentBlockPositionId (
         address _market,
         bool _isLong,
         uint _leverage,
-        uint _pricePointCurrent,
-        uint _t1Compounding
-    ) internal returns (uint positionId_) {
+        uint _pricePointCurrent
+    ) internal returns (
+        uint positionId_
+    ) {
 
-        mapping(uint=>uint) storage _queuedPositions = _isLong
-            ? queuedPositionLongs[_market]
-            : queuedPositionShorts[_market];
+        mapping(uint=>uint) storage _currentBlockPositions = _isLong
+            ? currentBlockPositionsLong[_market]
+            : currentBlockPositionsShort[_market];
 
-        positionId_ = _queuedPositions[_leverage];
+        positionId_ = _currentBlockPositions[_leverage];
 
         Position.Info storage position = positions[positionId_];
 
@@ -192,13 +190,12 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
                 pricePoint: _pricePointCurrent,
                 oiShares: 0,
                 debt: 0,
-                cost: 0,
-                compounding: _t1Compounding
+                cost: 0
             }));
 
             positionId_ = positions.length - 1;
 
-            _queuedPositions[_leverage] = positionId_;
+            _currentBlockPositions[_leverage] = positionId_;
 
         }
 
@@ -219,20 +216,18 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             uint _debtAdjusted,
             uint _fee,
             uint _impact,
-            uint _pricePointCurrent,
-            uint _t1Compounding ) = IOverlayV1Market(_market)
+            uint _pricePointCurrent ) = IOverlayV1Market(_market)
                 .enterOI(
                     _isLong,
                     _collateral,
                     _leverage
                 );
 
-        uint _positionId = getQueuedPositionId(
+        uint _positionId = getCurrentBlockPositionId(
             _market,
             _isLong,
             _leverage,
-            _pricePointCurrent,
-            _t1Compounding
+            _pricePointCurrent
         );
 
         Position.Info storage pos = positions[_positionId];
@@ -269,12 +264,10 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         (   uint _oi,
             uint _oiShares,
-            uint _priceFrame,
-            bool _fromQueued ) = IOverlayV1Market(pos.market)
+            uint _priceFrame ) = IOverlayV1Market(pos.market)
                 .exitData(
                     pos.isLong,
-                    pos.pricePoint,
-                    pos.compounding
+                    pos.pricePoint
                 );
 
         uint _totalPosShares = totalSupply(_positionId);
@@ -296,14 +289,9 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         fees += _feeAmount; // adds to fee pot, which is transferred on update
 
-        // TODO: compare gas expenditure
         pos.debt -= _userDebt;
         pos.cost -= _userCost;
         pos.oiShares -= _userOiShares;
-        // TODO: compare gas expenditure
-        // positions[_positionId].debt -= _userDebt;
-        // positions[_positionId].cost -= _userCost;
-        // positions[_positionId].oiShares -= _userOiShares;
 
         ovl.transfer(msg.sender, _userCost);
 
@@ -321,7 +309,6 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         IOverlayV1Market(pos.market).exitOI(
             pos.isLong,
-            _fromQueued,
             _userOi,
             _userOiShares,
             _userCost < _userValueAdjusted ? _userValueAdjusted - _userCost : 0,
@@ -348,12 +335,10 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         (   uint _oi,
             uint _oiShares,
-            uint _priceFrame,
-            bool _fromQueued ) = IOverlayV1Market(pos.market)
+            uint _priceFrame ) = IOverlayV1Market(pos.market)
                 .exitData(
                     _isLong,
-                    pos.pricePoint,
-                    pos.compounding
+                    pos.pricePoint
                 );
 
         MarketInfo memory _marketInfo = marketInfo[pos.market];
@@ -369,7 +354,6 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         IOverlayV1Market(pos.market).exitOI(
             _isLong,
-            _fromQueued,
             pos.oi(_oi, _oiShares),
             pos.oiShares,
             0,
@@ -412,8 +396,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             uint _priceFrame ) = _market
             .positionInfo(
                 pos.isLong,
-                pos.pricePoint,
-                pos.compounding
+                pos.pricePoint
             );
 
         value_ = pos.value(

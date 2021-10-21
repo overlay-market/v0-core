@@ -20,7 +20,6 @@ FEE_RESOLUTION = 1e18
     oi_short=strategy('uint256',
                       min_value=MIN_COLLATERAL_AMOUNT,
                       max_value=0.999*OI_CAP*10**TOKEN_DECIMALS),)
-@settings(max_examples=1)
 def test_update(mothership,
                 token,
                 market,

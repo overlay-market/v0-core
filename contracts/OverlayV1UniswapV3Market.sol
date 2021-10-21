@@ -67,22 +67,17 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         setPricePointCurrent(PricePoint(_price, _price, _price));
 
-        toUpdate = type(uint256).max;
         updated = block.timestamp;
         compounded = block.timestamp;
 
     }
 
-    function price (
-        uint _ago
-    ) public view override returns (
-        PricePoint memory
-    ) {
+    function price () public view override returns (PricePoint memory) {
 
         uint32[] memory _secondsAgo = new uint32[](3);
-        _secondsAgo[0] = uint32(_ago + macroWindow);
-        _secondsAgo[1] = uint32(_ago + microWindow);
-        _secondsAgo[2] = uint32(_ago);
+        _secondsAgo[0] = uint32(macroWindow);
+        _secondsAgo[1] = uint32(microWindow);
+        _secondsAgo[2] = uint32(0);
 
         ( int56[] memory _ticks, ) = IUniswapV3Pool(marketFeed).observe(_secondsAgo);
 
@@ -136,184 +131,54 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     }
 
     function epochs () public view returns (
-        uint updatesThen_,
-        uint updatesNow_,
-        uint tUpdate_,
-        uint t1Update_,
         uint compoundings_,
-        uint tCompounding_,
-        uint t1Compounding_
+        uint tCompounding_
     ) {
 
-        return epochs(block.timestamp, updated, toUpdate);
+        return epochs(block.timestamp, compounded);
 
     }
 
     function epochs (
-        uint _time,
-        uint _from,
-        uint _between
+        uint _now,
+        uint _compounded
     ) public view returns (
-        uint updatesThen_,
-        uint updatesNow_,
-        uint tUpdate_,
-        uint t1Update_,
         uint compoundings_,
-        uint tCompounding_,
-        uint t1Compounding_
+        uint tCompounding_
     ) {
 
-        uint _updatePeriod = updatePeriod;
         uint _compoundPeriod = compoundingPeriod;
-        uint _compounded = compounded;
 
-        if (_between < _time) {
-
-            updatesThen_ = ( _between - _from ) / _updatePeriod;
-
-            updatesNow_ = ( _time - _between ) / _updatePeriod;
-
-        } else {
-
-            updatesNow_ = ( _time - _from ) / _updatePeriod;
-
-        }
-
-        tUpdate_ = _from + ( ( updatesThen_ + updatesNow_ ) * _updatePeriod );
-
-        t1Update_ = tUpdate_ + _updatePeriod;
-
-        compoundings_ = ( _time - compounded ) / _compoundPeriod;
+        compoundings_ = ( _now - _compounded ) / _compoundPeriod;
 
         tCompounding_ = _compounded + ( compoundings_ * _compoundPeriod );
 
-        t1Compounding_ = tCompounding_ + _compoundPeriod;
 
     }
 
-    function staticUpdate () internal override returns (bool updated_) {
+    function _update () internal override {
 
-        uint _toUpdate = toUpdate;
-        uint _updated = updated;
-
-        (   uint _updatesThen,,,,
-            uint _compoundings,
-            uint _tCompounding, ) = epochs(block.timestamp, _updated, _toUpdate);
-
-        // only update if there is a position to update
-        if (0 < _updatesThen) {
-
-            uint _then = block.timestamp - _toUpdate;
-            PricePoint memory _price = price(_then);
-            setPricePointCurrent(_price);
-            updated = _toUpdate;
-            toUpdate = type(uint256).max;
-            updated_ = true;
-
-        }
-
-        if (0 < _compoundings) {
-
-            if (_toUpdate != type(uint256).max) {
-
-                updateFunding(1);
-                updateFunding(_compoundings - 1);
-
-            } else updateFunding(_compoundings);
-
-            compounded = _tCompounding;
-
-        }
-
-    }
-
-    function entryUpdate () internal override returns (
-        uint256 t1Compounding_
-    ) {
-
-        uint _toUpdate = toUpdate;
-
-        (   uint _updatesThen,,,
-            uint _tp1Update,
-            uint _compoundings,
-            uint _tCompounding,
-            uint _t1Compounding ) = epochs(block.timestamp, updated, _toUpdate);
-
-        if (0 < _updatesThen) {
-            uint _then = block.timestamp - _toUpdate;
-            PricePoint memory _price = price(_then);
-            setPricePointCurrent(_price);
-            updated = _toUpdate;
-        }
-
-        if (0 < _compoundings) {
-
-            // If there was an update queued up, that means
-            // there was queued oi, which is not involved in
-            // funding until one compounding epoch has passed.
-            // We pay funding for one compounding epoch, then
-            // compound the rest of the epochs.
-            if (_toUpdate != type(uint256).max) {
-
-                updateFunding(1);
-                updateFunding(_compoundings - 1);
-
-            } else updateFunding(_compoundings);
-
-            compounded = _tCompounding;
-
-        }
-
-        if (_toUpdate != _tp1Update) toUpdate = _tp1Update;
-
-        t1Compounding_ = _t1Compounding;
-
-    }
-
-    function exitUpdate () internal override returns (uint tCompounding_) {
-
-        uint _toUpdate = toUpdate;
         uint _now = block.timestamp;
 
-        (   uint _updatesThen,
-            uint _updatesNow,
-            uint _tUpdate,,
-            uint _compoundings,
-            uint _tCompounding, ) = epochs(_now, updated, _toUpdate);
+        uint _updated = updated;
 
-        if (0 < _updatesThen) {
+        if (_now != _updated) {
 
-            uint _then = _now - _toUpdate;
-            PricePoint memory _price = price(_then);
+            PricePoint memory _price = price();
             setPricePointCurrent(_price);
+            updated = _now;
 
         }
 
-        if (0 < _updatesNow) {
-
-            uint _then = _now - _tUpdate;
-            PricePoint memory _price = price(_then);
-            setPricePointCurrent(_price);
-
-            updated = _tUpdate;
-            toUpdate = type(uint256).max;
-
-        }
+        (   uint _compoundings, 
+            uint _tCompounding  ) = epochs(_now, compounded);
 
         if (0 < _compoundings) {
 
-            if (_toUpdate != type(uint256).max) {
-
-                updateFunding(1);
-                updateFunding(_compoundings - 1);
-
-            } else updateFunding(_compoundings);
-
+            payFunding(k, _compoundings);
             compounded = _tCompounding;
 
         }
-
-        tCompounding_ = _tCompounding;
 
     }
 
@@ -321,19 +186,15 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         uint oiLong_,
         uint oiShort_,
         uint oiLongShares_,
-        uint oiShortShares_,
-        uint queuedOiLong_,
-        uint queuedOiShort_
+        uint oiShortShares_
     ) {
 
-        ( ,,,,uint _compoundings,, ) = epochs(block.timestamp, updated, toUpdate);
+        ( uint _compoundings, ) = epochs(block.timestamp, compounded);
 
         (   oiLong_,
             oiShort_,
             oiLongShares_,
-            oiShortShares_,
-            queuedOiLong_,
-            queuedOiShort_ ) = _oi(_compoundings);
+            oiShortShares_ ) = _oi(_compoundings);
 
     }
 
@@ -343,138 +204,75 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         uint oiLong_,
         uint oiShort_,
         uint oiLongShares_,
-        uint oiShortShares_,
-        uint queuedOiLong_,
-        uint queuedOiShort_
+        uint oiShortShares_
     ) {
 
         oiLong_ = __oiLong__;
         oiShort_ = __oiShort__;
-        oiLongShares_ = __oiLongShares__;
-        oiShortShares_ = __oiShortShares__;
-        queuedOiLong_ = __queuedOiLong__;
-        queuedOiShort_ = __queuedOiShort__;
-
-        uint _k = k;
+        oiLongShares_ = oiLongShares;
+        oiShortShares_ = oiShortShares;
 
         if (0 < _compoundings) {
 
             ( oiLong_, oiShort_, ) = computeFunding(
-                oiLong_,
+                oiLong_, 
                 oiShort_,
-                1,
-                _k
+                _compoundings,
+                k
             );
-
-            ( oiLong_, oiShort_, ) = computeFunding(
-                oiLong_ += queuedOiLong_,
-                oiShort_ += queuedOiShort_,
-                _compoundings - 1,
-                _k
-            );
-
-            oiLongShares_ += queuedOiLong_;
-            oiShortShares_ += queuedOiShort_;
-
-            queuedOiLong_ = 0;
-            queuedOiShort_ = 0;
 
         }
 
     }
 
     function oiLong () external view returns (uint oiLong_) {
-        (   oiLong_,,,,, ) = oi();
+        (   oiLong_,,, ) = oi();
     }
 
     function oiShort () external view returns (uint oiShort_) {
-        (  ,oiShort_,,,, ) = oi();
-    }
-
-    function oiLongShares () external view returns (uint256 oiLongShares_) {
-        ( ,,oiLongShares_,,, ) = oi();
-    }
-
-    function oiShortShares () external view returns (uint256 oiShortShares_) {
-        ( ,,,oiShortShares_,, ) = oi();
-    }
-
-    function queuedOiLong () external view returns (uint256 queuedOiLong_) {
-        ( ,,,,queuedOiLong_, ) = oi();
-    }
-
-    function queuedOiShort () external view returns (uint256 queuedOiShort_) {
-        ( ,,,,,queuedOiShort_ ) = oi();
+        (  ,oiShort_,, ) = oi();
     }
 
     function positionInfo (
         bool _isLong,
-        uint _entryIndex,
-        uint _compounding
+        uint _entryIndex
     ) external view returns (
         uint256 oi_,
         uint256 oiShares_,
         uint256 priceFrame_
     ) {
 
-        (   uint _updatesThen,,
-            uint _tUpdate,,
-            uint _compoundings,
-            uint _tCompounding, ) = epochs(block.timestamp, updated, toUpdate);
+        (   uint _compoundings, ) = epochs(block.timestamp, compounded);
 
         priceFrame_ = priceFrame(
             _isLong,
-            _entryIndex,
-            _updatesThen,
-            _tUpdate
+            _entryIndex
         );
 
         (   uint _oiLong,
             uint _oiShort,
             uint _oiLongShares,
-            uint _oiShortShares,
-            uint _queuedOiLong,
-            uint _queuedOiShort ) = _oi(_compoundings);
+            uint _oiShortShares ) = _oi(_compoundings);
 
-        if (_compounding < _tCompounding) {
-
-            if (_isLong) ( oi_ = _oiLong, oiShares_ = _oiLongShares );
-            else ( oi_ = _oiShort, oiShares_ = _oiShortShares );
-
-        } else {
-
-            if (_isLong) oi_ = oiShares_ = _queuedOiLong;
-            else oi_ = oiShares_ = _queuedOiShort;
-
-        }
-
+        if (_isLong) ( oi_ = _oiLong, oiShares_ = _oiLongShares );
+        else ( oi_ = _oiShort, oiShares_ = _oiShortShares );
+    
     }
 
     function priceFrame (
         bool _isLong,
-        uint _entryIndex,
-        uint _updatesThen,
-        uint _tUpdate
+        uint _entryIndex
     ) internal view returns (
         uint256 priceFrame_
     ) {
 
-        PricePoint memory _priceEntry;
+
+        PricePoint memory _priceEntry = _pricePoints[_entryIndex]; 
+
         PricePoint memory _priceExit;
 
-        if (_entryIndex < _pricePoints.length - 1) {
-
-            _priceEntry = _pricePoints[_entryIndex];
-
-        } else if (0 < _updatesThen ) {
-
-            _priceEntry = price(block.timestamp - toUpdate);
-
-        // TODO: do we allow exit without settlement
-        } else revert("OVLV1:!settled");
-
-        // TODO: what if price has settled
-        _priceExit = price(block.timestamp - _tUpdate);
+        if (updated != block.timestamp) _priceExit = price();
+        else _priceExit = _pricePoints[_pricePoints.length - 1];
 
         priceFrame_ = _isLong
             ? Math.min(_priceExit.bid.divDown(_priceEntry.ask), priceFrameCap)

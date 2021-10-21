@@ -106,7 +106,6 @@ def test_unwind_oi_removed(
     leverage=strategy('uint256', min_value=1, max_value=100),
     time_delta=strategies.floats(min_value=0.1, max_value=1),
 )
-@settings(max_examples=10)
 def test_unwind_expected_fee(
     ovl_collateral,
     mothership,
