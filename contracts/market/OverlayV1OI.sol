@@ -11,9 +11,6 @@ contract OverlayV1OI {
 
     uint256 private constant ONE = 1e18;
 
-    // max number of periodSize periods before treat funding as completely rebalanced: done for gas savings on compute funding factor
-    uint16 public constant MAX_FUNDING_COMPOUND = 4320; // 30d at 10m for updatePeriod
-
     uint256 public compoundingPeriod;
     uint256 public compounded;
 
