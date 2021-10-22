@@ -407,7 +407,7 @@ def test_unwind_from_queued_oi (
     oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
     leverage=strategy('uint256', min_value=1, max_value=100),
     is_long=strategy('bool'))
-def test_unwind_from_active_oi(
+def test_unwind_from_funding_unpaid_oi(
         ovl_collateral,
         market,
         token,
@@ -439,36 +439,22 @@ def test_unwind_from_active_oi(
 
     # Position info
     pid = tx_build.events['Build']['positionId']
-    build_oi = tx_build.events['Build']['oi']
-    pshares = ovl_collateral.balanceOf(bob, pid)
 
-    queued_oi_before = market.queuedOiLong() if is_long else market.queuedOiShort()
+    pos_shares = ovl_collateral.balanceOf(bob, pid)
 
-    chain.mine(timedelta=market.compoundingPeriod()+1)
+    chain.mine(timedelta=market.compoundingPeriod() - 10)
 
-    market.update({'from': bob})
-
-    queued_oi_after = market.queuedOiLong() if is_long else market.queuedOiShort()
-
-    assert queued_oi_before == build_oi
-    assert queued_oi_after == 0
-
-    oi_before_unwind = market.oiLong() if is_long else market.oiShort()
-
-    tx = ovl_collateral.unwind(pid, pshares, { 'from': bob })
+    ovl_collateral.unwind(pid, pos_shares, { 'from': bob })
 
     oi_after_unwind = market.oiLong() if is_long else market.oiShort()
 
-    assert oi_before_unwind == build_oi
-    assert oi_after_unwind == 0 or 1
+    assert oi_after_unwind / 1e18 == approx(0)
 
 
 @given(
     is_long=strategy('bool'),
     oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
-    leverage=strategy('uint256', min_value=1, max_value=100)
-)
-@settings(max_examples=10)
+    leverage=strategy('uint256', min_value=1, max_value=100))
 def test_comptroller_recorded_mint_or_burn (
     ovl_collateral, 
     token, 
