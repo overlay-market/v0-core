@@ -348,7 +348,7 @@ def test_entry_update_compounding_oi_onesided(
     oi_adjusted = collateral_adjusted * leverage
     assert approx(oi2) == int(2*oi_adjusted)
 
-    brownie.chain.mine(timedelta=(compoundings+1)*market.compoundingPeriod()+1)
+    brownie.chain.mine(timedelta=compoundings*market.compoundingPeriod()+1)
     _ = market.update({"from": bob})
 
     oi_after_funding = market.oiLong() if is_long else market.oiShort()
@@ -408,7 +408,7 @@ def test_entry_update_compounding_oi_imbalance(
 
     market_oi_imbalance = market_oi_long - market_oi_short
 
-    brownie.chain.mine(timedelta=(compoundings+1)*market.compoundingPeriod()+1)
+    brownie.chain.mine(timedelta=compoundings*market.compoundingPeriod()+1)
     _ = market.update({"from": bob})
 
     oi_long_after_funding = market.oiLong()
