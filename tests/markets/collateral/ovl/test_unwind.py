@@ -77,7 +77,7 @@ def test_unwind_oi_removed(
     poi_build = tx_build.events['Build']['oi']
 
     (_, _, _, price_point, oi_shares_build,
-        debt_build, cost_build, p_compounding) = ovl_collateral.positions(pid)
+        debt_build, cost_build ) = ovl_collateral.positions(pid)
 
     chain.mine(timedelta=market.updatePeriod()+1)
 
@@ -91,8 +91,7 @@ def test_unwind_oi_removed(
         {"from": bob}
     )
 
-    (_, _, _, _, oi_shares_unwind, debt_unwind, cost_unwind, _) =\
-        ovl_collateral.positions(pid)
+    ( _, _, _, _, oi_shares_unwind, _, _ ) = ovl_collateral.positions(pid)
 
     poi_unwind = tx_unwind.events['Unwind']['oi']
 
