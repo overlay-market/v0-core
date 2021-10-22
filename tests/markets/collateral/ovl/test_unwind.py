@@ -143,26 +143,27 @@ def test_unwind_expected_fee(
 
     # Position info
     pid = tx_build.events['Build']['positionId']
-    pos_shares = tx_build.events['Build']['oi']
-    (_, _, _, price_point, oi_shares_pos, debt_pos, _, p_compounding) = ovl_collateral.positions(pid)
+    (_, _, _, price_point, oi_shares_pos, debt_pos, _) = ovl_collateral.positions(pid)
 
     bob_balance = ovl_collateral.balanceOf(bob, pid)
 
     chain.mine(timestamp=mine_time+1)
 
-    ( oi, oi_shares, price_frame ) = market.positionInfo(is_long, price_point, p_compounding)
+    ( oi, oi_shares, price_frame ) = market.positionInfo(is_long, price_point)
 
-    tx_unwind = ovl_collateral.unwind(
+    exit_index = market.pricePointCurrentIndex()
+
+    ovl_collateral.unwind(
         pid,
         bob_balance,
         {"from": bob}
     )
 
-    price_entry = market.pricePoints(market.pricePointCurrentIndex()-2)
+    price_entry = market.pricePoints(price_point)
     entry_bid = price_entry[0]
     entry_ask = price_entry[1]
 
-    price_exit = market.pricePoints(market.pricePointCurrentIndex()-1)
+    price_exit = market.pricePoints(exit_index)
     exit_bid = price_exit[0]
     exit_ask = price_exit[1]
 
@@ -187,9 +188,6 @@ def test_unwind_expected_fee(
 
     fee = notional * ( mothership.fee() / 1e18 )
 
-    (_, _, _, _, oi_shares_unwind, debt_unwind, cost_unwind, _) =\
-        ovl_collateral.positions(pid)
-
     fees_now = ovl_collateral.fees() / 1e18
 
     assert fee + fees_prior == approx(fees_now), "fees not expected amount"
@@ -200,7 +198,6 @@ def test_unwind_expected_fee(
     bob_oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
     alice_oi=strategy('uint256', min_value=3, max_value=OI_CAP/1e16),
     leverage=strategy('uint256', min_value=1, max_value=100))
-@settings(max_examples=100)
 def test_partial_unwind(
   ovl_collateral,
   mothership,
