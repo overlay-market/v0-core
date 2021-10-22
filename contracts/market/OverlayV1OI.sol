@@ -106,6 +106,8 @@ contract OverlayV1OI {
 
         if (_isLong) {
 
+            oiLongShares += _oi;
+
             uint _oiLong = __oiLong__ + _oi;
 
             require(_oiLong <= _oiCap, "OVLV1:>cap");
@@ -113,6 +115,8 @@ contract OverlayV1OI {
             __oiLong__ = _oiLong;
 
         } else {
+
+            oiShortShares += _oi;
 
             uint _oiShort = __oiShort__ + _oi;
 
