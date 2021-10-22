@@ -363,10 +363,11 @@ def test_entry_update_compounding_oi_onesided(
 @given(
     # bc we build multiple positions w leverage take care not to hit CAP
     collateral=strategy('uint256', min_value=1e18,
-                        max_value=(OI_CAP - 1e4)/300),
+                        max_value=(OI_CAP - 1e4)/3000),
     leverage=strategy('uint8', min_value=1, max_value=100),
     is_long=strategy('bool'),
     compoundings=strategy('uint16', min_value=1, max_value=36),
+    multiplier=strategy('decimal', min_value="1.01", max_value="14"),
     )
 def test_entry_update_compounding_oi_imbalance(
             ovl_collateral,
@@ -378,19 +379,20 @@ def test_entry_update_compounding_oi_imbalance(
             collateral,
             leverage,
             is_long,
-            compoundings
+            compoundings,
+            multiplier
         ):
 
     # transfer alice some tokens first given the conftest
     token.transfer(alice, collateral, {"from": bob})
 
     token.approve(ovl_collateral, collateral, {"from": alice})
-    token.approve(ovl_collateral, 2*collateral, {"from": bob})
+    token.approve(ovl_collateral, int(multiplier*collateral), {"from": bob})
 
     _ = ovl_collateral.build(
         market, collateral, leverage, not is_long, {"from": alice})
     _ = ovl_collateral.build(
-        market, 2*collateral, leverage, is_long, {"from": bob})
+        market, int(multiplier*collateral), leverage, is_long, {"from": bob})
 
     market_oi_long = market.oiLong()
     market_oi_short = market.oiShort()
@@ -399,12 +401,14 @@ def test_entry_update_compounding_oi_imbalance(
         leverage*mothership.fee()/FEE_RESOLUTION
     oi_adjusted = collateral_adjusted*leverage
 
+    multiplier = float(multiplier)
+
     if is_long:
-        assert approx(market_oi_long) == int(2*oi_adjusted)
+        assert approx(market_oi_long) == int(multiplier*oi_adjusted)
         assert approx(market_oi_short) == int(oi_adjusted)
     else:
         assert approx(market_oi_long) == int(oi_adjusted)
-        assert approx(market_oi_short) == int(2*oi_adjusted)
+        assert approx(market_oi_short) == int(multiplier*oi_adjusted)
 
     market_oi_imbalance = market_oi_long - market_oi_short
 
@@ -422,3 +426,17 @@ def test_entry_update_compounding_oi_imbalance(
     assert int(expected_oi_imbalance) == approx(oi_imbalance_after_funding)
     assert int(market_oi_long + market_oi_short) == approx(
         oi_long_after_funding + oi_short_after_funding)
+
+    total_oi = market_oi_long + market_oi_short
+    expected_funder_oi = (total_oi + expected_oi_imbalance)/2
+    expected_funded_oi = (total_oi - expected_oi_imbalance)/2
+
+    if is_long:
+        expected_oi_long = expected_funder_oi
+        expected_oi_short = expected_funded_oi
+    else:
+        expected_oi_long = expected_funder_oi
+        expected_oi_short = expected_funded_oi
+
+    assert int(expected_oi_long) == approx(oi_long_after_funding)
+    assert int(expected_oi_short) == approx(oi_short_after_funding)
