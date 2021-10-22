@@ -46,6 +46,7 @@ def test_unwind_revert_insufficient_shares(ovl_collateral, bob):
     is_long=strategy('bool'),
     oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
     leverage=strategy('uint256', min_value=1, max_value=100))
+@settings(max_examples=50)
 def test_unwind_oi_removed(
         ovl_collateral,
         mothership,
@@ -95,8 +96,11 @@ def test_unwind_oi_removed(
 
     poi_unwind = tx_unwind.events['Unwind']['oi']
 
+    viewedOi = market.oiLong() if is_long else market.oiShort()
+
     assert oi_shares_unwind == 0
-    assert int(poi_unwind) == approx(int(poi_build))
+    assert poi_unwind / 1e18 == approx(poi_build / 1e18)
+    assert viewedOi / 1e18 == approx(0)
 
 
 @given(
