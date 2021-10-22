@@ -277,9 +277,6 @@ def test_oi_shares_onesided_zero_funding(
             is_long,
             multiplier
         ):
-    """
-    Build multiple positions on the same side and check
-    """
     # Set k to zero so test without worrying about funding rate
     market.setK(0, {'from': gov})
     multiplier = float(multiplier)
@@ -334,20 +331,7 @@ def test_oi_shares_bothsides_zero_funding(
             is_long,
             multiplier
         ):
-    """
-    Build multiple positions on the both sides and check shares of open
-    interest for each position matches oi expectations
-    """
-    # Set k to zero so test without worrying about funding rate
-    market.setK(0, {'from': gov})
-    multiplier = float(multiplier)
-
-    token.approve(ovl_collateral, collateral, {"from": alice})
-    token.approve(ovl_collateral, int(multiplier*collateral), {"from": bob})
-
-    _ = ovl_collateral.build(market, collateral, leverage,
-                             is_long, {"from": alice})
-    # _ = ovl_collateral.build(market, collateral, )
+    pass
 
 
 @given(
@@ -554,15 +538,4 @@ def test_oi_shares_bothsides_with_funding(
             is_long,
             multiplier
         ):
-    """
-    Build multiple positions on the both sides and check shares of open
-    interest for each position matches oi expectations
-    """
-    multiplier = float(multiplier)
-
-    token.approve(ovl_collateral, collateral, {"from": alice})
-    token.approve(ovl_collateral, int(multiplier*collateral), {"from": bob})
-
-    _ = ovl_collateral.build(market, collateral, leverage,
-                             is_long, {"from": bob})
-    # _ = ovl_collateral.build(market, collateral, )
+    pass
