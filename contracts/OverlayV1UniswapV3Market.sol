@@ -266,7 +266,6 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         uint256 priceFrame_
     ) {
 
-
         PricePoint memory _priceEntry = _pricePoints[_entryIndex]; 
 
         PricePoint memory _priceExit;
