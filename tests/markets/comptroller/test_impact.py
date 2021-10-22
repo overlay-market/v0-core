@@ -119,7 +119,6 @@ def test_impact_roller_expected_impact_many_batched(comptroller):
 
 @given(time_diff=strategy('uint', min_value=1, max_value=100),
        brrrr=strategy('uint', min_value=100, max_value=100000))
-@settings(max_examples=100)
 def test_scry_interpolated_roller(comptroller, time_diff, brrrr):
 
     time_diff *= ONE_BLOCK
@@ -159,7 +158,6 @@ def test_scry_interpolated_roller(comptroller, time_diff, brrrr):
     assert abs(expected_pressure_total - interpolated_pressure_total) <= Decimal(1/10**17)
 
 @given(entry=strategy('uint256', min_value=1, max_value=1e6))
-@settings(max_examples=20)
 def test_impact_pressure(comptroller, entry):
 
     entry *= 1e18
@@ -191,7 +189,6 @@ def test_impact_pressure(comptroller, entry):
 @given(
     entry=strategy('uint256', min_value=1, max_value=.370400e6),
     rand=strategy('int', min_value=100, max_value=1000))
-@settings(max_examples=20)
 def test_impact_pressure_full_cooldown_entry_within_cap (comptroller, entry, rand):
 
     entry *= 1e16

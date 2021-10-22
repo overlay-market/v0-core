@@ -168,7 +168,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         address _market,
         bool _isLong,
         uint _leverage,
-        uint _pricePointCurrent
+        uint _pricePointNext
     ) internal returns (
         uint positionId_
     ) {
@@ -181,13 +181,13 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         Position.Info storage position = positions[positionId_];
 
-        if (position.pricePoint < _pricePointCurrent) {
+        if (position.pricePoint < _pricePointNext) {
 
             positions.push(Position.Info({
                 market: _market,
                 isLong: _isLong,
                 leverage: _leverage,
-                pricePoint: _pricePointCurrent,
+                pricePoint: _pricePointNext,
                 oiShares: 0,
                 debt: 0,
                 cost: 0
@@ -216,7 +216,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             uint _debtAdjusted,
             uint _fee,
             uint _impact,
-            uint _pricePointCurrent ) = IOverlayV1Market(_market)
+            uint _pricePointNext ) = IOverlayV1Market(_market)
                 .enterOI(
                     _isLong,
                     _collateral,
@@ -227,7 +227,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             _market,
             _isLong,
             _leverage,
-            _pricePointCurrent
+            _pricePointNext
         );
 
         Position.Info storage pos = positions[_positionId];

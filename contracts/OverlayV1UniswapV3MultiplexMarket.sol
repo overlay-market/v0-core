@@ -75,7 +75,7 @@
 //             _f1Token0 == _quote1 ? _f1Token0 : _f1Token1
 //         ));
 
-//         setPricePointCurrent(PricePoint(_price, _price, _price));
+//         setpricePointNext(PricePoint(_price, _price, _price));
 
 //         toUpdate = type(uint256).max;
 //         updated = block.timestamp;
@@ -190,7 +190,7 @@
 
 //             uint32 _then = uint32(block.timestamp - _toUpdate);
 //             PricePoint memory _price = price(_then);
-//             setPricePointCurrent(_price);
+//             setpricePointNext(_price);
 //             updated = _toUpdate;
 //             toUpdate = type(uint256).max;
 //             updated_ = true;
@@ -219,7 +219,7 @@
 //         if (0 < _updatesThen) {
 //             uint32 _then = uint32(block.timestamp - _toUpdate);
 //             PricePoint memory _price = price(_then);
-//             setPricePointCurrent(_price);
+//             setpricePointNext(_price);
 //             updated = _toUpdate;
 //         }
 
@@ -249,7 +249,7 @@
 
 //             uint32 _then = uint32(block.timestamp - _toUpdate);
 //             PricePoint memory _price = price(_then);
-//             setPricePointCurrent(_price);
+//             setpricePointNext(_price);
 
 //         }
 
@@ -257,7 +257,7 @@
 
 //             uint32 _then = uint32(block.timestamp - _tUpdate);
 //             PricePoint memory _price = price(_then);
-//             setPricePointCurrent(_price);
+//             setpricePointNext(_price);
 
 //             updated = _tUpdate;
 //             toUpdate = type(uint256).max;

@@ -72,7 +72,7 @@ interface IOverlayV1Market is IERC1155 {
         uint tCompounding_
     );
 
-    function pricePointCurrentIndex() external view returns (uint256);
+    function pricePointNextIndex() external view returns (uint256);
 
     function pricePoints (
         uint256 index
@@ -105,7 +105,7 @@ interface IOverlayV1Market is IERC1155 {
         uint debtAdjusted_,
         uint fee_,
         uint impact_,
-        uint pricePointCurrent_
+        uint pricePointNext_
     );
 
     function exitData (

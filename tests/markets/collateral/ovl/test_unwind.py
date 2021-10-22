@@ -154,7 +154,7 @@ def test_unwind_expected_fee(
 
     ( oi, oi_shares, price_frame ) = market.positionInfo(is_long, price_point)
 
-    exit_index = market.pricePointCurrentIndex()
+    exit_index = market.pricePointNextIndex()
 
     ovl_collateral.unwind(
         pid,
@@ -472,7 +472,7 @@ def test_unwind_pnl_mint_burn (
 
     # Unwind position
 
-    exit_price_ix = market.pricePointCurrentIndex()
+    exit_price_ix = market.pricePointNextIndex() 
 
     tx_unwind = ovl_collateral.unwind(
         pid,
@@ -485,7 +485,6 @@ def test_unwind_pnl_mint_burn (
     entry_bid = price_entry[0]
     entry_ask = price_entry[1]
 
-    # price_exit = market.pricePoints(market.pricePointCurrentIndex()-1)
     price_exit = market.pricePoints(exit_price_ix)
     exit_bid = price_exit[0]
     exit_ask = price_exit[1]

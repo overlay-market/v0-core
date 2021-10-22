@@ -104,7 +104,7 @@ def test_build_success_zero_impact(
     assert pos_market == market
     assert pos_islong == is_long
     assert pos_lev == leverage
-    assert pos_price_idx == market.pricePointCurrentIndex()
+    assert pos_price_idx == market.pricePointNextIndex() - 1
     assert approx(pos_oishares) == int(oi_adjusted)
     assert approx(pos_debt) == int(oi_adjusted - collateral_adjusted)
     assert approx(pos_cost) == int(collateral_adjusted)
@@ -355,14 +355,14 @@ def test_entry_update_price_fetching(
 
     token.approve(ovl_collateral, collateral*3, {"from": bob})
 
-    market_idx = market.pricePointCurrentIndex()
+    market_idx = market.pricePointNextIndex()
 
     # Mine to the entry time then build
     brownie.chain.mine(timestamp=price["entry"]["timestamp"])
 
     _ = ovl_collateral.build(
         market, collateral, leverage, is_long, {"from": bob})
-    idx1 = market.pricePointCurrentIndex()
+    idx1 = market.pricePointNextIndex() - 1
     assert market_idx == idx1
 
     entry_bid1, entry_ask1, entry_price1 = market.pricePoints(idx1)
@@ -382,7 +382,7 @@ def test_entry_update_price_fetching(
 
     _ = ovl_collateral.build(
         market, collateral, leverage, is_long, {"from": bob})
-    idx2 = market.pricePointCurrentIndex()
+    idx2 = market.pricePointNextIndex() - 1
 
     assert idx2 == idx1+1
 

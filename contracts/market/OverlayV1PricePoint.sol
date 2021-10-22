@@ -31,17 +31,9 @@ abstract contract OverlayV1PricePoint {
     function price () public view virtual returns (PricePoint memory);
 
     /// @notice Get the current price point index
-    function pricePointCurrentIndex() public view returns (uint) {
+    function pricePointNextIndex() public view returns (uint) {
 
-        if (updated != block.timestamp) {
-
-            return _pricePoints.length;
-
-        } else {
-
-            return _pricePoints.length - 1;
-
-        }
+        return _pricePoints.length;
 
     }
 
@@ -89,7 +81,7 @@ abstract contract OverlayV1PricePoint {
     }
 
     /// @notice Allows inheriting contracts to add the latest realized price
-    function setPricePointCurrent(
+    function setpricePointNext(
         PricePoint memory _pricePoint
     ) internal {
 

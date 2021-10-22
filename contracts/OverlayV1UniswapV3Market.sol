@@ -65,7 +65,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             _token0 == _quote ? _token0 : _token1
         );
 
-        setPricePointCurrent(PricePoint(_price, _price, _price));
+        setpricePointNext(PricePoint(_price, _price, _price));
 
         updated = block.timestamp;
         compounded = block.timestamp;
@@ -165,7 +165,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         if (_now != _updated) {
 
             PricePoint memory _price = price();
-            setPricePointCurrent(_price);
+            setpricePointNext(_price);
             updated = _now;
 
         }

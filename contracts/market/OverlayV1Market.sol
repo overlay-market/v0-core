@@ -38,12 +38,12 @@ abstract contract OverlayV1Market is OverlayV1Governance {
         uint debtAdjusted_,
         uint fee_,
         uint impact_,
-        uint pricePointCurrent_
+        uint pricePointNext_
     ) {
 
         _update();
 
-        pricePointCurrent_ = _pricePoints.length - 1;
+        pricePointNext_ = _pricePoints.length - 1;
 
         uint _oi = _collateral * _leverage;
 

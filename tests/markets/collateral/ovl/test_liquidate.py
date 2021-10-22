@@ -98,7 +98,7 @@ def test_liquidate_success_zero_funding(
 
     # Check the price we liquidated at ...
     liq_bid, liq_ask, liq_price = market.pricePoints(
-        market.pricePointCurrentIndex())
+        market.pricePointNextIndex() - 1)
 
     # calculate value and make sure it should have been liquidatable
     price_frame = liq_bid/entry_ask if position["is_long"] \
@@ -263,7 +263,7 @@ def test_liquidate_pnl_burned(
 
     # Check the price we liquidated at ...
     liq_bid, liq_ask, _ = market.pricePoints(
-        market.pricePointCurrentIndex())
+        market.pricePointNextIndex()-1)
 
     # calculate value and make sure it should have been liquidatable
     price_frame = liq_bid/entry_ask if position["is_long"] \
@@ -462,7 +462,7 @@ def test_liquidate_with_funding(
     pos_val = ovl_collateral.value(pos_id)
     _ = ovl_collateral.liquidate(pos_id, alice, {'from': alice})
     exit_bid, exit_ask, _ = market.pricePoints(
-        market.pricePointCurrentIndex())
+        market.pricePointNextIndex() - 1)
     assert pos_val < margin_maintenance * pos_oi_shares
 
     # check alice oi still there
