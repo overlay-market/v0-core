@@ -223,10 +223,10 @@ def test_partial_unwind(
         bob_oi *= reduction
         alice_oi *= reduction
 
+    fee = mothership.fee()
 
-    bob_collateral = get_collateral(bob_oi / leverage, leverage, mothership.fee())
-    alice_collateral = get_collateral(alice_oi / leverage, leverage, mothership.fee())
-
+    bob_collateral = get_collateral(bob_oi / leverage, leverage, fee)
+    alice_collateral = get_collateral(alice_oi / leverage, leverage, fee)
 
     # Alice and Bob both builds a position
     token.approve(ovl_collateral, bob_collateral, {"from": bob})
@@ -241,7 +241,7 @@ def test_partial_unwind(
     )
 
     # Update period so Alice and Bob do not share same positionId
-    chain.mine(timedelta=market.updatePeriod()+1)
+    chain.mine(timedelta=15)
 
     alice_tx_build = ovl_collateral.build(
         market,
@@ -258,13 +258,11 @@ def test_partial_unwind(
     alice_pid = alice_tx_build.events['Build']['positionId']
     alice_poi_build = alice_tx_build.events['Build']['oi']
 
-    (_, _, _, price_point, bob_oi_shares_build,
-        bob_debt_build, bob_cost_build, bob_p_compounding) = ovl_collateral.positions(bob_pid)
+    ( _, _, _, _, bob_oi_shares_build, _, _ ) = ovl_collateral.positions(bob_pid)
 
-    (_, _, _, price_point, alice_oi_shares_build,
-        alice_debt_build, alice_cost_build, alice_p_compounding) = ovl_collateral.positions(alice_pid)
+    ( _, _, _, _, alice_oi_shares_build, _, _ ) = ovl_collateral.positions(alice_pid)
 
-    chain.mine(timedelta=market.updatePeriod()+1)
+    chain.mine(timedelta=15)
 
     # Confirm that Bob and Alice both hold a position
     assert bob_oi_shares_build > 0
@@ -276,28 +274,25 @@ def test_partial_unwind(
     # Unwind half of OI
     bob_unwind_shares = bob_poi_build / 2
 
-    bob_oi_before_unwind = ovl_collateral.positions(bob_pid)['oiShares']
-    alice_oi_before_unwind = ovl_collateral.positions(alice_pid)['oiShares']
-
     ovl_collateral.unwind(bob_pid, bob_unwind_shares, {"from": bob})
 
-    bob_oi_after_unwind = ovl_collateral.positions(bob_pid)['oiShares']
-    alice_oi_after_unwind = ovl_collateral.positions(alice_pid)['oiShares']
+    bob_oi_shares_after_unwind = ovl_collateral.positions(bob_pid)['oiShares']
+    alice_oi_shares_after_unwind = ovl_collateral.positions(alice_pid)['oiShares']
 
     # Confirm Bob still hold a position after partial unwind
     assert bob_oi_shares_build > 0
     assert bob_poi_build > 0
 
-    assert alice_oi_shares_build > 0
+    assert alice_oi_shares_after_unwind == alice_oi_shares_build 
     assert alice_poi_build > 0
 
     # Bob should contain proper amounts of OI remaining
-    assert int(bob_oi_after_unwind) == int(bob_poi_build - bob_unwind_shares)
+    assert bob_oi_shares_after_unwind == bob_poi_build - bob_unwind_shares
 
     # Total OI should be accurate including Alice's position
-    queued_oi_after_unwind = market.queuedOiLong() if is_long else market.queuedOiShort()
+    total_oi = market.oiLong() if is_long else market.oiShort()
 
-    assert queued_oi_after_unwind / 1e18 == approx( ( bob_poi_build - bob_unwind_shares + alice_poi_build ) / 1e18 )
+    assert total_oi == ( bob_poi_build - bob_unwind_shares + alice_poi_build ) 
     
 
 @given(
