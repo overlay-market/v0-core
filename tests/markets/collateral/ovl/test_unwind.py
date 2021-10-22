@@ -535,9 +535,7 @@ def test_comptroller_recorded_mint_or_burn (
     is_long=strategy('bool'),
     oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
     leverage=strategy('uint256', min_value=1, max_value=100),
-    time_delta=strategies.floats(min_value=0.1, max_value=1),
-)
-@settings(max_examples=10)
+    time_delta=strategies.floats(min_value=0.1, max_value=1),)
 def test_unwind_pnl_mint_burn (
     ovl_collateral,
     token,
@@ -549,7 +547,7 @@ def test_unwind_pnl_mint_burn (
     leverage,
     oi,
     mothership
-    ):
+):
     '''
     Check if whatever was minted/burnt is equal to the PnL
     '''
@@ -573,18 +571,24 @@ def test_unwind_pnl_mint_burn (
         is_long,
         {"from": bob}
     )
-    
+
+    chain.mine(timestamp=mine_time+1)
+
     # Build position info
     pid = tx_build.events['Build']['positionId']
     pos_shares = tx_build.events['Build']['oi']
-    (_, _, _, price_point, oi_shares_pos, debt_pos, cost_pos, p_compounding) = ovl_collateral.positions(pid)
+    (_, _, _, price_point, oi_shares_pos, debt_pos, cost_pos) = ovl_collateral.positions(pid)
 
     bob_balance = ovl_collateral.balanceOf(bob, pid)
-    chain.mine(timestamp=mine_time+1)
-    ( oi, oi_shares, price_frame ) = market.positionInfo(is_long, price_point, p_compounding)
+
     total_pos_shares = ovl_collateral.totalSupply(pid)
     
+    ( oi, oi_shares, price_frame ) = market.positionInfo(is_long, price_point)
+
     # Unwind position
+
+    exit_price_ix = market.pricePointCurrentIndex()
+
     tx_unwind = ovl_collateral.unwind(
         pid,
         bob_balance,
@@ -592,30 +596,26 @@ def test_unwind_pnl_mint_burn (
     )
 
     # Fee calculation
-    price_entry = market.pricePoints(market.pricePointCurrentIndex()-2)
+    price_entry = market.pricePoints(price_point)
     entry_bid = price_entry[0]
     entry_ask = price_entry[1]
 
-    price_exit = market.pricePoints(market.pricePointCurrentIndex()-1)
+    # price_exit = market.pricePoints(market.pricePointCurrentIndex()-1)
+    price_exit = market.pricePoints(exit_price_ix)
     exit_bid = price_exit[0]
     exit_ask = price_exit[1]
 
     price_frame = min(exit_bid / entry_ask, price_cap) if is_long else exit_ask / entry_bid
 
-    # oi /= 1e18
-    # debt_pos /= 1e18
-    # oi_shares /= 1e18
-    # oi_shares_pos /= 1e18
-
-    pos_oi = ( oi_shares_pos * oi ) / oi_shares 
+    oi_pos = ( oi_shares_pos * oi ) / oi_shares 
 
     if is_long:
-        val = pos_oi * price_frame 
+        val = oi_pos * price_frame 
         val = val - min(val, debt_pos)
     else:
-        val = pos_oi *2
-        val = val - min(val, debt_pos + pos_oi * price_frame )
-
+        val = oi_pos *2
+        val = val - min(val, debt_pos + oi_pos * price_frame )
+        
     notional = val + debt_pos
 
     fee = notional * ( mothership.fee() / 1e18 )
@@ -623,15 +623,13 @@ def test_unwind_pnl_mint_burn (
     # Other metrics
     debt = bob_balance * (debt_pos/total_pos_shares)
     cost = bob_balance * (cost_pos/total_pos_shares)
-    
+
     value_adjusted = notional - fee
-    if value_adjusted > debt:
-        value_adjusted = value_adjusted - debt
-    else:
-        value_adjusted = 0
+
+    value_adjusted = value_adjusted - debt if value_adjusted > debt else 0
 
     exp_pnl = value_adjusted - cost
-    
+
     for _, v in enumerate(tx_unwind.events['Transfer']):
         if v['to'] == '0x0000000000000000000000000000000000000000':
             act_pnl = -v['value']
