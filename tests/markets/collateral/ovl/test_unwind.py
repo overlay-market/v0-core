@@ -305,16 +305,16 @@ def test_partial_unwind(
     oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
     leverage=strategy('uint256', min_value=1, max_value=100))
 def test_unwind_after_transfer(
-        ovl_collateral,
-        mothership,
-        market,
-        token,
-        bob,
-        alice,
-        oi,
-        leverage,
-        is_long
-        ):
+    ovl_collateral,
+    mothership,
+    market,
+    token,
+    bob,
+    alice,
+    oi,
+    leverage,
+    is_long
+):
     
     # Build parameters
     oi *= 1e16
@@ -332,16 +332,15 @@ def test_unwind_after_transfer(
 
     # Position info
     pid = tx_build.events['Build']['positionId']
-    poi_build = tx_build.events['Build']['oi']
+    pos_oi_build = tx_build.events['Build']['oi']
     
-    (_, _, _, price_point, oi_shares_build,
-        debt_build, cost_build, p_compounding) = ovl_collateral.positions(pid)
+    (_, _, _, price_point, oi_shares_build, debt_build, cost_build ) = ovl_collateral.positions(pid)
 
-    chain.mine(timedelta=market.updatePeriod()+1)
+    chain.mine(timedelta=market.compoundingPeriod()+1)
 
     # Confirm that Bob holds a position
     assert oi_shares_build > 0
-    assert poi_build > 0
+    assert pos_oi_build > 0
 
     # Transfer Bob's position to Alice
     ovl_collateral.safeTransferFrom(bob, alice, pid, ovl_collateral.totalSupply(pid), 1, {"from": bob})
