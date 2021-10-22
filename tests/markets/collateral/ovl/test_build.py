@@ -258,6 +258,99 @@ def test_oi_added(
 
 
 @given(
+    collateral=strategy('uint256', min_value=1e18,
+                        max_value=(OI_CAP - 1e4)/3000),
+    leverage=strategy('uint8', min_value=1, max_value=100),
+    is_long=strategy('bool'),
+    multiplier=strategy('decimal', min_value="1.01", max_value="14"),
+    )
+def test_oi_shares_onesided_zero_funding(
+            ovl_collateral,
+            token,
+            mothership,
+            market,
+            gov,
+            alice,
+            bob,
+            collateral,
+            leverage,
+            is_long,
+            multiplier
+        ):
+    """
+    Build multiple positions on the same side and check
+    """
+    # Set k to zero so test without worrying about funding rate
+    market.setK(0, {'from': gov})
+    multiplier = float(multiplier)
+
+    # build multiple positions on a side
+    _ = ovl_collateral.build(market, collateral, leverage,
+                             is_long, {"from": alice})
+    _ = ovl_collateral.build(market, int(multiplier*collateral), leverage,
+                             is_long, {"from": bob})
+
+    (market_oi_long, market_oi_short, market_oi_long_shares,
+     market_oi_short_shares) = market.oi()
+
+    collateral_adjusted = collateral - collateral * \
+        leverage*mothership.fee()/FEE_RESOLUTION
+    oi_adjusted = collateral_adjusted*leverage
+
+    expected_total_oi = oi_adjusted + oi_adjusted*multiplier
+    expected_total_oi_shares = oi_adjusted + oi_adjusted*multiplier
+
+    if is_long:
+        assert int(expected_total_oi) == approx(market_oi_long)
+        assert 0 == market_oi_short
+        assert int(expected_total_oi_shares) == approx(market_oi_long_shares)
+        assert 0 == market_oi_short_shares
+    else:
+        assert 0 == market_oi_long
+        assert int(expected_total_oi) == approx(market_oi_short)
+        assert 0 == market_oi_long_shares
+        assert int(expected_total_oi_shares) == approx(market_oi_short_shares)
+
+    # TODO: check position oi shares
+
+
+@given(
+    collateral=strategy('uint256', min_value=1e18,
+                        max_value=(OI_CAP - 1e4)/3000),
+    leverage=strategy('uint8', min_value=1, max_value=100),
+    is_long=strategy('bool'),
+    multiplier=strategy('decimal', min_value="1.01", max_value="14"),
+    )
+def test_oi_shares_bothsides_zero_funding(
+            ovl_collateral,
+            token,
+            mothership,
+            market,
+            gov,
+            alice,
+            bob,
+            collateral,
+            leverage,
+            is_long,
+            multiplier
+        ):
+    """
+    Build multiple positions on the both sides and check shares of open
+    interest for each position matches oi expectations
+    """
+    # Set k to zero so test without worrying about funding rate
+    market.setK(0, {'from': gov})
+    multiplier = float(multiplier)
+
+    token.approve(ovl_collateral, collateral, {"from": alice})
+    token.approve(ovl_collateral, int(multiplier*collateral), {"from": bob})
+
+    _ = ovl_collateral.build(market, collateral, leverage,
+                             is_long, {"from": alice})
+    # _ = ovl_collateral.build(market, collateral, )
+
+
+@given(
     # bc we build multiple positions w leverage take care not to hit CAP
     collateral=strategy('uint256', min_value=1e18,
                         max_value=(OI_CAP - 1e4)/300),
@@ -440,3 +533,36 @@ def test_entry_update_compounding_oi_imbalance(
 
     assert int(expected_oi_long) == approx(oi_long_after_funding)
     assert int(expected_oi_short) == approx(oi_short_after_funding)
+
+
+@given(
+    collateral=strategy('uint256', min_value=1e18,
+                        max_value=(OI_CAP - 1e4)/3000),
+    leverage=strategy('uint8', min_value=1, max_value=100),
+    is_long=strategy('bool'),
+    multiplier=strategy('decimal', min_value="1.01", max_value="14"),
+    )
+def test_oi_shares_bothsides_with_funding(
+            ovl_collateral,
+            token,
+            mothership,
+            market,
+            alice,
+            bob,
+            collateral,
+            leverage,
+            is_long,
+            multiplier
+        ):
+    """
+    Build multiple positions on the both sides and check shares of open
+    interest for each position matches oi expectations
+    """
+    multiplier = float(multiplier)
+
+    token.approve(ovl_collateral, collateral, {"from": alice})
+    token.approve(ovl_collateral, int(multiplier*collateral), {"from": bob})
+
+    _ = ovl_collateral.build(market, collateral, leverage,
+                             is_long, {"from": bob})
+    # _ = ovl_collateral.build(market, collateral, )
