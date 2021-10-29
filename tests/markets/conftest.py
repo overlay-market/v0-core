@@ -149,7 +149,9 @@ def get_uni_feeds(feed_owner, feed_info):
     return uniswapv3_factory.address, market_mock.address, depth_mock.address, market_token1
 
 @pytest.fixture(scope="module")
-def comptroller(gov):
+def comptroller(gov, feed_infos, feed_owner):
+
+    marketFeed, depthFeed, quote = get_uni_feeds(feed_owner, feed_infos)
 
     comptroller = gov.deploy(ComptrollerShim, 
         IMPACT_WINDOW, 
@@ -157,7 +159,9 @@ def comptroller(gov):
         STATIC_CAP, 
         BRRRR_EXPECTED, 
         BRRRR_WINDOW_MACRO,
-        BRRRR_WINDOW_MICRO
+        BRRRR_WINDOW_MICRO,
+        marketFeed,
+        depthFeed
     )
 
     yield comptroller
