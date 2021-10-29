@@ -117,10 +117,12 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             ? ( uint256(_liquidity) << 96 ) / _sqrtPrice
             : FullMath.mulDiv(uint256(_liquidity), _sqrtPrice, X96);
 
+        secondsAgo[0] = uint32(macroWindow);
+
         ( _ticks, ) = IUniswapV3Pool(ovlFeed).observe(_secondsAgo);
 
         uint _price = OracleLibraryV2.getQuoteAtTick(
-            int24((_ticks[1] - _ticks[0]) / int56(int32(int(microWindow)))),
+            int24((_ticks[1] - _ticks[0]) / int56(int32(int(macroWindow)))),
             1e18,
             address(ovl),
             eth
