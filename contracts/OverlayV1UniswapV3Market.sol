@@ -117,7 +117,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             ? ( uint256(_liquidity) << 96 ) / _sqrtPrice
             : FullMath.mulDiv(uint256(_liquidity), _sqrtPrice, X96);
 
-        secondsAgo[0] = uint32(macroWindow);
+        _secondsAgo[0] = uint32(macroWindow);
 
         ( _ticks, ) = IUniswapV3Pool(ovlFeed).observe(_secondsAgo);
 
@@ -172,7 +172,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         }
 
-        (   uint _compoundings, 
+        (   uint _compoundings,
             uint _tCompounding  ) = epochs(_now, compounded);
 
         if (0 < _compoundings) {
@@ -217,7 +217,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         if (0 < _compoundings) {
 
             ( oiLong_, oiShort_, ) = computeFunding(
-                oiLong_, 
+                oiLong_,
                 oiShort_,
                 _compoundings,
                 k
@@ -258,7 +258,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         if (_isLong) ( oi_ = _oiLong, oiShares_ = _oiLongShares );
         else ( oi_ = _oiShort, oiShares_ = _oiShortShares );
-    
+
     }
 
     function priceFrame (
@@ -268,7 +268,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         uint256 priceFrame_
     ) {
 
-        PricePoint memory _priceEntry = _pricePoints[_entryIndex]; 
+        PricePoint memory _priceEntry = _pricePoints[_entryIndex];
 
         PricePoint memory _priceExit;
 
