@@ -14,7 +14,7 @@ TOKEN_DECIMALS = 18
 TOKEN_TOTAL_SUPPLY = 8000000
 OI_CAP = 800000
 FEE_RESOLUTION = 1e18
-IMPACT_TOL = 0  # TODO: fix >= 0 and make as strategy param
+SLIPPAGE_TOL = 0.2
 
 
 @given(
@@ -41,10 +41,13 @@ def test_disburse(mothership,
     # do an initial update before build so all oi is queued
     market.update({"from": bob})
 
+    impact_tol_long = oi_long * SLIPPAGE_TOL
     tx_long = ovl_collateral.build(market, oi_long, 1, True,
-                                   IMPACT_TOL, {"from": bob})
+                                   impact_tol_long, {"from": bob})
+
+    impact_tol_short = oi_short * SLIPPAGE_TOL
     tx_short = ovl_collateral.build(market, oi_short, 1, False,
-                                    IMPACT_TOL, {"from": bob})
+                                    impact_tol_short, {"from": bob})
 
     # prior fee state
     margin_burn_rate, fee_burn_rate, fee_to = mothership.getUpdateParams()

@@ -14,7 +14,7 @@ TOKEN_DECIMALS = 18
 TOKEN_TOTAL_SUPPLY = 8000000
 OI_CAP = 800000e18
 FEE_RESOLUTION = 1e18
-IMPACT_TOL = 0  # TODO: fix >= 0 and make as strategy param
+SLIPPAGE_TOL = 0.2
 PRICES = [
     {
         "entry": {
@@ -74,8 +74,9 @@ def test_build_success_zero_impact(
     token.approve(ovl_collateral, collateral, {"from": bob})
 
     # build the position
+    impact_tol = oi * SLIPPAGE_TOL
     tx = ovl_collateral.build(
-        market, collateral, leverage, is_long, IMPACT_TOL, {"from": bob})
+        market, collateral, leverage, is_long, impact_tol, {"from": bob})
 
     assert 'Build' in tx.events
     assert 'positionId' in tx.events['Build']
@@ -133,12 +134,13 @@ def test_build_when_market_not_supported(
     token.approve(ovl_collateral, 3e18, {"from": bob})
     # just to avoid failing min_collateral check because of fees
     trade_amt = MIN_COLLATERAL*2
+    impact_tol = trade_amt * leverage * SLIPPAGE_TOL
 
     assert mothership.marketActive(market)
     assert not mothership.marketActive(notamarket)
     with brownie.reverts(EXPECTED_ERROR_MESSAGE):
         ovl_collateral.build(notamarket, trade_amt,
-                             leverage, is_long, IMPACT_TOL, {'from': bob})
+                             leverage, is_long, impact_tol, {'from': bob})
 
 
 @given(
@@ -165,16 +167,17 @@ def test_build_min_collateral(
     FL = mothership.fee()*leverage
     fee_offset = MIN_COLLATERAL*(FL/(FEE_RESOLUTION - FL))
     trade_amt = (MIN_COLLATERAL + fee_offset)
+    impact_tol = trade_amt * leverage * SLIPPAGE_TOL
 
     # higher than min collateral passes
     tx = ovl_collateral.build(market, trade_amt + 1,
-                              leverage, is_long, IMPACT_TOL, {'from': bob})
+                              leverage, is_long, impact_tol, {'from': bob})
     assert isinstance(tx, brownie.network.transaction.TransactionReceipt)
 
     # lower than min collateral fails
     with brownie.reverts(EXPECTED_ERROR_MESSAGE):
         ovl_collateral.build(market, trade_amt - 2,
-                             leverage, is_long, IMPACT_TOL, {'from': bob})
+                             leverage, is_long, impact_tol, {'from': bob})
 
 
 def test_build_max_leverage(
@@ -191,16 +194,17 @@ def test_build_max_leverage(
     token.approve(ovl_collateral, collateral, {"from": bob})
     # just to avoid failing min_collateral check because of fees
     trade_amt = MIN_COLLATERAL*2
+    impact_tol = trade_amt * ovl_collateral.maxLeverage(market) * SLIPPAGE_TOL
 
     tx = ovl_collateral.build(
         market, trade_amt, ovl_collateral.maxLeverage(market), is_long,
-        IMPACT_TOL, {'from': bob})
+        impact_tol, {'from': bob})
     assert isinstance(tx, brownie.network.transaction.TransactionReceipt)
 
     with brownie.reverts(EXPECTED_ERROR_MESSAGE):
         ovl_collateral.build(market, trade_amt,
                              ovl_collateral.maxLeverage(market) + 1,
-                             is_long, IMPACT_TOL, {'from': bob})
+                             is_long, impact_tol, {'from': bob})
 
 
 def test_build_cap(
@@ -218,13 +222,14 @@ def test_build_cap(
     cap = market.oiCap()
     token.approve(ovl_collateral, cap*2, {"from": bob})
 
+    impact_tol = cap * SLIPPAGE_TOL
     tx = ovl_collateral.build(market, cap, leverage, is_long,
-                              IMPACT_TOL, {'from': bob})
+                              impact_tol, {'from': bob})
     assert isinstance(tx, brownie.network.transaction.TransactionReceipt)
 
     with brownie.reverts(EXPECTED_ERROR_MESSAGE):
         ovl_collateral.build(market, cap + 1, leverage, is_long,
-                             IMPACT_TOL, {"from": bob})
+                             impact_tol, {"from": bob})
 
 
 @given(
@@ -247,9 +252,11 @@ def test_oi_added(
     market_oi = market.oiLong() if is_long else market.oiShort()
     assert market_oi == 0
 
+    impact_tol = collateral * leverage * SLIPPAGE_TOL
+
     token.approve(ovl_collateral, collateral, {"from": bob})
     tx = ovl_collateral.build(
-        market, collateral, leverage, is_long, IMPACT_TOL, {"from": bob})
+        market, collateral, leverage, is_long, impact_tol, {"from": bob})
 
     oi = collateral * leverage
     trade_fee = oi * mothership.fee() / FEE_RESOLUTION
@@ -286,11 +293,13 @@ def test_oi_shares_onesided_zero_funding(
     market.setK(0, {'from': gov})
     multiplier = float(multiplier)
 
+    impact_tol = collateral * leverage * SLIPPAGE_TOL
+
     # build multiple positions on a side
     _ = ovl_collateral.build(market, collateral, leverage,
-                             is_long, IMPACT_TOL, {"from": alice})
+                             is_long, impact_tol, {"from": alice})
     _ = ovl_collateral.build(market, int(multiplier*collateral), leverage,
-                             is_long, IMPACT_TOL, {"from": bob})
+                             is_long, impact_tol, {"from": bob})
 
     (market_oi_long, market_oi_short, market_oi_long_shares,
      market_oi_short_shares) = market.oi()
@@ -365,8 +374,9 @@ def test_entry_update_price_fetching(
     # Mine to the entry time then build
     brownie.chain.mine(timestamp=price["entry"]["timestamp"])
 
+    impact_tol = collateral * leverage * SLIPPAGE_TOL
     _ = ovl_collateral.build(
-        market, collateral, leverage, is_long, IMPACT_TOL, {"from": bob})
+        market, collateral, leverage, is_long, impact_tol, {"from": bob})
     idx1 = market.pricePointNextIndex() - 1
     assert market_idx == idx1
 
@@ -386,7 +396,7 @@ def test_entry_update_price_fetching(
     brownie.chain.mine(timedelta=market.compoundingPeriod()+1)
 
     _ = ovl_collateral.build(
-        market, collateral, leverage, is_long, IMPACT_TOL, {"from": bob})
+        market, collateral, leverage, is_long, impact_tol, {"from": bob})
     idx2 = market.pricePointNextIndex() - 1
 
     assert idx2 == idx1+1
@@ -416,11 +426,12 @@ def test_entry_update_compounding_oi_onesided(
         ):
 
     token.approve(ovl_collateral, collateral*2, {"from": bob})
-    _ = ovl_collateral.build(
-        market, collateral, leverage, is_long, IMPACT_TOL, {"from": bob})
 
+    impact_tol = collateral * leverage * SLIPPAGE_TOL
     _ = ovl_collateral.build(
-        market, collateral, leverage, is_long, IMPACT_TOL, {"from": bob})
+        market, collateral, leverage, is_long, impact_tol, {"from": bob})
+    _ = ovl_collateral.build(
+        market, collateral, leverage, is_long, impact_tol, {"from": bob})
     oi2 = market.oiLong() if is_long else market.oiShort()
 
     oi = collateral * leverage
@@ -471,11 +482,12 @@ def test_entry_update_compounding_oi_imbalance(
     token.approve(ovl_collateral, collateral, {"from": alice})
     token.approve(ovl_collateral, int(multiplier*collateral), {"from": bob})
 
+    impact_tol = collateral * leverage * SLIPPAGE_TOL
     _ = ovl_collateral.build(
-        market, collateral, leverage, not is_long, IMPACT_TOL, {"from": alice})
+        market, collateral, leverage, not is_long, impact_tol, {"from": alice})
     _ = ovl_collateral.build(
         market, int(multiplier*collateral), leverage, is_long,
-        IMPACT_TOL, {"from": bob})
+        impact_tol, {"from": bob})
 
     market_oi_long = market.oiLong()
     market_oi_short = market.oiShort()

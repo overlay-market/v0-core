@@ -12,7 +12,7 @@ COLLATERAL = 10*1e18
 TOKEN_DECIMALS = 18
 TOKEN_TOTAL_SUPPLY = 8000000
 OI_CAP = 800000e18
-IMPACT_TOL = 0  # TODO: fix >= 0 and make as strategy param
+SLIPPAGE_TOL = 0.2
 
 
 def print_logs(tx):
@@ -72,7 +72,7 @@ def test_unwind_oi_removed(
         collateral,
         leverage,
         is_long,
-        IMPACT_TOL,
+        collateral * leverage * SLIPPAGE_TOL,
         {"from": bob}
     )
 
@@ -141,7 +141,7 @@ def test_unwind_expected_fee(
         collateral,
         leverage,
         is_long,
-        IMPACT_TOL,
+        collateral * leverage * SLIPPAGE_TOL,
         {"from": bob}
     )
 
@@ -244,7 +244,7 @@ def test_partial_unwind(
         bob_collateral,
         leverage,
         is_long,
-        IMPACT_TOL,
+        bob_collateral * leverage * SLIPPAGE_TOL,
         {"from": bob}
     )
 
@@ -256,7 +256,7 @@ def test_partial_unwind(
         alice_collateral,
         leverage,
         is_long,
-        IMPACT_TOL,
+        alice_collateral * leverage * SLIPPAGE_TOL,
         {"from": alice}
     )
 
@@ -333,7 +333,7 @@ def test_unwind_after_transfer(
         collateral,
         leverage,
         is_long,
-        IMPACT_TOL,
+        collateral * leverage * SLIPPAGE_TOL,
         {"from": bob}
     )
 
@@ -470,7 +470,7 @@ def test_unwind_pnl_mint_burn(
         collateral,
         leverage,
         is_long,
-        IMPACT_TOL,
+        collateral * leverage * SLIPPAGE_TOL,
         {"from": bob}
     )
 

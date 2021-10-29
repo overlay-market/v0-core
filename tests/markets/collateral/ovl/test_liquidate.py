@@ -14,7 +14,7 @@ COLLATERAL = 10*1e18
 TOKEN_DECIMALS = 18
 TOKEN_TOTAL_SUPPLY = 8000000
 OI_CAP = 800000e18
-IMPACT_TOL = 0  # TODO: fix >= 0 and make as strategy param
+SLIPPAGE_TOL = 0.2
 
 POSITIONS = [
     {
@@ -74,7 +74,7 @@ def test_liquidate_success_zero_funding(
         position['collateral'],
         position['leverage'],
         position['is_long'],
-        IMPACT_TOL,
+        position['collateral'] * position['leverage'] * SLIPPAGE_TOL,
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
@@ -134,7 +134,7 @@ def test_liquidate_revert_not_liquidatable(
         position['collateral'],
         position['leverage'],
         position['is_long'],
-        IMPACT_TOL,
+        position['collateral'] * position['leverage'] * SLIPPAGE_TOL,
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
@@ -200,7 +200,7 @@ def test_liquidate_revert_unwind_after_liquidation(
         position['collateral'],
         position['leverage'],
         position['is_long'],
-        IMPACT_TOL,
+        position['collateral'] * position['leverage'] * SLIPPAGE_TOL,
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
@@ -251,7 +251,7 @@ def test_liquidate_pnl_burned(
         position['collateral'],
         position['leverage'],
         position['is_long'],
-        IMPACT_TOL,
+        position['collateral'] * position['leverage'] * SLIPPAGE_TOL,
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
@@ -306,7 +306,7 @@ def test_liquidate_oi_removed(
         position['collateral'],
         position['leverage'],
         position['is_long'],
-        IMPACT_TOL,
+        position['collateral'] * position['leverage'] * SLIPPAGE_TOL,
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
@@ -345,7 +345,7 @@ def test_liquidate_zero_value(
         position['collateral'],
         3*position['leverage'],  # 3x so it effectively turns negative
         position['is_long'],
-        IMPACT_TOL,
+        3*position['collateral'] * position['leverage'] * SLIPPAGE_TOL,
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
@@ -397,7 +397,7 @@ def test_liquidate_rewards_and_fees(
         position['collateral'],
         position['leverage'],
         position['is_long'],
-        IMPACT_TOL,
+        position['collateral'] * position['leverage'] * SLIPPAGE_TOL,
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
@@ -450,7 +450,7 @@ def test_liquidate_with_funding(
         position['collateral'],
         position['leverage'],
         position['is_long'],
-        IMPACT_TOL,
+        position['collateral'] * position['leverage'] * SLIPPAGE_TOL,
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
@@ -463,7 +463,7 @@ def test_liquidate_with_funding(
         int(position['collateral']/2.0),
         position['leverage'],
         not position['is_long'],
-        IMPACT_TOL,
+        int(position['collateral']/2.0) * position['leverage'] * SLIPPAGE_TOL,
         {'from': alice}
     )
     brownie.chain.mine(timestamp=position["liquidation"]["timestamp"]-300)
