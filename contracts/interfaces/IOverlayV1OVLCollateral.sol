@@ -15,15 +15,15 @@ interface IOverlayV1OVLCollateral is IERC1155 {
     event log(string k, address v);
 
     event Build(
-        address market, 
-        uint256 positionId, 
-        uint256 oi, 
+        address market,
+        uint256 positionId,
+        uint256 oi,
         uint256 debt
     );
     event Unwind(
         address market,
-        uint256 positionId, 
-        uint256 oi, 
+        uint256 positionId,
+        uint256 oi,
         uint256 debt
     );
     event Liquidate(
@@ -51,14 +51,14 @@ interface IOverlayV1OVLCollateral is IERC1155 {
     function supportedMarket (address market) external view returns (bool supported);
 
     function currentBlockPositionsLong (
-        address market, 
+        address market,
         uint leverage
     ) external view returns (
         uint positionId
     );
 
     function currentBlockPositionsShort (
-        address market, 
+        address market,
         uint leverage
     ) external view returns (
         uint positionId
@@ -107,7 +107,8 @@ interface IOverlayV1OVLCollateral is IERC1155 {
         address _market,
         uint256 _collateral,
         uint256 _leverage,
-        bool _isLong
+        bool _isLong,
+        uint256 _impactTolerance
     ) external;
 
     function unwind(

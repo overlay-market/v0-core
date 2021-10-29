@@ -1,7 +1,8 @@
 from brownie import chain
-from brownie.test import given, strategy 
+from brownie.test import given, strategy
 from hypothesis import settings
 from decimal import *
+
 
 def print_logs(tx):
     for i in range(len(tx.events['log'])):
@@ -122,7 +123,6 @@ def test_brrrr_fade(
   current_brrrr_window_macro = market.brrrrdWindowMacro()
   current_brrrr_window_micro = market.brrrrdWindowMicro()
 
-
   # test current _brrrrFade equals input value
   assert int(current_brrrr_expected) == int(input_brrrr_expected)
 
@@ -132,7 +132,6 @@ def test_brrrr_fade(
   assert int(current_lmbda) == int(initial_lmbda)
   assert int(current_brrrr_window_macro) == int(initial_brrrr_window_macro)
   assert int(current_brrrr_window_micro) == int(initial_brrrr_window_micro)
-
 
 
 def test_set_comptroller_params(
@@ -172,11 +171,12 @@ def test_set_comptroller_params(
   assert int(current_brrrr_window_macro) == int(input_brrrr_window_macro)
   assert int(current_brrrr_window_micro) == int(input_brrrr_window_micro)
 
+
 def test_set_update_period_only(
   market,
   gov
 ):
-    
+
   input_update_period = 110
 
   # grab initial _updatePeriod _compoundingPeriod values
@@ -184,7 +184,8 @@ def test_set_update_period_only(
   initial_compounding_period = market.compoundingPeriod()
 
   # set_updatePeriod only, without _compoundingPeriod
-  market.setPeriods(input_update_period, initial_compounding_period, {"from": gov})
+  market.setPeriods(input_update_period,
+                    initial_compounding_period, {"from": gov})
 
   # grab current _updatePeriod _compoundingPeriod values
   current_update_period = market.updatePeriod()
@@ -201,7 +202,7 @@ def test_set_compounding_period_only(
   market,
   gov
 ):
-    
+
   input_compounding_period = 660
 
   # grab initial _compoundingPeriod, _updatePeriod values
@@ -209,7 +210,8 @@ def test_set_compounding_period_only(
   initial_update_period = market.updatePeriod()
 
   # set _compoundingPeriod only, without _updatePeriod
-  market.setPeriods(initial_update_period, input_compounding_period, {"from": gov})
+  market.setPeriods(initial_update_period,
+                    input_compounding_period, {"from": gov})
 
   # grab current _compoundingPeriod, _updatePeriod values
   current_compounding_period = market.compoundingPeriod()
@@ -226,7 +228,7 @@ def test_set_update_and_compounding_period(
   market,
   gov
 ):
-    
+
   input_update_period = 110
   input_compounding_period = 660
 
@@ -235,7 +237,8 @@ def test_set_update_and_compounding_period(
   initial_compounding_period = market.compoundingPeriod()
 
   # set new _updatePeriod, _compoundingPeriod values
-  market.setPeriods(input_update_period, input_compounding_period, {"from": gov})
+  market.setPeriods(input_update_period,
+                    input_compounding_period, {"from": gov})
 
   # grab updated _updatePeriod, _compoundingPeriod values
   current_update_period = market.updatePeriod()
@@ -252,7 +255,7 @@ def test_set_k(
   market,
   gov
 ):
-    
+
   input_k = 346888760971066
 
   # TODO: test for different k values via an adjust

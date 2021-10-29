@@ -1,8 +1,9 @@
 from brownie import chain
-from brownie.test import given, strategy 
+from brownie.test import given, strategy
 from hypothesis import settings
 from pytest import approx
 from decimal import *
+
 
 @given(
   compoundings=strategy('uint256', min_value=1, max_value=100),
@@ -24,9 +25,9 @@ def test_funding_total_imbalance(
 
   oi *= 1e16
 
-  expected_oi = ( oi / 1e18 ) - ( ( oi / 1e18 ) * FEE )
+  expected_oi = (oi / 1e18) - ((oi / 1e18) * FEE)
 
-  expected_funding_factor = ( 1 - (2 * K) ) ** compoundings
+  expected_funding_factor = (1 - (2 * K)) ** compoundings
 
   expected_oi_after_payment = expected_oi * expected_funding_factor
 
@@ -37,23 +38,27 @@ def test_funding_total_imbalance(
     oi,
     1,
     is_long,
-    { 'from': bob }
+    oi,
+    {'from': bob}
   )
 
-  oi = ( market.oiLong() if is_long else market.oiShort() ) / 1e18
+  oi = (market.oiLong() if is_long else market.oiShort()) / 1e18
 
   assert oi == approx(expected_oi), 'queued oi different to expected'
 
   chain.mine(timedelta=COMPOUND_PERIOD * compoundings)
 
-  tx_update = market.update({ 'from': bob })
+  tx_update = market.update({'from': bob})
 
   funding_payment = tx_update.events['FundingPaid']['fundingPaid'] / 1e18
 
-  if is_long: funding_payment = -funding_payment
+  if is_long:
+    funding_payment = -funding_payment
 
-  assert expected_funding_payment == approx(funding_payment), 'funding payment different than expected'
+  assert expected_funding_payment == approx(
+    funding_payment), 'funding payment different than expected'
 
-  oi_after_payment = ( market.oiLong() if is_long else market.oiShort() ) / 1e18
+  oi_after_payment = (market.oiLong() if is_long else market.oiShort()) / 1e18
 
-  assert oi_after_payment == approx(expected_oi_after_payment), 'oi after funding payment different than expected'
+  assert oi_after_payment == approx(
+    expected_oi_after_payment), 'oi after funding payment different than expected'
