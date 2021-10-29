@@ -41,13 +41,13 @@ def test_disburse(mothership,
     # do an initial update before build so all oi is queued
     market.update({"from": bob})
 
-    impact_tol_long = oi_long * SLIPPAGE_TOL
+    oi_adjusted_min_long = oi_long * (1-SLIPPAGE_TOL)
     tx_long = ovl_collateral.build(market, oi_long, 1, True,
-                                   impact_tol_long, {"from": bob})
+                                   oi_adjusted_min_long, {"from": bob})
 
-    impact_tol_short = oi_short * SLIPPAGE_TOL
+    oi_adjusted_min_short = oi_short * (1-SLIPPAGE_TOL)
     tx_short = ovl_collateral.build(market, oi_short, 1, False,
-                                    impact_tol_short, {"from": bob})
+                                    oi_adjusted_min_short, {"from": bob})
 
     # prior fee state
     margin_burn_rate, fee_burn_rate, fee_to = mothership.getUpdateParams()

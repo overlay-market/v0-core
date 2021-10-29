@@ -74,7 +74,7 @@ def test_liquidate_success_zero_funding(
         position['collateral'],
         position['leverage'],
         position['is_long'],
-        position['collateral'] * position['leverage'] * SLIPPAGE_TOL,
+        position['collateral'] * position['leverage'] * (1-SLIPPAGE_TOL),
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
@@ -134,7 +134,7 @@ def test_liquidate_revert_not_liquidatable(
         position['collateral'],
         position['leverage'],
         position['is_long'],
-        position['collateral'] * position['leverage'] * SLIPPAGE_TOL,
+        position['collateral'] * position['leverage'] * (1-SLIPPAGE_TOL),
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
@@ -200,7 +200,7 @@ def test_liquidate_revert_unwind_after_liquidation(
         position['collateral'],
         position['leverage'],
         position['is_long'],
-        position['collateral'] * position['leverage'] * SLIPPAGE_TOL,
+        position['collateral'] * position['leverage'] * (1-SLIPPAGE_TOL),
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
@@ -251,7 +251,7 @@ def test_liquidate_pnl_burned(
         position['collateral'],
         position['leverage'],
         position['is_long'],
-        position['collateral'] * position['leverage'] * SLIPPAGE_TOL,
+        position['collateral'] * position['leverage'] * (1-SLIPPAGE_TOL),
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
@@ -306,7 +306,7 @@ def test_liquidate_oi_removed(
         position['collateral'],
         position['leverage'],
         position['is_long'],
-        position['collateral'] * position['leverage'] * SLIPPAGE_TOL,
+        position['collateral'] * position['leverage'] * (1-SLIPPAGE_TOL),
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
@@ -345,7 +345,7 @@ def test_liquidate_zero_value(
         position['collateral'],
         3*position['leverage'],  # 3x so it effectively turns negative
         position['is_long'],
-        3*position['collateral'] * position['leverage'] * SLIPPAGE_TOL,
+        3*position['collateral'] * position['leverage'] * (1-SLIPPAGE_TOL),
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
@@ -397,7 +397,7 @@ def test_liquidate_rewards_and_fees(
         position['collateral'],
         position['leverage'],
         position['is_long'],
-        position['collateral'] * position['leverage'] * SLIPPAGE_TOL,
+        position['collateral'] * position['leverage'] * (1-SLIPPAGE_TOL),
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
@@ -450,7 +450,7 @@ def test_liquidate_with_funding(
         position['collateral'],
         position['leverage'],
         position['is_long'],
-        position['collateral'] * position['leverage'] * SLIPPAGE_TOL,
+        position['collateral'] * position['leverage'] * (1-SLIPPAGE_TOL),
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
@@ -463,7 +463,8 @@ def test_liquidate_with_funding(
         int(position['collateral']/2.0),
         position['leverage'],
         not position['is_long'],
-        int(position['collateral']/2.0) * position['leverage'] * SLIPPAGE_TOL,
+        int(position['collateral']/2.0)
+        * position['leverage'] * (1-SLIPPAGE_TOL),
         {'from': alice}
     )
     brownie.chain.mine(timestamp=position["liquidation"]["timestamp"]-300)

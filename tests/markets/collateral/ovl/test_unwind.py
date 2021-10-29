@@ -72,7 +72,7 @@ def test_unwind_oi_removed(
         collateral,
         leverage,
         is_long,
-        collateral * leverage * SLIPPAGE_TOL,
+        collateral * leverage * (1-SLIPPAGE_TOL),
         {"from": bob}
     )
 

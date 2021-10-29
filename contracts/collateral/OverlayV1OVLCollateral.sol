@@ -206,7 +206,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         uint256 _collateral,
         uint256 _leverage,
         bool _isLong,
-        uint256 _impactTolerance
+        uint256 _oiAdjustedMinimum
     ) external {
 
         require(mothership.marketActive(_market), "OVLV1:!market");
@@ -224,7 +224,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
                     _leverage
                 );
 
-        require(_impact <= _impactTolerance, "OVLV1:impact>tol");
+        require(_oiAdjusted >= _oiAdjustedMinimum, "OVLV1:oi<min");
 
         uint _positionId = getCurrentBlockPositionId(
             _market,
