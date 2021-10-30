@@ -146,12 +146,14 @@ abstract contract OverlayV1Comptroller {
 
             return 0;
 
+        } else if (_brrrrd < _brrrrdExpected) {
+
+            return Math.min(staticCap, depth() );
+
         } else {
 
             uint _dynamicCap = ( 2e18 - _brrrrd.divDown(_brrrrdExpected) ).mulDown(staticCap);
-
             cap_ = Math.min( _dynamicCap, depth() );
-            cap_ = Math.min(cap_, staticCap);
         }
 
     }

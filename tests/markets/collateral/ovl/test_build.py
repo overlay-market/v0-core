@@ -675,7 +675,7 @@ def test_build_w_impact(
     oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
     leverage=strategy('uint8', min_value=1, max_value=100),
     is_long=strategy('bool'),
-    lmbda=strategy('decimal', min_value="0.2", max_value="10.0"))
+    lmbda=strategy('decimal', min_value="0.5", max_value="10.0"))
 def test_build_oi_adjusted_min(
         ovl_collateral,
         token,
@@ -721,24 +721,36 @@ def test_build_oi_adjusted_min(
     token.approve(ovl_collateral, collateral, {"from": bob})
 
     # in case have large impact, make sure to check for revert
-    oi_min_adjusted = 0
     if collateral_adjusted < MIN_COLLATERAL:
         EXPECTED_ERROR_MESSAGE = "OVLV1:collat<min"
         with brownie.reverts(EXPECTED_ERROR_MESSAGE):
             ovl_collateral.build(market, collateral, leverage, is_long,
-                                 oi_min_adjusted, {"from": bob})
+                                 0, {"from": bob})
         return
     elif oi_adjusted > market_oi_cap:
         EXPECTED_ERROR_MESSAGE = "OVLV1:>cap"
         with brownie.reverts(EXPECTED_ERROR_MESSAGE):
             ovl_collateral.build(market, collateral, leverage, is_long,
-                                 oi_min_adjusted, {"from": bob})
+                                 0, {"from": bob})
         return
 
-    # build the position
+    # build the position with oi_adjusted * (1 + rtol) as min so fails
+    r_tol = 1e-04
+    oi_min_adjusted = int(oi_adjusted * (1 + r_tol))
+
+    EXPECTED_ERROR_MESSAGE = "OVLV1:oi<min"
+    with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+        ovl_collateral.build(market, collateral, leverage, is_long,
+                             oi_min_adjusted, {"from": bob})
+
+    # and now build successfully when immediately at oi_adjusted as min
+    oi_min_adjusted = int(oi_adjusted * (1 - r_tol))
     tx = ovl_collateral.build(market, collateral, leverage, is_long,
                               oi_min_adjusted, {"from": bob})
     pid = tx.events['Build']['positionId']
+
+    # check position token issued with correct oi shares
+    assert approx(ovl_collateral.balanceOf(bob, pid)) == int(oi_adjusted)
 
 
 # TODO: def test_build_multiple_w_impact
