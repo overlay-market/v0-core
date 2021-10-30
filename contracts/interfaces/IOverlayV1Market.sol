@@ -4,7 +4,7 @@ pragma solidity ^0.8.7;
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "../libraries/Position.sol";
 
-interface IOverlayV1Market is IERC1155 {    
+interface IOverlayV1Market is IERC1155 {
 
     event log(string k, uint v);
 
@@ -54,6 +54,7 @@ interface IOverlayV1Market is IERC1155 {
     function priceFrameCap() external view returns (int256);
 
     function lmbda() external view returns (uint256);
+    function staticCap() external view returns (uint256);
 
     function brrrrdExpected() external view returns (uint256);
     function brrrrdWindowMacro() external view returns (uint256);
@@ -77,7 +78,7 @@ interface IOverlayV1Market is IERC1155 {
     function pricePoints (
         uint256 index
     ) external view returns (
-        PricePoint memory price 
+        PricePoint memory price
     );
 
     function MAX_FUNDING_COMPOUND() external view returns (uint16);

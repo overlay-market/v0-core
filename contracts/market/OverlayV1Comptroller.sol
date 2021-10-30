@@ -16,7 +16,7 @@ abstract contract OverlayV1Comptroller {
     uint256 private constant ONE = 1e18;
 
     // length of roller arrays when we circle
-    uint256 constant CHORD = 60; 
+    uint256 constant CHORD = 60;
 
     // current element for new rolls
     uint256 public impactCycloid;
@@ -43,7 +43,7 @@ abstract contract OverlayV1Comptroller {
         uint anti;
     }
 
-    uint256 internal staticCap;
+    uint256 public staticCap;
     uint256 public impactWindow;
     uint256 public lmbda;
 
@@ -74,7 +74,7 @@ abstract contract OverlayV1Comptroller {
     function brrrr (
         uint _brrrr,
         uint _antiBrrrr
-    ) internal { 
+    ) internal {
 
         uint _now = block.timestamp;
         uint _brrrrdFiling = brrrrdFiling;
@@ -109,16 +109,16 @@ abstract contract OverlayV1Comptroller {
 
     }
 
-    function getBrrrrd () internal view returns ( 
+    function getBrrrrd () internal view returns (
         uint brrrrd_,
         uint antiBrrrrd_
-    ) { 
+    ) {
 
         (  ,Roller memory _rollerNow,
             Roller memory _rollerThen ) = scry(
-                brrrrdRollers, 
+                brrrrdRollers,
                 brrrrdCycloid,
-                brrrrdWindowMacro 
+                brrrrdWindowMacro
             );
 
         brrrrd_ = brrrrdAccumulator[0] + _rollerNow.ying - _rollerThen.ying;
@@ -134,7 +134,7 @@ abstract contract OverlayV1Comptroller {
 
         uint _brrrrdExpected = brrrrdExpected;
 
-        if (_antiBrrrrd > _brrrrd) {
+        if (_antiBrrrrd >= _brrrrd) {
 
             return Math.min(staticCap, depth() );
 
@@ -150,9 +150,10 @@ abstract contract OverlayV1Comptroller {
 
             uint _dynamicCap = ( 2e18 - _brrrrd.divDown(_brrrrdExpected) ).mulDown(staticCap);
 
-            cap_= Math.min( _dynamicCap, depth() );
-
-        } 
+            // this should be min'd with the static cap
+            cap_ = Math.min( _dynamicCap, depth() );
+            cap_ = Math.min(cap_, staticCap);
+        }
 
     }
 
@@ -171,7 +172,7 @@ abstract contract OverlayV1Comptroller {
 
         impactCycloid = roll(
             impactRollers,
-            _rollerImpact, 
+            _rollerImpact,
             _lastMoment,
             impactCycloid
         );
@@ -197,8 +198,8 @@ abstract contract OverlayV1Comptroller {
         (   uint _lastMoment,
             Roller memory _rollerNow,
             Roller memory _rollerImpact ) = scry(
-                impactRollers, 
-                impactCycloid, 
+                impactRollers,
+                impactCycloid,
                 impactWindow );
 
         cap_ = oiCap();

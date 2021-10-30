@@ -15,6 +15,7 @@ TOKEN_TOTAL_SUPPLY = 8000000
 OI_CAP = 800000e18
 FEE_RESOLUTION = 1e18
 SLIPPAGE_TOL = 0.2
+LMBDA = 1
 PRICES = [
     {
         "entry": {
@@ -560,12 +561,11 @@ def test_oi_shares_bothsides_with_funding(
     pass
 
 
-# TODO: fix build tests above for oi *= 1e16 in fuzzing,
-# also fix/investigate rel tol in impact fee check below
 @given(
     oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
     leverage=strategy('uint8', min_value=1, max_value=100),
-    is_long=strategy('bool'))
+    is_long=strategy('bool'),
+    lmbda=strategy('decimal', min_value="2.0", max_value="10.0"))
 def test_build_w_impact(
         ovl_collateral,
         token,
@@ -576,9 +576,15 @@ def test_build_w_impact(
         rewards,
         oi,
         leverage,
-        is_long
+        is_long,
+        lmbda
 ):
-    lmbda = 1
+    lmbda = float(lmbda)
+    print('lmbda', lmbda)
+    print('lmbda*1e18', lmbda*1e18)
+    print('market.oiCap()', market.oiCap())
+    print('market.staticCap()', market.staticCap())
+
     market.setComptrollerParams(
         market.impactWindow(),
         lmbda*1e18,
@@ -588,6 +594,9 @@ def test_build_w_impact(
         market.brrrrdWindowMicro(),
         {'from': gov}
     )
+    print('OI_CAP', OI_CAP)
+    print('market.oiCap()', market.oiCap())
+    print('market.staticCap()', market.staticCap())
 
     oi *= 1e16
     collateral = oi / leverage
@@ -598,6 +607,14 @@ def test_build_w_impact(
 
     collateral_adjusted = collateral - impact_fee - trade_fee
     oi_adjusted = collateral_adjusted * leverage
+
+    print('oi', oi)
+    print('leverage', leverage)
+    print('q', q)
+    print('collateral_adjusted', collateral_adjusted)
+    print('oi_adjusted', oi_adjusted)
+    print('impact_fee', impact_fee)
+    print('trade_fee', trade_fee)
 
     # get prior state of collateral manager
     ovl_balance = token.balanceOf(ovl_collateral)
@@ -661,5 +678,67 @@ def test_build_w_impact(
     assert impact_fee == approx(act_impact_fee, rel=1e-05)
 
 
+@given(
+    oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
+    leverage=strategy('uint8', min_value=1, max_value=100),
+    is_long=strategy('bool'),
+    lmbda=strategy('decimal', min_value="0.2", max_value="10.0"))
+def test_build_oi_adjusted_min(
+        ovl_collateral,
+        token,
+        mothership,
+        market,
+        bob,
+        gov,
+        rewards,
+        oi,
+        leverage,
+        is_long,
+        lmbda
+):
+    lmbda = float(lmbda)
+    market.setComptrollerParams(
+        market.impactWindow(),
+        lmbda*1e18,
+        market.oiCap(),
+        market.brrrrdExpected(),
+        market.brrrrdWindowMacro(),
+        market.brrrrdWindowMicro(),
+        {'from': gov}
+    )
+
+    oi *= 1e16
+    collateral = oi / leverage
+    trade_fee = oi * mothership.fee() / FEE_RESOLUTION
+
+    q = oi / market.oiCap()
+    impact_fee = oi * (1 - math.exp(-lmbda * q))
+
+    collateral_adjusted = collateral - impact_fee - trade_fee
+    oi_adjusted = collateral_adjusted * leverage
+
+    # get prior state of collateral manager
+    ovl_balance = token.balanceOf(ovl_collateral)
+
+    # get prior state of market
+    market_oi = market.oiLong() if is_long else market.oiShort()
+
+    # approve collateral contract to spend bob's ovl to build position
+    token.approve(ovl_collateral, collateral, {"from": bob})
+
+    # in case have large impact, make sure to check for revert
+    oi_min_adjusted = 0
+    if collateral_adjusted < MIN_COLLATERAL:
+        EXPECTED_ERROR_MESSAGE = "OVLV1:collat<min"
+        with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+            ovl_collateral.build(market, collateral, leverage, is_long,
+                                 oi_min_adjusted, {"from": bob})
+        return
+
+    # build the position
+    tx = ovl_collateral.build(market, collateral, leverage, is_long,
+                              oi_min_adjusted, {"from": bob})
+    pid = tx.events['Build']['positionId']
+
+
 # TODO: def test_build_multiple_w_impact
-# TODO: def test_build_impact_tolerance
