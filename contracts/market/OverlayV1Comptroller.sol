@@ -43,7 +43,7 @@ abstract contract OverlayV1Comptroller {
         uint anti;
     }
 
-    uint256 public staticCap;
+    uint256 internal staticCap;
     uint256 public impactWindow;
     uint256 public lmbda;
 
@@ -150,7 +150,6 @@ abstract contract OverlayV1Comptroller {
 
             uint _dynamicCap = ( 2e18 - _brrrrd.divDown(_brrrrdExpected) ).mulDown(staticCap);
 
-            // this should be min'd with the static cap
             cap_ = Math.min( _dynamicCap, depth() );
             cap_ = Math.min(cap_, staticCap);
         }
@@ -204,6 +203,8 @@ abstract contract OverlayV1Comptroller {
 
         cap_ = oiCap();
 
+        // TODO: Fix: since addOi() in OverlayV1Market.sol comes *after*
+        // intake, this can throw overflow error when cap is small
         uint _pressure = _oi.divDown(cap_);
 
         if (_isLong) _rollerNow.ying += _pressure;

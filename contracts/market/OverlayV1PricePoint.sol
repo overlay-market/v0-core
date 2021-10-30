@@ -81,13 +81,13 @@ abstract contract OverlayV1PricePoint {
     }
 
     /// @notice Allows inheriting contracts to add the latest realized price
-    function setpricePointNext(
+    function setPricePointNext(
         PricePoint memory _pricePoint
     ) internal {
 
         emit NewPrice(
-            _pricePoint.bid, 
-            _pricePoint.ask, 
+            _pricePoint.bid,
+            _pricePoint.ask,
             _pricePoint.index
         );
 
