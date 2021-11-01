@@ -67,7 +67,7 @@ abstract contract OverlayV1Comptroller {
 
     }
 
-    function depth () internal virtual view returns ( uint256 depth_ );
+    // function depth () internal virtual view returns ( uint256 depth_ );
 
     function brrrr (
         uint _brrrr,
@@ -125,47 +125,46 @@ abstract contract OverlayV1Comptroller {
 
     }
 
-    function oiCap () public view returns ( uint cap_) {
+    // function oiCap () public view returns ( uint cap_) {
 
-        (   uint _brrrrd,
-            uint _antiBrrrrd ) = getBrrrrd();
+    //     (   uint _brrrrd,
+    //         uint _antiBrrrrd ) = getBrrrrd();
 
-        uint _brrrrdExpected = brrrrdExpected;
+    //     uint _brrrrdExpected = brrrrdExpected;
 
-        if (_antiBrrrrd > _brrrrd) {
+    //     if (_antiBrrrrd > _brrrrd) {
 
-            return Math.min(staticCap, depth() );
+    //         return Math.min(staticCap, depth() );
 
-        }
+    //     }
 
-        _brrrrd -= _antiBrrrrd;
+    //     _brrrrd -= _antiBrrrrd;
 
-        if ( _brrrrd > _brrrrdExpected * 2 ) {
+    //     if ( _brrrrd > _brrrrdExpected * 2 ) {
 
-            return 0;
+    //         return 0;
 
-        } else {
+    //     } else {
 
-            uint _dynamicCap = ( 2e18 - _brrrrd.divDown(_brrrrdExpected) ).mulDown(staticCap);
+    //         uint _dynamicCap = ( 2e18 - _brrrrd.divDown(_brrrrdExpected) ).mulDown(staticCap);
 
-            cap_= Math.min( _dynamicCap, depth() );
+    //         cap_= Math.min( _dynamicCap, depth() );
 
-        } 
+    //     } 
 
-    }
+    // }
 
     function intake (
         bool _isLong,
-        uint _oi
+        uint _oi,
+        uint _cap
     ) internal returns (
-        uint impact_,
-        uint cap_
+        uint impact_
     ) {
 
         (   Roller memory _rollerImpact,
             uint _lastMoment,
-            uint _impact,
-            uint _cap ) = _intake(_isLong, _oi);
+            uint _impact ) = _intake(_isLong, _oi, _cap);
 
         impactCycloid = roll(
             impactRollers,
@@ -178,8 +177,6 @@ abstract contract OverlayV1Comptroller {
 
         brrrr( 0, impact_ );
 
-        cap_ = _cap;
-
     }
 
     function _intake (
@@ -189,8 +186,7 @@ abstract contract OverlayV1Comptroller {
     ) internal view returns (
         Roller memory rollerNow_,
         uint lastMoment_,
-        uint impact_,
-        uint cap_
+        uint impact_
     ) {
 
         (   uint _lastMoment,

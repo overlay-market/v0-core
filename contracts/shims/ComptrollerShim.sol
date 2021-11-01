@@ -53,37 +53,74 @@ contract ComptrollerShim is OverlayV1Comptroller {
 
     }
 
+    function oiCap () public view returns (uint cap_) {
 
-    function depth () internal virtual override view returns (uint256 depth_) {
+        uint _brrrrdExpected = brrrrdExpected;
+        uint _now = block.timestamp;
+        uint _depth;
+
+        (   uint _brrrrd,
+            uint _antiBrrrrd ) = getBrrrrd();
+
+        bool _burnt;
+        bool _expected;
+        bool _surpassed;
+
+        if (_brrrrd < _antiBrrrrd) _burnt = true;
+        else {
+            _brrrrd -= _antiBrrrrd;
+            _expected = _brrrrd < _brrrrdExpected;
+            _surpassed = _brrrrd < _brrrrdExpected * 2;
+        }
+
+        _depth = readFeed();
+
+        if (_burnt || _expected) cap_ = Math.min(staticCap, _depth);
+
+        else if (_surpassed) {
+            uint _dynamicCap = ( 2e18 - _brrrrd.divDown(_brrrrdExpected) ).mulDown(staticCap);
+            cap_ = Math.min(staticCap, Math.min(_dynamicCap, _depth));
+        }
+
+    }
+
+
+    function readFeed () public view returns (uint256 depth_) { 
+
+        int56[] memory _ticks;
+        uint160[] memory _liqs;
 
         uint32[] memory _secondsAgo = new uint32[](2);
-        _secondsAgo[0] = uint32(microWindow);
-        _secondsAgo[1] = 0;
 
-        ( int56[] memory _ticks, uint160[] memory _invLiqs ) = IUniswapV3Pool(marketFeed).observe(_secondsAgo);
+        _secondsAgo[1] = uint32(microWindow);
+
+        ( _ticks, _liqs ) = IUniswapV3Pool(marketFeed).observe(_secondsAgo);
 
         uint256 _sqrtPrice = TickMath.getSqrtRatioAtTick(
-            int24((_ticks[1] - _ticks[0]) / int56(int32(int(microWindow))))
+            int24((_ticks[0] - _ticks[1]) / int56(int32(int(microWindow))))
         );
 
-        uint256 _liquidity = (uint160(microWindow) << 128) / ( _invLiqs[1] - _invLiqs[0] );
+        uint256 _liquidity = (uint160(microWindow) << 128) / ( _liqs[0] - _liqs[1] );
 
         uint _ethAmount = ethIs0
             ? ( uint256(_liquidity) << 96 ) / _sqrtPrice
             : FullMath.mulDiv(uint256(_liquidity), _sqrtPrice, X96);
 
+        _secondsAgo[1] = uint32(macroWindow);
+
         ( _ticks, ) = IUniswapV3Pool(ovlFeed).observe(_secondsAgo);
 
-        uint _price = OracleLibraryV2.getQuoteAtTick(
-            int24((_ticks[1] - _ticks[0]) / int56(int32(int(microWindow)))),
+        uint _ovlPrice = OracleLibraryV2.getQuoteAtTick(
+            int24((_ticks[0] - _ticks[1]) / int56(int32(int(macroWindow)))),
             1e18,
             address(ovl),
             eth
         );
 
-        depth_ = lmbda.mulUp(( _ethAmount * 1e18 ) / _price).divDown(2e18);
+        depth_ = lmbda.mulUp(( _ethAmount * 1e18 ) / _ovlPrice).divDown(2e18);
 
     }
+
 
     function setRoller (
         uint index,
@@ -129,6 +166,7 @@ contract ComptrollerShim is OverlayV1Comptroller {
 
     }
 
+
     function impactBatch (
         bool[] memory _isLong,
         uint[] memory _oi
@@ -140,7 +178,9 @@ contract ComptrollerShim is OverlayV1Comptroller {
 
         for (uint i = 0; i < len; i++) {
 
-            ( impact_, ) = intake(_isLong[i], _oi[i]);
+            uint _cap = oiCap();
+
+            impact_ = intake(_isLong[i], _oi[i], _cap);
 
         }
 
@@ -153,7 +193,9 @@ contract ComptrollerShim is OverlayV1Comptroller {
         uint impact_
     ) {
 
-        ( ,,impact_, ) = _intake(_isLong, _oi);
+        uint _cap = oiCap();
+
+        ( ,,impact_ ) = _intake(_isLong, _oi, _cap);
 
     }
 

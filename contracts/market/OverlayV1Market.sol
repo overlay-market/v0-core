@@ -22,11 +22,11 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
     constructor(address _mothership) OverlayV1Governance( _mothership) { }
 
-    function _update () internal virtual;
+    // function _update () internal virtual;
 
-    function __update () internal virtual returns (uint256 cap_);
+    function __update (bool _readDepth) internal virtual returns (uint256 cap_);
 
-    function update () external { _update(); }
+    function update () external { __update(false); }
 
     /// @notice Adds open interest to the market
     /// @dev invoked by an overlay position contract

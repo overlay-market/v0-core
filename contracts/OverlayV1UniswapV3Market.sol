@@ -65,70 +65,16 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             _token0 == _quote ? _token0 : _token1
         );
 
-        setpricePointNext(PricePoint(_price, _price, _price));
+        setPricePointNext(PricePoint(_price, _price, _price));
 
         updated = block.timestamp;
         compounded = block.timestamp;
 
     }
 
-    function price () public view override returns (PricePoint memory) {
+    function price () public view override returns (PricePoint memory price_) {
 
-        uint32[] memory _secondsAgo = new uint32[](3);
-        _secondsAgo[0] = uint32(macroWindow);
-        _secondsAgo[1] = uint32(microWindow);
-        _secondsAgo[2] = uint32(0);
-
-        ( int56[] memory _ticks, ) = IUniswapV3Pool(marketFeed).observe(_secondsAgo);
-
-        uint _macroPrice = OracleLibraryV2.getQuoteAtTick(
-            int24((_ticks[2] - _ticks[0]) / int56(int32(int(macroWindow)))),
-            amountIn,
-            base,
-            quote
-        );
-
-        uint _microPrice = OracleLibraryV2.getQuoteAtTick(
-            int24((_ticks[2] - _ticks[1]) / int56(int32(int(microWindow)))),
-            amountIn,
-            base,
-            quote
-        );
-
-        return insertSpread(_microPrice, _macroPrice);
-
-    }
-
-    function depth () internal virtual override view returns (uint256 depth_) {
-
-        uint32[] memory _secondsAgo = new uint32[](2);
-        _secondsAgo[0] = uint32(microWindow);
-        _secondsAgo[1] = 0;
-
-        ( int56[] memory _ticks, uint160[] memory _invLiqs ) = IUniswapV3Pool(marketFeed).observe(_secondsAgo);
-
-        uint256 _sqrtPrice = TickMath.getSqrtRatioAtTick(
-            int24((_ticks[1] - _ticks[0]) / int56(int32(int(microWindow))))
-        );
-
-        uint256 _liquidity = (uint160(microWindow) << 128) / ( _invLiqs[1] - _invLiqs[0] );
-
-        uint _ethAmount = ethIs0
-            ? ( uint256(_liquidity) << 96 ) / _sqrtPrice
-            : FullMath.mulDiv(uint256(_liquidity), _sqrtPrice, X96);
-
-        secondsAgo[0] = uint32(macroWindow);
-
-        ( _ticks, ) = IUniswapV3Pool(ovlFeed).observe(_secondsAgo);
-
-        uint _price = OracleLibraryV2.getQuoteAtTick(
-            int24((_ticks[1] - _ticks[0]) / int56(int32(int(macroWindow)))),
-            1e18,
-            address(ovl),
-            eth
-        );
-
-        depth_ = lmbda.mulUp(( _ethAmount * 1e18 ) / _price).divDown(2e18);
+        ( price_, ) = readFeed(true, false);
 
     }
 
@@ -158,42 +104,42 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
-    function _update () internal override {
+    // function _update () internal override {
 
-        uint _now = block.timestamp;
+    //     uint _now = block.timestamp;
 
-        uint _updated = updated;
+    //     uint _updated = updated;
 
-        if (_now != _updated) {
+    //     if (_now != _updated) {
 
-            PricePoint memory _price = price();
-            setpricePointNext(_price);
-            updated = _now;
+    //         PricePoint memory _price = price();
+    //         setPricePointNext(_price);
+    //         updated = _now;
 
-        }
+    //     }
 
-        (   uint _compoundings, 
-            uint _tCompounding  ) = epochs(_now, compounded);
+    //     (   uint _compoundings, 
+    //         uint _tCompounding  ) = epochs(_now, compounded);
 
-        if (0 < _compoundings) {
+    //     if (0 < _compoundings) {
 
-            payFunding(k, _compoundings);
-            compounded = _tCompounding;
+    //         payFunding(k, _compoundings);
+    //         compounded = _tCompounding;
 
-        }
+    //     }
 
-    }
+    // }
 
     function readFeed (
         bool _price, 
         bool _depth
     ) public view returns (
         PricePoint memory price_,
-        uint256 cap_
+        uint256 depth_
     ) { 
 
         int56[] memory _ticks;
-        int160[] memory _liqs;
+        uint160[] memory _liqs;
 
         if (_price) {
 
@@ -229,7 +175,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
                 _secondsAgo[1] = uint32(microWindow);
 
-                ( ticks, liqs ) = IUniswapV3Pool(marketFeed).observe(_secondsAgo);
+                ( _ticks, _liqs ) = IUniswapV3Pool(marketFeed).observe(_secondsAgo);
 
             }
 
@@ -247,21 +193,22 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
             ( _ticks, ) = IUniswapV3Pool(ovlFeed).observe(_secondsAgo);
 
-            uint _price = OracleLibraryV2.getQuoteAtTick(
+            uint _ovlPrice = OracleLibraryV2.getQuoteAtTick(
                 int24((_ticks[1] - _ticks[0]) / int56(int32(int(macroWindow)))),
                 1e18,
                 address(ovl),
                 eth
             );
 
-            depth_ = lmbda.mulUp(( _ethAmount * 1e18 ) / _price).divDown(2e18);
+            depth_ = lmbda.mulUp(( _ethAmount * 1e18 ) / _ovlPrice).divDown(2e18);
 
         }
 
     }
 
-    function __update (bool _readDepth) internal override returns (uint cap_) {
+    function __update (bool _readDepth) internal virtual override returns (uint cap_) {
 
+        uint _brrrrdExpected = brrrrdExpected;
         uint _now = block.timestamp;
         uint _updated = updated;
 
@@ -287,11 +234,11 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
             ( _price, _depth ) = readFeed(_readPrice, _burnt || _expected || _surpassed);
 
-            if (_readPrice) setNextPrice(_price);
+            if (_readPrice) setPricePointNext(_price);
 
             if (_burnt || _expected) cap_ = Math.min(staticCap, _depth);
 
-            else if (_printed) {
+            else if (_surpassed) {
                 uint _dynamicCap = ( 2e18 - _brrrrd.divDown(_brrrrdExpected) ).mulDown(staticCap);
                 cap_ = Math.min(staticCap, Math.min(_dynamicCap, _depth));
             }
@@ -299,9 +246,9 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         } else if (_readPrice) {
 
-            ( _price, ) = price(true, false);
+            ( _price, ) = readFeed(true, false);
 
-            setNextPricePoint(_price);
+            setPricePointNext(_price);
 
         }
 
