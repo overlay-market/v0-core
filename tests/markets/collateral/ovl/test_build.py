@@ -561,7 +561,8 @@ def test_oi_shares_bothsides_with_funding(
     pass
 
 
-# TODO: fix rel tol on comparison in impact fee. why so low? Bc of how we compute e**(x) in solidity?
+# TODO: fix rel tol on comparison in impact fee. why so low?
+# Bc of how we compute e**(x) in solidity?
 @given(
     oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
     leverage=strategy('uint8', min_value=1, max_value=100),
@@ -620,6 +621,7 @@ def test_build_w_impact(
             ovl_collateral.build(market, collateral, leverage, is_long,
                                  oi_min_adjusted, {"from": bob})
         return
+    # and if dynamic cap has brought down oi cap from static value
     elif oi_adjusted > market_oi_cap:
         EXPECTED_ERROR_MESSAGE = "OVLV1:>cap"
         with brownie.reverts(EXPECTED_ERROR_MESSAGE):
@@ -727,6 +729,7 @@ def test_build_oi_adjusted_min(
             ovl_collateral.build(market, collateral, leverage, is_long,
                                  0, {"from": bob})
         return
+    # and if dynamic cap has brought down oi cap from static value
     elif oi_adjusted > market_oi_cap:
         EXPECTED_ERROR_MESSAGE = "OVLV1:>cap"
         with brownie.reverts(EXPECTED_ERROR_MESSAGE):

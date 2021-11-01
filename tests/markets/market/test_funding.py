@@ -38,7 +38,7 @@ def test_funding_total_imbalance(
     oi,
     1,
     is_long,
-    oi,
+    0,
     {'from': bob}
   )
 
