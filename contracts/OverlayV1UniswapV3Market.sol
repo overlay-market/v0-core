@@ -274,24 +274,34 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             (   uint _brrrrd,
                 uint _antiBrrrrd ) = getBrrrrd();
 
-            bool _burnt = _brrrrd < _antiBrrrrd;
-            bool _printed = _brrrrd < _brrrrdExpected * 2;
+            bool _burnt;
+            bool _expected;
+            bool _surpassed;
 
-            ( _price, _depth ) = readFeed(_readPrice, _burnt || _printed);
+            if (_brrrrd < _antiBrrrrd) _burnt = true;
+            else {
+                _brrrrd -= _antiBrrrrd;
+                _expected = _brrrrd < _brrrrdExpected;
+                _surpassed = _brrrrd < _brrrrdExpected * 2;
+            }
+
+            ( _price, _depth ) = readFeed(_readPrice, _burnt || _expected || _surpassed);
 
             if (_readPrice) setNextPrice(_price);
 
-            if (_burnt) cap_ = Math.min(staticCap, _depth);
+            if (_burnt || _expected) cap_ = Math.min(staticCap, _depth);
 
-            if (_printed) cap_ = Math.min(staticCap, Math.min(_dynamicCap, _depth));
+            else if (_printed) {
+                uint _dynamicCap = ( 2e18 - _brrrrd.divDown(_brrrrdExpected) ).mulDown(staticCap);
+                cap_ = Math.min(staticCap, Math.min(_dynamicCap, _depth));
+            }
 
-            // else cap_ = 0; is the base case
 
         } else if (_readPrice) {
 
-            ( _price, ) = price(_readPrice, _readDepth);
+            ( _price, ) = price(true, false);
 
-            setPricePointNext(_price);
+            setNextPricePoint(_price);
 
         }
 

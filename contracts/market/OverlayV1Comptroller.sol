@@ -8,8 +8,6 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 
 abstract contract OverlayV1Comptroller {
 
-    // event log(string k, uint v);
-
     using FixedPoint for uint256;
 
     uint256 private constant INVERSE_E = 0x51AF86713316A9A;
@@ -186,7 +184,8 @@ abstract contract OverlayV1Comptroller {
 
     function _intake (
         bool _isLong,
-        uint _oi
+        uint _oi,
+        uint _cap
     ) internal view returns (
         Roller memory rollerNow_,
         uint lastMoment_,
@@ -201,9 +200,7 @@ abstract contract OverlayV1Comptroller {
                 impactCycloid, 
                 impactWindow );
 
-        cap_ = oiCap();
-
-        uint _pressure = _oi.divDown(cap_);
+        uint _pressure = _oi.divDown(_cap);
 
         if (_isLong) _rollerNow.ying += _pressure;
         else _rollerNow.yang += _pressure;

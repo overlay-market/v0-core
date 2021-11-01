@@ -24,6 +24,8 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
     function _update () internal virtual;
 
+    function __update () internal virtual returns (uint256 cap_);
+
     function update () external { _update(); }
 
     /// @notice Adds open interest to the market
@@ -41,13 +43,13 @@ abstract contract OverlayV1Market is OverlayV1Governance {
         uint pricePointNext_
     ) {
 
-        _update();
+        uint _cap = __update(true);
 
         pricePointNext_ = _pricePoints.length - 1;
 
         uint _oi = _collateral * _leverage;
 
-        ( uint _impact, uint _cap ) = intake(_isLong, _oi);
+        uint _impact = intake(_isLong, _oi, _cap);
 
         fee_ = _oi.mulDown(mothership.fee());
 
@@ -74,7 +76,7 @@ abstract contract OverlayV1Market is OverlayV1Governance {
         uint priceFrame_
     ) {
 
-        _update();
+        __update(false);
 
         PricePoint storage priceEntry = _pricePoints[_pricePoint];
 
