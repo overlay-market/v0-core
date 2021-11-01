@@ -293,36 +293,9 @@ abstract contract OverlayV1Comptroller {
 
         }
 
-        (   Roller memory _beforeOrAt,
-            Roller memory _atOrAfter ) = scryRollers(rollers, _cycloid, _target);
+        ( Roller memory _beforeOrAt, ) = scryRollers(rollers, _cycloid, _target);
 
-        if (_beforeOrAt.time == _target) {
-
-            rollerThen_ = _beforeOrAt;
-
-        } else if (_target == _atOrAfter.time) {
-
-            rollerThen_ = _atOrAfter;
-
-        } else if (_atOrAfter.time == _beforeOrAt.time) {
-
-            rollerThen_ = _beforeOrAt;
-
-        } else {
-
-            uint _yingDiff = _atOrAfter.ying - _beforeOrAt.ying;
-            uint _yangDiff = _atOrAfter.yang - _beforeOrAt.yang;
-
-            uint _timeDiff = ( _atOrAfter.time - _beforeOrAt.time ) * 1e18;
-
-            uint _targetRatio = ( ( _target - _beforeOrAt.time ) * 1e18 ).divUp(_timeDiff);
-
-            rollerThen_.ying = _beforeOrAt.ying.add(_yingDiff.mulDown(_targetRatio));
-            rollerThen_.yang = _beforeOrAt.yang.add(_yangDiff.mulDown(_targetRatio));
-            rollerThen_.time = _target;
-
-        }
-
+        rollerThen_ = _beforeOrAt;
     }
 
     function scryRollers (

@@ -800,6 +800,8 @@ def test_build_multiple_w_impact(
 
     q = 0
     for i in range(num_builds):
+        print("\n##################################################\n")
+
         brownie.chain.mine(timedelta=1)
 
         q += oi / market.oiCap()
@@ -850,9 +852,9 @@ def test_build_multiple_w_impact(
                                   oi_min_adjusted, {"from": bob})
         pid = tx.events['Build']['positionId']
 
-        print("\n##################### LOGS #######################")
+        # print("\n##################### LOGS #######################")
         # print_logs(tx)
-        print("##################################################\n")
+        # print("##################################################\n")
 
         # check collateral sent to collateral manager
         assert int(ovl_balance + collateral - impact_fee) \
@@ -896,9 +898,11 @@ def test_build_multiple_w_impact(
                 act_impact_fee = v['value']
 
         print('act_impact_fee', act_impact_fee)
-        print('impact_fee', impact_fee)
+        print('impact_fee', int(impact_fee))
 
         assert impact_fee == approx(act_impact_fee, rel=1e-04)
+
+        print("\n##################################################\n")
 
     # TODO: chain.mine(IMPACT_WINDOW) and check q => 0
 
