@@ -978,18 +978,27 @@ def test_build_multiple_in_multiple_impact_windows(
 
         print('index at -1', len(qs)-1)
         print('qs[-1]', qs[-1])
+        print('build_times[-1]', build_times[-1])
 
         print('index at -1-int(num_builds/2)', len(qs)-1-int(num_builds/2))
         print('qs[-1-int(num_builds/2)]', None if len(qs)
               <= int(num_builds/2) else qs[-1-int(num_builds/2)])
+        print('build_times[-1-int(num_builds/2)]', None if len(qs)
+              <= int(num_builds/2) else build_times[-1-int(num_builds/2)])
 
+        elapsed = build_times[-1] - \
+            build_times[-1-int(num_builds/2)] if len(qs) > int(num_builds/2) \
+            else build_times[-1]
         pressure = qs[-1] - qs[-1-int(num_builds/2)
                                ] if len(qs) > int(num_builds/2) else qs[-1]
-        print('pressure', pressure)
+        print('elapsed', elapsed)
+        print('pressure', int(pressure))
         print('qs', qs)
+        print('build_times', build_times)
 
         impact_fee = oi * (1 - math.exp(-lmbda * pressure))
         proj_impact_fee = market.getImpact(is_long, oi)
+        proj_pressure = market.getPressure(is_long, oi)
 
         collateral_adjusted = collateral - impact_fee - trade_fee
         oi_adjusted = collateral_adjusted * leverage
@@ -997,6 +1006,7 @@ def test_build_multiple_in_multiple_impact_windows(
         print('q', q)
         print('impact_fee', int(impact_fee))
         print('proj_impact_fee', proj_impact_fee)
+        print('proj_pressure', proj_pressure)
 
         print('collateral', collateral)
         print('oi', oi)
@@ -1031,6 +1041,8 @@ def test_build_multiple_in_multiple_impact_windows(
         tx = ovl_collateral.build(market, collateral, leverage, is_long,
                                   oi_min_adjusted, {"from": bob})
         pid = tx.events['Build']['positionId']
+
+        print('brownie.chain.time() (after tx):', brownie.chain.time())
 
         # check collateral sent to collateral manager
         assert int(ovl_balance + collateral - impact_fee) \
