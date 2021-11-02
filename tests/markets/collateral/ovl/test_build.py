@@ -43,10 +43,16 @@ PRICES = [
 
 
 @given(
-    collateral=strategy('uint256', min_value=1e18,
-                        max_value=(OI_CAP - 1e4)/100),
-    leverage=strategy('uint8', min_value=1, max_value=100),
-    is_long=strategy('bool'))
+    collateral=strategy(
+        'uint256', 
+        min_value=1e18,
+        max_value=(OI_CAP - 1e4)/100),
+    leverage=strategy(
+        'uint8', 
+        min_value=1, 
+        max_value=100),
+    is_long=strategy(
+        'bool'))
 def test_build_success_zero_impact(
         ovl_collateral,
         token,
@@ -141,9 +147,12 @@ def test_build_when_market_not_supported(
 
 
 @given(
-    leverage=strategy('uint8', min_value=1, max_value=100),
-    is_long=strategy('bool')
-    )
+    leverage=strategy(
+        'uint8', 
+        min_value=1, 
+        max_value=100),
+    is_long=strategy(
+        'bool'))
 def test_build_min_collateral(
             ovl_collateral,
             token,
@@ -213,6 +222,7 @@ def test_build_cap(
     EXPECTED_ERROR_MESSAGE = 'OVLV1:>cap'
 
     cap = market.oiCap()
+
     token.approve(ovl_collateral, cap*2, {"from": bob})
 
     tx = ovl_collateral.build(market, cap, leverage, is_long, {'from': bob})
@@ -223,11 +233,16 @@ def test_build_cap(
 
 
 @given(
-    collateral=strategy('uint256', min_value=1e18,
-                        max_value=(OI_CAP - 1e4)/100),
-    leverage=strategy('uint8', min_value=1, max_value=100),
-    is_long=strategy('bool')
-    )
+    collateral=strategy(
+        'uint256', 
+        min_value=1e18,
+        max_value=(OI_CAP - 1e4)/100),
+    leverage=strategy(
+        'uint8', 
+        min_value=1, 
+        max_value=100),
+    is_long=strategy(
+        'bool'))
 def test_oi_added(
             ovl_collateral,
             token,
@@ -258,12 +273,20 @@ def test_oi_added(
 
 
 @given(
-    collateral=strategy('uint256', min_value=1e18,
-                        max_value=(OI_CAP - 1e4)/3000),
-    leverage=strategy('uint8', min_value=1, max_value=100),
-    is_long=strategy('bool'),
-    multiplier=strategy('decimal', min_value="1.01", max_value="14"),
-    )
+    collateral=strategy(
+        'uint256', 
+        min_value=1e18,
+        max_value=(OI_CAP - 1e4)/3000),
+    leverage=strategy(
+        'uint8', 
+        min_value=1, 
+        max_value=100),
+    multiplier=strategy(
+        'decimal', 
+        min_value="1.01", 
+        max_value="14"),
+    is_long=strategy(
+        'bool'))
 def test_oi_shares_onesided_zero_funding(
             ovl_collateral,
             token,
@@ -312,12 +335,20 @@ def test_oi_shares_onesided_zero_funding(
 
 
 @given(
-    collateral=strategy('uint256', min_value=1e18,
-                        max_value=(OI_CAP - 1e4)/3000),
-    leverage=strategy('uint8', min_value=1, max_value=100),
-    is_long=strategy('bool'),
-    multiplier=strategy('decimal', min_value="1.01", max_value="14"),
-    )
+    collateral=strategy(
+        'uint256', 
+        min_value=1e18,
+        max_value=(OI_CAP - 1e4)/3000),
+    leverage=strategy(
+        'uint8', 
+        min_value=1, 
+        max_value=100),
+    multiplier=strategy(
+        'decimal', 
+        min_value="1.01", 
+        max_value="14"),
+    is_long=strategy(
+        'bool'))
 def test_oi_shares_bothsides_zero_funding(
             ovl_collateral,
             token,
@@ -336,11 +367,16 @@ def test_oi_shares_bothsides_zero_funding(
 
 @given(
     # bc we build multiple positions w leverage take care not to hit CAP
-    collateral=strategy('uint256', min_value=1e18,
-                        max_value=(OI_CAP - 1e4)/300),
-    leverage=strategy('uint8', min_value=1, max_value=100),
-    is_long=strategy('bool')
-    )
+    collateral=strategy(
+        'uint256', 
+        min_value=1e18,
+        max_value=(OI_CAP - 1e4)/300),
+    leverage=strategy(
+        'uint8', 
+        min_value=1, 
+        max_value=100),
+    is_long=strategy(
+        'bool'))
 @mark.parametrize('price', PRICES)
 def test_entry_update_price_fetching(
             ovl_collateral,
@@ -392,12 +428,20 @@ def test_entry_update_price_fetching(
 
 @given(
     # bc we build multiple positions w leverage take care not to hit CAP
-    collateral=strategy('uint256', min_value=1e18,
-                        max_value=(OI_CAP - 1e4)/300),
-    leverage=strategy('uint8', min_value=1, max_value=100),
-    is_long=strategy('bool'),
-    compoundings=strategy('uint16', min_value=1, max_value=36),
-    )
+    collateral=strategy(
+        'uint256', 
+        min_value=1e18,
+        max_value=(OI_CAP - 1e4)/300),
+    leverage=strategy(
+        'uint8', 
+        min_value=1, 
+        max_value=100),
+    compoundings=strategy(
+        'uint16', 
+        min_value=1, 
+        max_value=36),
+    is_long=strategy(
+        'bool'))
 def test_entry_update_compounding_oi_onesided(
             ovl_collateral,
             token,
@@ -439,13 +483,24 @@ def test_entry_update_compounding_oi_onesided(
 
 @given(
     # bc we build multiple positions w leverage take care not to hit CAP
-    collateral=strategy('uint256', min_value=1e18,
-                        max_value=(OI_CAP - 1e4)/3000),
-    leverage=strategy('uint8', min_value=1, max_value=100),
-    is_long=strategy('bool'),
-    compoundings=strategy('uint16', min_value=1, max_value=36),
-    multiplier=strategy('decimal', min_value="1.01", max_value="14"),
-    )
+    collateral=strategy(
+        'uint256', 
+        min_value=1e18,
+        max_value=(OI_CAP - 1e4)/3000),
+    leverage=strategy(
+        'uint8', 
+        min_value=1, 
+        max_value=100),
+    compoundings=strategy(
+        'uint16', 
+        min_value=1, 
+        max_value=36),
+    multiplier=strategy(
+        'decimal', 
+        min_value="1.01", 
+        max_value="14"),
+    is_long=strategy(
+        'bool'))
 def test_entry_update_compounding_oi_imbalance(
             ovl_collateral,
             token,
@@ -520,12 +575,20 @@ def test_entry_update_compounding_oi_imbalance(
 
 
 @given(
-    collateral=strategy('uint256', min_value=1e18,
-                        max_value=(OI_CAP - 1e4)/3000),
-    leverage=strategy('uint8', min_value=1, max_value=100),
-    is_long=strategy('bool'),
-    multiplier=strategy('decimal', min_value="1.01", max_value="14"),
-    )
+    collateral=strategy(
+        'uint256', 
+        min_value=1e18,
+        max_value=(OI_CAP - 1e4)/3000),
+    leverage=strategy(
+        'uint8', 
+        min_value=1, 
+        max_value=100),
+    multiplier=strategy(
+        'decimal', 
+        min_value="1.01", 
+        max_value="14"),
+    is_long=strategy(
+        'bool'))
 def test_oi_shares_bothsides_with_funding(
             ovl_collateral,
             token,
