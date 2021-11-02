@@ -64,6 +64,10 @@ interface IOverlayV1Market is IERC1155 {
         bool _isLong,
         uint _oi
     ) external view returns (uint256);
+    function getImpact(
+        bool _isLong,
+        uint _oi
+    ) external view returns (uint256);
 
     function epochs() external view returns (
         uint compoundings_,
