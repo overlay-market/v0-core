@@ -16,7 +16,7 @@ abstract contract OverlayV1Comptroller {
     uint256 private constant ONE = 1e18;
 
     // length of roller arrays when we circle
-    uint256 constant CHORD = 60; 
+    uint256 constant CHORD = 60;
 
     // current element for new rolls
     uint256 public impactCycloid;
@@ -72,7 +72,7 @@ abstract contract OverlayV1Comptroller {
     function brrrr (
         uint _brrrr,
         uint _antiBrrrr
-    ) internal { 
+    ) internal {
 
         uint _now = block.timestamp;
         uint _brrrrdFiling = brrrrdFiling;
@@ -96,7 +96,7 @@ abstract contract OverlayV1Comptroller {
 
             uint _brrrrdWindowMicro = brrrrdWindowMicro;
 
-            brrrrdFiling += _brrrrdWindowMicro 
+            brrrrdFiling += _brrrrdWindowMicro
                 + ( ( ( _now - _brrrrdFiling ) / _brrrrdWindowMicro ) * _brrrrdWindowMicro );
 
         } else { // add to the brrrr accumulator
@@ -108,16 +108,16 @@ abstract contract OverlayV1Comptroller {
 
     }
 
-    function getBrrrrd () internal view returns ( 
+    function getBrrrrd () public view returns (
         uint brrrrd_,
         uint antiBrrrrd_
-    ) { 
+    ) {
 
         (  ,Roller memory _rollerNow,
             Roller memory _rollerThen ) = scry(
-                brrrrdRollers, 
+                brrrrdRollers,
                 brrrrdCycloid,
-                brrrrdWindowMacro 
+                brrrrdWindowMacro
             );
 
         brrrrd_ = brrrrdAccumulator[0] + _rollerNow.ying - _rollerThen.ying;
@@ -141,7 +141,7 @@ abstract contract OverlayV1Comptroller {
 
         impactCycloid = roll(
             impactRollers,
-            _rollerImpact, 
+            _rollerImpact,
             _lastMoment,
             impactCycloid
         );
@@ -165,8 +165,8 @@ abstract contract OverlayV1Comptroller {
         (   uint _lastMoment,
             Roller memory _rollerNow,
             Roller memory _rollerImpact ) = scry(
-                impactRollers, 
-                impactCycloid, 
+                impactRollers,
+                impactCycloid,
                 impactWindow );
 
         uint _pressure = _oi.divDown(_cap);

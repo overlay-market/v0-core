@@ -73,12 +73,12 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     }
 
     function readFeed (
-        bool _price, 
+        bool _price,
         bool _depth
     ) public view returns (
         PricePoint memory price_,
         uint256 depth_
-    ) { 
+    ) {
 
         int56[] memory _ticks;
         uint160[] memory _liqs;
@@ -156,11 +156,11 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
-    function oiCap () public virtual view returns ( 
-        uint cap_ 
+    function oiCap () public virtual view returns (
+        uint cap_
     ) {
 
-        (   uint _brrrrd, 
+        (   uint _brrrrd,
             uint _antiBrrrrd ) = getBrrrrd();
 
         uint _brrrrdExpected = brrrrdExpected;
@@ -253,7 +253,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         }
 
-        (   uint _compoundings, 
+        (   uint _compoundings,
             uint _tCompounding  ) = epochs(_now, compounded);
 
         if (0 < _compoundings) {
@@ -298,7 +298,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         if (0 < _compoundings) {
 
             ( oiLong_, oiShort_, ) = computeFunding(
-                oiLong_, 
+                oiLong_,
                 oiShort_,
                 _compoundings,
                 k
@@ -339,7 +339,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         if (_isLong) ( oi_ = _oiLong, oiShares_ = _oiLongShares );
         else ( oi_ = _oiShort, oiShares_ = _oiShortShares );
-    
+
     }
 
     function priceFrame (
@@ -349,7 +349,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         uint256 priceFrame_
     ) {
 
-        PricePoint memory _priceEntry = _pricePoints[_entryIndex]; 
+        PricePoint memory _priceEntry = _pricePoints[_entryIndex];
 
         PricePoint memory _priceExit;
 
