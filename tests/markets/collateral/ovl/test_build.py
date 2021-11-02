@@ -561,8 +561,6 @@ def test_oi_shares_bothsides_with_funding(
     pass
 
 
-# TODO: fix rel tol on comparison in impact fee. why so low?
-# Bc of how we compute e**(x) in solidity?
 @given(
     oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
     leverage=strategy('uint8', min_value=1, max_value=100),
@@ -609,6 +607,10 @@ def test_build_w_impact(
     # get prior state of market
     market_oi = market.oiLong() if is_long else market.oiShort()
     market_oi_cap = market.oiCap()  # accounts for depth, brrrd, static
+    market_pressure = market.getPressure(is_long, 0)
+
+    # check no prior market pressure before trades are built
+    assert market_pressure == 0
 
     # approve collateral contract to spend bob's ovl to build position
     token.approve(ovl_collateral, collateral, {"from": bob})
@@ -671,6 +673,11 @@ def test_build_w_impact(
             act_impact_fee = v['value']
 
     assert impact_fee == approx(act_impact_fee, rel=1e-04)
+
+    # check new state of market pressure
+    exp_pressure = int(q * 1e18)
+    act_pressure = market.getPressure(is_long, 0)
+    assert exp_pressure == approx(act_pressure)
 
 
 @given(
@@ -762,7 +769,7 @@ def test_build_oi_adjusted_min(
     is_long=strategy('bool'),
     lmbda=strategy('decimal', min_value="0.5", max_value="10.0"),
     num_builds=strategy('uint8', min_value=2, max_value=10))
-def test_build_multiple_w_impact(
+def test_build_multiple_in_one_impact_window(
         ovl_collateral,
         token,
         mothership,
@@ -777,6 +784,7 @@ def test_build_multiple_w_impact(
         num_builds
 ):
     lmbda = float(lmbda)
+    impact_window = market.impactWindow()
 
     market.setComptrollerParams(
         market.impactWindow(),
@@ -794,6 +802,9 @@ def test_build_multiple_w_impact(
     oi *= 1e16
     collateral = oi / leverage
     trade_fee = oi * mothership.fee() / FEE_RESOLUTION
+
+    # check no market pressure before builds
+    assert market.getPressure(is_long, 0) == 0
 
     # approve collateral contract to spend bob's ovl to build positions
     token.approve(ovl_collateral, collateral*num_builds, {"from": bob})
@@ -852,10 +863,6 @@ def test_build_multiple_w_impact(
                                   oi_min_adjusted, {"from": bob})
         pid = tx.events['Build']['positionId']
 
-        # print("\n##################### LOGS #######################")
-        # print_logs(tx)
-        # print("##################################################\n")
-
         # check collateral sent to collateral manager
         assert int(ovl_balance + collateral - impact_fee) \
             == approx(token.balanceOf(ovl_collateral))
@@ -902,9 +909,23 @@ def test_build_multiple_w_impact(
 
         assert impact_fee == approx(act_impact_fee, rel=1e-04)
 
-        print("\n##################################################\n")
+        # check new state of market pressure
+        exp_pressure = int(q * 1e18)
+        act_pressure = market.getPressure(is_long, 0)
+        assert exp_pressure == approx(act_pressure)
 
-    # TODO: chain.mine(IMPACT_WINDOW) and check q => 0
+    print("\n##################################################\n")
+
+    # check q => 0 after a window has passed
+    brownie.chain.mine(timedelta=impact_window+1)
+    q = 0
+    exp_pressure = int(q * 1e18)
+    act_pressure = market.getPressure(is_long, 0)
+
+    print("exp_pressure", exp_pressure)
+    print("act_pressure", act_pressure)
+
+    assert exp_pressure == approx(act_pressure)
 
 
 # TODO: def test_build_w_dyanmic_cap ? lmbda=strategy('decimal', min_value="0.2", max_value="0.5")

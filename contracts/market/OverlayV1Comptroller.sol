@@ -109,7 +109,7 @@ abstract contract OverlayV1Comptroller {
 
     }
 
-    function getBrrrrd () internal view returns (
+    function getBrrrrd () public view returns (
         uint brrrrd_,
         uint antiBrrrrd_
     ) {
@@ -125,6 +125,28 @@ abstract contract OverlayV1Comptroller {
 
         antiBrrrrd_ = brrrrdAccumulator[1] + _rollerNow.yang - _rollerThen.yang;
 
+    }
+
+    function getPressure (
+        bool _isLong,
+        uint _oi
+    ) public view returns (uint pressure_) {
+        (   ,
+            Roller memory _rollerNow,
+            Roller memory _rollerImpact ) = scry(
+                impactRollers,
+                impactCycloid,
+                impactWindow );
+
+        uint _cap = oiCap();
+
+        uint _pressure = (_isLong
+            ? _rollerNow.ying - _rollerImpact.ying
+            : _rollerNow.yang - _rollerImpact.yang
+        );
+        _pressure += _oi.divDown(_cap);
+
+        pressure_ = _pressure;
     }
 
     function oiCap () public view returns ( uint cap_) {

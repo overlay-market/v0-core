@@ -59,6 +59,12 @@ interface IOverlayV1Market is IERC1155 {
     function brrrrdWindowMacro() external view returns (uint256);
     function brrrrdWindowMicro() external view returns (uint256);
 
+    function getBrrrrd() external view returns (uint256);
+    function getPressure(
+        bool _isLong,
+        uint _oi
+    ) external view returns (uint256);
+
     function epochs() external view returns (
         uint compoundings_,
         uint tCompounding_
