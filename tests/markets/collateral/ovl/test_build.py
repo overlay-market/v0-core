@@ -766,7 +766,7 @@ def test_build_oi_adjusted_min(
 
 
 @given(
-    oi=strategy('uint256', min_value=1, max_value=OI_CAP/(1000e16)),
+    oi=strategy('uint256', min_value=1, max_value=OI_CAP/(100e16)),
     leverage=strategy('uint8', min_value=1, max_value=100),
     is_long=strategy('bool'),
     lmbda=strategy('decimal', min_value="0.2", max_value="10.0"),
@@ -890,6 +890,197 @@ def test_build_multiple_in_one_impact_window(
         exp_pressure = int(q * 1e18)
         act_pressure = market.getPressure(is_long, 0)
         assert exp_pressure == approx(act_pressure, rel=1e-04)
+
+    # check q => 0 after a window has passed
+    brownie.chain.mine(timedelta=impact_window+1)
+    q = 0
+    exp_pressure = int(q * 1e18)
+    act_pressure = market.getPressure(is_long, 0)
+
+    assert exp_pressure == approx(act_pressure, rel=1e-04)
+
+
+@given(
+    oi=strategy('uint256', min_value=1, max_value=OI_CAP/(100e16)),
+    leverage=strategy('uint8', min_value=1, max_value=100),
+    is_long=strategy('bool'),
+    lmbda=strategy('decimal', min_value="0.2", max_value="10.0"),
+    num_builds=strategy('uint8', min_value=4, max_value=10))
+def test_build_multiple_in_multiple_impact_windows(
+        ovl_collateral,
+        token,
+        mothership,
+        market,
+        bob,
+        gov,
+        rewards,
+        oi,
+        leverage,
+        is_long,
+        lmbda,
+        num_builds
+):
+    lmbda = float(lmbda)
+    impact_window = market.impactWindow()
+    impact_time_delta = 2 * int(impact_window / num_builds)
+
+    print('impact_window', impact_window)
+    print('impact_time_delta', impact_time_delta)
+
+    market.setComptrollerParams(
+        market.impactWindow(),
+        lmbda*1e18,
+        market.oiCap(),
+        market.brrrrdExpected(),
+        market.brrrrdWindowMacro(),
+        market.brrrrdWindowMicro(),
+        {'from': gov}
+    )
+
+    oi *= 1e16
+    collateral = oi / leverage
+    trade_fee = oi * mothership.fee() / FEE_RESOLUTION
+
+    # check no market pressure before builds
+    assert market.getPressure(is_long, 0) == 0
+
+    # approve collateral contract to spend bob's ovl to build positions
+    token.approve(ovl_collateral, collateral*num_builds, {"from": bob})
+
+    q = 0
+    build_times = []
+    qs = []
+
+    print('q', q)
+    print('chain.time()', brownie.chain.time())
+
+    build_time = brownie.chain.time()
+    for i in range(num_builds):
+        build_time += impact_time_delta + 1
+        build_times.append(build_time)
+
+        print('\n##########################################################\n')
+
+        print('i', i)
+        print('time', brownie.chain.time())
+        print('impact_time_delta', impact_time_delta)
+
+        print('Current time:', brownie.chain.time())
+        print('Mining to time:', build_time)
+
+        print('build_time', build_time)
+        print('build_times', build_times)
+
+        brownie.chain.mine(timestamp=build_time)
+
+        q += oi / market.oiCap()
+        qs.append(q)
+
+        print('index at -1', len(qs)-1)
+        print('qs[-1]', qs[-1])
+
+        print('index at -1-int(num_builds/2)', len(qs)-1-int(num_builds/2))
+        print('qs[-1-int(num_builds/2)]', None if len(qs)
+              <= int(num_builds/2) else qs[-1-int(num_builds/2)])
+
+        pressure = qs[-1] - qs[-1-int(num_builds/2)
+                               ] if len(qs) > int(num_builds/2) else qs[-1]
+        print('pressure', pressure)
+        print('qs', qs)
+
+        impact_fee = oi * (1 - math.exp(-lmbda * pressure))
+        proj_impact_fee = market.getImpact(is_long, oi)
+
+        collateral_adjusted = collateral - impact_fee - trade_fee
+        oi_adjusted = collateral_adjusted * leverage
+
+        print('q', q)
+        print('impact_fee', int(impact_fee))
+        print('proj_impact_fee', proj_impact_fee)
+
+        print('collateral', collateral)
+        print('oi', oi)
+
+        print('collateral_adjusted', collateral_adjusted)
+        print('oi_adjusted', oi_adjusted)
+
+        # get prior state of collateral manager
+        ovl_balance = token.balanceOf(ovl_collateral)
+
+        # get prior state of market
+        market_oi = market.oiLong() if is_long else market.oiShort()
+        market_oi_cap = market.oiCap()  # accounts for depth, brrrd, static
+
+        # in case have large impact, make sure to check for revert
+        oi_min_adjusted = 0
+        if collateral_adjusted < MIN_COLLATERAL:
+            EXPECTED_ERROR_MESSAGE = "OVLV1:collat<min"
+            with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+                ovl_collateral.build(market, collateral, leverage, is_long,
+                                     oi_min_adjusted, {"from": bob})
+            continue
+        # and if dynamic cap has brought down oi cap from static value
+        elif oi_adjusted > market_oi_cap:
+            EXPECTED_ERROR_MESSAGE = "OVLV1:>cap"
+            with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+                ovl_collateral.build(market, collateral, leverage, is_long,
+                                     oi_min_adjusted, {"from": bob})
+            continue
+
+        # build the position
+        tx = ovl_collateral.build(market, collateral, leverage, is_long,
+                                  oi_min_adjusted, {"from": bob})
+        pid = tx.events['Build']['positionId']
+
+        # check collateral sent to collateral manager
+        assert int(ovl_balance + collateral - impact_fee) \
+            == approx(token.balanceOf(ovl_collateral))
+
+        # check position token issued with correct oi shares
+        assert approx(ovl_collateral.balanceOf(bob, pid)) == int(oi_adjusted)
+
+        # check position attributes for PID
+        (pos_market,
+         pos_islong,
+         pos_lev,
+         pos_price_idx,
+         pos_oishares,
+         pos_debt,
+         pos_cost) = ovl_collateral.positions(pid)
+
+        assert pos_market == market
+        assert pos_islong == is_long
+        assert pos_lev == leverage
+        assert pos_price_idx == market.pricePointNextIndex() - 1
+        assert approx(pos_oishares) == int(oi_adjusted)
+        assert approx(pos_debt) == int(oi_adjusted - collateral_adjusted)
+        assert approx(pos_cost) == int(collateral_adjusted)
+
+        # check oi has been added on the market for respective side of trade
+        if is_long:
+            assert int(market_oi + oi_adjusted) == approx(market.oiLong())
+        else:
+            assert int(market_oi + oi_adjusted) == approx(market.oiShort())
+
+        # check impact was burned
+        act_impact_fee = 0
+        for _, v in enumerate(tx.events['Transfer']):
+            if v['to'] == '0x0000000000000000000000000000000000000000':
+                act_impact_fee = v['value']
+
+        assert int(impact_fee) == approx(act_impact_fee, rel=1e-04)
+        assert int(impact_fee) == approx(proj_impact_fee, rel=1e-04)
+
+        # check new state of market pressure
+        exp_pressure = int(q * 1e18)
+        act_pressure = market.getPressure(is_long, 0)
+
+        print('exp_pressure', exp_pressure)
+        print('act_pressure', act_pressure)
+
+        assert exp_pressure == approx(act_pressure, rel=1e-04)
+
+        print('\n##########################################################\n')
 
     # check q => 0 after a window has passed
     brownie.chain.mine(timedelta=impact_window+1)
