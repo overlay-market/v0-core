@@ -292,7 +292,7 @@ def test_partial_unwind(
     # Total OI should be accurate including Alice's position
     total_oi = market.oiLong() if is_long else market.oiShort()
 
-    assert total_oi == ( bob_poi_build - bob_unwind_shares + alice_poi_build ) 
+    assert total_oi/1e18 == approx( (bob_poi_build - bob_unwind_shares + alice_poi_build)/1e18 )
     
 
 @given(
