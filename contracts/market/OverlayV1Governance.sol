@@ -25,9 +25,6 @@ abstract contract OverlayV1Governance is
 
     uint256 public priceFrameCap;
 
-    uint256 public updatePeriod;
-    uint256 public compoundingPeriod;
-
     mapping (address => bool) public isCollateral;
 
     modifier onlyCollateral () {

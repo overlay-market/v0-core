@@ -117,49 +117,7 @@ def test_impact_roller_expected_impact_many_batched(comptroller):
     assert comptroller.impactRollers(5)[1] / 1e18 == approx(22 * pressure)
     assert comptroller.impactRollers(5)[0] == chain[-1].timestamp
 
-@given(time_diff=strategy('uint', min_value=1, max_value=100),
-       brrrr=strategy('uint', min_value=100, max_value=100000))
-@settings(max_examples=100)
-def test_scry_interpolated_roller(comptroller, time_diff, brrrr):
-
-    time_diff *= ONE_BLOCK
-    brrrr *= 1e16
-
-    cap = comptroller.oiCap()
-
-    time0 = Decimal(chain[-1].timestamp)
-
-    window = comptroller.impactWindow()
-
-    chain.mine(timedelta=window+time_diff)
-
-    _ = comptroller.impactBatch([True],[brrrr])
-    time1 = Decimal(chain[-1].timestamp)
-
-    chain.mine(timedelta=(window/4))
-
-    _ = comptroller.impactBatch([True],[brrrr])
-    time2 = Decimal(chain[-1].timestamp)
-
-    ( roller_now, roller_then ) = comptroller.viewScry(window)
-
-    time_target = time2 - Decimal(window)
-    time_diff = time1 - time0
-    ratio = ( time_target - time0 ) / ( time_diff )
-
-    pressure = Decimal(brrrr) / Decimal(cap)
-
-    expected_pressure = pressure * ratio
-    expected_pressure_total = pressure + pressure - expected_pressure
-
-    interpolated_pressure = Decimal(roller_then[1]) / Decimal(1e18)
-    interpolated_pressure_total = (Decimal(roller_now[1]) / Decimal(1e18)) - interpolated_pressure
-
-    assert abs(expected_pressure - interpolated_pressure) <= Decimal(1/10**17)
-    assert abs(expected_pressure_total - interpolated_pressure_total) <= Decimal(1/10**17)
-
 @given(entry=strategy('uint256', min_value=1, max_value=1e6))
-@settings(max_examples=20)
 def test_impact_pressure(comptroller, entry):
 
     entry *= 1e18
@@ -191,7 +149,6 @@ def test_impact_pressure(comptroller, entry):
 @given(
     entry=strategy('uint256', min_value=1, max_value=.370400e6),
     rand=strategy('int', min_value=100, max_value=1000))
-@settings(max_examples=20)
 def test_impact_pressure_full_cooldown_entry_within_cap (comptroller, entry, rand):
 
     entry *= 1e16
@@ -208,13 +165,7 @@ def test_impact_pressure_full_cooldown_entry_within_cap (comptroller, entry, ran
 
     assert impact == 0
 
-def test_impact_when_before_roller_must_interpolate_over_long_timeframe(comptroller):
-    pass
-
 def test_impact_when_earliest_roller_is_more_contemporary_than_impact_window(comptroller):
-    pass
-
-def test_impact_when_before_roller_must_interpolate_over_small_timeframe(comptroller):
     pass
 
 def test_impact_when_earliest_roller_is_much_older_than_impact_window(comptroller):

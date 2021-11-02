@@ -13,6 +13,7 @@ TOKEN_TOTAL_SUPPLY = 8000000
 OI_CAP = 800000
 FEE_RESOLUTION = 1e18
 
+
 @given(
     oi_long=strategy('uint256',
                      min_value=MIN_COLLATERAL_AMOUNT,
@@ -20,8 +21,7 @@ FEE_RESOLUTION = 1e18
     oi_short=strategy('uint256',
                       min_value=MIN_COLLATERAL_AMOUNT,
                       max_value=0.999*OI_CAP*10**TOKEN_DECIMALS),)
-@settings(max_examples=1)
-def test_update(mothership,
+def test_disburse(mothership,
                 token,
                 market,
                 ovl_collateral,
@@ -47,7 +47,7 @@ def test_update(mothership,
 
     prior_total_supply = token.totalSupply()
 
-    ovl_collateral.update(market, {"from": alice})
+    ovl_collateral.disburse({"from": alice})
 
     fee_to_balance_now = token.balanceOf(fee_to)
     total_supply_now = token.totalSupply()

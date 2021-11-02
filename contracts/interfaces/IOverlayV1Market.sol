@@ -11,42 +11,39 @@ interface IOverlayV1Market is IERC1155 {
     struct PricePoint {
         uint256 bid;
         uint256 ask;
-        uint256 price;
+        uint256 index;
     }
 
-    event NewPrice(uint bid, uint ask, uint price);
+    event NewPrice(uint bid, uint ask, uint index);
     event FundingPaid(uint oiLong, uint oiShort, int fundingPaid);
 
-    function ovl() external view returns (address);
-    function factory() external view returns (address);
+    function ovl () external view returns (address);
+    function factory () external view returns (address);
 
-    function feed() external view returns (address);
-    function windowSize() external view returns (uint256);
-    function impactWindow() external view returns (uint256);
-    function updatePeriod() external view returns (uint256);
-    function compoundingPeriod() external view returns (uint256);
-    function updated() external view returns (uint256);
-    function update() external;
-    function toUpdate() external view returns (uint256);
-    function compounded() external view returns (uint256);
-    function leverageMax() external view returns (uint8);
+    function feed () external view returns (address);
+    function impactWindow () external view returns (uint256);
+    function updatePeriod () external view returns (uint256);
+    function updated () external view returns (uint256);
+    function update () external;
+    function toUpdate () external view returns (uint256);
+    function compounded () external view returns (uint256);
+    function compoundingPeriod () external view returns (uint256);
+
+    function leverageMax () external view returns (uint8);
+
     function k() external view returns (uint256);
 
     function oi () external view returns (
         uint oiLong_,
         uint oiShort_,
         uint oiLongShares_,
-        uint oiShortShares_,
-        uint queuedOiLong_,
-        uint queuedOiShort_
+        uint oiShortShares_
     );
 
     function oiLong() external view returns (uint256);
     function oiShort() external view returns (uint256);
     function oiLongShares() external view returns (uint256);
     function oiShortShares() external view returns (uint256);
-    function queuedOiLong() external view returns (uint256);
-    function queuedOiShort() external view returns (uint256);
 
     function oiCap () external view returns (uint256);
 
@@ -57,26 +54,25 @@ interface IOverlayV1Market is IERC1155 {
     function priceFrameCap() external view returns (int256);
 
     function lmbda() external view returns (uint256);
+
     function brrrrdExpected() external view returns (uint256);
     function brrrrdWindowMacro() external view returns (uint256);
     function brrrrdWindowMicro() external view returns (uint256);
 
-
-    function epochs(
-        uint _time,
-        uint _from,
-        uint _between
-    ) external view returns (
-        uint updatesThen_,
-        uint updatesNow_,
-        uint tUpdate_,
-        uint t1Update_,
+    function epochs() external view returns (
         uint compoundings_,
-        uint tCompounding_,
-        uint t1Compounding_
+        uint tCompounding_
     );
 
-    function pricePointCurrentIndex() external view returns (uint256);
+    function epochs(
+        uint _now,
+        uint _compounded
+    ) external view returns (
+        uint compoundings_,
+        uint tCompounding_
+    );
+
+    function pricePointNextIndex() external view returns (uint256);
 
     function pricePoints (
         uint256 index
@@ -109,24 +105,20 @@ interface IOverlayV1Market is IERC1155 {
         uint debtAdjusted_,
         uint fee_,
         uint impact_,
-        uint pricePointCurrent_,
-        uint t1Compounding_
+        uint pricePointNext_
     );
 
     function exitData (
         bool _isLong,
-        uint256 _pricePoint,
-        uint256 _compounding
+        uint256 _pricePoint
     ) external returns (
         uint oi_,
         uint oiShares_,
-        uint priceFrame_,
-        bool fromQueued_
+        uint priceFrame_
     );
 
     function exitOI (
         bool _isLong,
-        bool _fromQueued,
         uint _oi,
         uint _oiShares,
         uint _brrrr,
@@ -135,8 +127,7 @@ interface IOverlayV1Market is IERC1155 {
 
     function positionInfo (
         bool _isLong,
-        uint _entryIndex,
-        uint _compounding
+        uint _entryIndex
     ) external view returns (
         uint256 oi_,
         uint256 oiShares_,

@@ -9,18 +9,16 @@ contract OverlayV1OI {
 
     using FixedPoint for uint256;
 
-    // max number of periodSize periods before treat funding as completely rebalanced: done for gas savings on compute funding factor
-    uint16 public constant MAX_FUNDING_COMPOUND = 4320; // 30d at 10m for updatePeriod
     uint256 private constant ONE = 1e18;
+
+    uint256 public compoundingPeriod;
+    uint256 public compounded;
 
     uint256 internal __oiLong__; // total long open interest
     uint256 internal __oiShort__; // total short open interest
 
-    uint256 internal __oiLongShares__; // total shares of long open interest outstanding
-    uint256 internal __oiShortShares__; // total shares of short open interest outstanding
-
-    uint256 internal __queuedOiLong__; // queued long open interest to be settled at T+1
-    uint256 internal __queuedOiShort__; // queued short open interest to be settled at T+1
+    uint256 public oiLongShares; // total shares of long open interest outstanding
+    uint256 public oiShortShares; // total shares of short open interest outstanding
 
     uint256 public k;
 
@@ -62,9 +60,9 @@ contract OverlayV1OI {
             uint256 _oiImbNow = _fundingFactor.mulDown(_funder - _funded);
             uint256 _total = _funder + _funded;
 
+            fundingPaid_ = int( ( _funder - _funded ) / 2 );
             _funder = ( _total + _oiImbNow ) / 2;
             _funded = ( _total - _oiImbNow ) / 2;
-            fundingPaid_ = int( _oiImbNow / 2 );
 
         }
 
@@ -100,8 +98,7 @@ contract OverlayV1OI {
 
     }
 
-    /// @notice Adds to queued open interest to prep for T+1 price settlement
-    function queueOi(
+    function addOi(
         bool _isLong,
         uint256 _oi,
         uint256 _oiCap
@@ -109,53 +106,26 @@ contract OverlayV1OI {
 
         if (_isLong) {
 
-            uint _queuedOiLong = __queuedOiLong__;
-            _queuedOiLong += _oi;
-            __queuedOiLong__ = _queuedOiLong;
+            oiLongShares += _oi;
 
-            require(__oiLong__ + _queuedOiLong <= _oiCap, "OVLV1:>cap");
+            uint _oiLong = __oiLong__ + _oi;
+
+            require(_oiLong <= _oiCap, "OVLV1:>cap");
+
+            __oiLong__ = _oiLong;
 
         } else {
 
-            uint _queuedOiShort = __queuedOiShort__;
-            _queuedOiShort += _oi;
-            __queuedOiShort__ = _queuedOiShort;
+            oiShortShares += _oi;
 
-            require(__oiShort__ + _queuedOiShort <= _oiCap, "OVLV1:>cap");
+            uint _oiShort = __oiShort__ + _oi;
 
-        }
+            require(_oiShort <= _oiCap, "OVLV1:>cap");
 
-    }
-
-    function updateFunding (uint _epochs) internal returns (bool updated_) {
-
-        if (0 < _epochs) {
-
-            payFunding(k, _epochs); // WARNING: must pay funding before updating OI to avoid free rides
-
-            updateOi();
-
-            updated_ = true;
+            __oiShort__ = _oiShort;
 
         }
 
     }
 
-
-    /// @notice Updates open interest at T+1 price settlement
-    /// @dev Execute at market update() to prevent funding payment harvest without price risk
-    function updateOi() internal {
-
-        uint _queuedOiLong = __queuedOiLong__;
-        uint _queuedOiShort = __queuedOiShort__;
-
-        __oiLong__ += _queuedOiLong;
-        __oiShort__ += _queuedOiShort;
-        __oiLongShares__ += _queuedOiLong;
-        __oiShortShares__ += _queuedOiShort;
-
-        __queuedOiLong__ = 0;
-        __queuedOiShort__ = 0;
-
-    }
 }

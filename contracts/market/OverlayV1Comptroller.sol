@@ -47,7 +47,7 @@ abstract contract OverlayV1Comptroller {
     uint256 public impactWindow;
     uint256 public lmbda;
 
-    uint256[2] public brrrrdAccumulatooor;
+    uint256[2] public brrrrdAccumulator;
     uint256 public brrrrdWindowMicro;
     uint256 public brrrrdWindowMacro;
     uint256 public brrrrdExpected;
@@ -69,8 +69,6 @@ abstract contract OverlayV1Comptroller {
 
     }
 
-    function depth () internal virtual view returns ( uint256 depth_ );
-
     function brrrr (
         uint _brrrr,
         uint _antiBrrrr
@@ -88,22 +86,23 @@ abstract contract OverlayV1Comptroller {
             uint _lastMoment = _roller.time;
 
             _roller.time = _brrrrdFiling;
-            _roller.ying += brrrrdAccumulatooor[0];
-            _roller.yang += brrrrdAccumulatooor[1];
+            _roller.ying += brrrrdAccumulator[0];
+            _roller.yang += brrrrdAccumulator[1];
 
             brrrrdCycloid = roll(brrrrdRollers, _roller, _lastMoment, _brrrrdCycloid);
 
-            brrrrdAccumulatooor[0] = _brrrr;
-            brrrrdAccumulatooor[1] = _antiBrrrr;
+            brrrrdAccumulator[0] = _brrrr;
+            brrrrdAccumulator[1] = _antiBrrrr;
 
             uint _brrrrdWindowMicro = brrrrdWindowMicro;
 
-            brrrrdFiling += ( ( _now - _brrrrdFiling ) / _brrrrdWindowMicro ) * _brrrrdWindowMicro;
+            brrrrdFiling += _brrrrdWindowMicro 
+                + ( ( ( _now - _brrrrdFiling ) / _brrrrdWindowMicro ) * _brrrrdWindowMicro );
 
         } else { // add to the brrrr accumulator
 
-            brrrrdAccumulatooor[0] += _brrrr;
-            brrrrdAccumulatooor[1] += _antiBrrrr;
+            brrrrdAccumulator[0] += _brrrr;
+            brrrrdAccumulator[1] += _antiBrrrr;
 
         }
 
@@ -121,53 +120,24 @@ abstract contract OverlayV1Comptroller {
                 brrrrdWindowMacro 
             );
 
-        brrrrd_ = brrrrdAccumulatooor[0] + _rollerNow.ying - _rollerThen.ying;
+        brrrrd_ = brrrrdAccumulator[0] + _rollerNow.ying - _rollerThen.ying;
 
-        antiBrrrrd_ = brrrrdAccumulatooor[1] + _rollerNow.yang - _rollerThen.yang;
-
-    }
-
-    function oiCap () public view returns ( uint cap_) {
-
-        (   uint _brrrrd,
-            uint _antiBrrrrd ) = getBrrrrd();
-
-        uint _brrrrdExpected = brrrrdExpected;
-
-        if (_antiBrrrrd > _brrrrd) {
-
-            return Math.min(staticCap, depth());
-
-        }
-
-        _brrrrd -= _antiBrrrrd;
-
-        if ( _brrrrd > _brrrrdExpected * 2 ) {
-
-            return 0;
-
-        } else {
-
-            uint _dynamicCap = ( 2e18 - _brrrrd.divDown(_brrrrdExpected) ).mulDown(staticCap);
-
-            cap_= Math.min( _dynamicCap, depth() );
-
-        } 
+        antiBrrrrd_ = brrrrdAccumulator[1] + _rollerNow.yang - _rollerThen.yang;
 
     }
+
 
     function intake (
         bool _isLong,
-        uint _oi
+        uint _oi,
+        uint _cap
     ) internal returns (
-        uint impact_,
-        uint cap_
+        uint impact_
     ) {
 
         (   Roller memory _rollerImpact,
             uint _lastMoment,
-            uint _impact,
-            uint _cap ) = _intake(_isLong, _oi);
+            uint _impact ) = _intake(_isLong, _oi, _cap);
 
         impactCycloid = roll(
             impactRollers,
@@ -180,18 +150,16 @@ abstract contract OverlayV1Comptroller {
 
         brrrr( 0, impact_ );
 
-        cap_ = _cap;
-
     }
 
     function _intake (
         bool _isLong,
-        uint _oi
+        uint _oi,
+        uint _cap
     ) internal view returns (
         Roller memory rollerNow_,
         uint lastMoment_,
-        uint impact_,
-        uint cap_
+        uint impact_
     ) {
 
         (   uint _lastMoment,
@@ -201,9 +169,7 @@ abstract contract OverlayV1Comptroller {
                 impactCycloid, 
                 impactWindow );
 
-        cap_ = oiCap();
-
-        uint _pressure = _oi.divDown(cap_);
+        uint _pressure = _oi.divDown(_cap);
 
         if (_isLong) _rollerNow.ying += _pressure;
         else _rollerNow.yang += _pressure;
@@ -292,32 +258,7 @@ abstract contract OverlayV1Comptroller {
         (   Roller memory _beforeOrAt,
             Roller memory _atOrAfter ) = scryRollers(rollers, _cycloid, _target);
 
-        if (_beforeOrAt.time == _target) {
-
-            rollerThen_ = _beforeOrAt;
-
-        } else if (_target == _atOrAfter.time) {
-
-            rollerThen_ = _atOrAfter;
-
-        } else if (_atOrAfter.time == _beforeOrAt.time) {
-
-            rollerThen_ = _beforeOrAt;
-
-        } else {
-
-            uint _yingDiff = _atOrAfter.ying - _beforeOrAt.ying;
-            uint _yangDiff = _atOrAfter.yang - _beforeOrAt.yang;
-
-            uint _timeDiff = ( _atOrAfter.time - _beforeOrAt.time ) * 1e18;
-
-            uint _targetRatio = ( ( _target - _beforeOrAt.time ) * 1e18 ).divUp(_timeDiff);
-
-            rollerThen_.ying = _beforeOrAt.ying.add(_yingDiff.mulDown(_targetRatio));
-            rollerThen_.yang = _beforeOrAt.yang.add(_yangDiff.mulDown(_targetRatio));
-            rollerThen_.time = _target;
-
-        }
+        rollerThen_ = _beforeOrAt;
 
     }
 
