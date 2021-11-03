@@ -159,6 +159,11 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
+
+    /// @notice The depth of the market feed in OVL terms at the current block.
+    /// @dev Returns the time weighted liquidity of the market feed in 
+    /// OVL terms at the current block.
+    /// @return depth_ The time weighted liquidity in OVL terms.
     function depth () public view override returns (uint depth_) {
 
         (   ,depth_ ) = readFeed(false, true);
