@@ -286,6 +286,14 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
+
+    /// @notice Internal function to retrieve up to date open interest.
+    /// @dev Computes the current open interest values and returns them.
+    /// @param _compoundings Number of compoundings yet to be paid in funding.
+    /// @return oiLong_ Current open interest on the long side.
+    /// @return oiShort_ Current open interest on the short side.
+    /// @return oiLongShares_ Current open interest shares on the long side.
+    /// @return oiShortShares_ Current open interest shares on the short side.
     function _oi (
         uint _compoundings
     ) internal view returns (
