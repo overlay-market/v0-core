@@ -127,6 +127,18 @@ abstract contract OverlayV1Comptroller {
     }
 
 
+
+
+    /// @notice Takes in the open interest and appllies Overlay's monetary policy
+    /// @dev The impact is a measure of the demand placed on the market over a 
+    /// rolling window. It determines the amount of collateral to be burnt. 
+    /// This is akin to slippage in an order book model. 
+    /// @param _isLong Is it taking out open interest on the long or short side?
+    /// @param _oi The amount of open interest attempting to be taken out
+    /// @param _cap The current open interest cap
+    /// @return impact_ A factor between zero and one to be applied to initial
+    /// open interest to determine how much to take from the initial collateral 
+    /// before calculating the final collateral and open interest
     function intake (
         bool _isLong,
         uint _oi,
