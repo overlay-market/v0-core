@@ -114,11 +114,15 @@ abstract contract OverlayV1Market is OverlayV1Governance {
     }
 
     /// @notice Removes open interest from the market
-    /// @dev must update two prices if the pending update was from a long
-    /// @dev time ago in that case, a previously entered position must be
-    /// @dev settled, and the current exit price must be retrieved
-    /// @param _isLong is this from the short or the long side
-    /// @param _oiShares the amount of oi in shares to be removed
+    /// @dev Called as the second part of exiting oi, this function
+    /// reports the open interest in OVL terms to remove as well as 
+    /// open interest shares to remove. It also registers printing
+    /// or burning of OVL in the process.
+    /// @param _isLong The side from which to remove open interest.
+    /// @param _oi The open interest to remove in OVL terms.
+    /// @param _oiShares The open interest shares to remove.
+    /// @param _brrrr How much was printed on closing the position.
+    /// @param _antiBrrrr How much was burnt on closing the position.
     function exitOI (
         bool _isLong,
         uint _oi,
