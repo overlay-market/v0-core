@@ -201,13 +201,25 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     }
 
+
+    /// @notice Build a position on Overlay with OVL collateral
+    /// @dev This interacts with an Overlay Market to register oi and hold 
+    /// positions on behalf of users.
+    /// @param _market The address of the desired market to interact with.
+    /// @param _collateral The amount of OVL to use as collateral in the position.
+    /// @param _leverage The amount of leverage to use in the position
+    /// @param _isLong Whether to take out a position on the long or short side.
+    /// @param _oiMinimum Minimum acceptable amount of OI after impact and fees.
+    /// @return positionId_ Id of the built position for on chain convenience.
     function build (
         address _market,
         uint256 _collateral,
         uint256 _leverage,
         bool _isLong,
-        uint256 _oiAdjustedMinimum
-    ) external {
+        uint256 _oiMinimum
+    ) external returns (
+        uint positionId_
+    ) {
 
         require(mothership.marketActive(_market), "OVLV1:!market");
         require(_leverage <= marketInfo[_market].maxLeverage, "OVLV1:lev>max");
@@ -248,6 +260,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         ovl.burn(msg.sender, _impact);
 
         _mint(msg.sender, _positionId, _oiAdjusted, ""); // WARNING: last b/c erc1155 callback
+
+        positionId_ = _positionId;
 
     }
 
