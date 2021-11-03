@@ -164,6 +164,25 @@ abstract contract OverlayV1Comptroller {
 
     }
 
+
+    /// @notice Internal method to get historic impact data for impact factor
+    /// @dev Historic data is represented as a sum of pressure accumulating 
+    /// over the impact window. 
+    /// @dev Pressure is the fraction of the open interest cap that any given 
+    /// build tries to take out on one side.  It can range from zero to infinity 
+    /// but will settle at a reasonable value otherwise any build will burn all 
+    /// of its initial collateral and receive a worthless position.
+    /// @dev The sum of historic pressure is multiplied with lambda to yield
+    /// the power by which we raise the inverse of Euler's number in order to 
+    /// determine the final impact.
+    /// @param _isLong The side that open interest is being be taken out on.
+    /// @param _oi The amount of open interest.
+    /// @param _cap The open interest cap.
+    /// @return rollerNow_ The current roller for the impact rollers. Impact
+    /// from this particular call is accumulated on it for writing to storage.
+    /// @return lastMoment_ The timestamp of the previously written roller
+    /// which to determine whether to write to the current or the next.
+    /// @return impact_ The factor by which to take from initial collateral.
     function _intake (
         bool _isLong,
         uint _oi,
