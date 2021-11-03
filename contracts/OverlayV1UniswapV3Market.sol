@@ -72,6 +72,13 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
+
+    /// @notice Reads the current price and depth information
+    /// @dev Conditionall reads price and time weighted liquidity of market feed
+    /// @param _price To read the price or not
+    /// @param _depth To read the depth or not
+    /// @return price_ Current price. Returns emptry struct if price isn't read
+    /// @return depth_ Current depth. Returns 0 if depth is not read.
     function readFeed (
         bool _price,
         bool _depth
