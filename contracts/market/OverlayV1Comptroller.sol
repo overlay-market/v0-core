@@ -216,6 +216,54 @@ abstract contract OverlayV1Comptroller {
 
     }
 
+
+    function _oiCap (
+        bool _dynamic,
+        uint _depth,
+        uint _staticCap,
+        uint _brrrrd,
+        uint _brrrrdExpected
+    ) internal pure returns (
+        uint cap_
+    ) {
+
+        if (_dynamic) {
+
+            uint _dynamicCap = ( 2e18 - _brrrrd.divDown(_brrrrdExpected) ).mulDown(_staticCap);
+            cap_ = Math.min(_staticCap, Math.min(_dynamicCap, _depth));
+
+        } else cap_ = Math.min(_staticCap, _depth);
+
+    }
+
+    function oiCap () public virtual view returns (
+        uint cap_
+    ) {
+
+        (   uint _brrrrd,
+            uint _antiBrrrrd ) = getBrrrrd();
+
+        uint _brrrrdExpected = brrrrdExpected;
+
+        bool _burnt;
+        bool _expected;
+        bool _surpassed;
+
+        if (_brrrrd < _antiBrrrrd) _burnt = true;
+        else {
+            _brrrrd -= _antiBrrrrd;
+            _expected = _brrrrd < _brrrrdExpected;
+            _surpassed = _brrrrd > _brrrrdExpected * 2;
+        }
+
+        cap_ = _surpassed ? 0 : _burnt || _expected
+            ? _oiCap(false, depth(), staticCap, 0, 0)
+            : _oiCap(true, depth(), staticCap, _brrrrd, brrrrdExpected);
+
+    }
+
+    function depth () public virtual view returns (uint depth_);
+
     /// @notice The function that saves onto the respective roller array
     /// @dev This is multi purpose in that it can write to either the 
     /// brrrrd rollers or the impact rollers. It knows when to increment the 
