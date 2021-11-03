@@ -341,7 +341,11 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     }
 
-    /// @notice Liquidates an existing position
+    /// @notice Liquidates an existing position.
+    /// @dev Interacts with an Overlay Market to exit all open interest
+    /// associated with a liquidatable positoin.
+    /// @param _positionId ID of the position being liquidated.
+    /// @param _rewardsTo Address to send liquidation reward to.
     function liquidate (
         uint256 _positionId,
         address _rewardsTo
