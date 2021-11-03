@@ -263,6 +263,13 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
+
+    /// @notice The current open interest on both sides of the market.
+    /// @dev Returns all up to date open interest data for the market.
+    /// @return oiLong_ Current open interest on long side.
+    /// @return oiShort_ Current open interest on short side.
+    /// @return oiLongShares_ Current open interest shares on the long side.
+    /// @return oiShortShares_ Current open interest shares on the short side.
     function oi () public view returns (
         uint oiLong_,
         uint oiShort_,
