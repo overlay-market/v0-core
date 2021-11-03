@@ -405,6 +405,13 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     }
 
+
+    /// @notice Retrieves required information from market contract 
+    /// to calculate position value with.
+    /// @dev Gets price frame, total open interest and 
+    /// total open interest shares from an Overlay market.
+    /// @param _positionId ID of position to determine value of.
+    /// @return value_ Value of the position
     function value (
         uint _positionId
     ) public view returns (
