@@ -246,6 +246,10 @@ abstract contract OverlayV1Comptroller {
 
     }
 
+
+    /// @notice The open interest cap for the market
+    /// @dev Returns the open interest cap for the market.
+    /// @return cap_ The open interest cap.
     function oiCap () public virtual view returns (
         uint cap_
     ) {
