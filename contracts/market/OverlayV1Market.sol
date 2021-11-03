@@ -27,7 +27,19 @@ abstract contract OverlayV1Market is OverlayV1Governance {
     function update () external { _update(false); }
 
     /// @notice Adds open interest to the market
-    /// @dev invoked by an overlay position contract
+    /// @dev This is invoked by Overlay collateral manager contracts, which
+    /// can be for OVL, ERC20's, Overlay positions, NFTs, or what have you.
+    /// The calculations for impact and fees are performed here.
+    /// @param _isLong The side of the market to enter open interest on.
+    /// @param _collateral The amount of collateral in OVL terms to take the
+    /// position out with.
+    /// @param _leverage The leverage with which to take out the position.
+    /// @return oiAdjusted_ Amount of open interest after impact and fees.
+    /// @return collateralAdjusted_ Amount of collateral after impact and fees.
+    /// @return debtAdjusted_ Amount of debt after impact and fees.
+    /// @return fee_ The protocol fee to be taken.
+    /// @return impact_ The market impact for the build.
+    /// @return pricePointNext_ The index of the price point for the position.
     function enterOI (
         bool _isLong,
         uint _collateral,
