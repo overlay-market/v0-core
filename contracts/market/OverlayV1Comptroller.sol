@@ -265,6 +265,16 @@ abstract contract OverlayV1Comptroller {
 
     }
 
+
+    /// @notice First part of retrieving historic roller values
+    /// @dev Checks to see if the current roller is satisfactory and if not
+    /// searches deeper into the roller array.
+    /// @param rollers The roller array, either impact or brrrrd
+    /// @param _cycloid The current impact or brrrrd cycloid 
+    /// @param _ago The target time
+    /// @return lastMoment_ The time the most recent roller was written
+    /// @return rollerNow_ The current roller with the time set to now
+    /// @return rollerThen_ The roller closest and earlier to the target time 
     function scry (
         Roller[60] storage rollers,
         uint _cycloid,
