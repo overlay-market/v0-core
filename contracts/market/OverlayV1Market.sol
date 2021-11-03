@@ -77,6 +77,18 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
     }
 
+
+    /// @notice First part of the flow to remove OI from the system
+    /// @dev This is called by the collateral managers to retrieve
+    /// the necessary information to calculate the specifics of each position,
+    /// for instance the PnL or if it is liquidatable. 
+    /// @param _isLong Whether the data is being retrieved for a long or short.
+    /// @param _pricePoint Index of the initial price point
+    /// @param oi_ Total outstanding open interest on that side of the market.
+    /// @param oiShares_ Total outstanding open interest shares on that side.
+    /// @param priceFrame_ The price multiple comprised of the entry and exit
+    /// prices for the position, with the exit price being the current one.
+    /// Longs receive the bid on exit and the ask on entry shorts the opposite.
     function exitData (
         bool _isLong,
         uint256 _pricePoint
