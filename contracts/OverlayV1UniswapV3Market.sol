@@ -334,9 +334,17 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         (  ,oiShort_,, ) = oi();
     }
 
+
+    /// @notice Exposes important info for calculating position metrics.
+    /// @dev These values are required to feed to the position calculations.
+    /// @param _isLong Whether position is on short or long side of market.
+    /// @param _entryIndex Index of entry price
+    /// @return oi_ The current open interest on the chosen side.
+    /// @return oiShares_ The current open interest shares on the chosen side.
+    /// @return priceFrame_ Price frame resulting from e entry and exit prices.
     function positionInfo (
         bool _isLong,
-        uint _entryIndex
+        uint _priceEntry
     ) external view returns (
         uint256 oi_,
         uint256 oiShares_,
@@ -347,7 +355,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         priceFrame_ = priceFrame(
             _isLong,
-            _entryIndex
+            _priceEntry
         );
 
         (   uint _oiLong,
