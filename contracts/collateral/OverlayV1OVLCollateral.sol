@@ -265,7 +265,10 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     }
 
-    /// @notice Unwinds shares of an existing position
+    /// @notice Unwinds shares of an existing position.
+    /// @dev Interacts with a market contract to realize the PnL on a position.
+    /// @param _positionId Id of the position to be unwound.
+    /// @param _shares Number of shars to unwind from the position.
     function unwind (
         uint256 _positionId,
         uint256 _shares
