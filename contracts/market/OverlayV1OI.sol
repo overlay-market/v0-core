@@ -115,6 +115,11 @@ contract OverlayV1OI {
 
     }
 
+    /// @notice Adds open interest to one side
+    /// @dev Adds open interest to one side, asserting the cap is not breached.
+    /// @param _isLong If open interest is adding to the long or short side.
+    /// @param _oi Open interest to add.
+    /// @param _oiCap Open interest cap to require not to be breached.
     function addOi(
         bool _isLong,
         uint256 _oi,
