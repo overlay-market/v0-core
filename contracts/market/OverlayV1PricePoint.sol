@@ -70,6 +70,16 @@ abstract contract OverlayV1PricePoint {
 
     }
 
+
+    /// @notice Inserts the bid/ask spread into the price.
+    /// @dev Takes two time weighted average prices from the market feed
+    /// and composes them into a price point, which has a bid and an ask.
+    /// The ask is the max of the two twaps multiplied by euler's number 
+    /// raised to the market's spread. The bid is the min of the twaps
+    /// multiplied by the inverse of euler's number raised to the spread.
+    /// @param _microPrice The shorter TWAP.
+    /// @param _macroPrice The longer TWAP.
+    /// @return pricePoint_ The price point with bid/ask/index.
     function insertSpread (
         uint _microPrice,
         uint _macroPrice
