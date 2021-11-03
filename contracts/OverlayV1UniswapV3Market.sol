@@ -197,6 +197,13 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
+
+    /// @notice Internal update function to price, cap, and pay funding.
+    /// @dev This function updates the market with the latest price and 
+    /// conditionally reads the depth of the market feed. The market needs
+    /// an update on the first call of any block.
+    /// @param _readDepth Whether or not to read the depth of the market feed.
+    /// @return cap_ The open interest cap for the market.
     function _update (
         bool _readDepth
     ) internal virtual override returns (
