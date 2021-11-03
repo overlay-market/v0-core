@@ -217,6 +217,16 @@ abstract contract OverlayV1Comptroller {
     }
 
 
+    /// @notice Internal function to compute cap.
+    /// @dev Determines the cap relative to depth and dynamic or static
+    /// @param _dynamic If printing has exceeded expectations and the
+    /// cap is dynamic or static.
+    /// @param _depth The depth of the market feed in OVL terms.
+    /// @param _staticCap The static cap of the market.
+    /// @param _brrrrd How much has been printed. Only passed if printing
+    /// has occurred.
+    /// @param _brrrrdExpected How much the market expects to print before
+    /// engaging the dynamic cap. Only passed if printing has occurred.
     function _oiCap (
         bool _dynamic,
         uint _depth,
