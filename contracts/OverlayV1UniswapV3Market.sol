@@ -321,6 +321,8 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
+    /// @notice The current open interest on the long side.
+    /// @return oiLong_ The current open interest on the long side.
     function oiLong () external view returns (uint oiLong_) {
         (   oiLong_,,, ) = oi();
     }
