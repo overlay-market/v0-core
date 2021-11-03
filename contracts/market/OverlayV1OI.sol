@@ -28,6 +28,7 @@ contract OverlayV1OI {
     /// @notice Internal utility to pay funding from heavier to ligher side.
     /// @dev Pure function accepting current open interest, compoundings
     /// to perform, and funding constant.
+    /// @dev oiImbalance(period_m) = oiImbalance(period_now) * (1 - 2k) ** period_m
     /// @param _oiLong Current open interest on the long side.
     /// @param _oiShort Current open interest on the short side.
     /// @param _epochs The number of compounding periods to compute for.
@@ -84,8 +85,12 @@ contract OverlayV1OI {
 
     }
 
-    /// @notice Transfers funding payments
-    /// @dev oiImbalance(m) = oiImbalance(0) * (1 - 2k)**m
+
+    /// @notice Pays funding.
+    /// @dev Invokes internal computeFunding and sets oiLong and oiShort.
+    /// @param _k The funding constant.
+    /// @param _epochs The number of compounding periods to compute.
+    /// @return fundingPaid_ Signed integer of how much funding was paid.
     function payFunding (
         uint256 _k,
         uint256 _epochs
