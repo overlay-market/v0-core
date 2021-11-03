@@ -276,7 +276,11 @@ abstract contract OverlayV1Comptroller {
 
     }
 
+
+    /// @notice The time weighted liquidity of the market feed in OVL terms.
+    /// @return depth_ The amount of liquidity in the market feed in OVL terms.
     function depth () public virtual view returns (uint depth_);
+
 
     /// @notice The function that saves onto the respective roller array
     /// @dev This is multi purpose in that it can write to either the 
