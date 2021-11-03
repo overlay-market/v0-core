@@ -148,6 +148,11 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
+
+    /// @notice The price at the current block
+    /// @dev Returns the price of the current block.
+    /// @return price_ The price point for the current block consisting of 
+    /// the bid, the ask, TODO: ...and maybe the depth.
     function price () public view override returns (PricePoint memory price_) {
 
         ( price_, ) = readFeed(true, false);
