@@ -368,6 +368,14 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
+
+    /// @notice Computes the price frame for a given position
+    /// @dev Computes the price frame conditionally giving shorts the bid
+    /// on entry and ask on exit and longs the bid on exit and short on
+    /// entry. Capped at the priceFrameCap for longs.
+    /// @param _isLong If price frame is for a long or a short.
+    /// @param _entryIndex The index of the entry price.
+    /// @return priceFrame_ The exit price divided by the entry price.
     function priceFrame (
         bool _isLong,
         uint _entryIndex
