@@ -22,11 +22,9 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
     constructor(address _mothership) OverlayV1Governance( _mothership) { }
 
-    function staticUpdate () internal virtual returns (bool updated_);
-    function entryUpdate () internal virtual returns (uint256 t1Compounding_);
-    function exitUpdate () internal virtual returns (uint256 tCompounding_);
+    function _update (bool _readCap) internal virtual returns (uint cap_);
 
-    function update () external { staticUpdate(); }
+    function update () external { _update(false); }
 
     /// @notice Adds open interest to the market
     /// @dev invoked by an overlay position contract
@@ -40,17 +38,16 @@ abstract contract OverlayV1Market is OverlayV1Governance {
         uint debtAdjusted_,
         uint fee_,
         uint impact_,
-        uint pricePointCurrent_,
-        uint t1Compounding_
+        uint pricePointNext_
     ) {
 
-        t1Compounding_ = entryUpdate();
+        uint _cap = _update(true);
 
-        pricePointCurrent_ = _pricePoints.length;
+        pricePointNext_ = _pricePoints.length - 1;
 
         uint _oi = _collateral * _leverage;
 
-        ( uint _impact, uint _cap ) = intake(_isLong, _oi);
+        uint _impact = intake(_isLong, _oi, _cap);
 
         fee_ = _oi.mulDown(mothership.fee());
 
@@ -64,50 +61,31 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
         debtAdjusted_ = oiAdjusted_ - collateralAdjusted_;
 
-        queueOi(_isLong, oiAdjusted_, _cap);
+        addOi(_isLong, oiAdjusted_, _cap);
 
     }
 
     function exitData (
         bool _isLong,
-        uint256 _pricePoint,
-        uint256 _compounding
+        uint256 _pricePoint
     ) public onlyCollateral returns (
         uint oi_,
         uint oiShares_,
-        uint priceFrame_,
-        bool fromQueued_
+        uint priceFrame_
     ) {
 
-        // exitUpdate returns the present compounding period
-        fromQueued_ = _compounding > exitUpdate();
-
-        uint _latestPrice = _pricePoints.length - 1;
-
-        require(_pricePoint <= _latestPrice, "OVLV1:!settled");
+        _update(false);
 
         PricePoint storage priceEntry = _pricePoints[_pricePoint];
 
-        PricePoint storage priceExit = _pricePoints[_latestPrice];
+        PricePoint storage priceExit = _pricePoints[_pricePoints.length - 1];
 
         priceFrame_ = _isLong
             ? Math.min(priceExit.bid.divDown(priceEntry.ask), priceFrameCap)
             : priceExit.ask.divUp(priceEntry.bid);
 
-        if (fromQueued_){
-
-            uint _queuedOiLong = __queuedOiLong__;
-            uint _queuedOiShort = __queuedOiShort__;
-
-            if (_isLong) ( oi_ = _queuedOiLong, oiShares_ = _queuedOiLong );
-            else ( oi_ = _queuedOiShort, oiShares_ = _queuedOiShort );
-
-        } else {
-
-            if (_isLong) ( oi_ = __oiLong__, oiShares_ = __oiLongShares__ );
-            else ( oi_ = __oiShort__, oiShares_ = __oiShortShares__ );
-
-        }
+        if (_isLong) ( oi_ = __oiLong__, oiShares_ = oiLongShares );
+        else ( oi_ = __oiShort__, oiShares_ = oiShortShares );
 
     }
 
@@ -119,7 +97,6 @@ abstract contract OverlayV1Market is OverlayV1Governance {
     /// @param _oiShares the amount of oi in shares to be removed
     function exitOI (
         bool _isLong,
-        bool _fromQueued,
         uint _oi,
         uint _oiShares,
         uint _brrrr,
@@ -128,17 +105,8 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
         brrrr( _brrrr, _antiBrrrr );
 
-        if (_fromQueued) {
-
-            if (_isLong) __queuedOiLong__ -= _oi;
-            else __queuedOiShort__ -= _oi;
-
-        } else {
-
-            if (_isLong) ( __oiLong__ -= _oi, __oiLongShares__ -= _oiShares );
-            else ( __oiShort__ -= _oi, __oiShortShares__ -= _oiShares );
-
-        }
+        if (_isLong) ( __oiLong__ -= _oi, oiLongShares -= _oiShares );
+        else ( __oiShort__ -= _oi, oiShortShares -= _oiShares );
 
     }
 

@@ -1,5 +1,3 @@
-
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
@@ -14,8 +12,18 @@ interface IOverlayV1OVLCollateral is IERC1155 {
     event log(string k, uint v);
     event log(string k, address v);
 
-    event Build(uint256 positionId, uint256 oi, uint256 debt);
-    event Unwind(uint256 positionId, uint256 oi, uint256 debt);
+    event Build(
+        address market,
+        uint256 positionId,
+        uint256 oi,
+        uint256 debt
+    );
+    event Unwind(
+        address market,
+        uint256 positionId,
+        uint256 oi,
+        uint256 debt
+    );
     event Liquidate(
         uint256 positionId,
         uint256 oi,
@@ -39,8 +47,21 @@ interface IOverlayV1OVLCollateral is IERC1155 {
     function totalSupply(uint256 positionId) external view returns (uint256 totalSupply);
     function marginAdjustments (address market) external view returns (uint256 marginAdjustment);
     function supportedMarket (address market) external view returns (bool supported);
-    function queuedPositionLongs (address market, uint leverage) external view returns (uint queuedPositionId);
-    function queuedPositionShorts (address market, uint leverage) external view returns (uint queuedPositionId);
+
+    function currentBlockPositionsLong (
+        address market,
+        uint leverage
+    ) external view returns (
+        uint positionId
+    );
+
+    function currentBlockPositionsShort (
+        address market,
+        uint leverage
+    ) external view returns (
+        uint positionId
+    );
+
     function positions (uint positionId) external view returns (Position.Info memory);
     function ovl () external view returns (IOverlayToken);
     function mothership () external view returns (IOverlayV1Mothership);
@@ -78,15 +99,14 @@ interface IOverlayV1OVLCollateral is IERC1155 {
         uint _marginAdjustment
     ) external;
 
-    function update(
-        address _market
-    ) external;
+    function disburse() external;
 
     function build(
         address _market,
         uint256 _collateral,
         uint256 _leverage,
-        bool _isLong
+        bool _isLong,
+        uint256 _oiAdjustedMinimum
     ) external;
 
     function unwind(

@@ -14,6 +14,7 @@ COLLATERAL = 10*1e18
 TOKEN_DECIMALS = 18
 TOKEN_TOTAL_SUPPLY = 8000000
 OI_CAP = 800000e18
+SLIPPAGE_TOL = 0.2
 
 POSITIONS = [
     {
@@ -73,11 +74,12 @@ def test_liquidate_success_zero_funding(
         position['collateral'],
         position['leverage'],
         position['is_long'],
+        position['collateral'] * position['leverage'] * (1-SLIPPAGE_TOL),
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
-    (_, _, _, pos_price_idx, pos_oi_shares, pos_debt, pos_cost,
-     pos_compounding) = ovl_collateral.positions(pos_id)
+    (_, _, _, pos_price_idx, pos_oi_shares,
+     pos_debt, pos_cost) = ovl_collateral.positions(pos_id)
 
     # mine a bit more then update to settle
     brownie.chain.mine(timedelta=market.updatePeriod()+1)
@@ -92,14 +94,13 @@ def test_liquidate_success_zero_funding(
     assert 'positionId' in tx_liq.events['Liquidate']
     assert tx_liq.events['Liquidate']['positionId'] == pos_id
 
-    (_, _, _, _, pos_oi_shares_after, _, _,
-     _) = ovl_collateral.positions(pos_id)
+    (_, _, _, _, pos_oi_shares_after, _, _) = ovl_collateral.positions(pos_id)
 
     assert pos_oi_shares_after == 0
 
     # Check the price we liquidated at ...
     liq_bid, liq_ask, liq_price = market.pricePoints(
-        market.pricePointCurrentIndex()-1)
+        market.pricePointNextIndex() - 1)
 
     # calculate value and make sure it should have been liquidatable
     price_frame = liq_bid/entry_ask if position["is_long"] \
@@ -133,11 +134,12 @@ def test_liquidate_revert_not_liquidatable(
         position['collateral'],
         position['leverage'],
         position['is_long'],
+        position['collateral'] * position['leverage'] * (1-SLIPPAGE_TOL),
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
-    (_, _, _, pos_price_idx, pos_oi_shares, pos_debt, pos_cost,
-     pos_compounding) = ovl_collateral.positions(pos_id)
+    (_, _, _, pos_price_idx, pos_oi_shares,
+     pos_debt, pos_cost) = ovl_collateral.positions(pos_id)
 
     # mine a bit more then update to settle
     brownie.chain.mine(timedelta=market.updatePeriod()+1)
@@ -161,8 +163,7 @@ def test_liquidate_revert_not_liquidatable(
         {'from': alice}
         )
 
-    (_, _, _, _, pos_oi_shares_after, _, _,
-     _) = ovl_collateral.positions(pos_id)
+    (_, _, _, _, pos_oi_shares_after, _, _) = ovl_collateral.positions(pos_id)
 
     assert pos_oi_shares_after == 0
 
@@ -199,11 +200,12 @@ def test_liquidate_revert_unwind_after_liquidation(
         position['collateral'],
         position['leverage'],
         position['is_long'],
+        position['collateral'] * position['leverage'] * (1-SLIPPAGE_TOL),
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
-    (_, _, _, pos_price_idx, pos_oi_shares, pos_debt, pos_cost,
-     pos_compounding) = ovl_collateral.positions(pos_id)
+    (_, _, _, pos_price_idx, pos_oi_shares,
+     pos_debt, pos_cost) = ovl_collateral.positions(pos_id)
 
     # mine a bit more then update to settle
     brownie.chain.mine(timedelta=market.updatePeriod()+1)
@@ -214,8 +216,7 @@ def test_liquidate_revert_unwind_after_liquidation(
 
     tx_liq = ovl_collateral.liquidate(pos_id, alice, {'from': alice})
 
-    (_, _, _, _, pos_oi_shares_after, _, _,
-     _) = ovl_collateral.positions(pos_id)
+    (_, _, _, _, pos_oi_shares_after, _, _) = ovl_collateral.positions(pos_id)
 
     assert pos_oi_shares_after == 0
 
@@ -250,11 +251,12 @@ def test_liquidate_pnl_burned(
         position['collateral'],
         position['leverage'],
         position['is_long'],
+        position['collateral'] * position['leverage'] * (1-SLIPPAGE_TOL),
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
-    (_, _, _, pos_price_idx, pos_oi_shares, pos_debt, pos_cost,
-     _) = ovl_collateral.positions(pos_id)
+    (_, _, _, pos_price_idx, pos_oi_shares,
+     pos_debt, pos_cost) = ovl_collateral.positions(pos_id)
 
     # mine a bit more then update to settle
     brownie.chain.mine(timedelta=market.updatePeriod()+1)
@@ -266,7 +268,7 @@ def test_liquidate_pnl_burned(
 
     # Check the price we liquidated at ...
     liq_bid, liq_ask, _ = market.pricePoints(
-        market.pricePointCurrentIndex()-1)
+        market.pricePointNextIndex()-1)
 
     # calculate value and make sure it should have been liquidatable
     price_frame = liq_bid/entry_ask if position["is_long"] \
@@ -304,25 +306,20 @@ def test_liquidate_oi_removed(
         position['collateral'],
         position['leverage'],
         position['is_long'],
+        position['collateral'] * position['leverage'] * (1-SLIPPAGE_TOL),
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
-    (_, _, _, pos_price_idx, pos_oi_shares, pos_debt, pos_cost,
-     _) = ovl_collateral.positions(pos_id)
+    (_, _, _, pos_price_idx, pos_oi_shares,
+     pos_debt, pos_cost) = ovl_collateral.positions(pos_id)
 
-    qoi_before = market.queuedOiLong() if position["is_long"] \
-        else market.queuedOiShort()
-
-    assert qoi_before == pos_oi_shares
+    oi_before = market.oiLong() if position["is_long"] else market.oiShort()
+    assert oi_before == pos_oi_shares
 
     brownie.chain.mine(timestamp=position["liquidation"]["timestamp"])
     _ = ovl_collateral.liquidate(pos_id, alice, {'from': alice})
 
     oi_after = market.oiLong() if position["is_long"] else market.oiShort()
-    qoi_after = market.queuedOiLong() if position["is_long"] \
-        else market.queuedOiShort()
-
-    assert qoi_after == 0
     assert oi_after == 0
 
 
@@ -348,16 +345,15 @@ def test_liquidate_zero_value(
         position['collateral'],
         3*position['leverage'],  # 3x so it effectively turns negative
         position['is_long'],
+        3*position['collateral'] * position['leverage'] * (1-SLIPPAGE_TOL),
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
-    (_, _, _, pos_price_idx, pos_oi_shares, pos_debt, pos_cost,
-     _) = ovl_collateral.positions(pos_id)
+    (_, _, _, pos_price_idx, pos_oi_shares,
+     pos_debt, pos_cost) = ovl_collateral.positions(pos_id)
 
-    qoi_before = market.queuedOiLong() if position["is_long"] \
-        else market.queuedOiShort()
-
-    assert qoi_before == pos_oi_shares
+    oi_before = market.oiLong() if position["is_long"] else market.oiShort()
+    assert oi_before == pos_oi_shares
 
     brownie.chain.mine(timestamp=position["liquidation"]["timestamp"])
 
@@ -367,10 +363,6 @@ def test_liquidate_zero_value(
     tx_liq = ovl_collateral.liquidate(pos_id, alice, {'from': alice})
 
     oi_after = market.oiLong() if position["is_long"] else market.oiShort()
-    qoi_after = market.queuedOiLong() if position["is_long"] \
-        else market.queuedOiShort()
-
-    assert qoi_after == 0
     assert oi_after == 0
 
     expected_burn = pos_cost
@@ -405,11 +397,12 @@ def test_liquidate_rewards_and_fees(
         position['collateral'],
         position['leverage'],
         position['is_long'],
+        position['collateral'] * position['leverage'] * (1-SLIPPAGE_TOL),
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
-    (_, _, _, pos_price_idx, pos_oi_shares, pos_debt, pos_cost,
-     _) = ovl_collateral.positions(pos_id)
+    (_, _, _, pos_price_idx, pos_oi_shares,
+     pos_debt, pos_cost) = ovl_collateral.positions(pos_id)
 
     liquidations_prior = ovl_collateral.liquidations()
     alice_balance_prior = token.balanceOf(alice)
@@ -457,11 +450,12 @@ def test_liquidate_with_funding(
         position['collateral'],
         position['leverage'],
         position['is_long'],
+        position['collateral'] * position['leverage'] * (1-SLIPPAGE_TOL),
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
-    (_, _, _, pos_price_idx, pos_oi_shares, pos_debt, pos_cost,
-     _) = ovl_collateral.positions(pos_id)
+    (_, _, _, pos_price_idx, pos_oi_shares,
+     pos_debt, pos_cost) = ovl_collateral.positions(pos_id)
 
     # build a position for alice that take up 1/2 the OI of bob
     ovl_collateral.build(
@@ -469,6 +463,8 @@ def test_liquidate_with_funding(
         int(position['collateral']/2.0),
         position['leverage'],
         not position['is_long'],
+        int(position['collateral']/2.0)
+        * position['leverage'] * (1-SLIPPAGE_TOL),
         {'from': alice}
     )
     brownie.chain.mine(timestamp=position["liquidation"]["timestamp"]-300)
@@ -477,7 +473,7 @@ def test_liquidate_with_funding(
     pos_val = ovl_collateral.value(pos_id)
     _ = ovl_collateral.liquidate(pos_id, alice, {'from': alice})
     exit_bid, exit_ask, _ = market.pricePoints(
-        market.pricePointCurrentIndex()-1)
+        market.pricePointNextIndex() - 1)
     assert pos_val < margin_maintenance * pos_oi_shares
 
     # check alice oi still there

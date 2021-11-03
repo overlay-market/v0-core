@@ -1,9 +1,10 @@
 from brownie import chain
-from brownie.test import given, strategy 
+from brownie.test import given, strategy
 from hypothesis import settings
 import pytest
 import brownie
 from decimal import *
+
 
 def print_logs(tx):
     for i in range(len(tx.events['log'])):
@@ -46,31 +47,26 @@ def test_only_gov_can_update_market(
           input_brrrr_window_micro,
           {"from": alice})
 
-
   with brownie.reverts(EXPECTED_ERROR_MSG):
       market.setPeriods(
-          input_update_period, 
+          input_update_period,
           input_compounding_period,
           {"from": bob})
-
 
   with brownie.reverts(EXPECTED_ERROR_MSG):
       market.setK(
           input_k,
           {"from": feed_owner})
 
-
   with brownie.reverts(EXPECTED_ERROR_MSG):
       market.setSpread(
           input_spread,
           {"from": fees})
 
-
   with brownie.reverts(EXPECTED_ERROR_MSG):
       market.setPriceFrameCap(
           input_price_frame_cap,
           {"from": comptroller})
-
 
   with brownie.reverts(EXPECTED_ERROR_MSG):
       market.setEverything(
@@ -85,4 +81,4 @@ def test_only_gov_can_update_market(
           input_brrrr_expected,
           input_brrrr_window_macro,
           input_brrrr_window_micro,
-          {"from": token })
+          {"from": token})
