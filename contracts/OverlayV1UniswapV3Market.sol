@@ -148,42 +148,15 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
-    function price () public view override returns (
-        PricePoint memory price_
-    ) {
+    function price () public view override returns (PricePoint memory price_) {
 
         ( price_, ) = readFeed(true, false);
 
     }
 
-    function oiCap () public virtual view returns (
-        uint cap_
-    ) {
+    function depth () public view override returns (uint depth_) {
 
-        (   uint _brrrrd,
-            uint _antiBrrrrd ) = getBrrrrd();
-
-        uint _brrrrdExpected = brrrrdExpected;
-
-        bool _burnt;
-        bool _expected;
-        bool _surpassed;
-
-        if (_brrrrd < _antiBrrrrd) _burnt = true;
-        else {
-            _brrrrd -= _antiBrrrrd;
-            _expected = _brrrrd < _brrrrdExpected;
-            _surpassed = _brrrrd < _brrrrdExpected * 2;
-        }
-
-        ( ,uint _depth ) = readFeed(false, _burnt || _expected || _surpassed);
-
-        if (_surpassed) {
-
-            uint _dynamicCap = ( 2e18 - _brrrrd.divDown(_brrrrdExpected) ).mulDown(staticCap);
-            cap_ = Math.min(staticCap, Math.min(_dynamicCap, _depth));
-
-        } else if (_burnt || _expected) cap_ = Math.min(staticCap, _depth);
+        (   ,depth_ ) = readFeed(false, true);
 
     }
 
@@ -209,7 +182,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         uint cap_
     ) {
 
-        uint _brrrrdExpected = brrrrdExpected;
+        uint _brrrrdExpected;
         uint _now = block.timestamp;
         uint _updated = updated;
 
@@ -228,22 +201,19 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
             if (_brrrrd < _antiBrrrrd) _burnt = true;
             else {
+                _brrrrdExpected = brrrrdExpected;
                 _brrrrd -= _antiBrrrrd;
                 _expected = _brrrrd < _brrrrdExpected;
-                _surpassed = _brrrrd < _brrrrdExpected * 2;
+                _surpassed = _brrrrd > _brrrrdExpected * 2;
             }
 
-            ( _price, _depth ) = readFeed(_readPrice, _burnt || _expected || _surpassed);
+            ( _price, _depth ) = readFeed(_readPrice, _burnt || _expected || !_surpassed);
 
             if (_readPrice) setPricePointNext(_price);
 
-            if (_burnt || _expected) cap_ = Math.min(staticCap, _depth);
-
-            else if (_surpassed) {
-                uint _dynamicCap = ( 2e18 - _brrrrd.divDown(_brrrrdExpected) ).mulDown(staticCap);
-                cap_ = Math.min(staticCap, Math.min(_dynamicCap, _depth));
-            }
-
+            cap_ = _surpassed ? 0 : _burnt || _expected
+                ? _oiCap(false, _depth, staticCap, 0, 0)
+                : _oiCap(true, _depth, staticCap, _brrrrd, _brrrrdExpected);
 
         } else if (_readPrice) {
 
