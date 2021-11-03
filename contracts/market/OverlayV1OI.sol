@@ -24,6 +24,18 @@ contract OverlayV1OI {
 
     event FundingPaid(uint oiLong, uint oiShort, int fundingPaid);
 
+
+    /// @notice Internal utility to pay funding from heavier to ligher side.
+    /// @dev Pure function accepting current open interest, compoundings
+    /// to perform, and funding constant.
+    /// @param _oiLong Current open interest on the long side.
+    /// @param _oiShort Current open interest on the short side.
+    /// @param _epochs The number of compounding periods to compute for.
+    /// @param _k The funding constant.
+    /// @return oiLong_ Open interest on the long side after funding is paid.
+    /// @return oiShort_ Open interest on the short side after funding is paid.
+    /// @return fundingPaid_ Signed integer of funding paid, negative if longs
+    /// are paying shorts.
     function computeFunding (
         uint256 _oiLong,
         uint256 _oiShort,
