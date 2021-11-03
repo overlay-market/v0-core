@@ -30,10 +30,14 @@ abstract contract OverlayV1PricePoint {
 
     function price () public view virtual returns (PricePoint memory);
 
-    /// @notice Get the current price point index
-    function pricePointNextIndex() public view returns (uint) {
+    /// @notice Get the index of the next price to be realized
+    /// @dev Returns the index of the _next_ price
+    /// @return nextIndex_ The length of the price point array
+    function pricePointNextIndex() public view returns (
+        uint nextIndex_
+    ) {
 
-        return _pricePoints.length;
+        nextIndex_ = _pricePoints.length;
 
     }
 
