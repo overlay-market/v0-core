@@ -127,8 +127,6 @@ abstract contract OverlayV1Comptroller {
     }
 
 
-
-
     /// @notice Takes in the open interest and appllies Overlay's monetary policy
     /// @dev The impact is a measure of the demand placed on the market over a 
     /// rolling window. It determines the amount of collateral to be burnt. 
@@ -218,7 +216,20 @@ abstract contract OverlayV1Comptroller {
 
     }
 
-
+    /// @notice The function that saves onto the respective roller array
+    /// @dev This is multi purpose in that it can write to either the 
+    /// brrrrd rollers or the impact rollers. It knows when to increment the 
+    /// cycloid to point to the next roller index. It konws when it needs needs 
+    /// to write to the next roller or if it can safely write to the current one.  
+    /// If the current cycloid is the length of the array, then it sets to zero.
+    /// @param rollers The set of rollers array from storage. It can operate on
+    /// either the brrrrd rollers or the impact rollers.
+    /// @param _roller The current roller to be written.
+    /// @param _lastMoment The moment of the last write to determine to write to 
+    /// a new roller or the current one.
+    /// @param _cycloid The current position of the circular buffer which
+    /// always points to the most recent time.
+    /// @return cycloid_ The next value of the cycloid.
     function roll (
         Roller[60] storage rollers,
         Roller memory _roller,
