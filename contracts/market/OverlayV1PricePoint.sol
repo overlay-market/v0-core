@@ -41,6 +41,11 @@ abstract contract OverlayV1PricePoint {
 
     }
 
+
+    /// @notice All past price points.
+    /// @dev Returns the price point if it exists.
+    /// @param _pricePointIndex Index of the price point being queried.
+    /// @return pricePoint_ Price point, if it exists.
     function pricePoints(
         uint256 _pricePointIndex
     ) external view returns (
@@ -50,7 +55,7 @@ abstract contract OverlayV1PricePoint {
         uint _len = _pricePoints.length;
 
         require(_pricePointIndex <  _len ||
-               (_pricePointIndex == _len && updated == block.timestamp),
+               (_pricePointIndex == _len && updated != block.timestamp),
                "OVLV1:!price");
 
         if (_pricePointIndex == _len) {
