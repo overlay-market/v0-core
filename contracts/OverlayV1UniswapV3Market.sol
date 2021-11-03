@@ -170,6 +170,17 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
+
+    /// @notice The compounding information for computing funding.
+    /// @dev This returns the number of compoundings that have passed since 
+    /// the last time funding was paid as well as the timestamp of the 
+    /// current compounding epoch, which come at regular intervals according
+    /// to the compounding period.
+    /// @param _now The timestamp of the current block.
+    /// @param _compounded The last time compounding occurred.
+    /// @return compoundings_ The number of compounding periods passed since
+    /// the last time funding was compounded.
+    /// @return tCompounding_ The current compounding epoch.
     function epochs (
         uint _now,
         uint _compounded
