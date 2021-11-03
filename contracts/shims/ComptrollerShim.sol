@@ -54,6 +54,13 @@ contract ComptrollerShim is OverlayV1Comptroller {
 
     }
 
+
+    function depth () public view override returns (uint depth_) {
+
+        depth_ = staticCap;
+
+    }
+
     function readFeed () public view returns (
         uint256 depth_
     ) { 
@@ -89,37 +96,6 @@ contract ComptrollerShim is OverlayV1Comptroller {
         );
 
         depth_ = lmbda.mulUp(( _ethAmount * 1e18 ) / _ovlPrice).divDown(2e18);
-
-    }
-
-    function oiCap () public view returns ( 
-        uint cap_ 
-    ) {
-
-        (   uint _brrrrd, 
-            uint _antiBrrrrd ) = getBrrrrd();
-
-        uint _brrrrdExpected = brrrrdExpected;
-
-        bool _burnt;
-        bool _expected;
-        bool _surpassed;
-
-        if (_brrrrd < _antiBrrrrd) _burnt = true;
-        else {
-            _brrrrd -= _antiBrrrrd;
-            _expected = _brrrrd < _brrrrdExpected;
-            _surpassed = _brrrrd < _brrrrdExpected * 2;
-        }
-
-        uint _depth = staticCap;
-
-        if (_surpassed) {
-
-            uint _dynamicCap = ( 2e18 - _brrrrd.divDown(_brrrrdExpected) ).mulDown(staticCap);
-            cap_ = Math.min(staticCap, Math.min(_dynamicCap, _depth));
-
-        } else if (_burnt || _expected) cap_ = Math.min(staticCap, _depth);
 
     }
 
