@@ -293,11 +293,12 @@ abstract contract OverlayV1Comptroller {
                 impactCycloid,
                 impactWindow );
 
-        uint _pressure = (_isLong
+        pressure_ = (_isLong
             ? _rollerNow.ying - _rollerImpact.ying
             : _rollerNow.yang - _rollerImpact.yang
         );
-        pressure_ = _pressure + _oi.divDown(_cap);
+
+        pressure_ += _oi.divDown(_cap);
     }
 
     function impact (
