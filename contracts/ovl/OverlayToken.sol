@@ -38,22 +38,27 @@ contract OverlayTokenNew is Context, IOverlayTokenNew, AccessControlEnumerable {
 
     mapping(address => mapping(address => uint256)) private _allowances;
 
-    uint256 private _totalSupply;
+
+    bytes32 public constant ADMIN_ROLE = 0x00;
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER");
+    bytes32 public constant BURNER_ROLE = keccak256("BURNER");
+    bytes32 public constant COLLATERAL_ROLE = keccak256("COLLATERAL");
+
 
     string constant public override name = "Overlay Token";
     string constant public override symbol = "OVL";
     uint256 constant public override decimals = 18;
 
-    /**
-     * @dev Sets the values for {name} and {symbol}.
-     *
-     * The default value of {decimals} is 18. To select a different value for
-     * {decimals} you should overload it.
-     *
-     * All two of these values are immutable: they can only be set once during
-     * construction.
-     */
+    uint256 private _totalSupply;
+
     constructor() {
+
+        _setupRole(ADMIN_ROLE, msg.sender);
+        _setupRole(MINTER_ROLE, msg.sender);
+        _setupRole(BURNER_ROLE, msg.sender);
+        _setRoleAdmin(MINTER_ROLE, ADMIN_ROLE);
+        _setRoleAdmin(BURNER_ROLE, ADMIN_ROLE);
+        _setRoleAdmin(COLLATERAL_ROLE, ADMIN_ROLE);
 
     }
 
@@ -121,13 +126,14 @@ contract OverlayTokenNew is Context, IOverlayTokenNew, AccessControlEnumerable {
         address recipient,
         uint256 amount
     ) public virtual override returns (bool) {
+
         _transfer(sender, recipient, amount);
 
         uint256 currentAllowance = _allowances[sender][_msgSender()];
+
         require(currentAllowance >= amount, "ERC20: transfer amount exceeds allowance");
-        unchecked {
-            _approve(sender, _msgSender(), currentAllowance - amount);
-        }
+
+        unchecked { _approve(sender, _msgSender(), currentAllowance - amount); }
 
         return true;
     }
@@ -161,9 +167,7 @@ contract OverlayTokenNew is Context, IOverlayTokenNew, AccessControlEnumerable {
 
         require(currentAllowance >= amount + burnt, "OVL:allowance<amount+burnt");
 
-        unchecked {
-            _approve(sender, msg.sender, currentAllowance - amount - burnt);
-        }
+        unchecked { _approve(sender, msg.sender, currentAllowance - amount - burnt); }
 
         return true;
 
