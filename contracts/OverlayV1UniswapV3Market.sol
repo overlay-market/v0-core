@@ -345,7 +345,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     /// @notice Exposes important info for calculating position metrics.
     /// @dev These values are required to feed to the position calculations.
     /// @param _isLong Whether position is on short or long side of market.
-    /// @param _entryIndex Index of entry price
+    /// @param _priceEntry Index of entry price
     /// @return oi_ The current open interest on the chosen side.
     /// @return oiShares_ The current open interest shares on the chosen side.
     /// @return priceFrame_ Price frame resulting from e entry and exit prices.
