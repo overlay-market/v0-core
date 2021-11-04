@@ -149,7 +149,7 @@ contract OverlayTokenNew is Context, IOverlayTokenNew, AccessControlEnumerable {
         address recipient,
         uint256 amount,
         uint256 burnt
-    ) public override returns (
+    ) public override onlyBurner returns (
         bool
     ) {
 
@@ -172,7 +172,7 @@ contract OverlayTokenNew is Context, IOverlayTokenNew, AccessControlEnumerable {
         address recipient,
         uint256 amount,
         uint256 burnt
-    ) public override returns (
+    ) public override onlyBurner returns (
         bool success
     ) {
 
@@ -224,7 +224,7 @@ contract OverlayTokenNew is Context, IOverlayTokenNew, AccessControlEnumerable {
         address recipient,
         uint256 amount,
         uint256 minted
-    ) public override returns (
+    ) public override onlyMinter returns (
         bool success
     ) {
 
@@ -246,7 +246,7 @@ contract OverlayTokenNew is Context, IOverlayTokenNew, AccessControlEnumerable {
         address recipient,
         uint256 amount,
         uint256 minted
-    ) public override returns (
+    ) public override onlyMinter returns (
         bool
     ) {
 
@@ -343,7 +343,7 @@ contract OverlayTokenNew is Context, IOverlayTokenNew, AccessControlEnumerable {
     function mint(
         address _recipient, 
         uint256 _amount
-    ) external override {
+    ) external override onlyMinter {
 
         _mint(_recipient, _amount);
 
@@ -369,7 +369,7 @@ contract OverlayTokenNew is Context, IOverlayTokenNew, AccessControlEnumerable {
     function burn(
         address _account, 
         uint256 _amount
-    ) external override {
+    ) external override onlyBurner {
 
         _burn(_account, _amount);
 
