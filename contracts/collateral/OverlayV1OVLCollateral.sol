@@ -236,7 +236,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
                     _leverage
                 );
 
-        require(_oiAdjusted >= _oiAdjustedMinimum, "OVLV1:oi<min");
+        require(_oiAdjusted >= _oiMinimum, "OVLV1:oi<min");
 
         uint _positionId = getCurrentBlockPositionId(
             _market,
