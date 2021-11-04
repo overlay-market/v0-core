@@ -871,6 +871,8 @@ def test_build_multiple_in_one_impact_window(
     for i in range(num_builds):
         brownie.chain.mine(timedelta=1)
 
+        # TODO: set q to current impact pressure then add new
+        # TODO: add getImpact() and getPressure()
         q += oi / market.oiCap()
         impact_fee = oi * (1 - math.exp(-lmbda * q))
 

@@ -234,6 +234,39 @@ abstract contract OverlayV1Comptroller {
 
     function depth () public virtual view returns (uint depth_);
 
+    function pressure (
+        bool _isLong,
+        uint _oi,
+        uint _cap
+    ) public view returns (uint pressure_) {
+        (   ,
+            Roller memory _rollerNow,
+            Roller memory _rollerImpact ) = scry(
+                impactRollers,
+                impactCycloid,
+                impactWindow );
+
+        uint _pressure = (_isLong
+            ? _rollerNow.ying - _rollerImpact.ying
+            : _rollerNow.yang - _rollerImpact.yang
+        );
+        pressure_ = _pressure + _oi.divDown(_cap);
+    }
+
+    function impact (
+        bool _isLong,
+        uint _oi,
+        uint _cap
+    ) public view returns (uint impact_) {
+        uint _pressure = pressure(_isLong, _oi, _cap);
+        uint _power = lmbda.mulDown(_pressure);
+
+        uint _impact = _pressure != 0
+            ? ONE.sub(INVERSE_E.powUp(_power))
+            : 0;
+        impact_ = _oi.mulUp(_impact);
+    }
+
     function roll (
         Roller[60] storage rollers,
         Roller memory _roller,

@@ -176,6 +176,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
+    // TODO: why not make this in comptroller?
     function _update (
         bool _readDepth
     ) internal virtual override returns (
@@ -211,6 +212,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
             if (_readPrice) setPricePointNext(_price);
 
+            // Q: why not just use oiCap() here?
             cap_ = _surpassed ? 0 : _burnt || _expected
                 ? _oiCap(false, _depth, staticCap, 0, 0)
                 : _oiCap(true, _depth, staticCap, _brrrrd, _brrrrdExpected);
