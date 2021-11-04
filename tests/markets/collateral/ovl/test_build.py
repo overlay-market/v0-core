@@ -3,7 +3,6 @@ import math
 from brownie.test import given, strategy
 from hypothesis import settings
 from pytest import approx, mark
-
 from decimal import Decimal
 
 def print_logs(tx):
