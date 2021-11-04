@@ -200,7 +200,7 @@ contract OverlayTokenNew is Context, IOverlayTokenNew, AccessControlEnumerable {
 
         uint256 senderBalance = _balances[sender];
 
-        require(senderBalance >= amount + burnt, "ERC20: transfer amount exceeds balance");
+        require(senderBalance >= amount + burnt, "OVL:balance<amount+burnt");
 
         unchecked { _balances[sender] = senderBalance - amount - burnt; }
 
