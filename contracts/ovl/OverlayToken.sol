@@ -31,7 +31,6 @@ contract OverlayTokenNew is Context, IOverlayTokenNew, AccessControlEnumerable {
         _setupRole(BURNER_ROLE, msg.sender);
         _setRoleAdmin(MINTER_ROLE, ADMIN_ROLE);
         _setRoleAdmin(BURNER_ROLE, ADMIN_ROLE);
-        _setRoleAdmin(COLLATERAL_ROLE, ADMIN_ROLE);
 
     }
 
