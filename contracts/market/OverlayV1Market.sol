@@ -27,7 +27,19 @@ abstract contract OverlayV1Market is OverlayV1Governance {
     function update () external { _update(false); }
 
     /// @notice Adds open interest to the market
-    /// @dev invoked by an overlay position contract
+    /// @dev This is invoked by Overlay collateral manager contracts, which
+    /// can be for OVL, ERC20's, Overlay positions, NFTs, or what have you.
+    /// The calculations for impact and fees are performed here.
+    /// @param _isLong The side of the market to enter open interest on.
+    /// @param _collateral The amount of collateral in OVL terms to take the
+    /// position out with.
+    /// @param _leverage The leverage with which to take out the position.
+    /// @return oiAdjusted_ Amount of open interest after impact and fees.
+    /// @return collateralAdjusted_ Amount of collateral after impact and fees.
+    /// @return debtAdjusted_ Amount of debt after impact and fees.
+    /// @return fee_ The protocol fee to be taken.
+    /// @return impact_ The market impact for the build.
+    /// @return pricePointNext_ The index of the price point for the position.
     function enterOI (
         bool _isLong,
         uint _collateral,
@@ -65,6 +77,18 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
     }
 
+
+    /// @notice First part of the flow to remove OI from the system
+    /// @dev This is called by the collateral managers to retrieve
+    /// the necessary information to calculate the specifics of each position,
+    /// for instance the PnL or if it is liquidatable. 
+    /// @param _isLong Whether the data is being retrieved for a long or short.
+    /// @param _pricePoint Index of the initial price point
+    /// @param oi_ Total outstanding open interest on that side of the market.
+    /// @param oiShares_ Total outstanding open interest shares on that side.
+    /// @param priceFrame_ The price multiple comprised of the entry and exit
+    /// prices for the position, with the exit price being the current one.
+    /// Longs receive the bid on exit and the ask on entry shorts the opposite.
     function exitData (
         bool _isLong,
         uint256 _pricePoint
@@ -90,11 +114,15 @@ abstract contract OverlayV1Market is OverlayV1Governance {
     }
 
     /// @notice Removes open interest from the market
-    /// @dev must update two prices if the pending update was from a long
-    /// @dev time ago in that case, a previously entered position must be
-    /// @dev settled, and the current exit price must be retrieved
-    /// @param _isLong is this from the short or the long side
-    /// @param _oiShares the amount of oi in shares to be removed
+    /// @dev Called as the second part of exiting oi, this function
+    /// reports the open interest in OVL terms to remove as well as 
+    /// open interest shares to remove. It also registers printing
+    /// or burning of OVL in the process.
+    /// @param _isLong The side from which to remove open interest.
+    /// @param _oi The open interest to remove in OVL terms.
+    /// @param _oiShares The open interest shares to remove.
+    /// @param _brrrr How much was printed on closing the position.
+    /// @param _antiBrrrr How much was burnt on closing the position.
     function exitOI (
         bool _isLong,
         uint _oi,
