@@ -107,7 +107,9 @@ interface IOverlayV1OVLCollateral is IERC1155 {
         uint256 _leverage,
         bool _isLong,
         uint256 _oiAdjustedMinimum
-    ) external;
+    ) external returns (
+        uint positionId_
+    );
 
     function unwind(
         uint256 _positionId,

@@ -632,7 +632,7 @@ def test_oi_shares_bothsides_with_funding(
     oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
     leverage=strategy('uint8', min_value=1, max_value=100),
     is_long=strategy('bool'),
-    lmbda=strategy('decimal', min_value="0.2", max_value="10.0"))
+    lmbda=strategy('decimal', min_value="0.5", max_value="5.0"))
 def test_build_w_impact(
         ovl_collateral,
         token,
@@ -746,7 +746,7 @@ def test_build_w_impact(
     oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
     leverage=strategy('uint8', min_value=1, max_value=100),
     is_long=strategy('bool'),
-    lmbda=strategy('decimal', min_value="0.2", max_value="10.0"))
+    lmbda=strategy('decimal', min_value="0.5", max_value="5.0"))
 def test_build_oi_adjusted_min(
         ovl_collateral,
         token,
@@ -829,7 +829,7 @@ def test_build_oi_adjusted_min(
     oi=strategy('uint256', min_value=1, max_value=OI_CAP/(100e16)),
     leverage=strategy('uint8', min_value=1, max_value=100),
     is_long=strategy('bool'),
-    lmbda=strategy('decimal', min_value="0.2", max_value="10.0"),
+    lmbda=strategy('decimal', min_value="0.5", max_value="5.0"),
     num_builds=strategy('uint8', min_value=2, max_value=10))
 def test_build_multiple_in_one_impact_window(
         ovl_collateral,
@@ -862,7 +862,8 @@ def test_build_multiple_in_one_impact_window(
     collateral = oi / leverage
     trade_fee = oi * mothership.fee() / FEE_RESOLUTION
 
-    # TODO: check no market pressure before builds
+    # check no market pressure before builds
+    assert market.pressure(is_long, 0, market.oiCap()) == 0
 
     # approve collateral contract to spend bob's ovl to build positions
     token.approve(ovl_collateral, collateral*num_builds, {"from": bob})
@@ -871,8 +872,16 @@ def test_build_multiple_in_one_impact_window(
     for i in range(num_builds):
         brownie.chain.mine(timedelta=1)
 
+        # TODO: set q to current impact pressure then add new
+        # TODO: add getImpact() and getPressure()
         q += oi / market.oiCap()
         impact_fee = oi * (1 - math.exp(-lmbda * q))
+
+        proj_pressure = market.pressure(is_long, oi, market.oiCap())
+        proj_impact = market.impact(is_long, oi, market.oiCap())
+
+        assert int(q*1e18) == approx(proj_pressure, rel=1e-04)
+        assert int(impact_fee) == approx(proj_impact, rel=1e-04)
 
         collateral_adjusted = collateral - impact_fee - trade_fee
         oi_adjusted = collateral_adjusted * leverage
@@ -891,14 +900,14 @@ def test_build_multiple_in_one_impact_window(
             with brownie.reverts(EXPECTED_ERROR_MESSAGE):
                 ovl_collateral.build(market, collateral, leverage, is_long,
                                      oi_min_adjusted, {"from": bob})
-            continue
+            break
         # and if dynamic cap has brought down oi cap from static value
         elif oi_adjusted > market_oi_cap:
             EXPECTED_ERROR_MESSAGE = "OVLV1:>cap"
             with brownie.reverts(EXPECTED_ERROR_MESSAGE):
                 ovl_collateral.build(market, collateral, leverage, is_long,
                                      oi_min_adjusted, {"from": bob})
-            continue
+            break
 
         # build the position
         tx = ovl_collateral.build(market, collateral, leverage, is_long,
@@ -943,7 +952,12 @@ def test_build_multiple_in_one_impact_window(
 
         assert int(impact_fee) == approx(act_impact_fee, rel=1e-04)
 
-        # TODO: check new state of market pressure
+        # check new state of market pressure
+        act_pressure = market.pressure(is_long, 0, market.oiCap())
+        assert int(q*1e18) == approx(act_pressure, rel=1e-04)
+
+        # for precision issues, set q to act_pressure for next loop
+        q = act_pressure / (1e18)
 
     # TODO: check q => 0 after a window has passed
 
@@ -952,7 +966,7 @@ def test_build_multiple_in_one_impact_window(
     oi=strategy('uint256', min_value=1, max_value=OI_CAP/(1000e16)),
     leverage=strategy('uint8', min_value=1, max_value=100),
     is_long=strategy('bool'),
-    lmbda=strategy('decimal', min_value="0.2", max_value="10.0"),
+    lmbda=strategy('decimal', min_value="0.5", max_value="5.0"),
     num_builds=strategy('uint8', min_value=4, max_value=10))
 def test_build_multiple_in_multiple_impact_windows(
         ovl_collateral,

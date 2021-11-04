@@ -72,6 +72,13 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
+
+    /// @notice Reads the current price and depth information
+    /// @dev Conditionall reads price and time weighted liquidity of market feed
+    /// @param _price To read the price or not
+    /// @param _depth To read the depth or not
+    /// @return price_ Current price. Returns emptry struct if price isn't read
+    /// @return depth_ Current depth. Returns 0 if depth is not read.
     function readFeed (
         bool _price,
         bool _depth
@@ -148,18 +155,39 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
+
+    /// @notice The price at the current block
+    /// @dev Returns the price of the current block.
+    /// @return price_ The price point for the current block consisting of
+    /// the bid, the ask, TODO: ...and maybe the depth.
     function price () public view override returns (PricePoint memory price_) {
 
         ( price_, ) = readFeed(true, false);
 
     }
 
+
+    /// @notice The depth of the market feed in OVL terms at the current block.
+    /// @dev Returns the time weighted liquidity of the market feed in
+    /// OVL terms at the current block.
+    /// @return depth_ The time weighted liquidity in OVL terms.
     function depth () public view override returns (uint depth_) {
 
         (   ,depth_ ) = readFeed(false, true);
 
     }
 
+
+    /// @notice The compounding information for computing funding.
+    /// @dev This returns the number of compoundings that have passed since
+    /// the last time funding was paid as well as the timestamp of the
+    /// current compounding epoch, which come at regular intervals according
+    /// to the compounding period.
+    /// @param _now The timestamp of the current block.
+    /// @param _compounded The last time compounding occurred.
+    /// @return compoundings_ The number of compounding periods passed since
+    /// the last time funding was compounded.
+    /// @return tCompounding_ The current compounding epoch.
     function epochs (
         uint _now,
         uint _compounded
@@ -176,6 +204,13 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
+
+    /// @notice Internal update function to price, cap, and pay funding.
+    /// @dev This function updates the market with the latest price and
+    /// conditionally reads the depth of the market feed. The market needs
+    /// an update on the first call of any block.
+    /// @param _readDepth Whether or not to read the depth of the market feed.
+    /// @return cap_ The open interest cap for the market.
     function _update (
         bool _readDepth
     ) internal virtual override returns (
@@ -211,6 +246,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
             if (_readPrice) setPricePointNext(_price);
 
+            // Q: why not just use oiCap() here?
             cap_ = _surpassed ? 0 : _burnt || _expected
                 ? _oiCap(false, _depth, staticCap, 0, 0)
                 : _oiCap(true, _depth, staticCap, _brrrrd, _brrrrdExpected);
@@ -235,6 +271,13 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
+
+    /// @notice The current open interest on both sides of the market.
+    /// @dev Returns all up to date open interest data for the market.
+    /// @return oiLong_ Current open interest on long side.
+    /// @return oiShort_ Current open interest on short side.
+    /// @return oiLongShares_ Current open interest shares on the long side.
+    /// @return oiShortShares_ Current open interest shares on the short side.
     function oi () public view returns (
         uint oiLong_,
         uint oiShort_,
@@ -251,6 +294,14 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
+
+    /// @notice Internal function to retrieve up to date open interest.
+    /// @dev Computes the current open interest values and returns them.
+    /// @param _compoundings Number of compoundings yet to be paid in funding.
+    /// @return oiLong_ Current open interest on the long side.
+    /// @return oiShort_ Current open interest on the short side.
+    /// @return oiLongShares_ Current open interest shares on the long side.
+    /// @return oiShortShares_ Current open interest shares on the short side.
     function _oi (
         uint _compoundings
     ) internal view returns (
@@ -278,17 +329,30 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
+    /// @notice The current open interest on the long side.
+    /// @return oiLong_ The current open interest on the long side.
     function oiLong () external view returns (uint oiLong_) {
         (   oiLong_,,, ) = oi();
     }
 
+
+    /// @notice The current open interest on the short side.
+    /// @return oiShort_ The current open interest on the short side.
     function oiShort () external view returns (uint oiShort_) {
         (  ,oiShort_,, ) = oi();
     }
 
+
+    /// @notice Exposes important info for calculating position metrics.
+    /// @dev These values are required to feed to the position calculations.
+    /// @param _isLong Whether position is on short or long side of market.
+    /// @param _priceEntry Index of entry price
+    /// @return oi_ The current open interest on the chosen side.
+    /// @return oiShares_ The current open interest shares on the chosen side.
+    /// @return priceFrame_ Price frame resulting from e entry and exit prices.
     function positionInfo (
         bool _isLong,
-        uint _entryIndex
+        uint _priceEntry
     ) external view returns (
         uint256 oi_,
         uint256 oiShares_,
@@ -299,7 +363,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         priceFrame_ = priceFrame(
             _isLong,
-            _entryIndex
+            _priceEntry
         );
 
         (   uint _oiLong,
@@ -312,6 +376,14 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
+
+    /// @notice Computes the price frame for a given position
+    /// @dev Computes the price frame conditionally giving shorts the bid
+    /// on entry and ask on exit and longs the bid on exit and short on
+    /// entry. Capped at the priceFrameCap for longs.
+    /// @param _isLong If price frame is for a long or a short.
+    /// @param _entryIndex The index of the entry price.
+    /// @return priceFrame_ The exit price divided by the entry price.
     function priceFrame (
         bool _isLong,
         uint _entryIndex
