@@ -1,5 +1,7 @@
 import brownie
 import math
+
+from decimal import Decimal
 from brownie.test import given, strategy
 from pytest import approx, mark
 
@@ -869,7 +871,10 @@ def test_build_multiple_in_one_impact_window(
     assert market.pressure(is_long, 0, market.oiCap()) == 0
 
     # approve collateral contract to spend bob's ovl to build positions
-    token.approve(ovl_collateral, collateral*num_builds, {"from": bob})
+    token.approve(
+        ovl_collateral,
+        int(Decimal(str(collateral)))*num_builds,
+        {"from": bob})
 
     q = 0
     for i in range(num_builds):
@@ -1007,7 +1012,10 @@ def test_build_multiple_in_multiple_impact_windows(
     assert market.pressure(is_long, 0, market.oiCap()) == 0
 
     # approve collateral contract to spend bob's ovl to build positions
-    token.approve(ovl_collateral, collateral*num_builds, {"from": bob})
+    token.approve(
+        ovl_collateral,
+        int(Decimal(str(collateral)))*num_builds,
+        {"from": bob})
 
     q = 0
     build_times = []
