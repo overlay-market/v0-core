@@ -17,8 +17,6 @@ contract OverlayTokenNew is Context, IOverlayTokenNew, AccessControlEnumerable {
     bytes32 public constant ADMIN_ROLE = 0x00;
     bytes32 public constant MINTER_ROLE = keccak256("MINTER");
     bytes32 public constant BURNER_ROLE = keccak256("BURNER");
-    bytes32 public constant COLLATERAL_ROLE = keccak256("COLLATERAL");
-
 
     string constant public override name = "Overlay Token";
     string constant public override symbol = "OVL";
