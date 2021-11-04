@@ -127,6 +127,16 @@ abstract contract OverlayV1Comptroller {
     }
 
 
+    /// @notice Takes in the open interest and appllies Overlay's monetary policy
+    /// @dev The impact is a measure of the demand placed on the market over a
+    /// rolling window. It determines the amount of collateral to be burnt.
+    /// This is akin to slippage in an order book model.
+    /// @param _isLong Is it taking out open interest on the long or short side?
+    /// @param _oi The amount of open interest attempting to be taken out
+    /// @param _cap The current open interest cap
+    /// @return impact_ A factor between zero and one to be applied to initial
+    /// open interest to determine how much to take from the initial collateral
+    /// before calculating the final collateral and open interest
     function intake (
         bool _isLong,
         uint _oi,
@@ -152,6 +162,25 @@ abstract contract OverlayV1Comptroller {
 
     }
 
+
+    /// @notice Internal method to get historic impact data for impact factor
+    /// @dev Historic data is represented as a sum of pressure accumulating
+    /// over the impact window.
+    /// @dev Pressure is the fraction of the open interest cap that any given
+    /// build tries to take out on one side.  It can range from zero to infinity
+    /// but will settle at a reasonable value otherwise any build will burn all
+    /// of its initial collateral and receive a worthless position.
+    /// @dev The sum of historic pressure is multiplied with lambda to yield
+    /// the power by which we raise the inverse of Euler's number in order to
+    /// determine the final impact.
+    /// @param _isLong The side that open interest is being be taken out on.
+    /// @param _oi The amount of open interest.
+    /// @param _cap The open interest cap.
+    /// @return rollerNow_ The current roller for the impact rollers. Impact
+    /// from this particular call is accumulated on it for writing to storage.
+    /// @return lastMoment_ The timestamp of the previously written roller
+    /// which to determine whether to write to the current or the next.
+    /// @return impact_ The factor by which to take from initial collateral.
     function _intake (
         bool _isLong,
         uint _oi,
@@ -187,6 +216,17 @@ abstract contract OverlayV1Comptroller {
 
     }
 
+
+    /// @notice Internal function to compute cap.
+    /// @dev Determines the cap relative to depth and dynamic or static
+    /// @param _dynamic If printing has exceeded expectations and the
+    /// cap is dynamic or static.
+    /// @param _depth The depth of the market feed in OVL terms.
+    /// @param _staticCap The static cap of the market.
+    /// @param _brrrrd How much has been printed. Only passed if printing
+    /// has occurred.
+    /// @param _brrrrdExpected How much the market expects to print before
+    /// engaging the dynamic cap. Only passed if printing has occurred.
     function _oiCap (
         bool _dynamic,
         uint _depth,
@@ -206,6 +246,10 @@ abstract contract OverlayV1Comptroller {
 
     }
 
+
+    /// @notice The open interest cap for the market
+    /// @dev Returns the open interest cap for the market.
+    /// @return cap_ The open interest cap.
     function oiCap () public virtual view returns (
         uint cap_
     ) {
@@ -232,6 +276,9 @@ abstract contract OverlayV1Comptroller {
 
     }
 
+
+    /// @notice The time weighted liquidity of the market feed in OVL terms.
+    /// @return depth_ The amount of liquidity in the market feed in OVL terms.
     function depth () public virtual view returns (uint depth_);
 
     function pressure (
@@ -267,6 +314,21 @@ abstract contract OverlayV1Comptroller {
         impact_ = _oi.mulUp(_impact);
     }
 
+
+    /// @notice The function that saves onto the respective roller array
+    /// @dev This is multi purpose in that it can write to either the
+    /// brrrrd rollers or the impact rollers. It knows when to increment the
+    /// cycloid to point to the next roller index. It konws when it needs needs
+    /// to write to the next roller or if it can safely write to the current one.
+    /// If the current cycloid is the length of the array, then it sets to zero.
+    /// @param rollers The set of rollers array from storage. It can operate on
+    /// either the brrrrd rollers or the impact rollers.
+    /// @param _roller The current roller to be written.
+    /// @param _lastMoment The moment of the last write to determine to write to
+    /// a new roller or the current one.
+    /// @param _cycloid The current position of the circular buffer which
+    /// always points to the most recent time.
+    /// @return cycloid_ The next value of the cycloid.
     function roll (
         Roller[60] storage rollers,
         Roller memory _roller,
@@ -302,6 +364,16 @@ abstract contract OverlayV1Comptroller {
 
     }
 
+
+    /// @notice First part of retrieving historic roller values
+    /// @dev Checks to see if the current roller is satisfactory and if not
+    /// searches deeper into the roller array.
+    /// @param rollers The roller array, either impact or brrrrd
+    /// @param _cycloid The current impact or brrrrd cycloid
+    /// @param _ago The target time
+    /// @return lastMoment_ The time the most recent roller was written
+    /// @return rollerNow_ The current roller with the time set to now
+    /// @return rollerThen_ The roller closest and earlier to the target time
     function scry (
         Roller[60] storage rollers,
         uint _cycloid,
@@ -340,6 +412,7 @@ abstract contract OverlayV1Comptroller {
         rollerThen_ = _beforeOrAt;
 
     }
+
 
     function scryRollers (
         Roller[60] storage rollers,

@@ -201,13 +201,25 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     }
 
+
+    /// @notice Build a position on Overlay with OVL collateral
+    /// @dev This interacts with an Overlay Market to register oi and hold 
+    /// positions on behalf of users.
+    /// @param _market The address of the desired market to interact with.
+    /// @param _collateral The amount of OVL to use as collateral in the position.
+    /// @param _leverage The amount of leverage to use in the position
+    /// @param _isLong Whether to take out a position on the long or short side.
+    /// @param _oiMinimum Minimum acceptable amount of OI after impact and fees.
+    /// @return positionId_ Id of the built position for on chain convenience.
     function build (
         address _market,
         uint256 _collateral,
         uint256 _leverage,
         bool _isLong,
-        uint256 _oiAdjustedMinimum
-    ) external {
+        uint256 _oiMinimum
+    ) external returns (
+        uint positionId_
+    ) {
 
         require(mothership.marketActive(_market), "OVLV1:!market");
         require(_leverage <= marketInfo[_market].maxLeverage, "OVLV1:lev>max");
@@ -224,7 +236,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
                     _leverage
                 );
 
-        require(_oiAdjusted >= _oiAdjustedMinimum, "OVLV1:oi<min");
+        require(_oiAdjusted >= _oiMinimum, "OVLV1:oi<min");
 
         uint _positionId = getCurrentBlockPositionId(
             _market,
@@ -249,9 +261,14 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         _mint(msg.sender, _positionId, _oiAdjusted, ""); // WARNING: last b/c erc1155 callback
 
+        positionId_ = _positionId;
+
     }
 
-    /// @notice Unwinds shares of an existing position
+    /// @notice Unwinds shares of an existing position.
+    /// @dev Interacts with a market contract to realize the PnL on a position.
+    /// @param _positionId Id of the position to be unwound.
+    /// @param _shares Number of shars to unwind from the position.
     function unwind (
         uint256 _positionId,
         uint256 _shares
@@ -324,7 +341,11 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     }
 
-    /// @notice Liquidates an existing position
+    /// @notice Liquidates an existing position.
+    /// @dev Interacts with an Overlay Market to exit all open interest
+    /// associated with a liquidatable positoin.
+    /// @param _positionId ID of the position being liquidated.
+    /// @param _rewardsTo Address to send liquidation reward to.
     function liquidate (
         uint256 _positionId,
         address _rewardsTo
@@ -384,6 +405,13 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     }
 
+
+    /// @notice Retrieves required information from market contract 
+    /// to calculate position value with.
+    /// @dev Gets price frame, total open interest and 
+    /// total open interest shares from an Overlay market.
+    /// @param _positionId ID of position to determine value of.
+    /// @return value_ Value of the position
     function value (
         uint _positionId
     ) public view returns (

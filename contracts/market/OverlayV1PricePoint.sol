@@ -30,13 +30,22 @@ abstract contract OverlayV1PricePoint {
 
     function price () public view virtual returns (PricePoint memory);
 
-    /// @notice Get the current price point index
-    function pricePointNextIndex() public view returns (uint) {
+    /// @notice Get the index of the next price to be realized
+    /// @dev Returns the index of the _next_ price
+    /// @return nextIndex_ The length of the price point array
+    function pricePointNextIndex() public view returns (
+        uint nextIndex_
+    ) {
 
-        return _pricePoints.length;
+        nextIndex_ = _pricePoints.length;
 
     }
 
+
+    /// @notice All past price points.
+    /// @dev Returns the price point if it exists.
+    /// @param _pricePointIndex Index of the price point being queried.
+    /// @return pricePoint_ Price point, if it exists.
     function pricePoints(
         uint256 _pricePointIndex
     ) external view returns (
@@ -46,7 +55,7 @@ abstract contract OverlayV1PricePoint {
         uint _len = _pricePoints.length;
 
         require(_pricePointIndex <  _len ||
-               (_pricePointIndex == _len && updated == block.timestamp),
+               (_pricePointIndex == _len && updated != block.timestamp),
                "OVLV1:!price");
 
         if (_pricePointIndex == _len) {
@@ -61,6 +70,16 @@ abstract contract OverlayV1PricePoint {
 
     }
 
+
+    /// @notice Inserts the bid/ask spread into the price.
+    /// @dev Takes two time weighted average prices from the market feed
+    /// and composes them into a price point, which has a bid and an ask.
+    /// The ask is the max of the two twaps multiplied by euler's number 
+    /// raised to the market's spread. The bid is the min of the twaps
+    /// multiplied by the inverse of euler's number raised to the spread.
+    /// @param _microPrice The shorter TWAP.
+    /// @param _macroPrice The longer TWAP.
+    /// @return pricePoint_ The price point with bid/ask/index.
     function insertSpread (
         uint _microPrice,
         uint _macroPrice
