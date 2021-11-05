@@ -448,38 +448,34 @@ def test_entry_update_price_fetching(
     assert entry_price2 != price["entry"]["macro_price"]
 
 
-# @given(
-#     # bc we build multiple positions w leverage take care not to hit CAP
-#     collateral=strategy(
-#         'uint256',
-#         min_value=1e18,
-#         max_value=(OI_CAP - 1e4)/300),
-#     leverage=strategy(
-#         'uint8',
-#         min_value=1,
-#         max_value=100),
-#     compoundings=strategy(
-#         'uint16',
-#         min_value=1,
-#         max_value=36),
-#     is_long=strategy(
-#         'bool'))
+@given(
+    # bc we build multiple positions w leverage take care not to hit CAP
+    collateral=strategy(
+        'uint256',
+        min_value=1e18,
+        max_value=(OI_CAP - 1e4)/300),
+    leverage=strategy(
+        'uint8',
+        min_value=1,
+        max_value=100),
+    compoundings=strategy(
+        'uint16',
+        min_value=1,
+        max_value=36),
+    is_long=strategy(
+        'bool'))
 def test_entry_update_compounding_oi_onesided(
             ovl_collateral,
             token,
             market,
             mothership,
             bob,
-            # collateral,
-            # leverage,
-            # is_long,
-            # compoundings
+            collateral,
+            leverage,
+            is_long,
+            compoundings
         ):
     
-    collateral = 1000000000336856065
-    leverage = 96
-    is_long = False
-    compoundings = 5
 
     token.approve(ovl_collateral, collateral*2, {"from": bob})
 
@@ -636,11 +632,11 @@ def test_oi_shares_bothsides_with_funding(
     pass
 
 
-# @given(
-#     oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
-#     leverage=strategy('uint8', min_value=1, max_value=100),
-#     is_long=strategy('bool'),
-#     lmbda=strategy('decimal', min_value="0.5", max_value="5.0"))
+@given(
+    oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
+    leverage=strategy('uint8', min_value=1, max_value=100),
+    is_long=strategy('bool'),
+    lmbda=strategy('decimal', min_value="0.5", max_value="5.0"))
 def test_build_w_impact(
         ovl_collateral,
         token,
@@ -649,16 +645,11 @@ def test_build_w_impact(
         bob,
         gov,
         rewards,
-        # oi,
-        # leverage,
-        # is_long,
-        # lmbda
+        oi,
+        leverage,
+        is_long,
+        lmbda
 ):
-
-    lmbda = .5
-    oi = 4.156808e+22
-    leverage = 1 
-    is_long = False
 
     lmbda = float(lmbda)
 
@@ -759,11 +750,11 @@ def test_build_w_impact(
     assert int(q*1e18) == approx(act_pressure, rel=1e-04)
 
 
-# @given(
-#     oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
-#     leverage=strategy('uint8', min_value=1, max_value=100),
-#     is_long=strategy('bool'),
-#     lmbda=strategy('decimal', min_value="0.5", max_value="5.0"))
+@given(
+    oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
+    leverage=strategy('uint8', min_value=1, max_value=100),
+    is_long=strategy('bool'),
+    lmbda=strategy('decimal', min_value="0.5", max_value="5.0"))
 def test_build_oi_adjusted_min(
         ovl_collateral,
         token,
@@ -772,17 +763,12 @@ def test_build_oi_adjusted_min(
         bob,
         gov,
         rewards,
-        # oi,
-        # leverage,
-        # is_long,
-        # lmbda
+        oi,
+        leverage,
+        is_long,
+        lmbda
 ):
 
-
-    oi = 4.144966e+22
-    leverage = 1
-    is_long = False
-    lmbda = 0.5
 
     lmbda = float(lmbda)
 
@@ -796,7 +782,7 @@ def test_build_oi_adjusted_min(
         {'from': gov}
     )
 
-    # oi *= 1e16
+    oi *= 1e16
     collateral = oi / leverage
     trade_fee = oi * mothership.fee() / FEE_RESOLUTION
 
@@ -1013,36 +999,6 @@ def test_build_multiple_in_multiple_impact_windows(
         lmbda,
         num_builds
 ):
-
-    # oi=16940
-    # leverage=1
-    # is_long=False
-    # lmbda=.5
-    # num_builds=4
-
-    # oi=16970
-    # leverage=1
-    # is_long=False
-    # lmbda=.5
-    # num_builds=4
-
-    # oi=17130
-    # leverage=1
-    # is_long=False
-    # lmbda=.5000000000
-    # num_builds=4
-
-    # oi=17130
-    # leverage=1
-    # is_long=False
-    # lmbda=.5
-    # num_builds=4
-
-    # oi=17770
-    # leverage=1
-    # is_long=False
-    # lmbda=.5000000000
-    # num_builds=4
 
     lmbda = float(lmbda)
     impact_window = market.impactWindow()
