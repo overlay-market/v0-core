@@ -319,11 +319,19 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         // mint/burn excess PnL = valueAdjusted - cost
         if (_userCost < _userValueAdjusted) {
 
-            ovl.transferMint(msg.sender, _userCost, _userValueAdjusted - _userCost);
+            ovl.transferMint(
+                msg.sender, 
+                _userCost, 
+                _userValueAdjusted - _userCost
+            );
 
         } else {
 
-            ovl.transferBurn(msg.sender, _userCost, _userCost - _userValueAdjusted);
+            ovl.transferBurn(
+                msg.sender, 
+                _userValueAdjusted, 
+                _userCost - _userValueAdjusted
+            );
 
         }
 
