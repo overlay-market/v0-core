@@ -3,6 +3,7 @@ pragma solidity ^0.8.7;
 
 import "../interfaces/IOverlayV1Mothership.sol";
 import "../interfaces/IOverlayToken.sol";
+import "../interfaces/IOverlayTokenNew.sol";
 import "./OverlayV1Comptroller.sol";
 import "./OverlayV1OI.sol";
 import "./OverlayV1PricePoint.sol";
@@ -18,7 +19,7 @@ abstract contract OverlayV1Governance is
     bytes32 constant private GOVERNOR = keccak256("GOVERNOR");
     bytes32 constant private MARKET = keccak256("MARKET");
 
-    IOverlayToken public ovl;
+    IOverlayTokenNew public ovl;
     IOverlayV1Mothership public immutable mothership;
 
     uint256 public leverageMax;

@@ -3,8 +3,9 @@ import math
 
 from decimal import Decimal
 from brownie.test import given, strategy
+from hypothesis import settings
 from pytest import approx, mark
-
+from decimal import Decimal
 
 def print_logs(tx):
     for i in range(len(tx.events['log'])):
@@ -474,6 +475,7 @@ def test_entry_update_compounding_oi_onesided(
             is_long,
             compoundings
         ):
+    
 
     token.approve(ovl_collateral, collateral*2, {"from": bob})
 
@@ -648,6 +650,7 @@ def test_build_w_impact(
         is_long,
         lmbda
 ):
+
     lmbda = float(lmbda)
 
     market.setComptrollerParams(
@@ -765,7 +768,10 @@ def test_build_oi_adjusted_min(
         is_long,
         lmbda
 ):
+
+
     lmbda = float(lmbda)
+
     market.setComptrollerParams(
         market.impactWindow(),
         lmbda*1e18,
@@ -850,7 +856,9 @@ def test_build_multiple_in_one_impact_window(
         lmbda,
         num_builds
 ):
+
     lmbda = float(lmbda)
+
     impact_window = market.impactWindow()
 
     market.setComptrollerParams(
@@ -880,11 +888,14 @@ def test_build_multiple_in_one_impact_window(
     for i in range(num_builds):
         brownie.chain.mine(timedelta=1)
 
-        q += oi / market.oiCap()
+        market_oi = market.oiLong() if is_long else market.oiShort()
+        market_oi_cap = market.oiCap()  # accounts for depth, brrrd, static
+
+        q += oi / market_oi_cap
         impact_fee = oi * (1 - math.exp(-lmbda * q))
 
-        proj_pressure = market.pressure(is_long, oi, market.oiCap())
-        proj_impact = market.impact(is_long, oi, market.oiCap())
+        proj_pressure = market.pressure(is_long, oi, market_oi_cap)
+        proj_impact = market.impact(is_long, oi, market_oi_cap)
 
         assert int(q*1e18) == approx(proj_pressure, rel=1e-04)
         assert int(impact_fee) == approx(proj_impact, rel=1e-04)
@@ -896,8 +907,6 @@ def test_build_multiple_in_one_impact_window(
         ovl_balance = token.balanceOf(ovl_collateral)
 
         # get prior state of market
-        market_oi = market.oiLong() if is_long else market.oiShort()
-        market_oi_cap = market.oiCap()  # accounts for depth, brrrd, static
 
         # in case have large impact, make sure to check for revert
         oi_min_adjusted = 0
@@ -990,9 +999,15 @@ def test_build_multiple_in_multiple_impact_windows(
         lmbda,
         num_builds
 ):
+
     lmbda = float(lmbda)
     impact_window = market.impactWindow()
     impact_time_delta = 2 * int(impact_window / num_builds)
+
+    print("cap...", market.oiCap())
+    _lmbda = market.lmbda()
+    print("_lmbda", _lmbda)
+    print("lmbda", lmbda*1e18)
 
     market.setComptrollerParams(
         market.impactWindow(),
@@ -1003,6 +1018,8 @@ def test_build_multiple_in_multiple_impact_windows(
         market.brrrrdWindowMicro(),
         {'from': gov}
     )
+
+    print("cap...", market.oiCap())
 
     oi *= 1e16
     collateral = oi / leverage
@@ -1021,10 +1038,14 @@ def test_build_multiple_in_multiple_impact_windows(
     build_times = []
     qs = []
 
+    print("cap...", market.oiCap())
+
     build_time = brownie.chain.time()
     for i in range(num_builds):
         build_time += impact_time_delta + 1
         build_times.append(build_time)
+
+        print("cap.......", market.oiCap())
 
         brownie.chain.mine(timestamp=build_time)
 
@@ -1062,6 +1083,10 @@ def test_build_multiple_in_multiple_impact_windows(
         market_oi = market.oiLong() if is_long else market.oiShort()
         market_oi_cap = market.oiCap()  # accounts for depth, brrrd, static
 
+        print("collateral", collateral)
+        print("oi", market_oi)
+        print("cap", market_oi_cap)
+
         # in case have large impact, make sure to check for revert
         oi_min_adjusted = 0
         if collateral_adjusted < MIN_COLLATERAL:
@@ -1077,6 +1102,7 @@ def test_build_multiple_in_multiple_impact_windows(
                 ovl_collateral.build(market, collateral, leverage, is_long,
                                      oi_min_adjusted, {"from": bob})
             break
+
 
         # build the position
         tx = ovl_collateral.build(market, collateral, leverage, is_long,

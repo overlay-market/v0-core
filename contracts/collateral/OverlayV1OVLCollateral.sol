@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import "../interfaces/IOverlayV1Market.sol";
 import "../interfaces/IOverlayV1Mothership.sol";
 import "../interfaces/IOverlayToken.sol";
+import "../interfaces/IOverlayTokenNew.sol";
 
 contract OverlayV1OVLCollateral is ERC1155Supply {
 
@@ -31,7 +32,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     Position.Info[] public positions;
 
     IOverlayV1Mothership public immutable mothership;
-    IOverlayToken public ovl;
+    IOverlayTokenNew public ovl;
 
     uint256 public fees;
     uint256 public liquidations;
@@ -255,9 +256,9 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         emit Build(_market, _positionId, _oiAdjusted, _debtAdjusted);
 
-        ovl.transferFrom(msg.sender, address(this), _collateralAdjusted + _fee);
+        ovl.transferFromBurn(msg.sender, address(this), _collateralAdjusted + _fee, _impact);
 
-        ovl.burn(msg.sender, _impact);
+        // ovl.burn(msg.sender, _impact);
 
         _mint(msg.sender, _positionId, _oiAdjusted, ""); // WARNING: last b/c erc1155 callback
 
@@ -313,16 +314,24 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         pos.cost -= _userCost;
         pos.oiShares -= _userOiShares;
 
-        ovl.transfer(msg.sender, _userCost);
+        // ovl.transfer(msg.sender, _userCost);
 
         // mint/burn excess PnL = valueAdjusted - cost
         if (_userCost < _userValueAdjusted) {
 
-            ovl.mint(msg.sender, _userValueAdjusted - _userCost);
+            ovl.transferMint(
+                msg.sender, 
+                _userCost, 
+                _userValueAdjusted - _userCost
+            );
 
         } else {
 
-            ovl.burn(msg.sender, _userCost - _userValueAdjusted);
+            ovl.transferBurn(
+                msg.sender, 
+                _userValueAdjusted, 
+                _userCost - _userValueAdjusted
+            );
 
         }
 
@@ -400,8 +409,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             _rewardsTo
         );
 
-        ovl.burn(address(this), pos.cost - _value);
-        ovl.transfer(_rewardsTo, _toReward);
+        // ovl.burn(address(this), pos.cost - _value);
+        ovl.transferBurn(_rewardsTo, _toReward, pos.cost - _value);
 
     }
 

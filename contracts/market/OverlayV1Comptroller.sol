@@ -299,6 +299,7 @@ abstract contract OverlayV1Comptroller {
         );
 
         pressure_ += _oi.divDown(_cap);
+
     }
 
     function impact (
@@ -306,13 +307,17 @@ abstract contract OverlayV1Comptroller {
         uint _oi,
         uint _cap
     ) public view returns (uint impact_) {
+
         uint _pressure = pressure(_isLong, _oi, _cap);
+
         uint _power = lmbda.mulDown(_pressure);
 
         uint _impact = _pressure != 0
             ? ONE.sub(INVERSE_E.powUp(_power))
             : 0;
+
         impact_ = _oi.mulUp(_impact);
+
     }
 
 
