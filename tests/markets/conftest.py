@@ -188,8 +188,8 @@ def comptroller(gov, feed_infos, token, feed_owner):
             1e18,                # amount in
             PRICE_WINDOW_MACRO,  # macro window
             PRICE_WINDOW_MICRO,  # micro price window
-            343454218783234,     # k
             5e18,                # price frame cap
+            343454218783234,     # k
             .00573e18,           # spread
             COMPOUND_PERIOD,     # compound period
             0,                   # lambda
@@ -242,10 +242,10 @@ def create_mothership(token, feed_infos, fees, alice, bob, gov, feed_owner, requ
             market_feed,
             quote,
             eth,
-            *ovlm_args[:3]
+            *ovlm_args[:4]
         )
 
-        market.setEverything(*ovlm_args[3:], {"from": gov})
+        market.setEverything(*ovlm_args[4:], {"from": gov})
         mothership.initializeMarket(market, {"from": gov})
 
         ovl_collateral = gov.deploy(ovlc_type, "our_uri", mothership)

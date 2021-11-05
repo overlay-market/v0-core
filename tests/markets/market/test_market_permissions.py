@@ -62,11 +62,6 @@ def test_only_gov_can_update_market(
           {"from": fees})
 
   with brownie.reverts(EXPECTED_ERROR_MSG):
-      market.setPriceFrameCap(
-          input_price_frame_cap,
-          {"from": comptroller})
-
-  with brownie.reverts(EXPECTED_ERROR_MSG):
       market.setEverything(
           input_k,
           input_price_frame_cap,

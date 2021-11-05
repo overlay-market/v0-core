@@ -23,8 +23,6 @@ abstract contract OverlayV1Governance is
 
     uint256 public leverageMax;
 
-    uint256 public priceFrameCap;
-
     mapping (address => bool) public isCollateral;
 
     modifier onlyCollateral () {
@@ -42,9 +40,10 @@ abstract contract OverlayV1Governance is
         _;
     }
 
-    constructor(address _mothership) {
+    constructor(
+        address _mothership
+    ) {
 
-        // immutables
         mothership = IOverlayV1Mothership(_mothership);
         ovl = IOverlayV1Mothership(_mothership).ovl();
 
@@ -70,7 +69,6 @@ abstract contract OverlayV1Governance is
 
     function setEverything (
         uint256 _k,
-        uint256 _priceFrameCap,
         uint256 _pbnj,
         uint256 _compoundPeriod,
         uint256 _lmbda,
@@ -81,8 +79,6 @@ abstract contract OverlayV1Governance is
     ) public onlyGovernor {
 
         setK(_k);
-
-        setPriceFrameCap(_priceFrameCap);
 
         setSpread(_pbnj);
 
@@ -97,16 +93,6 @@ abstract contract OverlayV1Governance is
             _brrrrdWindowMacro,
             _brrrrdWindowMicro
         );
-
-    }
-
-    function setPriceFrameCap (
-        uint256 _priceFrameCap
-    ) public onlyGovernor {
-
-        require(ONE < _priceFrameCap, "OVLV1:!priceFrame");
-
-        priceFrameCap = _priceFrameCap;
 
     }
 

@@ -21,10 +21,21 @@ abstract contract OverlayV1PricePoint {
 
     uint256 public updated;
 
+    uint256 immutable public priceFrameCap;
+
     // mapping from price point index to realized historical prices
     PricePoint[] internal _pricePoints;
 
     event NewPrice(uint bid, uint ask, uint index);
+
+    constructor(
+        uint256 _priceFrameCap
+    ) {
+
+        require(1e18 <= _priceFrameCap, "OVLV1:!priceFrame");
+        priceFrameCap = _priceFrameCap;
+
+    }
 
     function price () public view virtual returns (PricePoint memory);
 

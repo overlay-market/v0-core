@@ -178,26 +178,6 @@ def test_set_spread(
   assert int(current_spread) == int(input_spread)
 
 
-def test_set_price_frame_cap(
-  market,
-  gov
-):
-  # test updating price frame cap
-  input_price_frame_cap = 5e19
-
-  # grab initial _priceFrameCap
-  initial_price_frame_cap = market.priceFrameCap()
-
-  # set new price frame cap
-  market.setPriceFrameCap(input_price_frame_cap, {"from": gov})
-
-  # grab current price frame cap
-  current_price_frame_cap = market.priceFrameCap()
-
-  # test current price frame cap equals updated input value
-  assert int(current_price_frame_cap) == int(input_price_frame_cap)
-
-
 def test_set_everything(
   market,
   gov

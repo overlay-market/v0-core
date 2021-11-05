@@ -32,12 +32,15 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         address _eth,
         uint128 _amountIn,
         uint256 _macroWindow,
-        uint256 _microWindow
+        uint256 _microWindow,
+        uint256 _priceFrameCap
     ) OverlayV1Market (
         _mothership
     ) OverlayV1Comptroller (
         _microWindow
-    ){
+    ) OverlayV1PricePoint (
+        _priceFrameCap
+    ) {
 
         // immutables
         eth = _eth;
