@@ -4,12 +4,12 @@
 
 pragma solidity ^0.8.0;
 
-import "../interfaces/IOverlayTokenNew.sol";
+import "../interfaces/IOverlayToken.sol";
 import "./utils/AccessControlEnumerable.sol";
 import "./utils/Context.sol";
 
 
-contract OverlayTokenNew is Context, IOverlayTokenNew, AccessControlEnumerable {
+contract OverlayToken is Context, IOverlayToken, AccessControlEnumerable {
 
     mapping(address => uint256) private _balances;
     mapping(address => mapping(address => uint256)) private _allowances;

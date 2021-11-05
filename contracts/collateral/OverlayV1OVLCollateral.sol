@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import "../interfaces/IOverlayV1Market.sol";
 import "../interfaces/IOverlayV1Mothership.sol";
 import "../interfaces/IOverlayToken.sol";
-import "../interfaces/IOverlayTokenNew.sol";
 
 contract OverlayV1OVLCollateral is ERC1155Supply {
 
@@ -32,7 +31,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     Position.Info[] public positions;
 
     IOverlayV1Mothership public immutable mothership;
-    IOverlayTokenNew public ovl;
+    IOverlayToken public ovl;
 
     uint256 public fees;
     uint256 public liquidations;
