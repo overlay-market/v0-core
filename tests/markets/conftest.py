@@ -23,7 +23,7 @@ PRICE_WINDOW_MICRO = 600
 
 COMPOUND_PERIOD = 600
 
-IMPACT_WINDOW = 600
+IMPACT_WINDOW = PRICE_WINDOW_MICRO
 
 LAMBDA = .6e18
 STATIC_CAP = 370400e18
@@ -192,7 +192,6 @@ def comptroller(gov, feed_infos, token, feed_owner):
             5e18,                # price frame cap
             .00573e18,           # spread
             COMPOUND_PERIOD,     # compound period
-            IMPACT_WINDOW,       # impact window
             0,                   # lambda
             OI_CAP*1e18,         # oi cap
             BRRRR_EXPECTED,      # brrrr expected
