@@ -796,7 +796,7 @@ def test_build_oi_adjusted_min(
         {'from': gov}
     )
 
-    oi *= 1e16
+    # oi *= 1e16
     collateral = oi / leverage
     trade_fee = oi * mothership.fee() / FEE_RESOLUTION
 
@@ -850,12 +850,12 @@ def test_build_oi_adjusted_min(
     assert approx(ovl_collateral.balanceOf(bob, pid)) == int(oi_adjusted)
 
 
-# @given(
-#     oi=strategy('uint256', min_value=1, max_value=OI_CAP/(100e16)),
-#     leverage=strategy('uint8', min_value=1, max_value=100),
-#     is_long=strategy('bool'),
-#     lmbda=strategy('decimal', min_value="0.5", max_value="5.0"),
-#     num_builds=strategy('uint8', min_value=2, max_value=10))
+@given(
+    oi=strategy('uint256', min_value=1, max_value=OI_CAP/(100e16)),
+    leverage=strategy('uint8', min_value=1, max_value=100),
+    is_long=strategy('bool'),
+    lmbda=strategy('decimal', min_value="0.5", max_value="5.0"),
+    num_builds=strategy('uint8', min_value=2, max_value=10))
 def test_build_multiple_in_one_impact_window(
         ovl_collateral,
         token,
@@ -864,18 +864,12 @@ def test_build_multiple_in_one_impact_window(
         bob,
         gov,
         rewards,
-        # oi,
-        # leverage,
-        # is_long,
-        # lmbda,
-        # num_builds
+        oi,
+        leverage,
+        is_long,
+        lmbda,
+        num_builds
 ):
-
-    oi = 5.7396e+20
-    leverage = 1
-    is_long = False
-    lmbda = 0.5
-    num_builds = 2
 
     lmbda = float(lmbda)
 
@@ -908,11 +902,14 @@ def test_build_multiple_in_one_impact_window(
     for i in range(num_builds):
         brownie.chain.mine(timedelta=1)
 
-        q += oi / market.oiCap()
+        market_oi = market.oiLong() if is_long else market.oiShort()
+        market_oi_cap = market.oiCap()  # accounts for depth, brrrd, static
+
+        q += oi / market_oi_cap
         impact_fee = oi * (1 - math.exp(-lmbda * q))
 
-        proj_pressure = market.pressure(is_long, oi, market.oiCap())
-        proj_impact = market.impact(is_long, oi, market.oiCap())
+        proj_pressure = market.pressure(is_long, oi, market_oi_cap)
+        proj_impact = market.impact(is_long, oi, market_oi_cap)
 
         assert int(q*1e18) == approx(proj_pressure, rel=1e-04)
         assert int(impact_fee) == approx(proj_impact, rel=1e-04)
@@ -924,8 +921,6 @@ def test_build_multiple_in_one_impact_window(
         ovl_balance = token.balanceOf(ovl_collateral)
 
         # get prior state of market
-        market_oi = market.oiLong() if is_long else market.oiShort()
-        market_oi_cap = market.oiCap()  # accounts for depth, brrrd, static
 
         # in case have large impact, make sure to check for revert
         oi_min_adjusted = 0
