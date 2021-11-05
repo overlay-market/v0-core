@@ -117,82 +117,23 @@ def test_set_comptroller_params(
   assert int(current_brrrr_window_micro) == int(input_brrrr_window_micro)
 
 
-def test_set_update_period_only(
-  market,
-  gov
-):
-
-  input_update_period = 110
-
-  # grab initial _updatePeriod _compoundingPeriod values
-  initial_update_period = market.updatePeriod()
-  initial_compounding_period = market.compoundingPeriod()
-
-  # set_updatePeriod only, without _compoundingPeriod
-  market.setPeriods(input_update_period,
-                    initial_compounding_period, {"from": gov})
-
-  # grab current _updatePeriod _compoundingPeriod values
-  current_update_period = market.updatePeriod()
-  current_compounding_period = market.compoundingPeriod()
-
-  # test _updatePeriod for updated value
-  assert int(current_update_period) == int(input_update_period)
-
-  # test _compoundingPeriod did not change
-  assert int(current_compounding_period) == int(initial_compounding_period)
-
-
-def test_set_compounding_period_only(
+def test_set_compounding_period(
   market,
   gov
 ):
 
   input_compounding_period = 660
 
-  # grab initial _compoundingPeriod, _updatePeriod values
+  # grab initial _compoundingPeriod
   initial_compounding_period = market.compoundingPeriod()
-  initial_update_period = market.updatePeriod()
 
-  # set _compoundingPeriod only, without _updatePeriod
-  market.setPeriods(initial_update_period,
-                    input_compounding_period, {"from": gov})
+  # set _compoundingPeriod 
+  market.setPeriods(input_compounding_period, {"from": gov})
 
-  # grab current _compoundingPeriod, _updatePeriod values
+  # grab current _compoundingPeriod
   current_compounding_period = market.compoundingPeriod()
-  current_update_period = market.updatePeriod()
 
   # test _compoundingPeriod updated to input value
-  assert int(current_compounding_period) == int(input_compounding_period)
-
-  # test _updatePeriod is same as initial
-  assert int(current_update_period) == int(initial_update_period)
-
-
-def test_set_update_and_compounding_period(
-  market,
-  gov
-):
-
-  input_update_period = 110
-  input_compounding_period = 660
-
-  # grab initial _updatePeriod, _compoundingPeriod values
-  initial_update_period = market.updatePeriod()
-  initial_compounding_period = market.compoundingPeriod()
-
-  # set new _updatePeriod, _compoundingPeriod values
-  market.setPeriods(input_update_period,
-                    input_compounding_period, {"from": gov})
-
-  # grab updated _updatePeriod, _compoundingPeriod values
-  current_update_period = market.updatePeriod()
-  current_compounding_period = market.compoundingPeriod()
-
-  # test _updatePeriod is updated
-  assert int(current_update_period) == int(input_update_period)
-
-  # test _compoundingPeriod is updated
   assert int(current_compounding_period) == int(input_compounding_period)
 
 
@@ -265,7 +206,6 @@ def test_set_everything(
   input_k = 346888760971066
   input_price_frame_cap = 5e19
   input_spread = .00573e19
-  input_update_period = 110
   input_compounding_period = 660
   input_static_cap = int(800000 * 1e19)
   input_brrrr_expected = 1e19
@@ -278,7 +218,6 @@ def test_set_everything(
     input_k,
     input_price_frame_cap,
     input_spread,
-    input_update_period,
     input_compounding_period,
     input_lmbda,
     input_static_cap,
@@ -292,7 +231,6 @@ def test_set_everything(
   current_k = market.k()
   current_price_frame_cap = market.priceFrameCap()
   current_spread = market.pbnj()
-  current_update_period = market.updatePeriod()
   current_compounding_period = market.compoundingPeriod()
   current_lmbda = market.lmbda()
   current_static_cap = market.oiCap()
@@ -306,8 +244,6 @@ def test_set_everything(
   assert int(current_price_frame_cap) == int(input_price_frame_cap)
 
   assert int(current_spread) == int(input_spread)
-
-  assert int(current_update_period) == int(input_update_period)
 
   assert int(current_compounding_period) == int(input_compounding_period)
 

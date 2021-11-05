@@ -22,10 +22,8 @@ interface IOverlayV1Market is IERC1155 {
 
     function feed () external view returns (address);
     function impactWindow () external view returns (uint256);
-    function updatePeriod () external view returns (uint256);
     function updated () external view returns (uint256);
     function update () external;
-    function toUpdate () external view returns (uint256);
     function compounded () external view returns (uint256);
     function compoundingPeriod () external view returns (uint256);
 
@@ -89,7 +87,6 @@ interface IOverlayV1Market is IERC1155 {
     ) external;
 
     function adjustParams (
-        uint256 _updatePeriod,
         uint256 _compoundingPeriod,
         uint144 _oiCap,
         uint112 _fundingKNumerator,
@@ -140,7 +137,6 @@ interface IOverlayV1Market is IERC1155 {
         uint256 _k,
         uint256 _priceFrameCap,
         uint256 _pbnj,
-        uint256 _updatePeriod,
         uint256 _compoundPeriod,
         uint256 _lmbda,
         uint256 _staticCap,
@@ -162,7 +158,6 @@ interface IOverlayV1Market is IERC1155 {
     ) external;
 
     function setPeriods(
-        uint256 _updatePeriod,
         uint256 _compoundingPeriod
     ) external;
 

@@ -21,7 +21,6 @@ PRICE_POINTS_END = 100
 PRICE_WINDOW_MACRO = 3600
 PRICE_WINDOW_MICRO = 600
 
-UPDATE_PERIOD = 100
 COMPOUND_PERIOD = 600
 
 IMPACT_WINDOW = 600
@@ -192,7 +191,6 @@ def comptroller(gov, feed_infos, token, feed_owner):
             343454218783234,     # k
             5e18,                # price frame cap
             .00573e18,           # spread
-            UPDATE_PERIOD,       # update period
             COMPOUND_PERIOD,     # compound period
             IMPACT_WINDOW,       # impact window
             0,                   # lambda

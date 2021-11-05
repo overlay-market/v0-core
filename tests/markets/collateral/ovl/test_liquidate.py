@@ -82,7 +82,7 @@ def test_liquidate_success_zero_funding(
      pos_debt, pos_cost) = ovl_collateral.positions(pos_id)
 
     # mine a bit more then update to settle
-    brownie.chain.mine(timedelta=market.updatePeriod()+1)
+    brownie.chain.mine(timedelta=10)
     market.update({"from": gov})
     entry_bid, entry_ask, entry_price = market.pricePoints(pos_price_idx)
 
@@ -142,7 +142,7 @@ def test_liquidate_revert_not_liquidatable(
      pos_debt, pos_cost) = ovl_collateral.positions(pos_id)
 
     # mine a bit more then update to settle
-    brownie.chain.mine(timedelta=market.updatePeriod()+1)
+    brownie.chain.mine(timedelta=10)
     market.update({"from": gov})
     entry_bid, entry_ask, entry_price = market.pricePoints(pos_price_idx)
 
@@ -208,7 +208,7 @@ def test_liquidate_revert_unwind_after_liquidation(
      pos_debt, pos_cost) = ovl_collateral.positions(pos_id)
 
     # mine a bit more then update to settle
-    brownie.chain.mine(timedelta=market.updatePeriod()+1)
+    brownie.chain.mine(timedelta=10)
     market.update({"from": gov})
     entry_bid, entry_ask, entry_price = market.pricePoints(pos_price_idx)
 
@@ -259,7 +259,7 @@ def test_liquidate_pnl_burned(
      pos_debt, pos_cost) = ovl_collateral.positions(pos_id)
 
     # mine a bit more then update to settle
-    brownie.chain.mine(timedelta=market.updatePeriod()+1)
+    brownie.chain.mine(timedelta=10)
     market.update({"from": gov})
     entry_bid, entry_ask, _ = market.pricePoints(pos_price_idx)
 

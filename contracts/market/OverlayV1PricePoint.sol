@@ -19,8 +19,6 @@ abstract contract OverlayV1PricePoint {
 
     uint256 public pbnj;
 
-    uint256 public updatePeriod;
-    uint256 public toUpdate;
     uint256 public updated;
 
     // mapping from price point index to realized historical prices

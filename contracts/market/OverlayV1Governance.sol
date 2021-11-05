@@ -72,7 +72,6 @@ abstract contract OverlayV1Governance is
         uint256 _k,
         uint256 _priceFrameCap,
         uint256 _pbnj,
-        uint256 _updatePeriod,
         uint256 _compoundPeriod,
         uint256 _lmbda,
         uint256 _staticCap,
@@ -88,7 +87,6 @@ abstract contract OverlayV1Governance is
         setSpread(_pbnj);
 
         setPeriods(
-            _updatePeriod,
             _compoundPeriod
         );
 
@@ -127,15 +125,9 @@ abstract contract OverlayV1Governance is
     }
 
     function setPeriods(
-        uint256 _updatePeriod,
         uint256 _compoundingPeriod
     ) public onlyGovernor {
 
-        // TODO: requires on params; particularly leverageMax wrt MAX_FEE and cap
-        require(_updatePeriod >= 1, "OVLV1:!update");
-        require(_updatePeriod <= _compoundingPeriod, "OVLV1:update>compound");
-
-        updatePeriod = _updatePeriod;
         compoundingPeriod = _compoundingPeriod;
 
     }
