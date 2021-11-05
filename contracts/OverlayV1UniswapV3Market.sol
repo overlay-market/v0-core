@@ -158,7 +158,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     /// @notice The price at the current block
     /// @dev Returns the price of the current block.
-    /// @return price_ The price point for the current block consisting of 
+    /// @return price_ The price point for the current block consisting of
     /// the bid, the ask, TODO: ...and maybe the depth.
     function price () public view override returns (PricePoint memory price_) {
 
@@ -168,7 +168,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
 
     /// @notice The depth of the market feed in OVL terms at the current block.
-    /// @dev Returns the time weighted liquidity of the market feed in 
+    /// @dev Returns the time weighted liquidity of the market feed in
     /// OVL terms at the current block.
     /// @return depth_ The time weighted liquidity in OVL terms.
     function depth () public view override returns (uint depth_) {
@@ -179,8 +179,8 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
 
     /// @notice The compounding information for computing funding.
-    /// @dev This returns the number of compoundings that have passed since 
-    /// the last time funding was paid as well as the timestamp of the 
+    /// @dev This returns the number of compoundings that have passed since
+    /// the last time funding was paid as well as the timestamp of the
     /// current compounding epoch, which come at regular intervals according
     /// to the compounding period.
     /// @param _now The timestamp of the current block.
@@ -206,7 +206,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
 
     /// @notice Internal update function to price, cap, and pay funding.
-    /// @dev This function updates the market with the latest price and 
+    /// @dev This function updates the market with the latest price and
     /// conditionally reads the depth of the market feed. The market needs
     /// an update on the first call of any block.
     /// @param _readDepth Whether or not to read the depth of the market feed.
@@ -246,6 +246,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
             if (_readPrice) setPricePointNext(_price);
 
+            // Q: why not just use oiCap() here?
             cap_ = _surpassed ? 0 : _burnt || _expected
                 ? _oiCap(false, _depth, staticCap, 0, 0)
                 : _oiCap(true, _depth, staticCap, _brrrrd, _brrrrdExpected);
@@ -335,7 +336,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     }
 
 
-    /// @notice The current open interest on the short side.    
+    /// @notice The current open interest on the short side.
     /// @return oiShort_ The current open interest on the short side.
     function oiShort () external view returns (uint oiShort_) {
         (  ,oiShort_,, ) = oi();
