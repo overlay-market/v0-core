@@ -5,8 +5,8 @@
 pragma solidity ^0.8.0;
 
 import "../interfaces/IOverlayToken.sol";
-import "./utils/AccessControlEnumerable.sol";
-import "./utils/Context.sol";
+import "../utils/AccessControlEnumerable.sol";
+import "../utils/Context.sol";
 
 
 contract OverlayToken is Context, IOverlayToken, AccessControlEnumerable {

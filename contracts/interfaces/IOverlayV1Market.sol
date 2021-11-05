@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "../libraries/Position.sol";
 
-interface IOverlayV1Market is IERC1155 {
+interface IOverlayV1Market {
 
     event log(string k, uint v);
 
@@ -22,10 +21,8 @@ interface IOverlayV1Market is IERC1155 {
 
     function feed () external view returns (address);
     function impactWindow () external view returns (uint256);
-    function updatePeriod () external view returns (uint256);
     function updated () external view returns (uint256);
     function update () external;
-    function toUpdate () external view returns (uint256);
     function compounded () external view returns (uint256);
     function compoundingPeriod () external view returns (uint256);
 
@@ -47,17 +44,8 @@ interface IOverlayV1Market is IERC1155 {
 
     function oiCap () external view returns (uint256);
 
+    // TODO: make brrrrd() function ?
     function brrrrd () external view returns (int256);
-    function pressure (
-        bool _isLong,
-        uint _oi,
-        uint _cap
-    ) external view returns (uint256);
-    function impact (
-        bool _isLong,
-        uint _oi,
-        uint _cap
-    ) external view returns (uint256);
 
     function pbnj () external view returns (uint256);
     function priceFrameCap() external view returns (int256);
@@ -98,7 +86,6 @@ interface IOverlayV1Market is IERC1155 {
     ) external;
 
     function adjustParams (
-        uint256 _updatePeriod,
         uint256 _compoundingPeriod,
         uint144 _oiCap,
         uint112 _fundingKNumerator,
@@ -147,11 +134,8 @@ interface IOverlayV1Market is IERC1155 {
 
     function setEverything (
         uint256 _k,
-        uint256 _priceFrameCap,
         uint256 _pbnj,
-        uint256 _updatePeriod,
         uint256 _compoundPeriod,
-        uint256 _impactWindow,
         uint256 _lmbda,
         uint256 _staticCap,
         uint256 _brrrrExpected,
@@ -163,21 +147,15 @@ interface IOverlayV1Market is IERC1155 {
         uint256 _k
     ) external;
 
-    function setPriceFrameCap (
-        uint256 _priceFrameCap
-    ) external;
-
     function setSpread(
         uint256 _pbnj
     ) external;
 
     function setPeriods(
-        uint256 _updatePeriod,
         uint256 _compoundingPeriod
     ) external;
 
     function setComptrollerParams (
-        uint256 _impactWindow,
         uint256 _lmbda,
         uint256 _staticCap,
         uint256 _brrrrExpected,

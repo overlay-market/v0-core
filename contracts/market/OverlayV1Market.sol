@@ -7,7 +7,6 @@ import "../interfaces/IOverlayV1Mothership.sol";
 import "./OverlayV1Governance.sol";
 import "./OverlayV1OI.sol";
 import "./OverlayV1PricePoint.sol";
-import "../OverlayToken.sol";
 import "./OverlayV1Comptroller.sol";
 
 abstract contract OverlayV1Market is OverlayV1Governance {
