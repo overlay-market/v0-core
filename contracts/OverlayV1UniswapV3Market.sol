@@ -150,7 +150,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             uint _ovlPrice = OracleLibraryV2.getQuoteAtTick(
                 int24((_ticks[0] - _ticks[1]) / int56(int32(int(macroWindow)))),
                 1e18,
-                address(ovl),
+                ovl,
                 eth
             );
 

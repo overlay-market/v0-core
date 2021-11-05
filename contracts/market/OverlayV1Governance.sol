@@ -18,7 +18,7 @@ abstract contract OverlayV1Governance is
     bytes32 constant private GOVERNOR = keccak256("GOVERNOR");
     bytes32 constant private MARKET = keccak256("MARKET");
 
-    IOverlayToken public ovl;
+    address public immutable ovl;
     IOverlayV1Mothership public immutable mothership;
 
     uint256 public leverageMax;
@@ -45,7 +45,7 @@ abstract contract OverlayV1Governance is
     ) {
 
         mothership = IOverlayV1Mothership(_mothership);
-        ovl = IOverlayV1Mothership(_mothership).ovl();
+        ovl = address(IOverlayV1Mothership(_mothership).ovl());
 
     }
 
@@ -58,12 +58,6 @@ abstract contract OverlayV1Governance is
     function removeCollateral (address _collateral) public onlyGovernor {
 
         isCollateral[_collateral] = false;
-
-    }
-
-    function setOVL () public onlyGovernor {
-
-        ovl = mothership.ovl();
 
     }
 
