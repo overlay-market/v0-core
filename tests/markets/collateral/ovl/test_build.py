@@ -649,7 +649,6 @@ def test_build_w_impact(
     lmbda = float(lmbda)
 
     market.setComptrollerParams(
-        market.impactWindow(),
         lmbda*1e18,
         market.oiCap(),
         market.brrrrdExpected(),
@@ -762,7 +761,6 @@ def test_build_oi_adjusted_min(
 ):
     lmbda = float(lmbda)
     market.setComptrollerParams(
-        market.impactWindow(),
         lmbda*1e18,
         market.oiCap(),
         market.brrrrdExpected(),
@@ -846,10 +844,8 @@ def test_build_multiple_in_one_impact_window(
         num_builds
 ):
     lmbda = float(lmbda)
-    impact_window = market.impactWindow()
 
     market.setComptrollerParams(
-        market.impactWindow(),
         lmbda*1e18,
         market.oiCap(),
         market.brrrrdExpected(),

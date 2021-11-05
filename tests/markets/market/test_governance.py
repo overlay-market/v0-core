@@ -8,49 +8,6 @@ def print_logs(tx):
     for i in range(len(tx.events['log'])):
         print(tx.events['log'][i]['k'] + ": " + str(tx.events['log'][i]['v']))
 
-
-def test_set_impact_window(
-  market,
-  gov,
-):
-  # test updating _impactWindow only in setComptrollerParams func
-  input_impact_window = 601
-
-  # record initial values
-  initial_static_cap = market.oiCap()
-  initial_lmbda = market.lmbda()
-  initial_brrrr_expected = market.brrrrdExpected()
-  initial_brrrr_window_macro = market.brrrrdWindowMacro()
-  initial_brrrr_window_micro = market.brrrrdWindowMicro()
-
-  market.setComptrollerParams(
-    input_impact_window,
-    initial_lmbda,
-    initial_static_cap,
-    initial_brrrr_expected,
-    initial_brrrr_window_macro,
-    initial_brrrr_window_micro,
-    {"from": gov}
-  )
-
-  current_impact_window = market.impactWindow()
-  current_static_cap = market.oiCap()
-  current_lmbda = market.lmbda()
-  current_brrrr_expected = market.brrrrdExpected()
-  current_brrrr_window_macro = market.brrrrdWindowMacro()
-  current_brrrr_window_micro = market.brrrrdWindowMicro()
-
-  # test current impact window equals input value
-  assert int(current_impact_window) == int(input_impact_window)
-
-  # test other params are unchanged
-  assert int(current_static_cap) == int(initial_static_cap)
-  assert int(current_lmbda) == int(initial_lmbda)
-  assert int(current_brrrr_expected) == int(initial_brrrr_expected)
-  assert int(current_brrrr_window_macro) == int(initial_brrrr_window_macro)
-  assert int(current_brrrr_window_micro) == int(initial_brrrr_window_micro)
-
-
 def test_set_static_cap(
   market,
   gov
@@ -58,14 +15,12 @@ def test_set_static_cap(
   # test updating _staticCap only in setComptrollerParams func
   input_static_cap = int(800000 * 1e19)
 
-  initial_impact_window = market.impactWindow()
   initial_lmbda = market.lmbda()
   initial_brrrr_expected = market.brrrrdExpected()
   initial_brrrr_window_macro = market.brrrrdWindowMacro()
   initial_brrrr_window_micro = market.brrrrdWindowMicro()
 
   market.setComptrollerParams(
-    initial_impact_window,
     initial_lmbda,
     input_static_cap,
     initial_brrrr_expected,
@@ -74,7 +29,6 @@ def test_set_static_cap(
     {"from": gov}
   )
 
-  current_impact_window = market.impactWindow()
   current_static_cap = market.oiCap()
 
   current_lmbda = market.lmbda()
@@ -86,7 +40,6 @@ def test_set_static_cap(
   assert int(current_static_cap) == int(input_static_cap)
 
   # test other params are unchanged
-  assert int(current_impact_window) == int(initial_impact_window)
   assert int(current_lmbda) == int(initial_lmbda)
   assert int(current_brrrr_expected) == int(initial_brrrr_expected)
   assert int(current_brrrr_window_macro) == int(initial_brrrr_window_macro)
@@ -100,14 +53,12 @@ def test_brrrr_fade(
   # test updating _brrrrFade only in setComptrollerParams func
   input_brrrr_expected = 1e19
 
-  initial_impact_window = market.impactWindow()
   initial_static_cap = market.oiCap()
   initial_lmbda = market.lmbda()
   initial_brrrr_window_macro = market.brrrrdWindowMacro()
   initial_brrrr_window_micro = market.brrrrdWindowMicro()
 
   market.setComptrollerParams(
-    initial_impact_window,
     initial_lmbda,
     initial_static_cap,
     input_brrrr_expected,
@@ -116,7 +67,6 @@ def test_brrrr_fade(
     {"from": gov}
   )
 
-  current_impact_window = market.impactWindow()
   current_static_cap = market.oiCap()
   current_lmbda = market.lmbda()
   current_brrrr_expected = market.brrrrdExpected()
@@ -127,7 +77,6 @@ def test_brrrr_fade(
   assert int(current_brrrr_expected) == int(input_brrrr_expected)
 
   # test other params are unchanged
-  assert int(current_impact_window) == int(initial_impact_window)
   assert int(current_static_cap) == int(initial_static_cap)
   assert int(current_lmbda) == int(initial_lmbda)
   assert int(current_brrrr_window_macro) == int(initial_brrrr_window_macro)
@@ -139,7 +88,6 @@ def test_set_comptroller_params(
   gov
 ):
   # set all params of setComptrollerParams func
-  input_impact_window = 601
   input_static_cap = int(800000 * 1e19)
   input_lmbda = market.lmbda()
   input_brrrr_expected = 1e19
@@ -147,7 +95,6 @@ def test_set_comptroller_params(
   input_brrrr_window_micro = 500
 
   market.setComptrollerParams(
-    input_impact_window,
     input_lmbda,
     input_static_cap,
     input_brrrr_expected,
@@ -156,7 +103,6 @@ def test_set_comptroller_params(
     {"from": gov}
   )
 
-  current_impact_window = market.impactWindow()
   current_static_cap = market.oiCap()
   current_lmbda = market.lmbda()
   current_brrrr_expected = market.brrrrdExpected()
@@ -164,7 +110,6 @@ def test_set_comptroller_params(
   current_brrrr_window_micro = market.brrrrdWindowMicro()
 
   # test all variables updated
-  assert int(current_impact_window) == int(input_impact_window)
   assert int(current_static_cap) == int(input_static_cap)
   assert int(current_lmbda) == int(input_lmbda)
   assert int(current_brrrr_expected) == int(input_brrrr_expected)
@@ -322,7 +267,6 @@ def test_set_everything(
   input_spread = .00573e19
   input_update_period = 110
   input_compounding_period = 660
-  input_impact_window = 601
   input_static_cap = int(800000 * 1e19)
   input_brrrr_expected = 1e19
   input_brrrr_window_macro = 6000
@@ -336,7 +280,6 @@ def test_set_everything(
     input_spread,
     input_update_period,
     input_compounding_period,
-    input_impact_window,
     input_lmbda,
     input_static_cap,
     input_brrrr_expected,
@@ -351,7 +294,6 @@ def test_set_everything(
   current_spread = market.pbnj()
   current_update_period = market.updatePeriod()
   current_compounding_period = market.compoundingPeriod()
-  current_impact_window = market.impactWindow()
   current_lmbda = market.lmbda()
   current_static_cap = market.oiCap()
   current_brrrr_expected = market.brrrrdExpected()
@@ -368,8 +310,6 @@ def test_set_everything(
   assert int(current_update_period) == int(input_update_period)
 
   assert int(current_compounding_period) == int(input_compounding_period)
-
-  assert int(current_impact_window) == int(input_impact_window)
 
   assert int(current_lmbda) == int(input_lmbda)
 
