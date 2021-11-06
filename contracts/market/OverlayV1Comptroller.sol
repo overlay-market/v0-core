@@ -41,7 +41,7 @@ abstract contract OverlayV1Comptroller {
         uint anti;
     }
 
-    uint256 immutable impactWindow;
+    uint256 public immutable impactWindow;
     uint256 internal staticCap;
     uint256 public lmbda;
 
