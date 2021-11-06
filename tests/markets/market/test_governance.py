@@ -184,7 +184,6 @@ def test_set_everything(
 ):
   # pass in inputs into setEverything function
   input_k = 346888760971066
-  input_price_frame_cap = 5e19
   input_spread = .00573e19
   input_compounding_period = 660
   input_static_cap = int(800000 * 1e19)
@@ -196,7 +195,6 @@ def test_set_everything(
 
   market.setEverything(
     input_k,
-    input_price_frame_cap,
     input_spread,
     input_compounding_period,
     input_lmbda,
@@ -209,7 +207,6 @@ def test_set_everything(
 
   # grab all current variables
   current_k = market.k()
-  current_price_frame_cap = market.priceFrameCap()
   current_spread = market.pbnj()
   current_compounding_period = market.compoundingPeriod()
   current_lmbda = market.lmbda()
@@ -220,8 +217,6 @@ def test_set_everything(
 
   # test all current values to be updated
   assert int(current_k) == int(input_k)
-
-  assert int(current_price_frame_cap) == int(input_price_frame_cap)
 
   assert int(current_spread) == int(input_spread)
 

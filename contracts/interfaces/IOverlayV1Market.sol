@@ -144,7 +144,6 @@ interface IOverlayV1Market is IERC1155 {
 
     function setEverything (
         uint256 _k,
-        uint256 _priceFrameCap,
         uint256 _pbnj,
         uint256 _compoundPeriod,
         uint256 _lmbda,
@@ -156,10 +155,6 @@ interface IOverlayV1Market is IERC1155 {
 
     function setK (
         uint256 _k
-    ) external;
-
-    function setPriceFrameCap (
-        uint256 _priceFrameCap
     ) external;
 
     function setSpread(
