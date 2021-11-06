@@ -61,6 +61,10 @@ def test_unwind_oi_removed(
         is_long
         ):
 
+    # oi = 1
+    # leverage = 1
+    # is_long = False
+
     # Build parameters
     oi *= 1e16
     collateral = get_collateral(oi / leverage, leverage, mothership.fee())
@@ -88,6 +92,8 @@ def test_unwind_oi_removed(
 
     assert oi_shares_build > 0
     assert poi_build > 0
+
+    balance = token.balanceOf(ovl_collateral)
 
     # Unwind
     tx_unwind = ovl_collateral.unwind(

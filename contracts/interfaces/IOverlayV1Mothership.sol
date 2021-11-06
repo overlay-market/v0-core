@@ -2,11 +2,12 @@
 pragma solidity ^0.8.7;
 
 import "./IOverlayToken.sol";
+import "./IOverlayTokenNew.sol";
 
 interface IOverlayV1Mothership {
 
     function ovl () external view returns (
-        IOverlayToken ovl_
+        IOverlayTokenNew ovl_
     );
 
     function marketActive(

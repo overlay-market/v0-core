@@ -45,8 +45,17 @@ interface IOverlayV1Market is IERC1155 {
 
     function oiCap () external view returns (uint256);
 
-    // TODO: make brrrrd() function ?
     function brrrrd () external view returns (int256);
+    function pressure (
+        bool _isLong,
+        uint _oi,
+        uint _cap
+    ) external view returns (uint256);
+    function impact (
+        bool _isLong,
+        uint _oi,
+        uint _cap
+    ) external view returns (uint256);
 
     function pbnj () external view returns (uint256);
     function priceFrameCap() external view returns (int256);
