@@ -8,49 +8,6 @@ def print_logs(tx):
     for i in range(len(tx.events['log'])):
         print(tx.events['log'][i]['k'] + ": " + str(tx.events['log'][i]['v']))
 
-
-def test_set_impact_window(
-  market,
-  gov,
-):
-  # test updating _impactWindow only in setComptrollerParams func
-  input_impact_window = 601
-
-  # record initial values
-  initial_static_cap = market.oiCap()
-  initial_lmbda = market.lmbda()
-  initial_brrrr_expected = market.brrrrdExpected()
-  initial_brrrr_window_macro = market.brrrrdWindowMacro()
-  initial_brrrr_window_micro = market.brrrrdWindowMicro()
-
-  market.setComptrollerParams(
-    input_impact_window,
-    initial_lmbda,
-    initial_static_cap,
-    initial_brrrr_expected,
-    initial_brrrr_window_macro,
-    initial_brrrr_window_micro,
-    {"from": gov}
-  )
-
-  current_impact_window = market.impactWindow()
-  current_static_cap = market.oiCap()
-  current_lmbda = market.lmbda()
-  current_brrrr_expected = market.brrrrdExpected()
-  current_brrrr_window_macro = market.brrrrdWindowMacro()
-  current_brrrr_window_micro = market.brrrrdWindowMicro()
-
-  # test current impact window equals input value
-  assert int(current_impact_window) == int(input_impact_window)
-
-  # test other params are unchanged
-  assert int(current_static_cap) == int(initial_static_cap)
-  assert int(current_lmbda) == int(initial_lmbda)
-  assert int(current_brrrr_expected) == int(initial_brrrr_expected)
-  assert int(current_brrrr_window_macro) == int(initial_brrrr_window_macro)
-  assert int(current_brrrr_window_micro) == int(initial_brrrr_window_micro)
-
-
 def test_set_static_cap(
   market,
   gov
@@ -58,14 +15,12 @@ def test_set_static_cap(
   # test updating _staticCap only in setComptrollerParams func
   input_static_cap = int(800000 * 1e19)
 
-  initial_impact_window = market.impactWindow()
   initial_lmbda = market.lmbda()
   initial_brrrr_expected = market.brrrrdExpected()
   initial_brrrr_window_macro = market.brrrrdWindowMacro()
   initial_brrrr_window_micro = market.brrrrdWindowMicro()
 
   market.setComptrollerParams(
-    initial_impact_window,
     initial_lmbda,
     input_static_cap,
     initial_brrrr_expected,
@@ -74,7 +29,6 @@ def test_set_static_cap(
     {"from": gov}
   )
 
-  current_impact_window = market.impactWindow()
   current_static_cap = market.oiCap()
 
   current_lmbda = market.lmbda()
@@ -86,7 +40,6 @@ def test_set_static_cap(
   assert int(current_static_cap) == int(input_static_cap)
 
   # test other params are unchanged
-  assert int(current_impact_window) == int(initial_impact_window)
   assert int(current_lmbda) == int(initial_lmbda)
   assert int(current_brrrr_expected) == int(initial_brrrr_expected)
   assert int(current_brrrr_window_macro) == int(initial_brrrr_window_macro)
@@ -100,14 +53,12 @@ def test_brrrr_fade(
   # test updating _brrrrFade only in setComptrollerParams func
   input_brrrr_expected = 1e19
 
-  initial_impact_window = market.impactWindow()
   initial_static_cap = market.oiCap()
   initial_lmbda = market.lmbda()
   initial_brrrr_window_macro = market.brrrrdWindowMacro()
   initial_brrrr_window_micro = market.brrrrdWindowMicro()
 
   market.setComptrollerParams(
-    initial_impact_window,
     initial_lmbda,
     initial_static_cap,
     input_brrrr_expected,
@@ -116,7 +67,6 @@ def test_brrrr_fade(
     {"from": gov}
   )
 
-  current_impact_window = market.impactWindow()
   current_static_cap = market.oiCap()
   current_lmbda = market.lmbda()
   current_brrrr_expected = market.brrrrdExpected()
@@ -127,7 +77,6 @@ def test_brrrr_fade(
   assert int(current_brrrr_expected) == int(input_brrrr_expected)
 
   # test other params are unchanged
-  assert int(current_impact_window) == int(initial_impact_window)
   assert int(current_static_cap) == int(initial_static_cap)
   assert int(current_lmbda) == int(initial_lmbda)
   assert int(current_brrrr_window_macro) == int(initial_brrrr_window_macro)
@@ -139,7 +88,6 @@ def test_set_comptroller_params(
   gov
 ):
   # set all params of setComptrollerParams func
-  input_impact_window = 601
   input_static_cap = int(800000 * 1e19)
   input_lmbda = market.lmbda()
   input_brrrr_expected = 1e19
@@ -147,7 +95,6 @@ def test_set_comptroller_params(
   input_brrrr_window_micro = 500
 
   market.setComptrollerParams(
-    input_impact_window,
     input_lmbda,
     input_static_cap,
     input_brrrr_expected,
@@ -156,7 +103,6 @@ def test_set_comptroller_params(
     {"from": gov}
   )
 
-  current_impact_window = market.impactWindow()
   current_static_cap = market.oiCap()
   current_lmbda = market.lmbda()
   current_brrrr_expected = market.brrrrdExpected()
@@ -164,7 +110,6 @@ def test_set_comptroller_params(
   current_brrrr_window_micro = market.brrrrdWindowMicro()
 
   # test all variables updated
-  assert int(current_impact_window) == int(input_impact_window)
   assert int(current_static_cap) == int(input_static_cap)
   assert int(current_lmbda) == int(input_lmbda)
   assert int(current_brrrr_expected) == int(input_brrrr_expected)
@@ -172,82 +117,23 @@ def test_set_comptroller_params(
   assert int(current_brrrr_window_micro) == int(input_brrrr_window_micro)
 
 
-def test_set_update_period_only(
-  market,
-  gov
-):
-
-  input_update_period = 110
-
-  # grab initial _updatePeriod _compoundingPeriod values
-  initial_update_period = market.updatePeriod()
-  initial_compounding_period = market.compoundingPeriod()
-
-  # set_updatePeriod only, without _compoundingPeriod
-  market.setPeriods(input_update_period,
-                    initial_compounding_period, {"from": gov})
-
-  # grab current _updatePeriod _compoundingPeriod values
-  current_update_period = market.updatePeriod()
-  current_compounding_period = market.compoundingPeriod()
-
-  # test _updatePeriod for updated value
-  assert int(current_update_period) == int(input_update_period)
-
-  # test _compoundingPeriod did not change
-  assert int(current_compounding_period) == int(initial_compounding_period)
-
-
-def test_set_compounding_period_only(
+def test_set_compounding_period(
   market,
   gov
 ):
 
   input_compounding_period = 660
 
-  # grab initial _compoundingPeriod, _updatePeriod values
+  # grab initial _compoundingPeriod
   initial_compounding_period = market.compoundingPeriod()
-  initial_update_period = market.updatePeriod()
 
-  # set _compoundingPeriod only, without _updatePeriod
-  market.setPeriods(initial_update_period,
-                    input_compounding_period, {"from": gov})
+  # set _compoundingPeriod 
+  market.setPeriods(input_compounding_period, {"from": gov})
 
-  # grab current _compoundingPeriod, _updatePeriod values
+  # grab current _compoundingPeriod
   current_compounding_period = market.compoundingPeriod()
-  current_update_period = market.updatePeriod()
 
   # test _compoundingPeriod updated to input value
-  assert int(current_compounding_period) == int(input_compounding_period)
-
-  # test _updatePeriod is same as initial
-  assert int(current_update_period) == int(initial_update_period)
-
-
-def test_set_update_and_compounding_period(
-  market,
-  gov
-):
-
-  input_update_period = 110
-  input_compounding_period = 660
-
-  # grab initial _updatePeriod, _compoundingPeriod values
-  initial_update_period = market.updatePeriod()
-  initial_compounding_period = market.compoundingPeriod()
-
-  # set new _updatePeriod, _compoundingPeriod values
-  market.setPeriods(input_update_period,
-                    input_compounding_period, {"from": gov})
-
-  # grab updated _updatePeriod, _compoundingPeriod values
-  current_update_period = market.updatePeriod()
-  current_compounding_period = market.compoundingPeriod()
-
-  # test _updatePeriod is updated
-  assert int(current_update_period) == int(input_update_period)
-
-  # test _compoundingPeriod is updated
   assert int(current_compounding_period) == int(input_compounding_period)
 
 
@@ -292,37 +178,14 @@ def test_set_spread(
   assert int(current_spread) == int(input_spread)
 
 
-def test_set_price_frame_cap(
-  market,
-  gov
-):
-  # test updating price frame cap
-  input_price_frame_cap = 5e19
-
-  # grab initial _priceFrameCap
-  initial_price_frame_cap = market.priceFrameCap()
-
-  # set new price frame cap
-  market.setPriceFrameCap(input_price_frame_cap, {"from": gov})
-
-  # grab current price frame cap
-  current_price_frame_cap = market.priceFrameCap()
-
-  # test current price frame cap equals updated input value
-  assert int(current_price_frame_cap) == int(input_price_frame_cap)
-
-
 def test_set_everything(
   market,
   gov
 ):
   # pass in inputs into setEverything function
   input_k = 346888760971066
-  input_price_frame_cap = 5e19
   input_spread = .00573e19
-  input_update_period = 110
   input_compounding_period = 660
-  input_impact_window = 601
   input_static_cap = int(800000 * 1e19)
   input_brrrr_expected = 1e19
   input_brrrr_window_macro = 6000
@@ -332,11 +195,8 @@ def test_set_everything(
 
   market.setEverything(
     input_k,
-    input_price_frame_cap,
     input_spread,
-    input_update_period,
     input_compounding_period,
-    input_impact_window,
     input_lmbda,
     input_static_cap,
     input_brrrr_expected,
@@ -347,11 +207,8 @@ def test_set_everything(
 
   # grab all current variables
   current_k = market.k()
-  current_price_frame_cap = market.priceFrameCap()
   current_spread = market.pbnj()
-  current_update_period = market.updatePeriod()
   current_compounding_period = market.compoundingPeriod()
-  current_impact_window = market.impactWindow()
   current_lmbda = market.lmbda()
   current_static_cap = market.oiCap()
   current_brrrr_expected = market.brrrrdExpected()
@@ -361,15 +218,9 @@ def test_set_everything(
   # test all current values to be updated
   assert int(current_k) == int(input_k)
 
-  assert int(current_price_frame_cap) == int(input_price_frame_cap)
-
   assert int(current_spread) == int(input_spread)
 
-  assert int(current_update_period) == int(input_update_period)
-
   assert int(current_compounding_period) == int(input_compounding_period)
-
-  assert int(current_impact_window) == int(input_impact_window)
 
   assert int(current_lmbda) == int(input_lmbda)
 

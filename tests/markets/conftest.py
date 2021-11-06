@@ -22,10 +22,9 @@ PRICE_POINTS_END = 100
 PRICE_WINDOW_MACRO = 3600
 PRICE_WINDOW_MICRO = 600
 
-UPDATE_PERIOD = 100
 COMPOUND_PERIOD = 600
 
-IMPACT_WINDOW = 600
+IMPACT_WINDOW = PRICE_WINDOW_MICRO
 
 LAMBDA = .6e18
 STATIC_CAP = 370400e18
@@ -161,7 +160,6 @@ def comptroller(gov, feed_infos, token, feed_owner):
     _, marketFeed, depthFeed, quote = get_uni_feeds(feed_owner, feed_infos)
 
     comptroller = gov.deploy(ComptrollerShim,
-                             IMPACT_WINDOW,
                              LAMBDA,
                              STATIC_CAP,
                              BRRRR_EXPECTED,
@@ -190,12 +188,10 @@ def comptroller(gov, feed_infos, token, feed_owner):
             1e18,                # amount in
             PRICE_WINDOW_MACRO,  # macro window
             PRICE_WINDOW_MICRO,  # micro price window
-            343454218783234,     # k
             5e18,                # price frame cap
+            343454218783234,     # k
             .00573e18,           # spread
-            UPDATE_PERIOD,       # update period
             COMPOUND_PERIOD,     # compound period
-            IMPACT_WINDOW,       # impact window
             0,                   # lambda
             OI_CAP*1e18,         # oi cap
             BRRRR_EXPECTED,      # brrrr expected
@@ -246,10 +242,10 @@ def create_mothership(token, feed_infos, fees, alice, bob, gov, feed_owner, requ
             market_feed,
             quote,
             eth,
-            *ovlm_args[:3]
+            *ovlm_args[:4]
         )
 
-        market.setEverything(*ovlm_args[3:], {"from": gov})
+        market.setEverything(*ovlm_args[4:], {"from": gov})
         mothership.initializeMarket(market, {"from": gov})
 
         ovl_collateral = gov.deploy(ovlc_type, "our_uri", mothership)

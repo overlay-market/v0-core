@@ -32,9 +32,14 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         address _eth,
         uint128 _amountIn,
         uint256 _macroWindow,
-        uint256 _microWindow
-    ) OverlayV1Market(
+        uint256 _microWindow,
+        uint256 _priceFrameCap
+    ) OverlayV1Market (
         _mothership
+    ) OverlayV1Comptroller (
+        _microWindow
+    ) OverlayV1PricePoint (
+        _priceFrameCap
     ) {
 
         // immutables
@@ -145,7 +150,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             uint _ovlPrice = OracleLibraryV2.getQuoteAtTick(
                 int24((_ticks[0] - _ticks[1]) / int56(int32(int(macroWindow)))),
                 1e18,
-                address(ovl),
+                ovl,
                 eth
             );
 

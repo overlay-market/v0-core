@@ -32,7 +32,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     Position.Info[] public positions;
 
     IOverlayV1Mothership public immutable mothership;
-    IOverlayTokenNew public ovl;
+    IOverlayTokenNew immutable public ovl;
 
     uint256 public fees;
     uint256 public liquidations;
