@@ -59,11 +59,8 @@ def test_unwind_oi_removed(
         oi,
         leverage,
         is_long
-        ):
+    ):
 
-    # oi = 1
-    # leverage = 1
-    # is_long = False
 
     # Build parameters
     oi *= 1e16
@@ -87,13 +84,13 @@ def test_unwind_oi_removed(
     (_, _, _, price_point, oi_shares_build,
         debt_build, cost_build) = ovl_collateral.positions(pid)
 
-    chain.mine(timedelta=market.compoundingPeriod()-10)
 
+    # TODO: When this changed to compoundingPeriod - 10 there was a problem. 
+    # Why?
+    chain.mine(timedelta=100)
 
     assert oi_shares_build > 0
     assert poi_build > 0
-
-    balance = token.balanceOf(ovl_collateral)
 
     # Unwind
     tx_unwind = ovl_collateral.unwind(
