@@ -87,7 +87,8 @@ def test_unwind_oi_removed(
     (_, _, _, price_point, oi_shares_build,
         debt_build, cost_build) = ovl_collateral.positions(pid)
 
-    chain.mine(timedelta=market.updatePeriod()+1)
+    chain.mine(timedelta=market.compoundingPeriod()-10)
+
 
     assert oi_shares_build > 0
     assert poi_build > 0
@@ -393,48 +394,6 @@ def test_comptroller_recorded_mint_or_burn(
 
     pass
     # TODO: needs updating to new comptroller
-
-    # update_period = market.updatePeriod()
-    # oi *= 1e16
-    # collateral = get_collateral(oi / leverage, leverage, mothership.fee())
-
-    # token.approve(ovl_collateral, 1e50, { 'from': bob })
-
-    # # when we unwind, seeing if there was a mint/burn,
-    # # and see if the brrrrd variable has recorded it
-    # tx = ovl_collateral.build(
-    #     market,
-    #     1e18,
-    #     1,
-    #     True,
-    #     { 'from': bob }
-    # )
-
-    # pos_id = tx.events['Build']['positionId']
-    # bobs_shares = tx.events['Build']['oi']
-
-    # chain.mine(timedelta=update_period*2)
-
-    # tx = ovl_collateral.unwind(
-    #     pos_id,
-    #     bobs_shares,
-    #     { "from": bob }
-    # )
-
-    # burnt = 0
-    # minted = 0
-    # for _, v in enumerate(tx.events['Transfer']):
-    #     if v['to'] == '0x0000000000000000000000000000000000000000':
-    #         burnt = v['value']
-    #     elif v['from'] == '0x0000000000000000000000000000000000000000':
-    #         minted = v['value']
-
-    # brrrrd = market.brrrrd()
-
-    # if burnt > 0:
-    #     assert brrrrd == -burnt
-    # else:
-    #     assert minted == brrrrd
 
 
 @given(

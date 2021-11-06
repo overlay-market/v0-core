@@ -16,7 +16,8 @@ contract OverlayV1UniswapV3MarketZeroLambdaShim is OverlayV1UniswapV3Market {
         address _eth,
         uint128 _amountIn,
         uint256 _macroWindow,
-        uint256 _microWindow
+        uint256 _microWindow,
+        uint256 _priceFrameCap
     ) OverlayV1UniswapV3Market (
         _mothership,
         _ovlFeed,
@@ -25,7 +26,8 @@ contract OverlayV1UniswapV3MarketZeroLambdaShim is OverlayV1UniswapV3Market {
         _eth,
         _amountIn,
         _macroWindow,
-        _microWindow
+        _microWindow,
+        _priceFrameCap
     ) { }
 
 

@@ -26,7 +26,6 @@ def test_only_gov_can_update_market(
   input_k = 346888760971066
   input_price_frame_cap = 5e19
   input_spread = .00573e19
-  input_update_period = 110
   input_compounding_period = 660
   input_impact_window = 601
   input_static_cap = int(800000 * 1e19)
@@ -49,7 +48,6 @@ def test_only_gov_can_update_market(
 
   with brownie.reverts(EXPECTED_ERROR_MSG):
       market.setPeriods(
-          input_update_period,
           input_compounding_period,
           {"from": bob})
 
@@ -64,16 +62,10 @@ def test_only_gov_can_update_market(
           {"from": fees})
 
   with brownie.reverts(EXPECTED_ERROR_MSG):
-      market.setPriceFrameCap(
-          input_price_frame_cap,
-          {"from": comptroller})
-
-  with brownie.reverts(EXPECTED_ERROR_MSG):
       market.setEverything(
           input_k,
           input_price_frame_cap,
           input_spread,
-          input_update_period,
           input_compounding_period,
           input_impact_window,
           input_static_cap,

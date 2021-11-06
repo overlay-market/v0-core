@@ -26,7 +26,6 @@ contract ComptrollerShim is OverlayV1Comptroller {
     uint public microWindow;
 
     constructor (
-        uint _impactWindow,
         uint _lmbda,
         uint _staticCap,
         uint _brrrrdExpected,
@@ -38,9 +37,10 @@ contract ComptrollerShim is OverlayV1Comptroller {
         address _ovlFeed,
         address _ovl,
         address _eth
-    ) {
+    ) OverlayV1Comptroller (
+        _priceWindowMicro
+    ){
 
-        impactWindow = _impactWindow;
         lmbda = _lmbda;
         staticCap = _staticCap;
         brrrrdExpected = _brrrrdExpected;

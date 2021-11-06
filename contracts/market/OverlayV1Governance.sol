@@ -19,12 +19,10 @@ abstract contract OverlayV1Governance is
     bytes32 constant private GOVERNOR = keccak256("GOVERNOR");
     bytes32 constant private MARKET = keccak256("MARKET");
 
-    IOverlayToken public ovl;
+    address public immutable ovl;
     IOverlayV1Mothership public immutable mothership;
 
     uint256 public leverageMax;
-
-    uint256 public priceFrameCap;
 
     mapping (address => bool) public isCollateral;
 
@@ -43,11 +41,12 @@ abstract contract OverlayV1Governance is
         _;
     }
 
-    constructor(address _mothership) {
+    constructor(
+        address _mothership
+    ) {
 
-        // immutables
         mothership = IOverlayV1Mothership(_mothership);
-        ovl = IOverlayV1Mothership(_mothership).ovl();
+        ovl = address(IOverlayV1Mothership(_mothership).ovl());
 
     }
 
@@ -63,19 +62,10 @@ abstract contract OverlayV1Governance is
 
     }
 
-    function setOVL () public onlyGovernor {
-
-        ovl = mothership.ovl();
-
-    }
-
     function setEverything (
         uint256 _k,
-        uint256 _priceFrameCap,
         uint256 _pbnj,
-        uint256 _updatePeriod,
         uint256 _compoundPeriod,
-        uint256 _impactWindow,
         uint256 _lmbda,
         uint256 _staticCap,
         uint256 _brrrrdExpected,
@@ -85,33 +75,19 @@ abstract contract OverlayV1Governance is
 
         setK(_k);
 
-        setPriceFrameCap(_priceFrameCap);
-
         setSpread(_pbnj);
 
         setPeriods(
-            _updatePeriod,
             _compoundPeriod
         );
 
         setComptrollerParams(
-            _impactWindow,
             _lmbda,
             _staticCap,
             _brrrrdExpected,
             _brrrrdWindowMacro,
             _brrrrdWindowMicro
         );
-
-    }
-
-    function setPriceFrameCap (
-        uint256 _priceFrameCap
-    ) public onlyGovernor {
-
-        require(ONE < _priceFrameCap, "OVLV1:!priceFrame");
-
-        priceFrameCap = _priceFrameCap;
 
     }
 
@@ -130,21 +106,14 @@ abstract contract OverlayV1Governance is
     }
 
     function setPeriods(
-        uint256 _updatePeriod,
         uint256 _compoundingPeriod
     ) public onlyGovernor {
 
-        // TODO: requires on params; particularly leverageMax wrt MAX_FEE and cap
-        require(_updatePeriod >= 1, "OVLV1:!update");
-        require(_updatePeriod <= _compoundingPeriod, "OVLV1:update>compound");
-
-        updatePeriod = _updatePeriod;
         compoundingPeriod = _compoundingPeriod;
 
     }
 
     function setComptrollerParams (
-        uint256 _impactWindow,
         uint256 _lmbda,
         uint256 _staticCap,
         uint256 _brrrrExpected,
@@ -152,7 +121,6 @@ abstract contract OverlayV1Governance is
         uint256 _brrrrdWindowMicro
     ) public onlyGovernor {
 
-        impactWindow = _impactWindow;
         lmbda = _lmbda;
         staticCap = _staticCap;
         brrrrdExpected = _brrrrExpected;

@@ -8,8 +8,6 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 
 abstract contract OverlayV1Comptroller {
 
-    // event log(string k, uint v);
-
     using FixedPoint for uint256;
 
     uint256 private constant INVERSE_E = 0x51AF86713316A9A;
@@ -43,8 +41,8 @@ abstract contract OverlayV1Comptroller {
         uint anti;
     }
 
+    uint256 immutable impactWindow;
     uint256 internal staticCap;
-    uint256 public impactWindow;
     uint256 public lmbda;
 
     uint256[2] public brrrrdAccumulator;
@@ -53,7 +51,11 @@ abstract contract OverlayV1Comptroller {
     uint256 public brrrrdExpected;
     uint256 public brrrrdFiling;
 
-    constructor () {
+    constructor (
+        uint256 _impactWindow
+    ) {
+
+        impactWindow = _impactWindow;
 
         impactRollers[0] = Roller({
             time: block.timestamp,

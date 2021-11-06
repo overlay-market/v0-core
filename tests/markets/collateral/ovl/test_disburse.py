@@ -36,8 +36,6 @@ def test_disburse(mothership,
 
     token.approve(ovl_collateral, 1e70, {"from": bob})
 
-    update_period = market.updatePeriod()
-
     # do an initial update before build so all oi is queued
     market.update({"from": bob})
 
