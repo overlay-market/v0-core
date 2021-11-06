@@ -999,13 +999,7 @@ def test_build_multiple_in_multiple_impact_windows(
     impact_window = market.impactWindow()
     impact_time_delta = 2 * int(impact_window / num_builds)
 
-    print("cap...", market.oiCap())
-    _lmbda = market.lmbda()
-    print("_lmbda", _lmbda)
-    print("lmbda", lmbda*1e18)
-
     market.setComptrollerParams(
-        market.impactWindow(),
         lmbda*1e18,
         market.oiCap(),
         market.brrrrdExpected(),
@@ -1013,8 +1007,6 @@ def test_build_multiple_in_multiple_impact_windows(
         market.brrrrdWindowMicro(),
         {'from': gov}
     )
-
-    print("cap...", market.oiCap())
 
     oi *= 1e16
     collateral = oi / leverage
@@ -1033,14 +1025,10 @@ def test_build_multiple_in_multiple_impact_windows(
     build_times = []
     qs = []
 
-    print("cap...", market.oiCap())
-
     build_time = brownie.chain.time()
     for i in range(num_builds):
         build_time += impact_time_delta + 1
         build_times.append(build_time)
-
-        print("cap.......", market.oiCap())
 
         brownie.chain.mine(timestamp=build_time)
 
@@ -1077,10 +1065,6 @@ def test_build_multiple_in_multiple_impact_windows(
         # get prior state of market
         market_oi = market.oiLong() if is_long else market.oiShort()
         market_oi_cap = market.oiCap()  # accounts for depth, brrrd, static
-
-        print("collateral", collateral)
-        print("oi", market_oi)
-        print("cap", market_oi_cap)
 
         # in case have large impact, make sure to check for revert
         oi_min_adjusted = 0
