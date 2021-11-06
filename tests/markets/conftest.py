@@ -160,7 +160,6 @@ def comptroller(gov, feed_infos, token, feed_owner):
     _, marketFeed, depthFeed, quote = get_uni_feeds(feed_owner, feed_infos)
 
     comptroller = gov.deploy(ComptrollerShim,
-                             IMPACT_WINDOW,
                              LAMBDA,
                              STATIC_CAP,
                              BRRRR_EXPECTED,
