@@ -17,7 +17,12 @@ contract OverlayV1UniswapV3MarketZeroLambdaShim is OverlayV1UniswapV3Market {
         uint128 _amountIn,
         uint256 _macroWindow,
         uint256 _microWindow,
-        uint256 _priceFrameCap
+        uint256 _priceFrameCap,
+        int24 _mu,
+        int24 _sigUp,
+        int24 _sigDown,
+        uint24 _ia,
+        uint256 _tauMax
     ) OverlayV1UniswapV3Market (
         _mothership,
         _ovlFeed,
@@ -27,7 +32,12 @@ contract OverlayV1UniswapV3MarketZeroLambdaShim is OverlayV1UniswapV3Market {
         _amountIn,
         _macroWindow,
         _microWindow,
-        _priceFrameCap
+        _priceFrameCap,
+        _mu,
+        _sigUp,
+        _sigDown,
+        _ia,
+        _tauMax
     ) { }
 
 
@@ -38,8 +48,8 @@ contract OverlayV1UniswapV3MarketZeroLambdaShim is OverlayV1UniswapV3Market {
 
     }
 
-    function oiCap () public override view returns ( 
-        uint cap_ 
+    function oiCap () public override view returns (
+        uint cap_
     ) {
 
         cap_ = super.oiCap();

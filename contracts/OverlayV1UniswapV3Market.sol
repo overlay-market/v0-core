@@ -24,6 +24,15 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     address internal immutable eth;
     bool internal immutable ethIs0;
 
+    int24 public mu;
+    int24 public sigUp;
+    int24 public sigDown;
+    uint24 public ia;
+    uint public tauMax;
+
+    int24 internal lastTick;
+    uint internal lastRead;
+
     constructor(
         address _mothership,
         address _ovlFeed,
@@ -33,7 +42,12 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         uint128 _amountIn,
         uint256 _macroWindow,
         uint256 _microWindow,
-        uint256 _priceFrameCap
+        uint256 _priceFrameCap,
+        int24 _mu,
+        int24 _sigUp,
+        int24 _sigDown,
+        uint24 _ia,
+        uint256 _tauMax
     ) OverlayV1Market (
         _mothership
     ) OverlayV1Comptroller (
@@ -51,30 +65,52 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         macroWindow = _macroWindow;
         microWindow = _microWindow;
 
+        // TODO: set mu, sig, ia, tauMax
+
         address _token0 = IUniswapV3Pool(_marketFeed).token0();
         address _token1 = IUniswapV3Pool(_marketFeed).token1();
 
-        base = _token0 != _quote ? _token0 : _token1;
-        quote = _token0 == _quote ? _token0 : _token1;
+        address _base = _token0 != _quote ? _token0 : _token1;
+        address _quote = _token0 == _quote ? _token0 : _token1;
 
+        base = _base;
+        quote = _quote;
+
+        _initialize(
+            _marketFeed,
+            _macroWindow,
+            _amountIn,
+            _base,
+            _quote
+        );
+    }
+
+    function _initialize(
+        address _marketFeed,
+        uint256 _macroWindow,
+        uint128 _amountIn,
+        address _base,
+        address _quote
+    ) internal {
         int24 _tick = OracleLibraryV2.consult(
             _marketFeed,
             uint32(_macroWindow),
             uint32(0)
         );
+        lastTick = _tick;
+        lastRead = block.timestamp;
 
         uint _price = OracleLibraryV2.getQuoteAtTick(
             _tick,
-            uint128(_amountIn),
-            _token0 != _quote ? _token0 : _token1,
-            _token0 == _quote ? _token0 : _token1
+            _amountIn,
+            _base,
+            _quote
         );
 
         setPricePointNext(insertSpread(_price, _price));
 
         updated = block.timestamp;
         compounded = block.timestamp;
-
     }
 
 
@@ -89,7 +125,8 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         bool _depth
     ) public view returns (
         PricePoint memory price_,
-        uint256 depth_
+        uint256 depth_,
+        int24 tick_
     ) {
 
         int56[] memory _ticks;
@@ -103,8 +140,11 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
             ( _ticks, _liqs ) = IUniswapV3Pool(marketFeed).observe(_secondsAgo);
 
+            tick_ = int24((_ticks[0] - _ticks[2]) / int56(int32(int(macroWindow))));
+            _checkTickRead(tick_);
+
             uint _macroPrice = OracleLibraryV2.getQuoteAtTick(
-                int24((_ticks[0] - _ticks[2]) / int56(int32(int(macroWindow)))),
+                tick_,
                 amountIn,
                 base,
                 quote
@@ -160,6 +200,41 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     }
 
+    function _checkTickRead(int24 _tick) internal view {
+        uint _now = block.timestamp;
+        uint _before = lastRead;
+        uint _tauMax = tauMax;
+        uint _tau = _now - _before;
+
+        int24 _mu = mu;
+        uint24 _ia = ia;
+
+        int24 _lastTick = lastTick;
+        int24 _dtick = _tick - _lastTick;
+
+        if (_dtick >= 0) {
+            int _dtickMax;
+            if (_tau >= _tauMax) {
+                _dtickMax = type(int24).max;
+            } else {
+                int24 _sigUp = sigUp;
+                uint _sigFactor = _tau.powDown(uint(_ia));
+                _dtickMax = int(_mu) * int(_tau) + int(_sigUp) * int(_sigFactor);
+            }
+            require(int(_dtick) <= _dtickMax, "OVLV1:price>max");
+        } else {
+            int _dtickMin;
+            if (_tau >= _tauMax) {
+                _dtickMin = type(int24).min;
+            } else {
+                int24 _sigDown = sigDown;
+                uint _sigFactor = _tau.powDown(uint(_ia));
+                _dtickMin = int(_mu) * int(_tau) + int(_sigDown) * int(_sigFactor);
+            }
+            require(int(_dtick) >= _dtickMin, "OVLV1:price<min");
+        }
+    }
+
 
     /// @notice The price at the current block
     /// @dev Returns the price of the current block.
@@ -167,7 +242,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     /// the bid, the ask, TODO: ...and maybe the depth.
     function price () public view override returns (PricePoint memory price_) {
 
-        ( price_, ) = readFeed(true, false);
+        ( price_, , ) = readFeed(true, false);
 
     }
 
@@ -178,7 +253,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     /// @return depth_ The time weighted liquidity in OVL terms.
     function depth () public view override returns (uint depth_) {
 
-        (   ,depth_ ) = readFeed(false, true);
+        (   ,depth_, ) = readFeed(false, true);
 
     }
 
@@ -228,6 +303,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         uint _depth;
         PricePoint memory _price;
+        int24 _tick;
         bool _readPrice = _now != _updated;
 
         if (_readDepth) {
@@ -247,9 +323,13 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
                 _surpassed = _brrrrd > _brrrrdExpected * 2;
             }
 
-            ( _price, _depth ) = readFeed(_readPrice, _burnt || _expected || !_surpassed);
+            ( _price, _depth, _tick ) = readFeed(_readPrice, _burnt || _expected || !_surpassed);
 
-            if (_readPrice) setPricePointNext(_price);
+            if (_readPrice) {
+                setPricePointNext(_price);
+                lastTick = _tick;
+                lastRead = block.timestamp;
+            }
 
             // Q: why not just use oiCap() here?
             cap_ = _surpassed ? 0 : _burnt || _expected
@@ -258,9 +338,12 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         } else if (_readPrice) {
 
-            ( _price, ) = readFeed(true, false);
+            ( _price, , _tick ) = readFeed(true, false);
 
             setPricePointNext(_price);
+
+            lastTick = _tick;
+            lastRead = block.timestamp;
 
         }
 
