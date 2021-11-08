@@ -70,10 +70,10 @@ def deploy_uni_pool(factory, token0, token1, path):
 
     base = os.path.dirname(os.path.abspath(__file__))
 
-    with open(os.path.normpath(os.path.join(base, path + '_raw_uni_framed.json'))) as f: 
+    with open(os.path.normpath(os.path.join(base, path + '_raw_uni_framed.json'))) as f:  # noqa: E501
         data = json.load(f)
 
-    with open(os.path.normpath(os.path.join(base, path + '_reflected.json'))) as f: 
+    with open(os.path.normpath(os.path.join(base, path + '_reflected.json'))) as f:  # noqa: E501
         beginning = json.load(f)['timestamp'][0]
 
     factory.createPool(token0, token1)

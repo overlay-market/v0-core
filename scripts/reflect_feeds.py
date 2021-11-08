@@ -13,7 +13,7 @@ ONE_DAY = 86400
 
 def reflect_feed(path):
     base = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.normpath(os.path.join(base, path + '_raw_uni.json'))) as f:  # noqa: 501
+    with open(os.path.normpath(os.path.join(base, path + '_raw_uni.json'))) as f:  # noqa: E501
         feed = json.load(f)
 
     feed.reverse()
@@ -100,10 +100,10 @@ def reflect_feed(path):
         'shims': shims
     }
 
-    with open(os.path.normpath(os.path.join(base, path + '_reflected.json')), 'w+') as f:  # noqa: 501
+    with open(os.path.normpath(os.path.join(base, path + '_reflected.json')), 'w+') as f:  # noqa: E501
         json.dump(reflected, f)
 
-    with open(os.path.normpath(os.path.join(base, path + '_raw_uni_framed.json')), 'w+') as f:  # noqa: 501
+    with open(os.path.normpath(os.path.join(base, path + '_raw_uni_framed.json')), 'w+') as f:  # noqa: E501
         json.dump(mock, f)
 
 

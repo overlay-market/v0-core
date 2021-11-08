@@ -20,14 +20,14 @@ def ENV(key):
 def get_balances_for_position_in_accounts_dot_balances(accounts, pos):
     return {
         to_address(balance['account']['address']): balance['shares']
-        for sublist in [x['balances'] for x in accounts if 0 < len(x['balances'])]  # noqa: 501
+        for sublist in [x['balances'] for x in accounts if 0 < len(x['balances'])]  # noqa: E501
         for balance in sublist
         if balance['position'] == str(pos)
     }
 
 
 def query(gql):
-    return json.loads(requests.post(subgraph, json={'query': gql}).text)['data']  # noqa: 501
+    return json.loads(requests.post(subgraph, json={'query': gql}).text)['data']  # noqa: E501
 
 
 def test_alice_and_bob_exist():
@@ -107,21 +107,21 @@ def test_batch_transfer_positions_3_to_5():
 
     accounts = result['accounts']
 
-    position_3 = get_balances_for_position_in_accounts_dot_balances(accounts, 3)  # noqa: 501
+    position_3 = get_balances_for_position_in_accounts_dot_balances(accounts, 3)  # noqa: E501
 
     assert position_3[ENV('ALICE')] == (ENV('ALICE_POSITION_3'),
            'alice has unexpected position 3 shares')
     assert position_3[ENV('BOB')] == (ENV('BOB_POSITION_3'),
            'bob has unexpected position 3 shares')
 
-    position_4 = get_balances_for_position_in_accounts_dot_balances(accounts, 4)  # noqa: 501
+    position_4 = get_balances_for_position_in_accounts_dot_balances(accounts, 4)  # noqa: E501
 
     assert position_4[ENV('ALICE')] == (ENV('ALICE_POSITION_4'),
            'alice has unexpected position 4 shares')
     assert position_4[ENV('BOB')] == (ENV('BOB_POSITION_4'),
            'bob has unexpected position 4 shares')
 
-    position_5 = get_balances_for_position_in_accounts_dot_balances(accounts, 5)  # noqa: 501
+    position_5 = get_balances_for_position_in_accounts_dot_balances(accounts, 5)  # noqa: E501
 
     assert position_5[ENV('ALICE')] == (ENV('ALICE_POSITION_5'),
            'alice has unexpected position 5 shares')
