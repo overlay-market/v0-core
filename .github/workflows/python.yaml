@@ -1,7 +1,6 @@
-name: Overlay V1 Repo Linter
+name: Overlay V1 Core Repo Linter
 
-on: [ push, pull_request ]
-
+on: [push, pull_request]
 
 jobs:
   flake8-lint:
@@ -16,3 +15,5 @@ jobs:
           python-version: "3.9"
       - name: flake8 lint
         uses: py-actions/flake8@v1
+        with:
+          max-line-length: "100"
