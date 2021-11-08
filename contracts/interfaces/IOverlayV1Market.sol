@@ -56,6 +56,7 @@ interface IOverlayV1Market is IERC1155 {
         uint _oi,
         uint _cap
     ) external view returns (uint256);
+    function depth() external view returns (uint256);
 
     function pbnj () external view returns (uint256);
     function priceFrameCap() external view returns (int256);

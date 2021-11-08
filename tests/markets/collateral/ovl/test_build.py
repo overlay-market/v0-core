@@ -7,6 +7,7 @@ from hypothesis import settings
 from pytest import approx, mark
 from decimal import Decimal
 
+
 def print_logs(tx):
     for i in range(len(tx.events['log'])):
         print(tx.events['log'][i]['k'] + ": " + str(tx.events['log'][i]['v']))
@@ -475,7 +476,6 @@ def test_entry_update_compounding_oi_onesided(
             is_long,
             compoundings
         ):
-    
 
     token.approve(ovl_collateral, collateral*2, {"from": bob})
 
@@ -768,7 +768,6 @@ def test_build_oi_adjusted_min(
         lmbda
 ):
 
-
     lmbda = float(lmbda)
 
     market.setComptrollerParams(
@@ -999,6 +998,10 @@ def test_build_multiple_in_multiple_impact_windows(
     impact_window = market.impactWindow()
     impact_time_delta = 2 * int(impact_window / num_builds)
 
+    print('oiCap before', market.oiCap())
+    print('depth before', market.depth())
+    print('lmbda before', market.lmbda())
+
     market.setComptrollerParams(
         lmbda*1e18,
         market.oiCap(),
@@ -1007,6 +1010,10 @@ def test_build_multiple_in_multiple_impact_windows(
         market.brrrrdWindowMicro(),
         {'from': gov}
     )
+
+    print('oiCap after', market.oiCap())
+    print('depth after', market.depth())
+    print('lmbda after', market.lmbda())
 
     oi *= 1e16
     collateral = oi / leverage
@@ -1081,7 +1088,6 @@ def test_build_multiple_in_multiple_impact_windows(
                 ovl_collateral.build(market, collateral, leverage, is_long,
                                      oi_min_adjusted, {"from": bob})
             break
-
 
         # build the position
         tx = ovl_collateral.build(market, collateral, leverage, is_long,
