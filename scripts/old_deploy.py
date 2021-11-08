@@ -1,4 +1,3 @@
-from brownie import *
 from brownie import interface
 from brownie import\
     OverlayV1UniswapV3Deployer,\
@@ -35,16 +34,18 @@ def get_mock_data():
         feeds = json.load(f)
     return feeds
 
+
 def seed_ovl(ovl_address, people):
     account = accounts.load('tester')
-    _from = {'from':account}
-    ovl = interface.IOverlayToken(ovl_address);
+    _from = {'from': account}
+    ovl = interface.IOverlayToken(ovl_address)
     supply = 8000000e18
     ovl.mint(account, supply, _from)
     for k, v in people.items():
         ovl.transfer(v, 80000e18, _from)
 
-def add_observations (address: str):
+
+def add_observations(address: str):
 
     mock_data = get_mock_data()
     obs = mock_data['UniswapV3: WETH / DAI .3%']['tick_cumulatives']
@@ -57,11 +58,12 @@ def add_observations (address: str):
     account = accounts.load('tester')
 
     while i < len(chunks):
-        uv3_mock.addObservations(chunks[i], { 'from': account })
+        uv3_mock.addObservations(chunks[i], {'from': account})
         total_obs = uv3_mock.observationsLength()
         i += 1
 
-def deploy_market_from_factory (factory, uv3mock):
+
+def deploy_market_from_factory(factory, uv3mock):
 
     tester = accounts.load('tester')
 
@@ -78,14 +80,14 @@ def deploy_market_from_factory (factory, uv3mock):
         True,
         600,
         1e18,
-        { 'from': tester }
+        {'from': tester}
     )
 
 
 def deploy_all ():
 
     account = accounts.load('tester')
-    _from = { 'from': account }
+    _from = {'from': account}
 
     mock_data = get_mock_data()
     obs = mock_data['UniswapV3: WETH / DAI .3%']['tick_cumulatives']
@@ -103,13 +105,13 @@ def deploy_all ():
         "0x6B175474E89094C44Da98b954EedeAC495271d0F",
         "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
         600
-    );
+    )
 
     print("created mock univ3 pool")
 
     uv3_mock_addr = uv3_factory_mock.allPools(0)
     uv3_mock = interface.IUniswapV3OracleMock(uv3_mock_addr)
-    uv3_mock.addObservations(chunks[0],_from)
+    uv3_mock.addObservations(chunks[0], _from)
 
     print("seeded mock pool with observations")
 
@@ -152,6 +154,6 @@ def main():
     # add_observations(deployments['univ3_pool_oracle_mock'])
 
     deploy_market_from_factory(
-        deployments['ovl_v1_uni_v3_factory'], 
-        deployments['univ3_pool_oracle_mock'] 
+        deployments['ovl_v1_uni_v3_factory'],
+        deployments['univ3_pool_oracle_mock']
     )
