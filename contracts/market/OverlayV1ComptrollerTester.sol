@@ -6,7 +6,9 @@ import "../libraries/FixedPoint.sol";
 import "./OverlayV1Governance.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
-abstract contract OverlayV1Comptroller {
+abstract contract OverlayV1ComptrollerTester {
+
+    event log(string k, uint v);
 
     using FixedPoint for uint256;
 
@@ -110,7 +112,7 @@ abstract contract OverlayV1Comptroller {
 
     }
 
-    function getBrrrrd () public view returns (
+    function getBrrrrd () public  returns (
         uint brrrrd_,
         uint antiBrrrrd_
     ) {
@@ -151,6 +153,10 @@ abstract contract OverlayV1Comptroller {
             uint _lastMoment,
             uint _impact ) = _intake(_isLong, _oi, _cap);
 
+        emit log("impact.time     :", _rollerImpact.time);
+        emit log("imapct.ying     :", _rollerImpact.ying);
+        emit log("impact.yang     :", _rollerImpact.yang);
+
         impactCycloid = roll(
             impactRollers,
             _rollerImpact,
@@ -187,7 +193,7 @@ abstract contract OverlayV1Comptroller {
         bool _isLong,
         uint _oi,
         uint _cap
-    ) internal view returns (
+    ) internal  returns (
         Roller memory rollerNow_,
         uint lastMoment_,
         uint impact_
@@ -252,7 +258,7 @@ abstract contract OverlayV1Comptroller {
     /// @notice The open interest cap for the market
     /// @dev Returns the open interest cap for the market.
     /// @return cap_ The open interest cap.
-    function oiCap () public virtual view returns (
+    function oiCap () public virtual  returns (
         uint cap_
     ) {
 
@@ -281,13 +287,13 @@ abstract contract OverlayV1Comptroller {
 
     /// @notice The time weighted liquidity of the market feed in OVL terms.
     /// @return depth_ The amount of liquidity in the market feed in OVL terms.
-    function depth () public virtual view returns (uint depth_);
+    function depth () public virtual  returns (uint depth_);
 
     function pressure (
         bool _isLong,
         uint _oi,
         uint _cap
-    ) public view returns (uint pressure_) {
+    ) public  returns (uint pressure_) {
         (   ,
             Roller memory _rollerNow,
             Roller memory _rollerImpact ) = scry(
@@ -308,7 +314,7 @@ abstract contract OverlayV1Comptroller {
         bool _isLong,
         uint _oi,
         uint _cap
-    ) public view returns (uint impact_) {
+    ) public  returns (uint impact_) {
 
         uint _pressure = pressure(_isLong, _oi, _cap);
 
@@ -386,36 +392,36 @@ abstract contract OverlayV1Comptroller {
         Roller[60] storage rollers,
         uint _cycloid,
         uint _ago
-    ) internal view returns (
+    ) internal  returns (
         uint lastMoment_,
         Roller memory rollerNow_,
         Roller memory rollerThen_
     ) {
 
+        emit log("in scry", _cycloid);
+
         uint _time = block.timestamp;
 
         rollerNow_ = rollers[_cycloid];
+        emit log("in scry rollernow time", rollerNow_.time);
 
-        // set latest roller time to now for rolling next
         lastMoment_ = rollerNow_.time;
-        rollerNow_.time = _time;
 
         uint _target = _time - _ago;
 
         // is latest roller less than target time
-        if (lastMoment_ <= _target) {
+        if (rollerNow_.time <= _target) {
 
-            // set values of earlier roller so computation works
+            // set latest roller time to now 
+            // and write values onto earlier roller
+            rollerNow_.time = _time;
             rollerThen_.ying = rollerNow_.ying;
             rollerThen_.yang = rollerNow_.yang;
 
-            return ( 
-                lastMoment_, 
-                rollerNow_, 
-                rollerThen_ 
-            );
+            return ( lastMoment_, rollerNow_, rollerThen_ );
 
         } 
+
 
         // start at oldest roller
         rollerThen_ = rollers[ ( _cycloid + 1 ) % CHORD ];
@@ -423,41 +429,125 @@ abstract contract OverlayV1Comptroller {
         // if uninitialized reset to beginning
         if (rollerThen_.time <= 1) rollerThen_ = rollers[0];
 
-        // if target within rollers, binary search
-        if (rollerThen_.time < _target) {
+        emit log("target ----->", _target);
 
+        emit log("then time -->", rollerThen_.time);
+
+        emit log("now time --->", lastMoment_);
+
+
+        // is target time is within rollers
+        if (_target > rollerThen_.time) { 
+            
+        emit log("roller then time", rollerThen_.time);
+        emit log("target time", _target);
+
+            // binary search before and closest to target
             rollerThen_ = binarySearch(
-                rollers, 
-                uint16(_cycloid), 
-                uint32(_target)
+                rollers,
+                uint32(_target),
+                uint16(_cycloid)
             );
 
-        }
+        } // otherwise simply return earliest roller
+
+        emit log("cycloid        :", _cycloid);
+        emit log("rollerNow.time :", rollerNow_.time);
+        emit log("target         :", _target);
+
+        // rollerThen_ = binarySearch(
+        //     rollers, 
+        //     uint16(_cycloid),
+        //     uint32(_target)
+        // );
+
+        // (   Roller memory _beforeOrAt,
+        //     Roller memory _atOrAfter ) = scryRollers(rollers, _cycloid, _target);
+
+        // rollerThen_ = _beforeOrAt;
 
     }
 
 
-    function binarySearch(
-        Roller[60] storage self,
-        uint16 _cycloid,
-        uint32 _target
-    ) private view returns (
+    function scryRollers (
+        Roller[60] storage rollers,
+        uint _cycloid,
+        uint _target
+    ) internal  returns (
         Roller memory beforeOrAt_
     ) {
 
+        // now, set before to the oldest roller
+        _cycloid = ( _cycloid + 1 ) % CHORD;
+
+        beforeOrAt_ = rollers[_cycloid];
+
+        if ( beforeOrAt_.time <= 1 ) {
+
+            beforeOrAt_ = rollers[0];
+
+        }
+
+
+        if (_target <= beforeOrAt_.time) {
+
+            return beforeOrAt_;
+
+        } else {
+
+            beforeOrAt_ = binarySearch(
+                rollers,
+                uint32(_target),
+                uint16(_cycloid)
+            );
+
+        }
+
+
+    }
+
+    function binarySearch (
+        Roller[60] storage rollers,
+        uint32 _target,
+        uint16 _cycloid
+    ) private  returns (
+        Roller memory beforeOrAt_
+    ) {
+
+        emit log("binary", _cycloid);
+
         Roller memory _atOrAfter;
-        uint256 l = (_cycloid + 1) % CHORD; // oldest print
-        uint256 r = l + CHORD - 1; // newest print
+        uint256 l = (_cycloid + 1) % CHORD; // oldest rolling
+        uint256 r = l + CHORD - 1; // newest rolling
         uint256 i;
+        uint count;
+
+        emit log("target", _target);
+
         while (true) {
+            count += 1;
+            emit log("count", count);
+            if (count == 10) break;
+
             i = (l + r) / 2;
 
-            beforeOrAt_ = self[ i % CHORD ];
+            emit log("l", l);
+            emit log("r", r);
+            emit log("i", i);
+            emit log("beforeoratix", i % CHORD);
+
+            beforeOrAt_ = rollers[ i % CHORD ];
+
+            emit log("beforeOrAt.time", beforeOrAt_.time);
 
             // we've landed on an uninitialized roller, keep searching
             if (beforeOrAt_.time <= 1) { l = i + 1; continue; }
 
-            _atOrAfter = self[ (i + 1) % CHORD ];
+            emit log("atorafterix", (i+1) % CHORD);
+
+            _atOrAfter = rollers[ (i + 1) % CHORD ];
+
+            emit log("at or after.time", _atOrAfter.time);
 
             bool _targetAtOrAfter = beforeOrAt_.time <= _target;
 
@@ -466,6 +556,7 @@ abstract contract OverlayV1Comptroller {
             if (!_targetAtOrAfter) r = i - 1;
             else l = i + 1;
         }
+
     }
 
 }

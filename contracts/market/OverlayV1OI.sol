@@ -5,7 +5,7 @@ import "../libraries/FixedPoint.sol";
 
 contract OverlayV1OI {
 
-    event log(string k , uint v);
+    // event log(string k , uint v);
 
     using FixedPoint for uint256;
 

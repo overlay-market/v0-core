@@ -7,6 +7,7 @@ from brownie import (
     OverlayToken,
     OverlayTokenNew,
     ComptrollerShim,
+    ComptrollerShimTester,
     chain,
     interface,
     UniTest

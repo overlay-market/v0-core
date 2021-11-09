@@ -25,7 +25,11 @@ def test_impact(comptroller):
 
     chain.mine(timedelta=1200)
 
-    tx = comptroller.impactBatch([True], [1e18])
+    impactCycloid = comptroller.impactCycloid()
+
+    print("impact cycloid python", impactCycloid)
+
+    tx = comptroller.impactBatch([True], [1e18]);
 
     tx = comptroller.impactBatch([True], [1e18])
 
