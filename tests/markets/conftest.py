@@ -263,7 +263,7 @@ def create_mothership(token, feed_infos, fees, alice, bob, gov, feed_owner, requ
 
 @pytest.fixture(scope="module")
 def start_time():
-    return chain.time + 200
+    return chain.time() + 200
 
 @pytest.fixture(scope="module")
 def mothership(create_mothership):
