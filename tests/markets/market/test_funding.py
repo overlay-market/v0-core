@@ -1,8 +1,6 @@
 from brownie import chain
 from brownie.test import given, strategy
-from hypothesis import settings
 from pytest import approx
-from decimal import *
 
 
 @given(
@@ -33,14 +31,14 @@ def test_funding_total_imbalance(
 
     expected_funding_payment = expected_oi - expected_oi_after_payment
 
-    tx_build = ovl_collateral.build(
+    tx_build = ovl_collateral.build(  # noqa: F841
         market,
         oi,
         1,
         is_long,
         0,
         {'from': bob}
-    )
+        )
 
     oi = (market.oiLong() if is_long else market.oiShort()) / 1e18
 
@@ -62,4 +60,4 @@ def test_funding_total_imbalance(
         market.oiLong() if is_long else market.oiShort()) / 1e18
 
     assert oi_after_payment == approx(
-        expected_oi_after_payment), 'oi after funding payment different than expected'
+            expected_oi_after_payment), 'oi after funding payment different than expected'  # noqa: E501
