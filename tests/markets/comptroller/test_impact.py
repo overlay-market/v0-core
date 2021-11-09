@@ -1,9 +1,8 @@
-from decimal import *
+from decimal import Decimal
 import math
 
-from brownie import reverts, chain
+from brownie import chain
 from brownie.test import given, strategy
-from hypothesis import settings
 from pytest import approx
 
 ONE_BLOCK = 13
@@ -37,7 +36,7 @@ def test_impact(comptroller):
     print(roller1)
     print(roller2)
 
-    tx = comptroller.impactBatch([True], [1e18])
+    tx = comptroller.impactBatch([True], [1e18])  # noqa: F841
 
     roller0 = comptroller.impactRollers(0)
     roller1 = comptroller.impactRollers(1)
@@ -64,7 +63,7 @@ def test_impact_roller_expected_impact(comptroller):
     chain.mine(timedelta=ONE_BLOCK)
     tx = comptroller.impactBatch([True], [1e18])
     chain.mine(timedelta=ONE_BLOCK)
-    tx = comptroller.impactBatch([True], [1e18])
+    tx = comptroller.impactBatch([True], [1e18])  # noqa: F841
 
     assert comptroller.impactCycloid() == 5
 
@@ -106,7 +105,7 @@ def test_impact_roller_expected_impact_many_batched(comptroller):
     )
 
     chain.mine(timedelta=ONE_BLOCK)
-    tx = comptroller.impactBatch(
+    tx = comptroller.impactBatch(  # noqa: F841
         [True, True, True, True, True, True],
         [1e18, 1e18, 1e18, 1e18, 1e18, 1e18]
     )
@@ -153,7 +152,7 @@ def test_impact_pressure(comptroller, entry):
 @given(
     entry=strategy('uint256', min_value=1, max_value=.370400e6),
     rand=strategy('int', min_value=100, max_value=1000))
-def test_impact_pressure_full_cooldown_entry_within_cap(comptroller, entry, rand):
+def test_impact_pressure_full_cooldown_entry_within_cap(comptroller, entry, rand):  # noqa: E501
 
     entry *= 1e16
 
@@ -161,7 +160,7 @@ def test_impact_pressure_full_cooldown_entry_within_cap(comptroller, entry, rand
 
     chain.mine(timedelta=ONE_BLOCK)
 
-    tx = comptroller.impactBatch([True], [entry])
+    tx = comptroller.impactBatch([True], [entry])  # noqa: F841
 
     chain.mine(timedelta=impact_window+1)
 
