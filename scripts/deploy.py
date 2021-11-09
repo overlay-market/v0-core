@@ -1,4 +1,3 @@
-from brownie import *
 from brownie import interface
 from brownie import \
     UniswapV3FactoryMock, \
@@ -85,7 +84,7 @@ def deploy_uni_pool(factory, token0, token1, path):
     uniswapv3_pool.loadObservations(
         data['observations'],
         data['shims'],
-        { 'from': FEED_OWNER }
+        {'from': FEED_OWNER}
     )
 
     chain.mine(timestamp=beginning)
@@ -96,8 +95,8 @@ def deploy_uni_pool(factory, token0, token1, path):
 def deploy_ovl():
 
     ovl = GOV.deploy(OverlayToken)
-    ovl.mint(ALICE, TOKEN_TOTAL_SUPPLY / 2, { "from": GOV })
-    ovl.mint(BOB, TOKEN_TOTAL_SUPPLY / 2, { "from": GOV })
+    ovl.mint(ALICE, TOKEN_TOTAL_SUPPLY / 2, {"from": GOV})
+    ovl.mint(BOB, TOKEN_TOTAL_SUPPLY / 2, {"from": GOV})
 
     return ovl
 
@@ -105,16 +104,16 @@ def deploy_ovl():
 def deploy_mothership(ovl):
 
     mothership = GOV.deploy(
-        OverlayV1Mothership, 
-        FEE_TO, 
-        FEE, 
-        FEE_BURN_RATE, 
+        OverlayV1Mothership,
+        FEE_TO,
+        FEE,
+        FEE_BURN_RATE,
         MARGIN_BURN_RATE
     )
 
-    mothership.setOVL(ovl, { "from": GOV })
+    mothership.setOVL(ovl, {"from": GOV})
 
-    ovl.grantRole(ovl.ADMIN_ROLE(), mothership, { "from": GOV })
+    ovl.grantRole(ovl.ADMIN_ROLE(), mothership, {"from": GOV})
 
     return mothership
 
@@ -145,10 +144,10 @@ def deploy_market(mothership, feed_depth, feed_market):
         BRRRR_EXPECTED,
         BRRRR_WINDOW_MACRO,
         BRRRR_WINDOW_MICRO,
-        { "from": GOV }
+        {"from": GOV}
     )
 
-    mothership.initializeMarket(market, { "from": GOV })
+    mothership.initializeMarket(market, {"from": GOV})
 
     return market
 
@@ -166,24 +165,25 @@ def deploy_ovl_collateral(mothership, market, ovl):
         MARGIN_MAINTENANCE,
         MARGIN_REWARD_RATE,
         MAX_LEVERAGE,
-        { "from": GOV }
+        {"from": GOV}
     )
 
-    market.addCollateral(ovl_collateral, { "from": GOV })
+    market.addCollateral(ovl_collateral, {"from": GOV})
 
-    mothership.initializeCollateral(ovl_collateral, { "from": GOV })
+    mothership.initializeCollateral(ovl_collateral, {"from": GOV})
 
-    ovl.approve(ovl_collateral, 1e50, { "from": ALICE })
-    ovl.approve(ovl_collateral, 1e50, { "from": BOB })
+    ovl.approve(ovl_collateral, 1e50, {"from": ALICE})
+    ovl.approve(ovl_collateral, 1e50, {"from": BOB})
 
     return ovl_collateral
 
-def build_position (
-    collateral_manager, 
-    market, 
-    collateral, 
-    leverage, 
-    is_long, 
+
+def build_position(
+    collateral_manager,
+    market,
+    collateral,
+    leverage,
+    is_long,
     taker
 ):
 
@@ -192,7 +192,7 @@ def build_position (
         collateral,
         leverage,
         is_long,
-        { "from": taker }
+        {"from": taker}
     )
 
     position = tx_build.events['Build']['positionId']
@@ -208,7 +208,8 @@ def build_position (
         'collateral': collateral,
         'leverage': leverage,
         'is_long': is_long
-    }
+        }
+
 
 def unwind_position(
     collateral_manager,
@@ -220,7 +221,7 @@ def unwind_position(
     tx_unwind = collateral_manager.unwind(
         position_id,
         position_shares,
-        { "from": unwinder }
+        {"from": unwinder}
     )
 
 
@@ -238,8 +239,9 @@ def transfer_position_shares(
         position_id,
         amount,
         "",
-        { "from": sender }
+        {"from": sender}
     )
+
 
 def transfer_position_shares_batch(
     collateral_manager,
@@ -255,7 +257,7 @@ def transfer_position_shares_batch(
         position_ids,
         amounts,
         "",
-        { "from": sender }
+        {"from": sender}
     )
 
 
@@ -263,9 +265,9 @@ def main():
 
     uni_factory = deploy_uni_factory()
 
-    feed_depth = deploy_uni_pool(uni_factory, AXS, WETH, '../feeds/univ3_axs_weth')
+    feed_depth = deploy_uni_pool(uni_factory, AXS, WETH, '../feeds/univ3_axs_weth')  # noqa: E501
 
-    feed_market = deploy_uni_pool(uni_factory, DAI, WETH, '../feeds/univ3_dai_weth')
+    feed_market = deploy_uni_pool(uni_factory, DAI, WETH, '../feeds/univ3_dai_weth')  # noqa: E501
 
     ovl = deploy_ovl()
 
@@ -275,7 +277,7 @@ def main():
 
     ovl_collateral = deploy_ovl_collateral(mothership, market, ovl)
 
-    chain.mine( timedelta=market.compoundingPeriod() * 3 )
+    chain.mine(timedelta=market.compoundingPeriod() * 3)
 
     position_1 = build_position(
         ovl_collateral,
@@ -286,7 +288,7 @@ def main():
         ALICE
     )
 
-    chain.mine( timedelta=market.updatePeriod() * 2 )
+    chain.mine(timedelta=market.updatePeriod() * 2)
 
     position_2 = build_position(
         ovl_collateral,
@@ -298,10 +300,10 @@ def main():
     )
 
     transfer_position_shares(
-        ovl_collateral, 
-        ALICE, 
-        BOB, 
-        position_1['id'], 
+        ovl_collateral,
+        ALICE,
+        BOB,
+        position_1['id'],
         position_1['oi'] / 2
     )
 
@@ -353,11 +355,11 @@ def main():
     )
 
     transfer_position_shares_batch(
-        ovl_collateral, 
-        ALICE, 
-        BOB, 
-        [ position_3['id'], position_4['id'], position_5['id'] ],
-        [ position_3['oi'], position_4['oi'] / 2, position_5['oi'] / 4 ]
+        ovl_collateral,
+        ALICE,
+        BOB,
+        [position_3['id'], position_4['id'], position_5['id']],
+        [position_3['oi'], position_4['oi'] / 2, position_5['oi'] / 4]
     )
 
     chain.mine(timedelta=UPDATE_PERIOD)
@@ -384,13 +386,13 @@ def main():
         f.write('BOB={}\n'.format(BOB))
         f.write('GOV={}\n'.format(GOV))
         f.write('FEE_TO={}\n'.format(FEE_TO))
-        f.write('BOB_POSITION_1={}\n'.format(ovl_collateral.balanceOf(BOB, position_1['id'])))
-        f.write('BOB_POSITION_2={}\n'.format(ovl_collateral.balanceOf(BOB, position_2['id'])))
-        f.write('BOB_POSITION_3={}\n'.format(ovl_collateral.balanceOf(BOB, position_3['id'])))
-        f.write('BOB_POSITION_4={}\n'.format(ovl_collateral.balanceOf(BOB, position_4['id'])))
-        f.write('BOB_POSITION_5={}\n'.format(ovl_collateral.balanceOf(BOB, position_5['id'])))
-        f.write('ALICE_POSITION_1={}\n'.format(ovl_collateral.balanceOf(ALICE, position_1['id'])))
-        f.write('ALICE_POSITION_2={}\n'.format(ovl_collateral.balanceOf(ALICE, position_2['id'])))
-        f.write('ALICE_POSITION_3={}\n'.format(ovl_collateral.balanceOf(ALICE, position_3['id'])))
-        f.write('ALICE_POSITION_4={}\n'.format(ovl_collateral.balanceOf(ALICE, position_4['id'])))
-        f.write('ALICE_POSITION_5={}\n'.format(ovl_collateral.balanceOf(ALICE, position_5['id'])))
+        f.write('BOB_POSITION_1={}\n'.format(ovl_collateral.balanceOf(BOB, position_1['id'])))  # noqa: E501
+        f.write('BOB_POSITION_2={}\n'.format(ovl_collateral.balanceOf(BOB, position_2['id'])))  # noqa: E501
+        f.write('BOB_POSITION_3={}\n'.format(ovl_collateral.balanceOf(BOB, position_3['id'])))  # noqa: E501
+        f.write('BOB_POSITION_4={}\n'.format(ovl_collateral.balanceOf(BOB, position_4['id'])))  # noqa: E501
+        f.write('BOB_POSITION_5={}\n'.format(ovl_collateral.balanceOf(BOB, position_5['id'])))  # noqa: E501
+        f.write('ALICE_POSITION_1={}\n'.format(ovl_collateral.balanceOf(ALICE, position_1['id'])))  # noqa: E501
+        f.write('ALICE_POSITION_2={}\n'.format(ovl_collateral.balanceOf(ALICE, position_2['id'])))  # noqa: E501
+        f.write('ALICE_POSITION_3={}\n'.format(ovl_collateral.balanceOf(ALICE, position_3['id'])))  # noqa: E501
+        f.write('ALICE_POSITION_4={}\n'.format(ovl_collateral.balanceOf(ALICE, position_4['id'])))  # noqa: E501
+        f.write('ALICE_POSITION_5={}\n'.format(ovl_collateral.balanceOf(ALICE, position_5['id'])))  # noqa: E501
