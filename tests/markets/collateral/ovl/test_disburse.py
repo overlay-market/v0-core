@@ -24,15 +24,19 @@ SLIPPAGE_TOL = 0.2
     oi_short=strategy('uint256',
                       min_value=MIN_COLLATERAL_AMOUNT,
                       max_value=0.999*OI_CAP*10**TOKEN_DECIMALS),)
-def test_disburse(mothership,
-                  token,
-                  market,
-                  ovl_collateral,
-                  alice,
-                  bob,
-                  rewards,
-                  oi_long,
-                  oi_short):
+def test_disburse(
+    mothership,
+    token,
+    market,
+    ovl_collateral,
+    alice,
+    bob,
+    start_time,
+    oi_long,
+    oi_short
+):
+
+    brownie.chain.mine(timestamp=start_time)
 
     token.approve(ovl_collateral, 1e70, {"from": bob})
 

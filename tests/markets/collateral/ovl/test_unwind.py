@@ -33,7 +33,13 @@ def test_unwind(ovl_collateral, token, bob):
     pass
 
 
-def test_unwind_revert_insufficient_shares(ovl_collateral, bob):
+def test_unwind_revert_insufficient_shares(
+    ovl_collateral, 
+    bob,
+    start_time
+):
+
+    brownie.chain.mine(timestamp=start_time)
 
     EXPECTED_ERROR_MESSAGE = "OVLV1:!shares"
     with brownie.reverts(EXPECTED_ERROR_MESSAGE):
@@ -56,11 +62,13 @@ def test_unwind_oi_removed(
         token,
         bob,
         alice,
+        start_time,
         oi,
         leverage,
         is_long
     ):
 
+    brownie.chain.mine(timestamp=start_time)
 
     # Build parameters
     oi *= 1e16
@@ -122,12 +130,15 @@ def test_unwind_expected_fee(
     market,
     token,
     bob,
+    start_time,
+    feed_infos,
     oi,
     leverage,
     is_long,
-    feed_infos,
     time_delta
 ):
+
+    brownie.chain.mine(timestamp=start_time)
 
     mine_ix = int(
         (len(feed_infos.market_info[2]['timestamp']) - 1) * time_delta)
@@ -219,11 +230,14 @@ def test_partial_unwind(
   token,
   bob,
   alice,
+  start_time,
   bob_oi,
   alice_oi,
   leverage,
   is_long
 ):
+
+    brownie.chain.mine(timestamp=start_time)
 
     # Build parameters
     bob_oi *= 1e16
@@ -322,10 +336,13 @@ def test_unwind_after_transfer(
     token,
     bob,
     alice,
+    start_time,
     oi,
     leverage,
     is_long
 ):
+
+    brownie.chain.mine(timestamp=start_time)
 
     # Build parameters
     oi *= 1e16
@@ -379,6 +396,7 @@ def test_comptroller_recorded_mint_or_burn(
     market,
     bob,
     is_long,
+    start_time,
     oi,
     leverage,
     mothership
@@ -404,15 +422,18 @@ def test_unwind_pnl_mint_burn(
     market,
     bob,
     feed_infos,
+    mothership,
+    start_time,
     is_long,
     time_delta,
     leverage,
-    oi,
-    mothership
+    oi
 ):
     '''
     Check if whatever was minted/burnt is equal to the PnL
     '''
+
+    brownie.chain.mine(timestamp=start_time)
 
     price_cap = market.priceFrameCap() / 1e18
 
