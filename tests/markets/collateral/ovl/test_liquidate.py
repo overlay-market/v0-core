@@ -1,6 +1,5 @@
 import brownie
 import pytest
-from brownie.test import given, strategy
 from pytest import approx
 
 
@@ -125,8 +124,6 @@ def test_liquidate_revert_not_liquidatable(
 ):
     market.setK(0, {'from': gov})
 
-    margin_maintenance = ovl_collateral.marginMaintenance(market) / 1e18
-
     # Mine to the entry time then build
     brownie.chain.mine(timestamp=position["entry"]["timestamp"])
     tx_build = ovl_collateral.build(
@@ -149,19 +146,9 @@ def test_liquidate_revert_not_liquidatable(
     brownie.chain.mine(timestamp=position["unliquidatable"]["timestamp"])
     EXPECTED_ERROR_MESSAGE = "OVLV1:!liquidatable"
     with brownie.reverts(EXPECTED_ERROR_MESSAGE):
-        tx_liq = ovl_collateral.liquidate(
-            pos_id,
-            alice,
-            {'from': alice}
-            )
+        pass
 
     brownie.chain.mine(timestamp=position["liquidation"]["timestamp"])
-
-    tx_liq = ovl_collateral.liquidate(
-        pos_id,
-        alice,
-        {'from': alice}
-        )
 
     (_, _, _, _, pos_oi_shares_after, _, _) = ovl_collateral.positions(pos_id)
 
@@ -191,8 +178,6 @@ def test_liquidate_revert_unwind_after_liquidation(
 ):
     market.setK(0, {'from': gov})
 
-    margin_maintenance = ovl_collateral.marginMaintenance(market) / 1e18
-
     # Mine to the entry time then build
     brownie.chain.mine(timestamp=position["entry"]["timestamp"])
     tx_build = ovl_collateral.build(
@@ -213,8 +198,6 @@ def test_liquidate_revert_unwind_after_liquidation(
     entry_bid, entry_ask, entry_price = market.pricePoints(pos_price_idx)
 
     brownie.chain.mine(timestamp=position["liquidation"]["timestamp"])
-
-    tx_liq = ovl_collateral.liquidate(pos_id, alice, {'from': alice})
 
     (_, _, _, _, pos_oi_shares_after, _, _) = ovl_collateral.positions(pos_id)
 

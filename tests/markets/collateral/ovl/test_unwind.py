@@ -3,8 +3,6 @@ from brownie.test import given, strategy
 from hypothesis import settings, strategies
 from brownie import chain
 from pytest import approx
-from decimal import *
-import random
 
 FEE_RESOLUTION = 1e18
 MIN_COLLATERAL = 1e14  # min amount to build
@@ -49,18 +47,8 @@ def test_unwind_revert_insufficient_shares(ovl_collateral, bob):
     oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
     leverage=strategy('uint256', min_value=1, max_value=100))
 @settings(max_examples=50)
-def test_unwind_oi_removed(
-        ovl_collateral,
-        mothership,
-        market,
-        token,
-        bob,
-        alice,
-        oi,
-        leverage,
-        is_long
-    ):
-
+def test_unwind_oi_removed(ovl_collateral, mothership, market, token, bob, alice, oi, leverage,  # noqa: E501
+                           is_long):
 
     # Build parameters
     oi *= 1e16
@@ -84,8 +72,7 @@ def test_unwind_oi_removed(
     (_, _, _, price_point, oi_shares_build,
         debt_build, cost_build) = ovl_collateral.positions(pid)
 
-
-    # TODO: When this changed to compoundingPeriod - 10 there was a problem. 
+    # TODO: When this changed to compoundingPeriod - 10 there was a problem.
     # Why?
     chain.mine(timedelta=100)
 
@@ -440,7 +427,6 @@ def test_unwind_pnl_mint_burn(
 
     # Build position info
     pid = tx_build.events['Build']['positionId']
-    pos_shares = tx_build.events['Build']['oi']
     (_, _, _, price_point, oi_shares_pos, debt_pos,
      cost_pos) = ovl_collateral.positions(pid)
 

@@ -1,7 +1,5 @@
-from brownie import chain
 from brownie.test import given, strategy
-from hypothesis import settings
-from decimal import *
+from decimal import Decimal
 
 
 def print_logs(tx):
@@ -38,14 +36,6 @@ def test_disburse(mothership,
 
     # do an initial update before build so all oi is queued
     market.update({"from": bob})
-
-    oi_adjusted_min_long = oi_long * (1-SLIPPAGE_TOL)
-    tx_long = ovl_collateral.build(market, oi_long, 1, True,
-                                   oi_adjusted_min_long, {"from": bob})
-
-    oi_adjusted_min_short = oi_short * (1-SLIPPAGE_TOL)
-    tx_short = ovl_collateral.build(market, oi_short, 1, False,
-                                    oi_adjusted_min_short, {"from": bob})
 
     # prior fee state
     margin_burn_rate, fee_burn_rate, fee_to = mothership.getUpdateParams()
