@@ -1,3 +1,4 @@
+import brownie
 from brownie import chain
 from brownie.test import given, strategy
 from hypothesis import settings
