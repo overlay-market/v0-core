@@ -7,6 +7,7 @@ from hypothesis import settings
 from pytest import approx, mark
 from decimal import Decimal
 
+
 def print_logs(tx):
     for i in range(len(tx.events['log'])):
         print(tx.events['log'][i]['k'] + ": " + str(tx.events['log'][i]['v']))
@@ -501,7 +502,7 @@ def test_entry_update_compounding_oi_onesided(
     is_long,
     compoundings
 ):
-    
+
     brownie.chain.mine(timestamp=start_time)
 
     token.approve(ovl_collateral, collateral*2, {"from": bob})
@@ -711,9 +712,14 @@ def test_build_w_impact(
     # get prior state of market
     market_oi = market.oiLong() if is_long else market.oiShort()
     market_oi_cap = market.oiCap()  # accounts for depth, brrrd, static
+    market_brrrrd, market_anti_brrrrd = market.getBrrrrd()
 
     # check no market pressure before builds
     assert market.pressure(is_long, 0, market.oiCap()) == 0
+
+    # check no market brrrd before builds
+    assert market_brrrrd == 0
+    assert market_anti_brrrrd == 0
 
     # approve collateral contract to spend bob's ovl to build position
     token.approve(ovl_collateral, collateral, {"from": bob})
@@ -780,6 +786,11 @@ def test_build_w_impact(
     # check new state of market pressure
     act_pressure = market.pressure(is_long, 0, market.oiCap())
     assert int(q*1e18) == approx(act_pressure, rel=1e-04)
+
+    # check impact fee burn registered in market brrrd
+    act_brrrrd, act_anti_brrrrd = market.getBrrrrd()
+    assert act_brrrrd == market_brrrrd
+    assert act_anti_brrrrd == market_anti_brrrrd + act_impact_fee
 
 
 @given(
@@ -921,6 +932,7 @@ def test_build_multiple_in_one_impact_window(
 
         market_oi = market.oiLong() if is_long else market.oiShort()
         market_oi_cap = market.oiCap()  # accounts for depth, brrrd, static
+        market_brrrrd, market_anti_brrrrd = market.getBrrrrd()
 
         q += oi / market_oi_cap
         impact_fee = oi * (1 - math.exp(-lmbda * q))
@@ -936,8 +948,6 @@ def test_build_multiple_in_one_impact_window(
 
         # get prior state of collateral manager
         ovl_balance = token.balanceOf(ovl_collateral)
-
-        # get prior state of market
 
         # in case have large impact, make sure to check for revert
         oi_min_adjusted = 0
@@ -1001,6 +1011,11 @@ def test_build_multiple_in_one_impact_window(
         # check new state of market pressure
         act_pressure = market.pressure(is_long, 0, market.oiCap())
         assert int(q*1e18) == approx(act_pressure, rel=1e-04)
+
+        # check impact fee burn registered in market brrrrd
+        act_brrrrd, act_anti_brrrrd = market.getBrrrrd()
+        assert act_brrrrd == market_brrrrd
+        assert act_anti_brrrrd == market_anti_brrrrd + act_impact_fee
 
         # for precision issues, set q to act_pressure for next loop
         q = act_pressure / (1e18)
@@ -1103,6 +1118,7 @@ def test_build_multiple_in_multiple_impact_windows(
         # get prior state of market
         market_oi = market.oiLong() if is_long else market.oiShort()
         market_oi_cap = market.oiCap()  # accounts for depth, brrrd, static
+        market_brrrrd, market_anti_brrrrd = market.getBrrrrd()
 
         # in case have large impact, make sure to check for revert
         oi_min_adjusted = 0
@@ -1119,7 +1135,6 @@ def test_build_multiple_in_multiple_impact_windows(
                 ovl_collateral.build(market, collateral, leverage, is_long,
                                      oi_min_adjusted, {"from": bob})
             break
-
 
         # build the position
         tx = ovl_collateral.build(market, collateral, leverage, is_long,
@@ -1167,6 +1182,11 @@ def test_build_multiple_in_multiple_impact_windows(
         # check new state of market pressure
         act_pressure = market.pressure(is_long, 0, market.oiCap())
         assert int(pressure*1e18) == approx(act_pressure, rel=1e-04)
+
+        # check impact fee burn registered in market brrrrd
+        act_brrrrd, act_anti_brrrrd = market.getBrrrrd()
+        assert act_brrrrd == market_brrrrd
+        assert act_anti_brrrrd == market_anti_brrrrd + act_impact_fee
 
         # for precision issues, adjust q for act_pressure to start next loop
         q = q - pressure + act_pressure / (1e18)
