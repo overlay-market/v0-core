@@ -348,10 +348,16 @@ def test_oi_shares_onesided_zero_funding(
     oi_adjusted_min = collateral * leverage * (1-SLIPPAGE_TOL)
 
     # build multiple positions on a side
-    _ = ovl_collateral.build(market, collateral, leverage,
-                             is_long, oi_adjusted_min, {"from": alice})
-    _ = ovl_collateral.build(market, int(multiplier*collateral), leverage,
-                             is_long, oi_adjusted_min, {"from": bob})
+    tx_alice = ovl_collateral.build(market, collateral, leverage,
+                                    is_long, oi_adjusted_min, {"from": alice})
+
+    brownie.chain.mine(timedelta=10)
+
+    tx_bob = ovl_collateral.build(market, int(multiplier*collateral), leverage,
+                                  is_long, oi_adjusted_min, {"from": bob})
+
+    pid_alice = tx_alice.return_value
+    pid_bob = tx_bob.return_value
 
     (market_oi_long, market_oi_short, market_oi_long_shares,
      market_oi_short_shares) = market.oi()
@@ -374,7 +380,24 @@ def test_oi_shares_onesided_zero_funding(
         assert 0 == market_oi_long_shares
         assert int(expected_total_oi_shares) == approx(market_oi_short_shares)
 
-    # TODO: check position oi shares
+    # check position oi shares
+    (_, _, _, _, pos_oishares_alice, _, _) \
+        = ovl_collateral.positions(pid_alice)
+    (_, _, _, _, pos_oishares_bob, _, _) \
+        = ovl_collateral.positions(pid_bob)
+
+    assert approx(pos_oishares_alice) == int(oi_adjusted)
+    assert approx(pos_oishares_bob) == int(oi_adjusted*multiplier)
+
+    act_total_oi = market_oi_long if is_long else market_oi_short
+    act_total_oi_shares = market_oi_long_shares if is_long \
+        else market_oi_short_shares
+
+    exp_oi_alice = act_total_oi * pos_oishares_alice / act_total_oi_shares
+    exp_oi_bob = act_total_oi * pos_oishares_bob / act_total_oi_shares
+
+    assert approx(exp_oi_alice) == oi_adjusted
+    assert approx(exp_oi_bob) == oi_adjusted*multiplier
 
 
 @given(
@@ -406,7 +429,211 @@ def test_oi_shares_bothsides_zero_funding(
             is_long,
             multiplier
         ):
-    pass
+
+    brownie.chain.mine(timestamp=start_time)
+
+    # Set k to zero so test without worrying about funding rate
+    market.setK(0, {'from': gov})
+    multiplier = float(multiplier)
+
+    oi_adjusted_min = collateral * leverage * (1-SLIPPAGE_TOL)
+
+    # build multiple positions on a side
+    tx_alice = ovl_collateral.build(market, collateral, leverage,
+                                    is_long, oi_adjusted_min, {"from": alice})
+
+    brownie.chain.mine(timedelta=10)
+
+    tx_bob = ovl_collateral.build(market, int(multiplier*collateral), leverage,
+                                  not is_long, oi_adjusted_min, {"from": bob})
+
+    brownie.chain.mine(timedelta=10)
+
+    tx_alice_2 = ovl_collateral.build(market, collateral, leverage,
+                                      is_long, oi_adjusted_min,
+                                      {"from": alice})
+
+    pid_alice = tx_alice.return_value
+    pid_bob = tx_bob.return_value
+    pid_alice_2 = tx_alice_2.return_value
+
+    (market_oi_long, market_oi_short, market_oi_long_shares,
+     market_oi_short_shares) = market.oi()
+
+    collateral_adjusted = collateral - collateral * \
+        leverage*mothership.fee()/FEE_RESOLUTION
+    oi_adjusted = collateral_adjusted*leverage
+
+    exp_total_oi_long = 2*oi_adjusted if is_long \
+        else oi_adjusted*multiplier
+    exp_total_oi_short = oi_adjusted*multiplier if is_long \
+        else 2*oi_adjusted
+
+    assert int(exp_total_oi_long) == approx(market_oi_long)
+    assert int(exp_total_oi_short) == approx(market_oi_short)
+    assert int(exp_total_oi_long) == approx(market_oi_long_shares)
+    assert int(exp_total_oi_short) == approx(market_oi_short_shares)
+
+    # check position oi shares
+    (_, _, _, _, pos_oishares_alice, _, _) \
+        = ovl_collateral.positions(pid_alice)
+    (_, _, _, _, pos_oishares_bob, _, _) \
+        = ovl_collateral.positions(pid_bob)
+    (_, _, _, _, pos_oishares_alice_2, _, _) \
+        = ovl_collateral.positions(pid_alice_2)
+
+    assert approx(pos_oishares_alice) == int(oi_adjusted)
+    assert approx(pos_oishares_bob) == int(oi_adjusted*multiplier)
+    assert approx(pos_oishares_alice_2) == int(oi_adjusted)
+
+    if is_long:
+        exp_oi_alice = market_oi_long * pos_oishares_alice \
+            / market_oi_long_shares
+        exp_oi_bob = market_oi_short * pos_oishares_bob \
+            / market_oi_short_shares
+        exp_oi_alice_2 = market_oi_long * pos_oishares_alice_2 \
+            / market_oi_long_shares
+    else:
+        exp_oi_alice = market_oi_short * pos_oishares_alice \
+            / market_oi_short_shares
+        exp_oi_bob = market_oi_long * pos_oishares_bob \
+            / market_oi_long_shares
+        exp_oi_alice_2 = market_oi_short * pos_oishares_alice_2 \
+            / market_oi_short_shares
+
+    assert approx(exp_oi_alice) == oi_adjusted
+    assert approx(exp_oi_bob) == oi_adjusted*multiplier
+    assert approx(exp_oi_alice_2) == oi_adjusted
+
+
+@given(
+    collateral=strategy(
+        'uint256',
+        min_value=1e18,
+        max_value=(OI_CAP - 1e4)/3000),
+    leverage=strategy(
+        'uint8',
+        min_value=1,
+        max_value=100),
+    multiplier=strategy(
+        'decimal',
+        min_value="1.01",
+        max_value="14"),
+    is_long=strategy(
+        'bool'))
+def test_oi_shares_bothsides_w_funding(
+            ovl_collateral,
+            token,
+            mothership,
+            market,
+            gov,
+            alice,
+            bob,
+            start_time,
+            collateral,
+            leverage,
+            is_long,
+            multiplier
+        ):
+
+    brownie.chain.mine(timestamp=start_time)
+
+    multiplier = float(multiplier)
+    oi_adjusted_min = collateral * leverage * (1-SLIPPAGE_TOL)
+
+    # build multiple positions on a side
+    tx_alice = ovl_collateral.build(market, collateral, leverage,
+                                    is_long, oi_adjusted_min, {"from": alice})
+
+    brownie.chain.mine(timedelta=10)
+
+    tx_bob = ovl_collateral.build(market, int(multiplier*collateral),
+                                  leverage, not is_long, oi_adjusted_min,
+                                  {"from": bob})
+
+    brownie.chain.mine(timedelta=10)
+
+    tx_alice_2 = ovl_collateral.build(market, collateral, leverage,
+                                      is_long, oi_adjusted_min,
+                                      {"from": alice})
+
+    pid_alice = tx_alice.return_value
+    pid_bob = tx_bob.return_value
+    pid_alice_2 = tx_alice_2.return_value
+
+    # mine 1 compounding period into the future
+    brownie.chain.mine(timedelta=market.compoundingPeriod()+1)
+
+    (market_oi_long, market_oi_short, market_oi_long_shares,
+     market_oi_short_shares) = market.oi()
+
+    collateral_adjusted = collateral - collateral * \
+        leverage*mothership.fee()/FEE_RESOLUTION
+    oi_adjusted = collateral_adjusted*leverage
+
+    exp_total_oi_long = 2*oi_adjusted if is_long \
+        else oi_adjusted*multiplier
+    exp_total_oi_short = oi_adjusted*multiplier if is_long \
+        else 2*oi_adjusted
+
+    exp_total_oi_long_shares = exp_total_oi_long
+    exp_total_oi_short_shares = exp_total_oi_short
+
+    # adjust further for funding drawdown
+    k = market.k() / (1e18)
+    exp_oi_imb = exp_total_oi_long - exp_total_oi_short
+
+    funding_payment = k * exp_oi_imb
+    funding_rate_long = funding_payment / exp_total_oi_long
+    funding_rate_short = funding_payment / exp_total_oi_short
+
+    exp_total_oi_long -= funding_payment
+    exp_total_oi_short += funding_payment
+
+    assert int(exp_total_oi_long) == approx(market_oi_long)
+    assert int(exp_total_oi_short) == approx(market_oi_short)
+    assert int(exp_total_oi_long_shares) == approx(market_oi_long_shares)
+    assert int(exp_total_oi_short_shares) == approx(market_oi_short_shares)
+
+    # check position oi shares have not changed
+    (_, _, _, _, pos_oishares_alice, _, _) \
+        = ovl_collateral.positions(pid_alice)
+    (_, _, _, _, pos_oishares_bob, _, _) \
+        = ovl_collateral.positions(pid_bob)
+    (_, _, _, _, pos_oishares_alice_2, _, _) \
+        = ovl_collateral.positions(pid_alice_2)
+
+    assert approx(pos_oishares_alice) == int(oi_adjusted)
+    assert approx(pos_oishares_bob) == int(oi_adjusted*multiplier)
+    assert approx(pos_oishares_alice_2) == int(oi_adjusted)
+
+    if is_long:
+        act_oi_alice = market_oi_long * pos_oishares_alice \
+            / market_oi_long_shares
+        act_oi_bob = market_oi_short * pos_oishares_bob \
+            / market_oi_short_shares
+        act_oi_alice_2 = market_oi_long * pos_oishares_alice_2 \
+            / market_oi_long_shares
+
+        exp_oi_alice = oi_adjusted * (1 - funding_rate_long)
+        exp_oi_bob = oi_adjusted * multiplier * (1 + funding_rate_short)
+        exp_oi_alice_2 = oi_adjusted * (1 - funding_rate_long)
+
+    else:
+        act_oi_alice = market_oi_short * pos_oishares_alice \
+            / market_oi_short_shares
+        act_oi_bob = market_oi_long * pos_oishares_bob \
+            / market_oi_long_shares
+        act_oi_alice_2 = market_oi_short * pos_oishares_alice_2 \
+            / market_oi_short_shares
+
+        exp_oi_alice = oi_adjusted * (1 + funding_rate_short)
+        exp_oi_bob = oi_adjusted * multiplier * (1 - funding_rate_long)
+        exp_oi_alice_2 = oi_adjusted * (1 + funding_rate_short)
+
+    assert approx(act_oi_alice) == exp_oi_alice
+    assert approx(act_oi_bob) == exp_oi_bob
+    assert approx(act_oi_alice_2) == exp_oi_alice_2
 
 
 @given(
@@ -1195,6 +1422,8 @@ def test_build_multiple_in_multiple_impact_windows(
     brownie.chain.mine(timedelta=market.impactWindow()+1)
     assert market.pressure(is_long, 0, market.oiCap()) == 0
 
+
+# def test_build_oi_cap_unchanged_after_impact_burn()
 
 # TODO: def test_build_w_dyanmic_cap ? lmbda=strategy('decimal',
 # min_value="0.2", max_value="0.5")
