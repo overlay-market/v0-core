@@ -256,12 +256,13 @@ def create_mothership(token, feed_infos, fees, alice, bob, gov, feed_owner, requ
         tok.approve(ovl_collateral, 1e50, {"from": alice})
         tok.approve(ovl_collateral, 1e50, {"from": bob})
 
-        chain.mine(timedelta=ovlm_args[7]+1)  # mine the update period
-
         return mothership
 
     yield create_mothership
 
+@pytest.fixture(scope="module")
+def start_time():
+    return chain.time() + 200
 
 @pytest.fixture(scope="module")
 def mothership(create_mothership):

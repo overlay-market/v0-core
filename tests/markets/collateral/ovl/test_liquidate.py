@@ -60,9 +60,12 @@ def test_liquidate_success_zero_funding(
     alice,
     gov,
     bob,
-    rewards,
+    start_time,
     position,
 ):
+
+    brownie.chain.mine(timestamp=start_time)
+
     market.setK(0, {'from': gov})
 
     margin_maintenance = ovl_collateral.marginMaintenance(market) / 1e18
@@ -121,8 +124,12 @@ def test_liquidate_revert_not_liquidatable(
     gov,
     bob,
     rewards,
+    start_time,
     position,
 ):
+
+    brownie.chain.mine(timestamp=start_time)
+
     market.setK(0, {'from': gov})
 
     margin_maintenance = ovl_collateral.marginMaintenance(market) / 1e18
@@ -186,9 +193,12 @@ def test_liquidate_revert_unwind_after_liquidation(
     alice,
     gov,
     bob,
-    rewards,
+    start_time,
     position,
 ):
+
+    brownie.chain.mine(timestamp=start_time)
+
     market.setK(0, {'from': gov})
 
     margin_maintenance = ovl_collateral.marginMaintenance(market) / 1e18
@@ -239,9 +249,12 @@ def test_liquidate_pnl_burned(
     alice,
     gov,
     bob,
-    rewards,
+    start_time,
     position,
 ):
+
+    brownie.chain.mine(timestamp=start_time)
+
     market.setK(0, {'from': gov})
 
     # Mine to the entry time then build
@@ -294,9 +307,12 @@ def test_liquidate_oi_removed(
     alice,
     gov,
     bob,
-    rewards,
+    start_time,
     position,
 ):
+
+    brownie.chain.mine(timestamp=start_time)
+
     market.setK(0, {'from': gov})
 
     # Mine to the entry time then build
@@ -333,9 +349,12 @@ def test_liquidate_zero_value(
     alice,
     gov,
     bob,
-    rewards,
+    start_time,
     position,
 ):
+
+    brownie.chain.mine(timestamp=start_time)
+
     market.setK(0, {'from': gov})
 
     # Mine to the entry time then build
@@ -383,9 +402,12 @@ def test_liquidate_rewards_and_fees(
     alice,
     gov,
     bob,
-    rewards,
+    start_time,
     position,
 ):
+
+    brownie.chain.mine(timestamp=start_time)
+
     market.setK(0, {'from': gov})
 
     margin_reward_rate = ovl_collateral.marginRewardRate(market) / 1e18
@@ -438,9 +460,12 @@ def test_liquidate_with_funding(
     alice,
     gov,
     bob,
-    rewards,
+    start_time,
     position,
 ):
+
+    brownie.chain.mine(timestamp=start_time)
+
     margin_maintenance = ovl_collateral.marginMaintenance(market) / 1e18
 
     # Mine to the entry time then build

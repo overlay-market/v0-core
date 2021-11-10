@@ -59,16 +59,18 @@ PRICES = [
     is_long=strategy(
         'bool'))
 def test_build_success_zero_impact(
-        ovl_collateral,
-        token,
-        mothership,
-        market,
-        bob,
-        rewards,
-        collateral,
-        leverage,
-        is_long
-        ):
+    ovl_collateral,
+    token,
+    mothership,
+    market,
+    bob,
+    start_time,
+    collateral,
+    leverage,
+    is_long
+):
+
+    brownie.chain.mine(timestamp=start_time)
 
     oi = collateral * leverage
     trade_fee = oi * mothership.fee() / FEE_RESOLUTION
@@ -129,15 +131,18 @@ def test_build_success_zero_impact(
 
 
 def test_build_when_market_not_supported(
-            ovl_collateral,
-            token,
-            mothership,
-            market,
-            notamarket,
-            bob,
-            leverage=1,  # doesn't matter
-            is_long=True  # doesn't matter
-        ):
+    ovl_collateral,
+    token,
+    mothership,
+    market,
+    notamarket,
+    bob,
+    start_time,
+    leverage=1,  # doesn't matter
+    is_long=True  # doesn't matter
+):
+
+    brownie.chain.mine(timestamp=start_time)
 
     EXPECTED_ERROR_MESSAGE = 'OVLV1:!market'
 
@@ -161,14 +166,17 @@ def test_build_when_market_not_supported(
     is_long=strategy(
         'bool'))
 def test_build_min_collateral(
-            ovl_collateral,
-            token,
-            mothership,
-            market,
-            bob,
-            leverage,
-            is_long
-        ):
+    ovl_collateral,
+    token,
+    mothership,
+    market,
+    bob,
+    start_time,
+    leverage,
+    is_long
+):
+
+    brownie.chain.mine(timestamp=start_time)
 
     EXPECTED_ERROR_MESSAGE = 'OVLV1:collat<min'
 
@@ -195,13 +203,16 @@ def test_build_min_collateral(
 
 
 def test_build_max_leverage(
-            ovl_collateral,
-            token,
-            market,
-            bob,
-            collateral=1e18,
-            is_long=True
-        ):
+    ovl_collateral,
+    token,
+    market,
+    bob,
+    start_time,
+    collateral=1e18,
+    is_long=True
+):
+
+    brownie.chain.mine(timestamp=start_time)
 
     EXPECTED_ERROR_MESSAGE = 'OVLV1:lev>max'
 
@@ -223,13 +234,16 @@ def test_build_max_leverage(
 
 
 def test_build_cap(
-            token,
-            ovl_collateral,
-            market,
-            bob,
-            leverage=1,
-            is_long=True
-        ):
+    token,
+    ovl_collateral,
+    market,
+    bob,
+    start_time,
+    leverage=1,
+    is_long=True
+):
+
+    brownie.chain.mine(timestamp=start_time)
 
     # NOTE error msg should be 'OVLV1:collat>cap'
     EXPECTED_ERROR_MESSAGE = 'OVLV1:>cap'
@@ -261,15 +275,18 @@ def test_build_cap(
     is_long=strategy(
         'bool'))
 def test_oi_added(
-            ovl_collateral,
-            token,
-            mothership,
-            market,
-            bob,
-            collateral,
-            leverage,
-            is_long
-        ):
+    ovl_collateral,
+    token,
+    mothership,
+    market,
+    bob,
+    start_time,
+    collateral,
+    leverage,
+    is_long
+):
+
+    brownie.chain.mine(timestamp=start_time)
 
     market_oi = market.oiLong() if is_long else market.oiShort()
     assert market_oi == 0
@@ -307,18 +324,22 @@ def test_oi_added(
     is_long=strategy(
         'bool'))
 def test_oi_shares_onesided_zero_funding(
-            ovl_collateral,
-            token,
-            mothership,
-            market,
-            gov,
-            alice,
-            bob,
-            collateral,
-            leverage,
-            is_long,
-            multiplier
-        ):
+    ovl_collateral,
+    token,
+    mothership,
+    market,
+    gov,
+    alice,
+    bob,
+    start_time,
+    collateral,
+    leverage,
+    is_long,
+    multiplier
+):
+
+    brownie.chain.mine(timestamp=start_time)
+
     # Set k to zero so test without worrying about funding rate
     market.setK(0, {'from': gov})
     multiplier = float(multiplier)
@@ -378,6 +399,7 @@ def test_oi_shares_bothsides_zero_funding(
             gov,
             alice,
             bob,
+            start_time,
             collateral,
             leverage,
             is_long,
@@ -400,15 +422,18 @@ def test_oi_shares_bothsides_zero_funding(
         'bool'))
 @mark.parametrize('price', PRICES)
 def test_entry_update_price_fetching(
-            ovl_collateral,
-            token,
-            market,
-            bob,
-            collateral,
-            leverage,
-            is_long,
-            price
-        ):
+    ovl_collateral,
+    token,
+    market,
+    bob,
+    start_time,
+    collateral,
+    leverage,
+    is_long,
+    price
+):
+
+    brownie.chain.mine(timestamp=start_time)
 
     token.approve(ovl_collateral, collateral*3, {"from": bob})
 
@@ -465,17 +490,19 @@ def test_entry_update_price_fetching(
     is_long=strategy(
         'bool'))
 def test_entry_update_compounding_oi_onesided(
-            ovl_collateral,
-            token,
-            market,
-            mothership,
-            bob,
-            collateral,
-            leverage,
-            is_long,
-            compoundings
-        ):
+    ovl_collateral,
+    token,
+    market,
+    mothership,
+    bob,
+    start_time,
+    collateral,
+    leverage,
+    is_long,
+    compoundings
+):
     
+    brownie.chain.mine(timestamp=start_time)
 
     token.approve(ovl_collateral, collateral*2, {"from": bob})
 
@@ -527,18 +554,21 @@ def test_entry_update_compounding_oi_onesided(
     is_long=strategy(
         'bool'))
 def test_entry_update_compounding_oi_imbalance(
-            ovl_collateral,
-            token,
-            market,
-            mothership,
-            alice,
-            bob,
-            collateral,
-            leverage,
-            is_long,
-            compoundings,
-            multiplier
-        ):
+    ovl_collateral,
+    token,
+    market,
+    mothership,
+    alice,
+    bob,
+    start_time,
+    collateral,
+    leverage,
+    is_long,
+    compoundings,
+    multiplier
+):
+
+    brownie.chain.mine(timestamp=start_time)
 
     # transfer alice some tokens first given the conftest
     token.transfer(alice, collateral, {"from": bob})
@@ -624,6 +654,7 @@ def test_oi_shares_bothsides_with_funding(
             market,
             alice,
             bob,
+            start_time,
             collateral,
             leverage,
             is_long,
@@ -644,12 +675,14 @@ def test_build_w_impact(
         market,
         bob,
         gov,
-        rewards,
+        start_time,
         oi,
         leverage,
         is_long,
         lmbda
 ):
+
+    brownie.chain.mine(timestamp=start_time)
 
     lmbda = float(lmbda)
 
@@ -761,13 +794,14 @@ def test_build_oi_adjusted_min(
         market,
         bob,
         gov,
-        rewards,
+        start_time,
         oi,
         leverage,
         is_long,
         lmbda
 ):
 
+    brownie.chain.mine(timestamp=start_time)
 
     lmbda = float(lmbda)
 
@@ -847,13 +881,15 @@ def test_build_multiple_in_one_impact_window(
         market,
         bob,
         gov,
-        rewards,
+        start_time,
         oi,
         leverage,
         is_long,
         lmbda,
         num_builds
 ):
+
+    brownie.chain.mine(timestamp=start_time)
 
     lmbda = float(lmbda)
 
@@ -987,13 +1023,15 @@ def test_build_multiple_in_multiple_impact_windows(
         market,
         bob,
         gov,
-        rewards,
+        start_time,
         oi,
         leverage,
         is_long,
         lmbda,
         num_builds
 ):
+
+    brownie.chain.mine(timestamp=start_time)
 
     lmbda = float(lmbda)
     impact_window = market.impactWindow()

@@ -1,3 +1,4 @@
+import brownie
 from brownie import chain
 from brownie.test import given, strategy
 from hypothesis import settings
@@ -14,10 +15,13 @@ def test_funding_total_imbalance(
     market,
     oi,
     ovl_collateral,
+    start_time,
     is_long,
     mothership,
     compoundings
 ):
+
+    brownie.chain.mine(timestamp=start_time)
 
     COMPOUND_PERIOD = market.compoundingPeriod()
     FEE = mothership.fee() / 1e18
