@@ -823,11 +823,6 @@ def test_build_oi_adjusted_min(
     collateral_adjusted = collateral - impact_fee - trade_fee
     oi_adjusted = collateral_adjusted * leverage
 
-    #  # get prior state of collateral manager
-    #  ovl_balance = token.balanceOf(ovl_collateral)
-
-    #  # get prior state of market
-    #  market_oi = market.oiLong() if is_long else market.oiShort()
     market_oi_cap = market.oiCap()  # accounts for depth, brrrd, static
 
     # approve collateral contract to spend bob's ovl to build position
