@@ -1,12 +1,3 @@
-import math
-import random
-
-from brownie import reverts, chain
-from brownie.test import given, strategy
-from hypothesis import settings
-from decimal import *
-
-
 def print_events(tx):
     for i in range(len(tx.events['log'])):
         print(tx.events['log'][i]['k'] + ": " + str(tx.events['log'][i]['v']))
@@ -41,8 +32,4 @@ def test_cap_no_constraint_on_ovl_depreciation_because_liquidity_influx():
 
 
 def test_cap_to_zero_because_liquidity_and_brrrr():
-    pass
-
-
-def test_cap_above_static_cap_because_burn():
     pass

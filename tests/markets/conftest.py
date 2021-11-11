@@ -2,9 +2,7 @@ import pytest
 import brownie
 import os
 import json
-import time
 from brownie import (
-    OverlayToken,
     OverlayTokenNew,
     ComptrollerShim,
     chain,
@@ -94,13 +92,13 @@ def feed_infos():
     market_path = '../../feeds/univ3_dai_weth'
     depth_path = '../../feeds/univ3_axs_weth'
 
-    with open(os.path.normpath(os.path.join(base, market_path + '_raw_uni_framed.json'))) as f:
+    with open(os.path.normpath(os.path.join(base, market_path + '_raw_uni_framed.json'))) as f:  # noqa: E501
         market_mock = json.load(f)
-    with open(os.path.normpath(os.path.join(base, market_path + '_reflected.json'))) as f:
+    with open(os.path.normpath(os.path.join(base, market_path + '_reflected.json'))) as f:  # noqa: E501
         market_reflection = json.load(f)
-    with open(os.path.normpath(os.path.join(base, depth_path + '_raw_uni_framed.json'))) as f:
+    with open(os.path.normpath(os.path.join(base, depth_path + '_raw_uni_framed.json'))) as f:  # noqa: E501
         depth_mock = json.load(f)
-    with open(os.path.normpath(os.path.join(base, depth_path + '_reflected.json'))) as f:
+    with open(os.path.normpath(os.path.join(base, depth_path + '_reflected.json'))) as f:  # noqa: E501
         depth_reflection = json.load(f)
 
     class FeedSmuggler:
@@ -151,7 +149,7 @@ def get_uni_feeds(feed_owner, feed_info):
 
     chain.mine(timestamp=feed_info.market_info[2]['timestamp'][0])
 
-    return uniswapv3_factory.address, market_mock.address, depth_mock.address, market_token1
+    return uniswapv3_factory.address, market_mock.address, depth_mock.address, market_token1  # noqa: E501
 
 
 @pytest.fixture(scope="module")
@@ -206,8 +204,8 @@ def comptroller(gov, feed_infos, token, feed_owner):
          get_uni_feeds,
         ),
     ])
-def create_mothership(token, feed_infos, fees, alice, bob, gov, feed_owner, request):
-    ovlms_name, ovlms_args, ovlm_name, ovlm_args, ovlc_name, ovlc_args, get_feed = request.param
+def create_mothership(token, feed_infos, fees, alice, bob, gov, feed_owner, request):  # noqa: E501
+    ovlms_name, ovlms_args, ovlm_name, ovlm_args, ovlc_name, ovlc_args, get_feed = request.param  # noqa: E501
 
     ovlms = getattr(brownie, ovlms_name)
     ovlm = getattr(brownie, ovlm_name)
@@ -261,9 +259,11 @@ def create_mothership(token, feed_infos, fees, alice, bob, gov, feed_owner, requ
 
     yield create_mothership
 
+
 @pytest.fixture(scope="module")
 def start_time():
     return chain.time() + 200
+
 
 @pytest.fixture(scope="module")
 def mothership(create_mothership):
@@ -292,8 +292,10 @@ def market(mothership, request):
     scope="module",
     params=["IOverlayV1Market"])
 def notamarket(accounts):
-    '''We need this because we cannot mutate the market object in tests (mutated state is inherited by all future tests :HORROR:)
-    And we cannot copy or deepcopy contract objects owing to RecursionError: maximum recursion depth exceeded while calling a Python object
+    '''We need this because we cannot mutate the market object in tests
+    (mutated state is inherited by all future tests :HORROR:) And we cannot
+    copy or deepcopy contract objects owing to RecursionError: maximum
+    recursion depth exceeded while calling a Python object
     '''
     yield accounts[5]
 
@@ -301,18 +303,18 @@ def notamarket(accounts):
 @pytest.fixture(scope="module")
 def uni_test(gov, rewards, accounts):
 
-    dai_eth = "0xc2e9f25be6257c210d7adf0d4cd6e3e881ba25f8"
+    #  dai_eth = "0xc2e9f25be6257c210d7adf0d4cd6e3e881ba25f8"
     usdc_eth = "0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8"
-    wbtc_eth = "0xcbcdf9626bc03e24f779434178a73a0b4bad62ed"
-    uni_eth = "0x1d42064Fc4Beb5F8aAF85F4617AE8b3b5B8Bd801"
-    link_eth = "0xa6Cc3C2531FdaA6Ae1A3CA84c2855806728693e8"
+    #  wbtc_eth = "0xcbcdf9626bc03e24f779434178a73a0b4bad62ed"
+    #  uni_eth = "0x1d42064Fc4Beb5F8aAF85F4617AE8b3b5B8Bd801"
+    #  link_eth = "0xa6Cc3C2531FdaA6Ae1A3CA84c2855806728693e8"
     aave_eth = "0x5aB53EE1d50eeF2C1DD3d5402789cd27bB52c1bB"
 
     usdc = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
     eth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-    wbtc = "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599"
-    uni = "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984"
-    link = "0x514910771AF9Ca656af840dff83E8264EcF986CA"
+    #  wbtc = "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599"
+    #  uni = "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984"
+    #  link = "0x514910771AF9Ca656af840dff83E8264EcF986CA"
     aave = "0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9"
 
     # we are trying to find amount USDC in OVL terms

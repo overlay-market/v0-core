@@ -3,9 +3,8 @@ import math
 
 from decimal import Decimal
 from brownie.test import given, strategy
-from hypothesis import settings
 from pytest import approx, mark
-from decimal import Decimal
+
 
 def print_logs(tx):
     for i in range(len(tx.events['log'])):
@@ -294,7 +293,7 @@ def test_oi_added(
     oi_adjusted_min = collateral * leverage * (1-SLIPPAGE_TOL)
 
     token.approve(ovl_collateral, collateral, {"from": bob})
-    tx = ovl_collateral.build(
+    ovl_collateral.build(
         market, collateral, leverage, is_long, oi_adjusted_min, {"from": bob})
 
     oi = collateral * leverage
@@ -501,7 +500,7 @@ def test_entry_update_compounding_oi_onesided(
     is_long,
     compoundings
 ):
-    
+
     brownie.chain.mine(timestamp=start_time)
 
     token.approve(ovl_collateral, collateral*2, {"from": bob})
@@ -824,11 +823,11 @@ def test_build_oi_adjusted_min(
     collateral_adjusted = collateral - impact_fee - trade_fee
     oi_adjusted = collateral_adjusted * leverage
 
-    # get prior state of collateral manager
-    ovl_balance = token.balanceOf(ovl_collateral)
+    #  # get prior state of collateral manager
+    #  ovl_balance = token.balanceOf(ovl_collateral)
 
-    # get prior state of market
-    market_oi = market.oiLong() if is_long else market.oiShort()
+    #  # get prior state of market
+    #  market_oi = market.oiLong() if is_long else market.oiShort()
     market_oi_cap = market.oiCap()  # accounts for depth, brrrd, static
 
     # approve collateral contract to spend bob's ovl to build position
@@ -1119,7 +1118,6 @@ def test_build_multiple_in_multiple_impact_windows(
                 ovl_collateral.build(market, collateral, leverage, is_long,
                                      oi_min_adjusted, {"from": bob})
             break
-
 
         # build the position
         tx = ovl_collateral.build(market, collateral, leverage, is_long,
