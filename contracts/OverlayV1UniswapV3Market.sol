@@ -70,7 +70,11 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             _token0 == _quote ? _token0 : _token1
         );
 
-        setPricePointNext(insertSpread(_price, _price));
+        setPricePointNext(computePricePoint(
+            _price, 
+            _price, 
+            0
+        ));
 
         updated = block.timestamp;
         compounded = block.timestamp;
@@ -80,22 +84,20 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     /// @notice Reads the current price and depth information
     /// @dev Conditionall reads price and time weighted liquidity of market feed
-    /// @param _price To read the price or not
-    /// @param _depth To read the depth or not
-    /// @return price_ Current price. Returns emptry struct if price isn't read
-    /// @return depth_ Current depth. Returns 0 if depth is not read.
-    function readFeed (
-        bool _price,
-        bool _depth
-    ) public view returns (
-        PricePoint memory price_,
-        uint256 depth_
+    /// @return price_ Current price point
+    function fetchPricePoint () public view override returns (
+        PricePoint memory price_
     ) {
 
         int56[] memory _ticks;
         uint160[] memory _liqs;
 
-        if (_price) {
+        uint _microPrice;
+        uint _macroPrice;
+        uint _ovlPrice;
+        uint _marketLiquidity;
+
+        {
 
             uint32[] memory _secondsAgo = new uint32[](3);
             _secondsAgo[2] = uint32(macroWindow);
@@ -103,74 +105,57 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
             ( _ticks, _liqs ) = IUniswapV3Pool(marketFeed).observe(_secondsAgo);
 
-            uint _macroPrice = OracleLibraryV2.getQuoteAtTick(
+            _macroPrice = OracleLibraryV2.getQuoteAtTick(
                 int24((_ticks[0] - _ticks[2]) / int56(int32(int(macroWindow)))),
                 amountIn,
                 base,
                 quote
             );
 
-            uint _microPrice = OracleLibraryV2.getQuoteAtTick(
+            _microPrice = OracleLibraryV2.getQuoteAtTick(
                 int24((_ticks[0] - _ticks[1]) / int56(int32(int(microWindow)))),
                 amountIn,
                 base,
                 quote
             );
 
-            price_ = insertSpread(_microPrice, _macroPrice);
-
-        }
-
-        if (_depth) {
-
-            uint32[] memory _secondsAgo = new uint32[](2);
-
-            if (!_price) {
-
-                _secondsAgo[1] = uint32(microWindow);
-
-                ( _ticks, _liqs ) = IUniswapV3Pool(marketFeed).observe(_secondsAgo);
-
-            }
-
-            uint256 _sqrtPrice = TickMath.getSqrtRatioAtTick(
+            uint _sqrtPrice = TickMath.getSqrtRatioAtTick(
                 int24((_ticks[0] - _ticks[1]) / int56(int32(int(microWindow))))
             );
 
-            uint256 _liquidity = (uint160(microWindow) << 128) / ( _liqs[0] - _liqs[1] );
+            uint _liquidity = (uint160(microWindow) << 128) / ( _liqs[0] - _liqs[1] );
 
-            uint _ethAmount = ethIs0
+            _marketLiquidity = ethIs0
                 ? ( uint256(_liquidity) << 96 ) / _sqrtPrice
                 : FullMath.mulDiv(uint256(_liquidity), _sqrtPrice, X96);
+
+        }
+
+
+        {
+
+            uint32[] memory _secondsAgo = new uint32[](2);
 
             _secondsAgo[1] = uint32(macroWindow);
 
             ( _ticks, ) = IUniswapV3Pool(ovlFeed).observe(_secondsAgo);
 
-            uint _ovlPrice = OracleLibraryV2.getQuoteAtTick(
+            _ovlPrice = OracleLibraryV2.getQuoteAtTick(
                 int24((_ticks[0] - _ticks[1]) / int56(int32(int(macroWindow)))),
                 1e18,
                 ovl,
                 eth
             );
 
-            depth_ = lmbda.mulUp(( _ethAmount * 1e18 ) / _ovlPrice).divDown(2e18);
-
         }
 
-    }
-
-
-    /// @notice The price at the current block
-    /// @dev Returns the price of the current block.
-    /// @return price_ The price point for the current block consisting of
-    /// the bid, the ask, TODO: ...and maybe the depth.
-    function price () public view override returns (PricePoint memory price_) {
-
-        ( price_, ) = readFeed(true, false);
+        price_ = computePricePoint(
+            _microPrice, 
+            _macroPrice, 
+            computeDepth(_marketLiquidity, _ovlPrice)
+        );
 
     }
-
 
     /// @notice The depth of the market feed in OVL terms at the current block.
     /// @dev Returns the time weighted liquidity of the market feed in
@@ -178,7 +163,9 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     /// @return depth_ The time weighted liquidity in OVL terms.
     function depth () public view override returns (uint depth_) {
 
-        (   ,depth_ ) = readFeed(false, true);
+        PricePoint memory _pricePointCurrent = pricePointCurrent();
+
+        depth_ = _pricePointCurrent.depth;
 
     }
 
@@ -222,47 +209,18 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         uint cap_
     ) {
 
-        uint _brrrrdExpected;
         uint _now = block.timestamp;
         uint _updated = updated;
 
-        uint _depth;
-        PricePoint memory _price;
-        bool _readPrice = _now != _updated;
+        if (_now != _updated) {
 
-        if (_readDepth) {
+            PricePoint memory _pricePoint = fetchPricePoint();
 
-            (   uint _brrrrd,
-                uint _antiBrrrrd ) = getBrrrrd();
+            setPricePointNext(_pricePoint);
 
-            bool _burnt;
-            bool _expected;
-            bool _surpassed;
+            updated = _now;
 
-            if (_brrrrd < _antiBrrrrd) _burnt = true;
-            else {
-                _brrrrdExpected = brrrrdExpected;
-                _brrrrd -= _antiBrrrrd;
-                _expected = _brrrrd < _brrrrdExpected;
-                _surpassed = _brrrrd > _brrrrdExpected * 2;
-            }
-
-            ( _price, _depth ) = readFeed(_readPrice, _burnt || _expected || !_surpassed);
-
-            if (_readPrice) setPricePointNext(_price);
-
-            // Q: why not just use oiCap() here?
-            cap_ = _surpassed ? 0 : _burnt || _expected
-                ? _oiCap(false, _depth, staticCap, 0, 0)
-                : _oiCap(true, _depth, staticCap, _brrrrd, _brrrrdExpected);
-
-        } else if (_readPrice) {
-
-            ( _price, ) = readFeed(true, false);
-
-            setPricePointNext(_price);
-
-        }
+        } 
 
         (   uint _compoundings,
             uint _tCompounding  ) = epochs(_now, compounded);
@@ -273,6 +231,8 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             compounded = _tCompounding;
 
         }
+
+        cap_ = oiCap();
 
     }
 
@@ -398,10 +358,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         PricePoint memory _priceEntry = _pricePoints[_entryIndex];
 
-        PricePoint memory _priceExit;
-
-        if (updated != block.timestamp) _priceExit = price();
-        else _priceExit = _pricePoints[_pricePoints.length - 1];
+        PricePoint memory _priceExit = pricePointCurrent();
 
         priceFrame_ = _isLong
             ? Math.min(_priceExit.bid.divDown(_priceEntry.ask), priceFrameCap)
