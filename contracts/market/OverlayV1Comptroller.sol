@@ -283,6 +283,20 @@ abstract contract OverlayV1Comptroller {
     /// @return depth_ The amount of liquidity in the market feed in OVL terms.
     function depth () public virtual view returns (uint depth_);
 
+
+    function computeDepth (
+        uint _marketLiquidity,
+        uint _ovlPrice
+    ) public view returns (
+        uint depth_
+    ) {
+
+        depth_ = ((_marketLiquidity * 1e18) / _ovlPrice)
+            .mulUp(lmbda)    
+            .divDown(2e18);
+
+    }
+
     function pressure (
         bool _isLong,
         uint _oi,

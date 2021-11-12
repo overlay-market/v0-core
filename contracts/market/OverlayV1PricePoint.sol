@@ -14,7 +14,7 @@ abstract contract OverlayV1PricePoint {
     struct PricePoint {
         uint256 bid;
         uint256 ask;
-        uint256 index;
+        uint256 depth;
     }
 
     uint256 public pbnj;
@@ -26,7 +26,7 @@ abstract contract OverlayV1PricePoint {
     // mapping from price point index to realized historical prices
     PricePoint[] internal _pricePoints;
 
-    event NewPrice(uint bid, uint ask, uint index);
+    event NewPricePoint(uint bid, uint ask, uint depth);
 
     constructor(
         uint256 _priceFrameCap
@@ -37,7 +37,7 @@ abstract contract OverlayV1PricePoint {
 
     }
 
-    function price () public view virtual returns (PricePoint memory);
+    function fetchPricePoint () public view virtual returns (PricePoint memory);
 
     /// @notice Get the index of the next price to be realized
     /// @dev Returns the index of the _next_ price
@@ -69,7 +69,7 @@ abstract contract OverlayV1PricePoint {
 
         if (_pricePointIndex == _len) {
 
-            pricePoint_ = price();
+            pricePoint_ = fetchPricePoint();
 
         } else {
 
@@ -79,7 +79,6 @@ abstract contract OverlayV1PricePoint {
 
     }
 
-
     /// @notice Inserts the bid/ask spread into the price.
     /// @dev Takes two time weighted average prices from the market feed
     /// and composes them into a price point, which has a bid and an ask.
@@ -88,10 +87,12 @@ abstract contract OverlayV1PricePoint {
     /// multiplied by the inverse of euler's number raised to the spread.
     /// @param _microPrice The shorter TWAP.
     /// @param _macroPrice The longer TWAP.
+    /// @param _depth Time weighted liquidity of market in OVL terms
     /// @return pricePoint_ The price point with bid/ask/index.
-    function insertSpread (
+    function computePricePoint (
         uint _microPrice,
-        uint _macroPrice
+        uint _macroPrice,
+        uint _depth 
     ) internal view returns (
         PricePoint memory pricePoint_
     ) {
@@ -103,8 +104,27 @@ abstract contract OverlayV1PricePoint {
         pricePoint_ = PricePoint(
             _bid,
             _ask,
-            _macroPrice
+            _depth
         );
+
+    }
+
+    function pricePointCurrent () public view returns (
+        PricePoint memory pricePoint_
+    ){
+
+        uint _now = block.timestamp;
+        uint _updated = updated;
+
+        if (_now != _updated) {
+
+            pricePoint_ = fetchPricePoint();
+
+        } else {
+
+            pricePoint_ = _pricePoints[_pricePoints.length - 1];
+
+        }
 
     }
 
@@ -113,10 +133,10 @@ abstract contract OverlayV1PricePoint {
         PricePoint memory _pricePoint
     ) internal {
 
-        emit NewPrice(
+        emit NewPricePoint(
             _pricePoint.bid, 
             _pricePoint.ask, 
-            _pricePoint.index
+            _pricePoint.depth
         );
 
         _pricePoints.push(_pricePoint);
