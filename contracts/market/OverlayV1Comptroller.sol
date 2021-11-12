@@ -283,19 +283,17 @@ abstract contract OverlayV1Comptroller {
     /// @return depth_ The amount of liquidity in the market feed in OVL terms.
     function depth () public virtual view returns (uint depth_);
 
-
+    /// @notice Performs arithmetic to turn market liquidity into OVL terms.
+    /// @dev Derived from cnstant product formula X*Y=K and tailored 
+    /// to Uniswap V3 selective liquidity provision.
+    /// @param _marketLiquidity Amount of liquidity in market in ETH terms.
+    /// @param _ovlPrice Price of OVL against ETH.
+    /// @return depth_ Market depth in OVL terms.
     function computeDepth (
         uint _marketLiquidity,
         uint _ovlPrice
-    ) public view returns (
-        uint depth_
-    ) {
+    ) public virtual view returns (uint depth_);
 
-        depth_ = ((_marketLiquidity * 1e18) / _ovlPrice)
-            .mulUp(lmbda)    
-            .divDown(2e18);
-
-    }
 
     function pressure (
         bool _isLong,
