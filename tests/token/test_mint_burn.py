@@ -3,13 +3,13 @@ import brownie
 
 
 def test_only_minter(token, alice):
-    EXPECTED_ERROR_MSG = 'only minter'
+    EXPECTED_ERROR_MSG = 'OVL:!minter'
     with brownie.reverts(EXPECTED_ERROR_MSG):
         token.mint(alice, 1 * 10 ** token.decimals(), {"from": alice})
 
 
 def test_only_burner(token, bob):
-    EXPECTED_ERROR_MSG = 'only burner'
+    EXPECTED_ERROR_MSG = 'OVL:!burner'
     with brownie.reverts(EXPECTED_ERROR_MSG):
         token.burn(bob, 1 * 10 ** token.decimals(), {"from": bob})
 

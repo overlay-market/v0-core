@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "../libraries/Position.sol";
 
-interface IOverlayV1Market is IERC1155 {
+interface IOverlayV1Market {
 
     event log(string k, uint v);
 
