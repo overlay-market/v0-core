@@ -449,7 +449,6 @@ def test_entry_update_price_fetching(
     idx1 = market.pricePointNextIndex() - 1
     assert market_idx == idx1
 
-
     entry_bid1, entry_ask1, _ = market.pricePoints(idx1)
 
     # make sure bid/ask calculated correctly
