@@ -5,6 +5,7 @@ import "./libraries/FixedPoint.sol";
 import "./libraries/UniswapV3OracleLibrary/UniswapV3OracleLibraryV2.sol";
 import "./interfaces/IUniswapV3Pool.sol";
 import "./market/OverlayV1Market.sol";
+import "./libraries/UniswapV3OracleLibrary/TickMath.sol";
 
 contract OverlayV1UniswapV3Market is OverlayV1Market {
 
@@ -19,7 +20,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     address public immutable ovlFeed;
     address public immutable base;
     address public immutable quote;
-    uint128 internal immutable amountIn;
+    uint128 internal immutable baseAmount;
 
     address internal immutable eth;
     bool internal immutable ethIs0;
@@ -30,7 +31,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         address _marketFeed,
         address _quote,
         address _eth,
-        uint128 _amountIn,
+        uint128 _baseAmount,
         uint256 _macroWindow,
         uint256 _microWindow,
         uint256 _priceFrameCap
@@ -49,7 +50,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         ethIs0 = IUniswapV3Pool(_ovlFeed).token0() == _eth;
         ovlFeed = _ovlFeed;
         marketFeed = _marketFeed;
-        amountIn = _amountIn;
+        baseAmount = _baseAmount;
         macroWindow = _macroWindow;
         microWindow = _microWindow;
 
@@ -65,11 +66,20 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             uint32(0)
         );
 
-        setPricePointNext(PricePoint(
+        _pricePoints.push(PricePoint(
             _tick, 
             _tick, 
             0
         ));
+
+        uint _price = OracleLibraryV2.getQuoteAtTick(
+            _tick,
+            uint128(_baseAmount),
+            _token0 != _quote ? _token0 : _token1,
+            _token0 == _quote ? _token0 : _token1
+        );
+
+        emit NewPricePoint(_price, _price, 0);
 
     }
 
@@ -136,12 +146,6 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             computeDepth(_marketLiquidity, _ovlPrice)
         );
 
-        // price_ = computePricePoint(
-        //     _microTick, 
-        //     _macroTick, 
-        //     computeDepth(_marketLiquidity, _ovlPrice)
-        // );
-
     }
 
 
@@ -161,6 +165,35 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         depth_ = ((_marketLiquidity * 1e18) / _ovlPrice)
             .mulUp(lmbda)    
             .divDown(2e18);
+
+    }
+
+    function _tickToPrice (
+        int24 _tick
+    ) public override view returns (
+        uint quote_
+    ) {
+
+        uint160 sqrtRatioX96 = TickMath.getSqrtRatioAtTick(_tick);
+
+        // better precision if no overflow when squared
+        if (sqrtRatioX96 <= type(uint128).max) {
+
+            uint256 ratioX192 = uint256(sqrtRatioX96) * sqrtRatioX96;
+
+            quote_ = base < quote
+                ? FullMath.mulDiv(ratioX192, baseAmount, 1 << 192)
+                : FullMath.mulDiv(1 << 192, baseAmount, ratioX192);
+
+        } else {
+
+            uint256 ratioX128 = FullMath.mulDiv(sqrtRatioX96, sqrtRatioX96, 1 << 64);
+
+            quote_ = base < quote
+                ? FullMath.mulDiv(ratioX128, baseAmount, 1 << 128)
+                : FullMath.mulDiv(1 << 128, baseAmount, ratioX128);
+
+        }
 
     }
 

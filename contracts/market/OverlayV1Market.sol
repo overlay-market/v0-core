@@ -168,11 +168,11 @@ abstract contract OverlayV1Market is OverlayV1Governance {
     /// @dev Returns the time weighted liquidity of the market feed in
     /// OVL terms at the current block.
     /// @return depth_ The time weighted liquidity in OVL terms.
-    function depth () public view override returns (uint depth_) {
+    function depth () public view override returns (
+        uint depth_
+    ) {
 
-        PricePoint memory _pricePointCurrent = pricePointCurrent();
-
-        depth_ = _pricePointCurrent.depth;
+        ( ,,depth_ )= pricePointCurrent();
 
     }
 

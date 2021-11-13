@@ -12,8 +12,8 @@ abstract contract OverlayV1PricePoint {
     uint256 private constant INVERSE_E = 0x51AF86713316A9A;
 
     struct PricePoint {
-        int56 macroTick;
-        int56 microTick;
+        int24 macroTick;
+        int24 microTick;
         uint256 depth;
     }
 
@@ -43,6 +43,9 @@ abstract contract OverlayV1PricePoint {
 
     function fetchPricePoint () public view virtual returns (PricePoint memory);
 
+    function _tickToPrice (int24 _tick) public virtual view returns (uint quote_);
+
+
     /// @notice Get the index of the next price to be realized
     /// @dev Returns the index of the _next_ price
     /// @return nextIndex_ The length of the price point array
@@ -58,11 +61,15 @@ abstract contract OverlayV1PricePoint {
     /// @notice All past price points.
     /// @dev Returns the price point if it exists.
     /// @param _pricePointIndex Index of the price point being queried.
-    /// @return pricePoint_ Price point, if it exists.
+    /// @return bid_ Bid.
+    /// @return ask_ Ask.
+    /// @return depth_ Market liquidity in OVL terms.
     function pricePoints(
         uint256 _pricePointIndex
     ) external view returns (
-        PricePoint memory pricePoint_
+        uint256 bid_,
+        uint256 ask_,
+        uint256 depth_
     ) {
 
         uint _len = _pricePoints.length;
@@ -73,48 +80,26 @@ abstract contract OverlayV1PricePoint {
 
         if (_pricePointIndex == _len) {
 
-            pricePoint_ = fetchPricePoint();
+            ( bid_, ask_, depth_ ) = readPricePoint(fetchPricePoint());
 
         } else {
 
-            pricePoint_ = _pricePoints[_pricePointIndex];
+            ( bid_, ask_, depth_ ) = readPricePoint(_pricePointIndex);
 
         }
 
     }
 
-    /// @notice Inserts the bid/ask spread into the price.
-    /// @dev Takes two time weighted average prices from the market feed
-    /// and composes them into a price point, which has a bid and an ask.
-    /// The ask is the max of the two twaps multiplied by euler's number 
-    /// raised to the market's spread. The bid is the min of the twaps
-    /// multiplied by the inverse of euler's number raised to the spread.
-    /// @param _microPrice The shorter TWAP.
-    /// @param _macroPrice The longer TWAP.
-    /// @param _depth Time weighted liquidity of market in OVL terms
-    /// @return pricePoint_ The price point with bid/ask/index.
-    function computePricePoint (
-        uint _microPrice,
-        uint _macroPrice,
-        uint _depth 
-    ) internal view returns (
-        PricePoint memory pricePoint_
-    ) {
 
-        // uint _ask = Math.max(_macroPrice, _microPrice).mulUp(E.powUp(pbnj));
-
-        // uint _bid = Math.min(_macroPrice, _microPrice).mulDown(INVERSE_E.powUp(pbnj));
-
-        // pricePoint_ = PricePoint(
-        //     _bid,
-        //     _ask,
-        //     _depth
-        // );
-
-    }
-
+    /// @notice Current price point.
+    /// @dev Returns the price point if it exists.
+    /// @return bid_ Bid.
+    /// @return ask_ Ask.
+    /// @return depth_ Market liquidity in OVL terms.
     function pricePointCurrent () public view returns (
-        PricePoint memory pricePoint_
+        uint bid_,
+        uint ask_,
+        uint depth_
     ){
 
         uint _now = block.timestamp;
@@ -122,11 +107,11 @@ abstract contract OverlayV1PricePoint {
 
         if (_now != _updated) {
 
-            pricePoint_ = fetchPricePoint();
+            ( bid_, ask_, depth_ ) = readPricePoint(fetchPricePoint());
 
         } else {
 
-            pricePoint_ = _pricePoints[_pricePoints.length - 1];
+            ( bid_, ask_, depth_ ) = readPricePoint(_pricePoints.length - 1);
 
         }
 
@@ -137,13 +122,17 @@ abstract contract OverlayV1PricePoint {
         PricePoint memory _pricePoint
     ) internal {
 
-        // emit NewPricePoint(
-        //     _pricePoint.bid, 
-        //     _pricePoint.ask, 
-        //     _pricePoint.depth
-        // );
-
         _pricePoints.push(_pricePoint);
+
+        (   uint _bid, 
+            uint _ask,  
+            uint _depth ) = readPricePoint(_pricePoint);
+
+        emit NewPricePoint(
+            _bid, 
+            _ask, 
+            _depth
+        );
 
     }
 
@@ -178,15 +167,6 @@ abstract contract OverlayV1PricePoint {
         bid_ = Math.min(_macroPrice, _microPrice).mulDown(INVERSE_E.powUp(_spread));
 
         depth_ = _pricePoint.depth;
-
-
-    }
-
-    function _tickToPrice (
-        int56 _tick
-    ) public pure returns (
-        uint price_
-    ) {
 
 
     }
