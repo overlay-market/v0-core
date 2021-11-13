@@ -47,18 +47,6 @@ contract OverlayV1UniswapV3MarketZeroLambdaShim is OverlayV1UniswapV3Market {
 
     }
 
-    // function computeDepth (
-    //     uint _marketLiquidity,
-    //     uint _ovlPrice
-    // ) public override view returns (
-    //     uint depth_
-    // ) {
-
-    //     depth_ = ((_marketLiquidity * 1e18) / _ovlPrice)
-    //         .mulUp(lmbda)    
-    //         .divDown(2e18);
-
-    // }
 
 
 }

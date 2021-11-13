@@ -86,7 +86,9 @@ interface IOverlayV1Market is IERC1155 {
     function pricePoints (
         uint256 index
     ) external view returns (
-        PricePoint memory price
+        uint bid_,
+        uint ask_,
+        uint depth_
     );
 
     function MAX_FUNDING_COMPOUND() external view returns (uint16);
