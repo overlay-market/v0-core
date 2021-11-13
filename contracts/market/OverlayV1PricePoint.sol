@@ -12,8 +12,8 @@ abstract contract OverlayV1PricePoint {
     uint256 private constant INVERSE_E = 0x51AF86713316A9A;
 
     struct PricePoint {
-        uint256 bid;
-        uint256 ask;
+        int56 macroTick;
+        int56 microTick;
         uint256 depth;
     }
 
@@ -33,7 +33,11 @@ abstract contract OverlayV1PricePoint {
     ) {
 
         require(1e18 <= _priceFrameCap, "OVLV1:!priceFrame");
+
         priceFrameCap = _priceFrameCap;
+
+        updated = block.timestamp;
+
 
     }
 
@@ -97,15 +101,15 @@ abstract contract OverlayV1PricePoint {
         PricePoint memory pricePoint_
     ) {
 
-        uint _ask = Math.max(_macroPrice, _microPrice).mulUp(E.powUp(pbnj));
+        // uint _ask = Math.max(_macroPrice, _microPrice).mulUp(E.powUp(pbnj));
 
-        uint _bid = Math.min(_macroPrice, _microPrice).mulDown(INVERSE_E.powUp(pbnj));
+        // uint _bid = Math.min(_macroPrice, _microPrice).mulDown(INVERSE_E.powUp(pbnj));
 
-        pricePoint_ = PricePoint(
-            _bid,
-            _ask,
-            _depth
-        );
+        // pricePoint_ = PricePoint(
+        //     _bid,
+        //     _ask,
+        //     _depth
+        // );
 
     }
 
@@ -133,14 +137,59 @@ abstract contract OverlayV1PricePoint {
         PricePoint memory _pricePoint
     ) internal {
 
-        emit NewPricePoint(
-            _pricePoint.bid, 
-            _pricePoint.ask, 
-            _pricePoint.depth
-        );
+        // emit NewPricePoint(
+        //     _pricePoint.bid, 
+        //     _pricePoint.ask, 
+        //     _pricePoint.depth
+        // );
 
         _pricePoints.push(_pricePoint);
 
     }
+
+    function readPricePoint (
+        uint _pricePoint
+    ) public view returns (
+        uint256 bid_,
+        uint256 ask_,
+        uint256 depth_
+    ) {
+
+        return readPricePoint(_pricePoints[_pricePoint]);
+
+    }
+
+    function readPricePoint(
+        PricePoint memory _pricePoint
+    ) public view returns (
+        uint256 bid_,
+        uint256 ask_,
+        uint256 depth_
+    ) {
+
+        uint _microPrice = _tickToPrice(_pricePoint.microTick);
+
+        uint _macroPrice = _tickToPrice(_pricePoint.macroTick);
+
+        uint _spread = pbnj;
+
+        ask_ = Math.max(_macroPrice, _microPrice).mulUp(E.powUp(_spread));
+
+        bid_ = Math.min(_macroPrice, _microPrice).mulDown(INVERSE_E.powUp(_spread));
+
+        depth_ = _pricePoint.depth;
+
+
+    }
+
+    function _tickToPrice (
+        int56 _tick
+    ) public pure returns (
+        uint price_
+    ) {
+
+
+    }
+
 
 }

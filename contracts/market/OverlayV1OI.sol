@@ -24,6 +24,16 @@ contract OverlayV1OI {
 
     event FundingPaid(uint oiLong, uint oiShort, int fundingPaid);
 
+    constructor (
+        uint256 _compoundingPeriod
+    ) {
+
+        compoundingPeriod = _compoundingPeriod;
+
+        compounded = block.timestamp;
+
+    }
+
     /// @notice The compounding information for computing funding.
     /// @dev This returns the number of compoundings that have passed since
     /// the last time funding was paid as well as the timestamp of the

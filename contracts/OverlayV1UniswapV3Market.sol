@@ -38,6 +38,8 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         _mothership
     ) OverlayV1Comptroller (
         _microWindow
+    ) OverlayV1OI (
+        _microWindow
     ) OverlayV1PricePoint (
         _priceFrameCap
     ) {
@@ -63,21 +65,11 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             uint32(0)
         );
 
-        uint _price = OracleLibraryV2.getQuoteAtTick(
-            _tick,
-            uint128(_amountIn),
-            _token0 != _quote ? _token0 : _token1,
-            _token0 == _quote ? _token0 : _token1
-        );
-
-        setPricePointNext(computePricePoint(
-            _price, 
-            _price, 
+        setPricePointNext(PricePoint(
+            _tick, 
+            _tick, 
             0
         ));
-
-        updated = block.timestamp;
-        compounded = block.timestamp;
 
     }
 
@@ -92,10 +84,11 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         int56[] memory _ticks;
         uint160[] memory _liqs;
 
-        uint _microPrice;
-        uint _macroPrice;
         uint _ovlPrice;
         uint _marketLiquidity;
+
+        int24 _microTick;
+        int24 _macroTick;
 
         {
 
@@ -105,23 +98,11 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
             ( _ticks, _liqs ) = IUniswapV3Pool(marketFeed).observe(_secondsAgo);
 
-            _macroPrice = OracleLibraryV2.getQuoteAtTick(
-                int24((_ticks[0] - _ticks[2]) / int56(int32(int(macroWindow)))),
-                amountIn,
-                base,
-                quote
-            );
+            _macroTick = int24(( _ticks[0] - _ticks[2]) / int56(int32(int(macroWindow))));
 
-            _microPrice = OracleLibraryV2.getQuoteAtTick(
-                int24((_ticks[0] - _ticks[1]) / int56(int32(int(microWindow)))),
-                amountIn,
-                base,
-                quote
-            );
+            _microTick = int24((_ticks[0] - _ticks[1]) / int56(int32(int(microWindow))));
 
-            uint _sqrtPrice = TickMath.getSqrtRatioAtTick(
-                int24((_ticks[0] - _ticks[1]) / int56(int32(int(microWindow))))
-            );
+            uint _sqrtPrice = TickMath.getSqrtRatioAtTick(_microTick);
 
             uint _liquidity = (uint160(microWindow) << 128) / ( _liqs[0] - _liqs[1] );
 
@@ -149,11 +130,17 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         }
 
-        price_ = computePricePoint(
-            _microPrice, 
-            _macroPrice, 
+        price_ = PricePoint(
+            _microTick, 
+            _macroTick, 
             computeDepth(_marketLiquidity, _ovlPrice)
         );
+
+        // price_ = computePricePoint(
+        //     _microTick, 
+        //     _macroTick, 
+        //     computeDepth(_marketLiquidity, _ovlPrice)
+        // );
 
     }
 
