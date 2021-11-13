@@ -1,6 +1,3 @@
-import pytest
-
-
 def test_balances(token, gov, alice, bob, minter, burner, admin):
     assert token.totalSupply() == token.balanceOf(bob)
     assert token.balanceOf(gov) == 0

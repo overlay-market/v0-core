@@ -1,25 +1,15 @@
 import brownie
 from brownie import chain
 from brownie.test import given, strategy
-from hypothesis import settings
 from pytest import approx
-from decimal import *
 
 
 @given(
   compoundings=strategy('uint256', min_value=1, max_value=100),
   oi=strategy('uint256', min_value=1, max_value=10000),
   is_long=strategy('bool'))
-def test_funding_total_imbalance(
-    bob,
-    market,
-    oi,
-    ovl_collateral,
-    start_time,
-    is_long,
-    mothership,
-    compoundings
-):
+def test_funding_total_imbalance(bob, market, oi, ovl_collateral, start_time,
+                                 is_long, mothership, compoundings):
 
     brownie.chain.mine(timestamp=start_time)
 
@@ -37,14 +27,7 @@ def test_funding_total_imbalance(
 
     expected_funding_payment = expected_oi - expected_oi_after_payment
 
-    tx_build = ovl_collateral.build(
-        market,
-        oi,
-        1,
-        is_long,
-        0,
-        {'from': bob}
-    )
+    ovl_collateral.build(market, oi, 1, is_long, 0, {'from': bob})
 
     oi = (market.oiLong() if is_long else market.oiShort()) / 1e18
 
@@ -60,10 +43,10 @@ def test_funding_total_imbalance(
         funding_payment = -funding_payment
 
     assert expected_funding_payment == approx(
-        funding_payment), 'funding payment different than expected'
+        funding_payment, rel=1e-04), 'funding payment different than expected'
 
     oi_after_payment = (
-        market.oiLong() if is_long else market.oiShort()) / 1e18
+            market.oiLong() if is_long else market.oiShort()) / 1e18
 
     assert oi_after_payment == approx(
-        expected_oi_after_payment), 'oi after funding payment different than expected'
+            expected_oi_after_payment, rel=1e-04), 'oi after funding payment different than expected'  # noqa: E501

@@ -1,9 +1,8 @@
-from decimal import *
 import math
 
-from brownie import reverts, chain
+from brownie import chain
 from brownie.test import given, strategy
-from hypothesis import settings
+from decimal import Decimal
 from pytest import approx
 
 ONE_BLOCK = 13
@@ -25,9 +24,9 @@ def test_impact(comptroller):
 
     chain.mine(timedelta=1200)
 
-    tx = comptroller.impactBatch([True], [1e18])
+    comptroller.impactBatch([True], [1e18])
 
-    tx = comptroller.impactBatch([True], [1e18])
+    comptroller.impactBatch([True], [1e18])
 
     roller0 = comptroller.impactRollers(0)
     roller1 = comptroller.impactRollers(1)
@@ -37,7 +36,7 @@ def test_impact(comptroller):
     print(roller1)
     print(roller2)
 
-    tx = comptroller.impactBatch([True], [1e18])
+    comptroller.impactBatch([True], [1e18])
 
     roller0 = comptroller.impactRollers(0)
     roller1 = comptroller.impactRollers(1)
@@ -56,15 +55,15 @@ def test_impact_roller_expected_impact(comptroller):
 
     chain.mine(timedelta=ONE_BLOCK)
 
-    tx = comptroller.impactBatch([True], [1e18])
+    comptroller.impactBatch([True], [1e18])
     chain.mine(timedelta=ONE_BLOCK)
-    tx = comptroller.impactBatch([True], [1e18])
+    comptroller.impactBatch([True], [1e18])
     chain.mine(timedelta=ONE_BLOCK)
-    tx = comptroller.impactBatch([True], [1e18])
+    comptroller.impactBatch([True], [1e18])
     chain.mine(timedelta=ONE_BLOCK)
-    tx = comptroller.impactBatch([True], [1e18])
+    comptroller.impactBatch([True], [1e18])
     chain.mine(timedelta=ONE_BLOCK)
-    tx = comptroller.impactBatch([True], [1e18])
+    comptroller.impactBatch([True], [1e18])
 
     assert comptroller.impactCycloid() == 5
 
@@ -85,28 +84,28 @@ def test_impact_roller_expected_impact_many_batched(comptroller):
 
     chain.mine(timedelta=ONE_BLOCK)
 
-    tx = comptroller.impactBatch(
+    comptroller.impactBatch(
         [True, True, True, True],
         [1e18, 1e18, 1e18, 1e18]
     )
     chain.mine(timedelta=ONE_BLOCK)
-    tx = comptroller.impactBatch(
+    comptroller.impactBatch(
         [True, True, True],
         [1e18, 1e18, 1e18]
     )
     chain.mine(timedelta=ONE_BLOCK)
-    tx = comptroller.impactBatch(
+    comptroller.impactBatch(
         [True, True, True, True],
         [1e18, 1e18, 1e18, 1e18]
     )
     chain.mine(timedelta=ONE_BLOCK)
-    tx = comptroller.impactBatch(
+    comptroller.impactBatch(
         [True, True, True, True, True],
         [1e18, 1e18, 1e18, 1e18, 1e18]
     )
 
     chain.mine(timedelta=ONE_BLOCK)
-    tx = comptroller.impactBatch(
+    comptroller.impactBatch(
         [True, True, True, True, True, True],
         [1e18, 1e18, 1e18, 1e18, 1e18, 1e18]
     )
@@ -153,7 +152,7 @@ def test_impact_pressure(comptroller, entry):
 @given(
     entry=strategy('uint256', min_value=1, max_value=.370400e6),
     rand=strategy('int', min_value=100, max_value=1000))
-def test_impact_pressure_full_cooldown_entry_within_cap(comptroller, entry, rand):
+def test_impact_pressure_full_cooldown_entry_within_cap(comptroller, entry, rand):  # noqa: E501
 
     entry *= 1e16
 
@@ -161,7 +160,7 @@ def test_impact_pressure_full_cooldown_entry_within_cap(comptroller, entry, rand
 
     chain.mine(timedelta=ONE_BLOCK)
 
-    tx = comptroller.impactBatch([True], [entry])
+    comptroller.impactBatch([True], [entry])
 
     chain.mine(timedelta=impact_window+1)
 
@@ -170,9 +169,9 @@ def test_impact_pressure_full_cooldown_entry_within_cap(comptroller, entry, rand
     assert impact == 0
 
 
-def test_impact_when_earliest_roller_is_more_contemporary_than_impact_window(comptroller):
+def test_impact_when_earliest_roller_is_more_contemporary_than_impact_window(comptroller):  # noqa: E501
     pass
 
 
-def test_impact_when_earliest_roller_is_much_older_than_impact_window(comptroller):
+def test_impact_when_earliest_roller_is_much_older_than_impact_window(comptroller):  # noqa: E501
     pass
