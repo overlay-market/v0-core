@@ -226,7 +226,7 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
         ( uint _entryBid, uint _entryAsk, ) = readPricePoint(_pricePoint);
 
-        ( uint _exitBid, uint _exitAsk, ) = readPricePoint(_pricePoints.length - 1);
+        ( uint _exitBid, uint _exitAsk, ) = pricePointCurrent();
 
         priceFrame_ = _isLong
             ? Math.min(_exitBid.divDown(_entryAsk), priceFrameCap)
