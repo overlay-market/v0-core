@@ -12,9 +12,9 @@ abstract contract OverlayV1PricePoint {
     uint256 private constant INVERSE_E = 0x51AF86713316A9A;
 
     struct PricePoint {
-        uint256 bid;
-        uint256 ask;
-        uint256 index;
+        int24 macroTick;
+        int24 microTick;
+        uint256 depth;
     }
 
     uint256 public pbnj;
@@ -26,18 +26,25 @@ abstract contract OverlayV1PricePoint {
     // mapping from price point index to realized historical prices
     PricePoint[] internal _pricePoints;
 
-    event NewPrice(uint bid, uint ask, uint index);
+    event NewPricePoint(uint bid, uint ask, uint depth);
 
     constructor(
         uint256 _priceFrameCap
     ) {
 
         require(1e18 <= _priceFrameCap, "OVLV1:!priceFrame");
+
         priceFrameCap = _priceFrameCap;
+
+        updated = block.timestamp;
+
 
     }
 
-    function price () public view virtual returns (PricePoint memory);
+    function fetchPricePoint () public view virtual returns (PricePoint memory);
+
+    function _tickToPrice (int24 _tick) public virtual view returns (uint quote_);
+
 
     /// @notice Get the index of the next price to be realized
     /// @dev Returns the index of the _next_ price
@@ -54,11 +61,15 @@ abstract contract OverlayV1PricePoint {
     /// @notice All past price points.
     /// @dev Returns the price point if it exists.
     /// @param _pricePointIndex Index of the price point being queried.
-    /// @return pricePoint_ Price point, if it exists.
+    /// @return bid_ Bid.
+    /// @return ask_ Ask.
+    /// @return depth_ Market liquidity in OVL terms.
     function pricePoints(
         uint256 _pricePointIndex
     ) external view returns (
-        PricePoint memory pricePoint_
+        uint256 bid_,
+        uint256 ask_,
+        uint256 depth_
     ) {
 
         uint _len = _pricePoints.length;
@@ -69,42 +80,40 @@ abstract contract OverlayV1PricePoint {
 
         if (_pricePointIndex == _len) {
 
-            pricePoint_ = price();
+            ( bid_, ask_, depth_ ) = readPricePoint(fetchPricePoint());
 
         } else {
 
-            pricePoint_ = _pricePoints[_pricePointIndex];
+            ( bid_, ask_, depth_ ) = readPricePoint(_pricePointIndex);
 
         }
 
     }
 
 
-    /// @notice Inserts the bid/ask spread into the price.
-    /// @dev Takes two time weighted average prices from the market feed
-    /// and composes them into a price point, which has a bid and an ask.
-    /// The ask is the max of the two twaps multiplied by euler's number 
-    /// raised to the market's spread. The bid is the min of the twaps
-    /// multiplied by the inverse of euler's number raised to the spread.
-    /// @param _microPrice The shorter TWAP.
-    /// @param _macroPrice The longer TWAP.
-    /// @return pricePoint_ The price point with bid/ask/index.
-    function insertSpread (
-        uint _microPrice,
-        uint _macroPrice
-    ) internal view returns (
-        PricePoint memory pricePoint_
-    ) {
+    /// @notice Current price point.
+    /// @dev Returns the price point if it exists.
+    /// @return bid_ Bid.
+    /// @return ask_ Ask.
+    /// @return depth_ Market liquidity in OVL terms.
+    function pricePointCurrent () public view returns (
+        uint bid_,
+        uint ask_,
+        uint depth_
+    ){
 
-        uint _ask = Math.max(_macroPrice, _microPrice).mulUp(E.powUp(pbnj));
+        uint _now = block.timestamp;
+        uint _updated = updated;
 
-        uint _bid = Math.min(_macroPrice, _microPrice).mulDown(INVERSE_E.powUp(pbnj));
+        if (_now != _updated) {
 
-        pricePoint_ = PricePoint(
-            _bid,
-            _ask,
-            _macroPrice
-        );
+            ( bid_, ask_, depth_ ) = readPricePoint(fetchPricePoint());
+
+        } else {
+
+            ( bid_, ask_, depth_ ) = readPricePoint(_pricePoints.length - 1);
+
+        }
 
     }
 
@@ -113,14 +122,54 @@ abstract contract OverlayV1PricePoint {
         PricePoint memory _pricePoint
     ) internal {
 
-        emit NewPrice(
-            _pricePoint.bid, 
-            _pricePoint.ask, 
-            _pricePoint.index
-        );
-
         _pricePoints.push(_pricePoint);
 
+        (   uint _bid, 
+            uint _ask,  
+            uint _depth ) = readPricePoint(_pricePoint);
+
+        emit NewPricePoint(
+            _bid, 
+            _ask, 
+            _depth
+        );
+
     }
+
+    function readPricePoint (
+        uint _pricePoint
+    ) public view returns (
+        uint256 bid_,
+        uint256 ask_,
+        uint256 depth_
+    ) {
+
+        return readPricePoint(_pricePoints[_pricePoint]);
+
+    }
+
+    function readPricePoint(
+        PricePoint memory _pricePoint
+    ) public view returns (
+        uint256 bid_,
+        uint256 ask_,
+        uint256 depth_
+    ) {
+
+        uint _microPrice = _tickToPrice(_pricePoint.microTick);
+
+        uint _macroPrice = _tickToPrice(_pricePoint.macroTick);
+
+        uint _spread = pbnj;
+
+        ask_ = Math.max(_macroPrice, _microPrice).mulUp(E.powUp(_spread));
+
+        bid_ = Math.min(_macroPrice, _microPrice).mulDown(INVERSE_E.powUp(_spread));
+
+        depth_ = _pricePoint.depth;
+
+
+    }
+
 
 }

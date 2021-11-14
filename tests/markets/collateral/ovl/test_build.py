@@ -3,9 +3,8 @@ import math
 
 from decimal import Decimal
 from brownie.test import given, strategy
-from hypothesis import settings
 from pytest import approx, mark
-from decimal import Decimal
+
 
 
 def print_logs(tx):
@@ -21,22 +20,22 @@ FEE_RESOLUTION = 1e18
 SLIPPAGE_TOL = 0.2
 LMBDA = 1
 PRICES = [
-    {
-        "entry": {
-            "timestamp": 1633520012,
-            "micro_price": 307964236479616,
-            "macro_price": 308748518420310,
-            "rtol": 1e-4,
-        }
-    },
-    {
-        "entry": {
-            "timestamp": 1633504052,
-            "micro_price": 317828920167667,
-            "macro_price": 316765033525492,
-            "rtol": 1e-4,
-        }
-    },
+    # {
+    #     "entry": {
+    #         "timestamp": 1633520012,
+    #         "micro_price": 307964236479616,
+    #         "macro_price": 308748518420310,
+    #         "rtol": 1e-4,
+    #     }
+    # },
+    # {
+    #     "entry": {
+    #         "timestamp": 1633504052,
+    #         "micro_price": 317828920167667,
+    #         "macro_price": 316765033525492,
+    #         "rtol": 1e-4,
+    #     }
+    # },
     {
         "entry": {
             "timestamp": 1633554032,
@@ -295,7 +294,7 @@ def test_oi_added(
     oi_adjusted_min = collateral * leverage * (1-SLIPPAGE_TOL)
 
     token.approve(ovl_collateral, collateral, {"from": bob})
-    tx = ovl_collateral.build(
+    ovl_collateral.build(
         market, collateral, leverage, is_long, oi_adjusted_min, {"from": bob})
 
     oi = collateral * leverage
@@ -667,6 +666,8 @@ def test_entry_update_price_fetching(
 
     market_idx = market.pricePointNextIndex()
 
+    print("market_idx", market_idx)
+
     # Mine to the entry time then build
     brownie.chain.mine(timestamp=price["entry"]["timestamp"])
 
@@ -676,9 +677,7 @@ def test_entry_update_price_fetching(
     idx1 = market.pricePointNextIndex() - 1
     assert market_idx == idx1
 
-    entry_bid1, entry_ask1, entry_price1 = market.pricePoints(idx1)
-    assert price["entry"]["macro_price"] == \
-        approx(entry_price1, rel=price["entry"]["rtol"])
+    entry_bid1, entry_ask1, _ = market.pricePoints(idx1)
 
     # make sure bid/ask calculated correctly
     spread = market.pbnj()/1e18
@@ -1062,11 +1061,6 @@ def test_build_oi_adjusted_min(
     collateral_adjusted = collateral - impact_fee - trade_fee
     oi_adjusted = collateral_adjusted * leverage
 
-    # get prior state of collateral manager
-    ovl_balance = token.balanceOf(ovl_collateral)
-
-    # get prior state of market
-    market_oi = market.oiLong() if is_long else market.oiShort()
     market_oi_cap = market.oiCap()  # accounts for depth, brrrd, static
 
     # approve collateral contract to spend bob's ovl to build position

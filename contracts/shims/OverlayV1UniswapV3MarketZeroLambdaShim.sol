@@ -31,9 +31,9 @@ contract OverlayV1UniswapV3MarketZeroLambdaShim is OverlayV1UniswapV3Market {
     ) { }
 
 
-    function _update (bool _readDepth) internal virtual override returns (uint cap_) {
+    function update () public virtual override returns (uint cap_) {
 
-        cap_ = super._update(_readDepth);
+        cap_ = super.update();
         cap_ = lmbda == 0 ? staticCap : cap_;
 
     }
@@ -46,6 +46,7 @@ contract OverlayV1UniswapV3MarketZeroLambdaShim is OverlayV1UniswapV3Market {
         cap_ = lmbda == 0 ? staticCap : cap_;
 
     }
+
 
 
 }

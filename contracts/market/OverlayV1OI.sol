@@ -24,6 +24,42 @@ contract OverlayV1OI {
 
     event FundingPaid(uint oiLong, uint oiShort, int fundingPaid);
 
+    constructor (
+        uint256 _compoundingPeriod
+    ) {
+
+        compoundingPeriod = _compoundingPeriod;
+
+        compounded = block.timestamp;
+
+    }
+
+    /// @notice The compounding information for computing funding.
+    /// @dev This returns the number of compoundings that have passed since
+    /// the last time funding was paid as well as the timestamp of the
+    /// current compounding epoch, which come at regular intervals according
+    /// to the compounding period.
+    /// @param _now The timestamp of the current block.
+    /// @param _compounded The last time compounding occurred.
+    /// @return compoundings_ The number of compounding periods passed since
+    /// the last time funding was compounded.
+    /// @return tCompounding_ The current compounding epoch.
+    function epochs (
+        uint _now,
+        uint _compounded
+    ) public view returns (
+        uint compoundings_,
+        uint tCompounding_
+    ) {
+
+        uint _compoundPeriod = compoundingPeriod;
+
+        compoundings_ = ( _now - _compounded ) / _compoundPeriod;
+
+        tCompounding_ = _compounded + ( compoundings_ * _compoundPeriod );
+
+    }
+
 
     /// @notice Internal utility to pay funding from heavier to ligher side.
     /// @dev Pure function accepting current open interest, compoundings
@@ -118,19 +154,19 @@ contract OverlayV1OI {
     /// @notice Adds open interest to one side
     /// @dev Adds open interest to one side, asserting the cap is not breached.
     /// @param _isLong If open interest is adding to the long or short side.
-    /// @param _oi Open interest to add.
+    /// @param _openInterest Open interest to add.
     /// @param _oiCap Open interest cap to require not to be breached.
     function addOi(
         bool _isLong,
-        uint256 _oi,
+        uint256 _openInterest,
         uint256 _oiCap
     ) internal {
 
         if (_isLong) {
 
-            oiLongShares += _oi;
+            oiLongShares += _openInterest;
 
-            uint _oiLong = __oiLong__ + _oi;
+            uint _oiLong = __oiLong__ + _openInterest;
 
             require(_oiLong <= _oiCap, "OVLV1:>cap");
 
@@ -138,9 +174,9 @@ contract OverlayV1OI {
 
         } else {
 
-            oiShortShares += _oi;
+            oiShortShares += _openInterest;
 
-            uint _oiShort = __oiShort__ + _oi;
+            uint _oiShort = __oiShort__ + _openInterest;
 
             require(_oiShort <= _oiCap, "OVLV1:>cap");
 
@@ -148,6 +184,76 @@ contract OverlayV1OI {
 
         }
 
+    }
+
+    /// @notice Internal function to retrieve up to date open interest.
+    /// @dev Computes the current open interest values and returns them.
+    /// @param _compoundings Number of compoundings yet to be paid in funding.
+    /// @return oiLong_ Current open interest on the long side.
+    /// @return oiShort_ Current open interest on the short side.
+    /// @return oiLongShares_ Current open interest shares on the long side.
+    /// @return oiShortShares_ Current open interest shares on the short side.
+    function _oi (
+        uint _compoundings
+    ) internal view returns (
+        uint oiLong_,
+        uint oiShort_,
+        uint oiLongShares_,
+        uint oiShortShares_
+    ) {
+
+        oiLong_ = __oiLong__;
+        oiShort_ = __oiShort__;
+        oiLongShares_ = oiLongShares;
+        oiShortShares_ = oiShortShares;
+
+        if (0 < _compoundings) {
+
+            ( oiLong_, oiShort_, ) = computeFunding(
+                oiLong_,
+                oiShort_,
+                _compoundings,
+                k
+            );
+
+        }
+
+    }
+
+    /// @notice The current open interest on both sides of the market.
+    /// @dev Returns all up to date open interest data for the market.
+    /// @return oiLong_ Current open interest on long side.
+    /// @return oiShort_ Current open interest on short side.
+    /// @return oiLongShares_ Current open interest shares on the long side.
+    /// @return oiShortShares_ Current open interest shares on the short side.
+    function oi () public view returns (
+        uint oiLong_,
+        uint oiShort_,
+        uint oiLongShares_,
+        uint oiShortShares_
+    ) {
+
+        ( uint _compoundings, ) = epochs(block.timestamp, compounded);
+
+        (   oiLong_,
+            oiShort_,
+            oiLongShares_,
+            oiShortShares_ ) = _oi(_compoundings);
+
+    }
+
+
+    /// @notice The current open interest on the long side.
+    /// @return oiLong_ The current open interest on the long side.
+    function oiLong () external view returns (uint oiLong_) {
+        (   oiLong_,,, ) = oi();
+    }
+
+
+    /// @notice The current open interest on the short side.
+    /// @return oiShort_ The current open interest on the short side.
+    function oiShort () external view returns (uint oiShort_) {
+        (  ,oiShort_,, ) = oi();
     }
 
 }

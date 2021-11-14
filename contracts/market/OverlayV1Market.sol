@@ -22,10 +22,6 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
     constructor(address _mothership) OverlayV1Governance( _mothership) { }
 
-    function _update (bool _readCap) internal virtual returns (uint cap_);
-
-    function update () external { _update(false); }
-
     /// @notice Adds open interest to the market
     /// @dev This is invoked by Overlay collateral manager contracts, which
     /// can be for OVL, ERC20's, Overlay positions, NFTs, or what have you.
@@ -53,7 +49,7 @@ abstract contract OverlayV1Market is OverlayV1Governance {
         uint pricePointNext_
     ) {
 
-        uint _cap = _update(true);
+        uint _cap = update();
 
         pricePointNext_ = _pricePoints.length - 1;
 
@@ -98,18 +94,12 @@ abstract contract OverlayV1Market is OverlayV1Governance {
         uint priceFrame_
     ) {
 
-        _update(false);
-
-        PricePoint storage priceEntry = _pricePoints[_pricePoint];
-
-        PricePoint storage priceExit = _pricePoints[_pricePoints.length - 1];
-
-        priceFrame_ = _isLong
-            ? Math.min(priceExit.bid.divDown(priceEntry.ask), priceFrameCap)
-            : priceExit.ask.divUp(priceEntry.bid);
+        update();
 
         if (_isLong) ( oi_ = __oiLong__, oiShares_ = oiLongShares );
         else ( oi_ = __oiShort__, oiShares_ = oiShortShares );
+
+        priceFrame_ = priceFrame(_isLong, _pricePoint);
 
     }
 
@@ -135,6 +125,112 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
         if (_isLong) ( __oiLong__ -= _oi, oiLongShares -= _oiShares );
         else ( __oiShort__ -= _oi, oiShortShares -= _oiShares );
+
+    }
+
+    /// @notice Internal update function to price, cap, and pay funding.
+    /// @dev This function updates the market with the latest price and
+    /// conditionally reads the depth of the market feed. The market needs
+    /// an update on the first call of any block.
+    /// @return cap_ The open interest cap for the market.
+    function update () public virtual returns (
+        uint cap_
+    ) {
+
+        uint _now = block.timestamp;
+        uint _updated = updated;
+
+        if (_now != _updated) {
+
+            PricePoint memory _pricePoint = fetchPricePoint();
+
+            setPricePointNext(_pricePoint);
+
+            updated = _now;
+
+        } 
+
+        (   uint _compoundings,
+            uint _tCompounding  ) = epochs(_now, compounded);
+
+        if (0 < _compoundings) {
+
+            payFunding(k, _compoundings);
+            compounded = _tCompounding;
+
+        }
+
+        cap_ = oiCap();
+
+    }
+
+    /// @notice The depth of the market feed in OVL terms at the current block.
+    /// @dev Returns the time weighted liquidity of the market feed in
+    /// OVL terms at the current block.
+    /// @return depth_ The time weighted liquidity in OVL terms.
+    function depth () public view override returns (
+        uint depth_
+    ) {
+
+        ( ,,depth_ )= pricePointCurrent();
+
+    }
+
+    /// @notice Exposes important info for calculating position metrics.
+    /// @dev These values are required to feed to the position calculations.
+    /// @param _isLong Whether position is on short or long side of market.
+    /// @param _priceEntry Index of entry price
+    /// @return oi_ The current open interest on the chosen side.
+    /// @return oiShares_ The current open interest shares on the chosen side.
+    /// @return priceFrame_ Price frame resulting from e entry and exit prices.
+    function positionInfo (
+        bool _isLong,
+        uint _priceEntry
+    ) external view returns (
+        uint256 oi_,
+        uint256 oiShares_,
+        uint256 priceFrame_
+    ) {
+
+        (   uint _compoundings, ) = epochs(block.timestamp, compounded);
+
+        (   uint _oiLong,
+            uint _oiShort,
+            uint _oiLongShares,
+            uint _oiShortShares ) = _oi(_compoundings);
+
+        if (_isLong) ( oi_ = _oiLong, oiShares_ = _oiLongShares );
+        else ( oi_ = _oiShort, oiShares_ = _oiShortShares );
+
+        priceFrame_ = priceFrame(
+            _isLong,
+            _priceEntry
+        );
+
+    }
+
+
+    /// @notice Computes the price frame for a given position
+    /// @dev Computes the price frame conditionally giving shorts the bid
+    /// on entry and ask on exit and longs the bid on exit and short on
+    /// entry. Capped at the priceFrameCap for longs.
+    /// @param _isLong If price frame is for a long or a short.
+    /// @param _pricePoint The index of the entry price.
+    /// @return priceFrame_ The exit price divided by the entry price.
+    function priceFrame (
+        bool _isLong,
+        uint _pricePoint
+    ) internal view returns (
+        uint256 priceFrame_
+    ) {
+
+        ( uint _entryBid, uint _entryAsk, ) = readPricePoint(_pricePoint);
+
+        ( uint _exitBid, uint _exitAsk, ) = pricePointCurrent();
+
+        priceFrame_ = _isLong
+            ? Math.min(_exitBid.divDown(_entryAsk), priceFrameCap)
+            : _exitAsk.divUp(_entryBid);
 
     }
 

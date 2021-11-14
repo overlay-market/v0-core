@@ -1,6 +1,5 @@
 import brownie
 import pytest
-from brownie.test import given, strategy
 from pytest import approx
 
 
@@ -132,8 +131,6 @@ def test_liquidate_revert_not_liquidatable(
 
     market.setK(0, {'from': gov})
 
-    margin_maintenance = ovl_collateral.marginMaintenance(market) / 1e18
-
     # Mine to the entry time then build
     brownie.chain.mine(timestamp=position["entry"]["timestamp"])
     tx_build = ovl_collateral.build(
@@ -156,19 +153,11 @@ def test_liquidate_revert_not_liquidatable(
     brownie.chain.mine(timestamp=position["unliquidatable"]["timestamp"])
     EXPECTED_ERROR_MESSAGE = "OVLV1:!liquidatable"
     with brownie.reverts(EXPECTED_ERROR_MESSAGE):
-        tx_liq = ovl_collateral.liquidate(
-            pos_id,
-            alice,
-            {'from': alice}
-            )
+        ovl_collateral.liquidate(pos_id, alice, {'from': alice})
 
     brownie.chain.mine(timestamp=position["liquidation"]["timestamp"])
 
-    tx_liq = ovl_collateral.liquidate(
-        pos_id,
-        alice,
-        {'from': alice}
-        )
+    ovl_collateral.liquidate(pos_id, alice, {'from': alice})
 
     (_, _, _, _, pos_oi_shares_after, _, _) = ovl_collateral.positions(pos_id)
 
@@ -176,11 +165,7 @@ def test_liquidate_revert_not_liquidatable(
 
     EXPECTED_ERROR_MESSAGE = "OVLV1:liquidated"
     with brownie.reverts(EXPECTED_ERROR_MESSAGE):
-        ovl_collateral.unwind(
-            pos_id,
-            pos_oi_shares,
-            {"from": bob}
-            )
+        ovl_collateral.unwind(pos_id, pos_oi_shares, {"from": bob})
 
 
 @pytest.mark.parametrize('position', POSITIONS)
@@ -200,8 +185,6 @@ def test_liquidate_revert_unwind_after_liquidation(
     brownie.chain.mine(timestamp=start_time)
 
     market.setK(0, {'from': gov})
-
-    margin_maintenance = ovl_collateral.marginMaintenance(market) / 1e18
 
     # Mine to the entry time then build
     brownie.chain.mine(timestamp=position["entry"]["timestamp"])
@@ -224,7 +207,7 @@ def test_liquidate_revert_unwind_after_liquidation(
 
     brownie.chain.mine(timestamp=position["liquidation"]["timestamp"])
 
-    tx_liq = ovl_collateral.liquidate(pos_id, alice, {'from': alice})
+    ovl_collateral.liquidate(pos_id, alice, {'from': alice})
 
     (_, _, _, _, pos_oi_shares_after, _, _) = ovl_collateral.positions(pos_id)
 

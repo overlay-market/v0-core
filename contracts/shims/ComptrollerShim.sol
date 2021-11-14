@@ -61,6 +61,20 @@ contract ComptrollerShim is OverlayV1Comptroller {
 
     }
 
+
+    function computeDepth (
+        uint _marketLiquidity,
+        uint _ovlPrice
+    ) public override view returns (
+        uint depth_
+    ) {
+
+        depth_ = ((_marketLiquidity * 1e18) / _ovlPrice)
+            .mulUp(lmbda)    
+            .divDown(2e18);
+
+    }
+
     function readFeed () public view returns (
         uint256 depth_
     ) { 
