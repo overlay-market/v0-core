@@ -1,7 +1,6 @@
 from brownie import \
     accounts, \
     chain, \
-    interface, \
     UniswapV3FactoryMock, \
     UniswapV3OracleMock
 import json
@@ -9,9 +8,9 @@ import os
 
 FEED_OWNER = accounts.load('tester')
 
-DAI = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+AXS = "0xBB0E17EF65F82Ab018d8EDd776e8DD940327B28b"
 WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-TOKEN0 = DAI
+TOKEN0 = AXS
 TOKEN1 = WETH
 
 ONE_DAY = 86400
@@ -19,7 +18,7 @@ ONE_DAY = 86400
 def main():
 
     base = os.path.dirname(os.path.abspath(__file__))
-    path = os.path.join(base, '../../feeds/univ3_dai_weth_raw_uni.json')
+    path = os.path.join(base, '../../feeds/univ3_axs_weth_raw_uni.json')
 
     with open(os.path.normpath(path)) as file:
         data = json.load(file)
@@ -65,4 +64,4 @@ def main():
                 success = True
             except: print("Retrying.")
 
-    print("WETH/DAI Mock Address: ", uv3_pool.address)
+    print("WETH/AXS Mock Address: ", uv3_pool.address)
