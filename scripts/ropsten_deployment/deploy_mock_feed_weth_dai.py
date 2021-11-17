@@ -24,9 +24,13 @@ def main():
     with open(os.path.normpath(path)) as file:
         data = json.load(file)
 
+    data.reverse()
+
+    data = data[:350]
+
     now = chain.time()
 
-    mock_start = now - 3600
+    mock_start = now - 4200
 
     earliest = data[0]['observation'][0]
 
