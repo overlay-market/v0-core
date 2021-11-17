@@ -15,7 +15,7 @@ TOKEN1 = WETH
 
 ONE_DAY = 86400
 
-def main():
+def deploy_mock_feed_weth_axs():
 
     base = os.path.dirname(os.path.abspath(__file__))
     path = os.path.join(base, '../../feeds/univ3_axs_weth_raw_uni.json')
@@ -65,3 +65,5 @@ def main():
             except: print("Retrying.")
 
     print("WETH/AXS Mock Address: ", uv3_pool.address)
+
+    return uv3_pool.address
