@@ -23,9 +23,6 @@ def reflect_feed(path):
     earliest = feed[0]['observation'][0]
 
     diff = 0
-    print("len feed", len(feed))
-
-    print("feed12",feed[311])
 
     obs = []
     shims = []
@@ -65,8 +62,6 @@ def reflect_feed(path):
 
         time = START + x
 
-        print("time", time, "x", x, "breadth", breadth)
-        
         brownie.chain.mine(timestamp=time)
 
         pbnj = .00573
