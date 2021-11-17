@@ -1,0 +1,72 @@
+
+from brownie import (
+    accounts,
+    OverlayV1UniswapV3Market
+)
+
+MOTHERSHIP = '0x6a01c92B4D5f25955AE65E3b7cdD49Fe406E3244'
+OVL_TOKEN = '0x69d2D936ad815E733f31346e470e4Ad23eF7404b'
+
+
+GOV = accounts.load('tester')
+
+TEN_MINUTES = 600
+ONE_HOUR = 3600
+SEVEN_DAYS = 604800
+
+BASE_AMOUNT = 1e18
+PRICE_WINDOW_MACRO = ONE_HOUR
+PRICE_WINDOW_MICRO = TEN_MINUTES
+PRICE_FRAME_CAP = 5e18
+K = 343454218783234
+SPREAD = .00573e18
+COMPOUND_PERIOD = 600
+LAMBDA = 0
+OI_CAP = 800_000e18
+
+
+BRRRR_EXPECTED = 26_320e18
+BRRRR_WINDOW_MACRO = SEVEN_DAYS
+BRRRR_WINDOW_MICRO = TEN_MINUTES
+
+WETH_DAI = '0x8F9D6f24A514d64a2B8Accb86340B97f79b7FcFB'
+WETH_AXS = '0x85EE547E369304e3BAe60BF9a554deE5CAC78032'
+
+WETH = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
+
+MARKET_QUOTE = WETH
+
+MARKET_FEED = WETH_DAI
+OVL_FEED = WETH_AXS
+
+
+def main():
+
+    market = GOV.deploy(
+        OverlayV1UniswapV3Market,
+        MOTHERSHIP,
+        OVL_FEED,
+        MARKET_FEED,
+        MARKET_QUOTE,
+        WETH,
+        BASE_AMOUNT,
+        PRICE_WINDOW_MACRO,
+        PRICE_WINDOW_MICRO,
+        PRICE_FRAME_CAP
+    )
+
+    market.setEverything(
+        K,
+        SPREAD,
+        COMPOUND_PERIOD,
+        LAMBDA,
+        OI_CAP,
+        BRRRR_EXPECTED,
+        BRRRR_WINDOW_MACRO,
+        BRRRR_WINDOW_MICRO,
+        { 'from': GOV }
+    )
+
+    print("Overlay WETH/DAI Market Address: ", market)
+
+
