@@ -275,9 +275,9 @@ def main():
 
     uni_factory = deploy_uni_factory()
 
-    feed_depth = deploy_uni_pool(uni_factory, AXS, WETH, '../feeds/univ3_axs_weth')
+    feed_depth = deploy_uni_pool(uni_factory, AXS, WETH, '../../feeds/univ3_axs_weth')
 
-    feed_market = deploy_uni_pool(uni_factory, DAI, WETH, '../feeds/univ3_dai_weth')
+    feed_market = deploy_uni_pool(uni_factory, DAI, WETH, '../../feeds/univ3_dai_weth')
 
     ovl = deploy_ovl()
 
