@@ -5,12 +5,15 @@ from brownie import \
     OverlayV1Mothership, \
     OverlayV1OVLCollateral, \
     OverlayV1UniswapV3Market, \
-    OverlayToken, \
+    OverlayTokenNew, \
     chain, \
     accounts
 import os
 import json
 
+def print_logs(tx):
+    for i in range(len(tx.events['log'])):
+        print(tx.events['log'][i]['k'] + ": " + str(tx.events['log'][i]['v']))
 
 ''' OVERLAY TOKEN PARAMETERS '''
 TOKEN_TOTAL_SUPPLY = 8000000e18
@@ -95,7 +98,7 @@ def deploy_uni_pool(factory, token0, token1, path):
 
 def deploy_ovl():
 
-    ovl = GOV.deploy(OverlayToken)
+    ovl = GOV.deploy(OverlayTokenNew)
     ovl.mint(ALICE, TOKEN_TOTAL_SUPPLY / 2, { "from": GOV })
     ovl.mint(BOB, TOKEN_TOTAL_SUPPLY / 2, { "from": GOV })
 
@@ -130,16 +133,14 @@ def deploy_market(mothership, feed_depth, feed_market):
         WETH,
         AMOUNT_IN,
         PRICE_WINDOW_MACRO,
-        PRICE_WINDOW_MICRO
+        PRICE_WINDOW_MICRO,
+        PRICE_FRAME_CAP
     )
 
     market.setEverything(
         K,
-        PRICE_FRAME_CAP,
         SPREAD,
-        UPDATE_PERIOD,
         COMPOUND_PERIOD,
-        IMPACT_WINDOW,
         LAMBDA,
         STATIC_CAP,
         BRRRR_EXPECTED,
@@ -192,8 +193,15 @@ def build_position (
         collateral,
         leverage,
         is_long,
+        0,
         { "from": taker }
     )
+
+    print("REVERT MESSAGE", tx_build.revert_msg)
+
+    print_logs(tx_build)
+
+    print("BUILD TX", tx_build)
 
     position = tx_build.events['Build']['positionId']
     oi = tx_build.events['Build']['oi']
@@ -222,6 +230,10 @@ def unwind_position(
         position_shares,
         { "from": unwinder }
     )
+
+    print("TX UNWIND", tx_unwind)
+
+    print_logs(tx_unwind)
 
 
 def transfer_position_shares(
@@ -286,7 +298,7 @@ def main():
         ALICE
     )
 
-    chain.mine( timedelta=market.updatePeriod() * 2 )
+    chain.mine( timedelta=market.compoundingPeriod() * 2 )
 
     position_2 = build_position(
         ovl_collateral,
