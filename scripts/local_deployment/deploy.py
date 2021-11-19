@@ -11,12 +11,6 @@ from brownie import \
 import os
 import json
 
-
-def print_logs(tx):
-    for i in range(len(tx.events['log'])):
-        print(tx.events['log'][i]['k'] + ": " + str(tx.events['log'][i]['v']))
-
-
 ''' OVERLAY TOKEN PARAMETERS '''
 TOKEN_TOTAL_SUPPLY = 8000000e18
 
@@ -200,10 +194,6 @@ def build_position(
         {"from": taker}
     )
 
-    print("REVERT MESSAGE", tx_build.revert_msg)
-
-    print("BUILD TX", tx_build)
-
     position = tx_build.events['Build']['positionId']
     oi = tx_build.events['Build']['oi']
     debt = tx_build.events['Build']['debt']
@@ -232,8 +222,6 @@ def unwind_position(
         position_shares,
         {"from": unwinder}
     )
-
-    print("TX UNWIND", tx_unwind)
 
 
 def transfer_position_shares(
