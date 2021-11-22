@@ -4,7 +4,7 @@ interface IBalancerFeed {
 
     enum Variable { PAIR_PRICE, BPT_PRICE, INVARIANT }
 
-    struct OracleAverageQuery {
+    struct Query {
         Variable variable;
         uint256 secs;
         uint256 ago;
@@ -32,7 +32,7 @@ interface IBalancerFeed {
     function getTotalSamples() external view returns (uint256);
 
     function getTimeWeightedAverage(
-        OracleAverageQuery[] memory queries
+        Query[] memory queries
     ) external view returns (
         uint256[] memory results
     );
