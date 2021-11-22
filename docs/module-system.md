@@ -20,11 +20,11 @@ Currently, we have an OVL Collateral Manager that accepts OVL: collateral/Overla
 
 ##### OverlayV1OVLCollateral.sol:
 
-`build(address _market, uint256 _collateral, uint256 _leverage, bool _isLong):`
+`build(address _market, uint256 _collateral, uint256 _leverage, bool _isLong, uint256 _oiMinimum):`
 
-- Auth calls `IOverlayV1Market(_market).enterOI()` which queues open interest on the market contract, adjusted for trading and impact fees
+- Auth calls `IOverlayV1Market(_market).enterOI()` which adds open interest on the market contract, adjusted for trading and impact fees
 - Transfers OVL collateral amount to manager from `msg.sender`
-- Returns ERC1155 position token for user's share of the position
+- Mints shares of ERC1155 position token for user's share of the position
 
 `unwind(uint256 _positionId, uint256 _shares):`
 
@@ -64,7 +64,7 @@ Each market has external functions accessible only by approved collateral manage
 - `exitData()`
 - `exitOI()`
 
-and an external `update()` function to be called in the event the market hasn't been interacted with for an extended period of time.
+and a public `update()` function that can be called by anyone.
 
 Currently, we have Overlay markets on Uniswap V3 oracles: OverlayV1UniswapV3Market.sol which implements markets/OverlayV1Market.sol
 
@@ -74,33 +74,35 @@ Currently, we have Overlay markets on Uniswap V3 oracles: OverlayV1UniswapV3Mark
 
 `enterOI(bool _isLong, uint256 _collateral, uint256 _leverage):`
 
-- Internal calls `OverlayV1UniswapV3Market.entryUpdate()` which fetches and stores a new price from the oracle and applies funding to the open interest
+- Internal calls `update()` which fetches and stores a new price from the oracle and applies funding to the open interest
 - Internal calls `OverlayV1Comptroller.intake()` which calculates and records the market impact
-- Internal calls `OverlayV1OI.queueOi()` to add the adjusted open interest to the market
+- Internal calls `OverlayV1OI.addOi()` to add the adjusted open interest to the market
 
 
-`exitData(bool _isLong, uint256 _pricePoint, uint256 _compounding):`
+`exitData(bool _isLong, uint256 _pricePoint):`
 
-- Internal calls `OverlayV1UniswapV3Market.exitUpdate()` which fetches current and last settlement prices from the oracle and applies funding
+- Internal calls `update()` which fetches and stores a new price from the oracle and applies funding to the open interest
 - Returns total open interest on side of trade and ratio between exit and entry prices
 
 
-`exitOI(bool _isLong, bool _fromQueued, uint _oi, uint _oiShares, uint _brrrr, uint _antiBrrrr):`
+`exitOI():`
 
 - Internal calls `OverlayV1Comptroller.brrrr()` which records the amount of OVL minted or burned for trade
 - Removes open interest from the long or short side
 
 `update():`
 
-- Internal calls `OverlayV1UniswapV3Market.staticUpdate()` to update the market
+- Internal calls `OverlayV1UniswapV3Market.fetchPricePoint()` to fetch a new price point if at least one block has passed since the last fetch
+- Internal calls `OverlayV1PricePoint.setPricePointCurrent()` to store fetched price
+- Internal calls `OverlayV1OI.payFunding()` if at least one `compoundingPeriod` has passed since the last funding to pay out funding
 
 
 ##### OverlayV1Comptroller.sol:
 
-`intake(bool _isLong, uint _oi):`
+`intake(bool _isLong, uint _oi, uint _cap):`
 
-- Records in accumulator snapshots `impactRollers` the amount of open interest cap occupied by the trade: `oi / oiCap()`
-- Calculates market impact fee `_oi * (1 - e**(-lmbda * (impactRollers[now] - impactRollers[now-impactWindow])))` in OVL burned from collateral manager
+- Records in accumulator snapshots `impactRollers` the amount of open interest cap occupied by the trade, adding to pressure in last `brrrrdWindowMacro` rolling window: `pressure += oi / oiCap()`
+- Calculates market impact fee `_oi * (1 - e**(-lmbda * pressure))` in OVL burned from collateral manager
 - Internal calls `brrrr()` to record the impact fee that will be burned
 
 `brrrr(uint _brrrr, _antiBrrrr):`
@@ -109,80 +111,49 @@ Currently, we have Overlay markets on Uniswap V3 oracles: OverlayV1UniswapV3Mark
 
 `oiCap():`
 
-- Returns the current dynamic cap on open interest for the market, if less than constraint from `OverlayV1UniswapV3Market.depth()`: `staticCap * min(1, 2 - (brrrrdRollers[now] - brrrrdRollers[now-brrrrdWindowMacro]) / brrrrdExpected)`
+- Returns the current open interest cap for the market: equal to min of `OverlayV1UniswapV3Market.depth()` with either or two cases:
+1. `staticCap` if there has been less printing than expected in last `brrrrdWindowMacro` rolling window
+2.  `dynamicCap = staticCap * ( 2 - brrrrdRealized / brrrrdExpected )` if more has been printed than expected (i.e. `brrrrdRealized > brrrrdExpected`) with a floor at `dynamicCap = 0`
 
 
 ##### OverlayV1OI.sol:
 
-`updateFunding(uint _epochs):`
+`payFunding(uint256 _k, uint256 _epochs):`
 
-- Internal calls `payFunding()` which pays funding between `__oiLong__` and `__oiShort__`: open interest imbalance is drawn down by `(1-2*k)**(epochs)`
-- Internal calls `updateOi()` which transfers queued open interest into `__oiLong__` and `__oiShort__` since now eligible for funding
+- Pays funding between `__oiLong__` and `__oiShort__`: open interest imbalance is drawn down by `(1-2*_k)**(_epochs)`
+- For the edge case of all open interest being on one side of the market, the open interest is draw down at same rate of `(1-2*_k)**(_epochs)`
 
-`queueOi(bool _isLong, uint256 _oi, uint256 _oiCap):`
+`addOi(bool _isLong, uint256 _openInterest, uint256 _oiCap):`
 
-- Add open interest to either `__queuedOiLong__` or `__queuedOiShort__`
-- Checks current open interest cap has not been exceeded: `_oiLong__ + __queuedOiLong__ <= _oiCap` or `_oiShort__ + __queuedOiShort__ <= _oiCap`
+- Add open interest to either `__oiLong__` or `__oiShort__`
+- Checks current open interest cap has not been exceeded: `__oiLong__ <= _oiCap` or `__oiShort__ <= _oiCap`
 
 
 ##### OverlayV1PricePoint.sol:
 
-`setPricePointCurrent(PricePoint memory _pricePoint):`
+`setPricePointNext(PricePoint memory _pricePoint):`
 
-- Stores a new historical price in the `_pricePoints` array. Price points include bid and ask values used for entry and exit: `PricePoint{ uint bid; uint ask; uint price }`. Longs receive the ask on entry, bid on exit. Shorts receive the bid on entry, ask on exit.
+- Stores a new historical price in the `_pricePoints` array
+- Price points include `macroWindow` tick, `microWindow` tick, and market `depth` (spot liquidity constraints) values used for entry and exit: `PricePoint{ int24 macroTick; int24 microTick; uint depth }`. Longs receive the ask on entry, bid on exit. Shorts receive the bid on entry, ask on exit
+- Tick values are the logarithm of price
 
-`insertSpread(uint _microPrice, uint _macroPrice)`
 
-- Calculates bid and ask values given shorter and longer TWAP values fetched from the oracle
+`readPricePoint(uint _pricePoint)`
+
+- Calculates bid and ask values given price point index. Uses shorter and longer TWAT (time-weighted average tick) values fetched from the oracle
 - Applies the static spread `pbnj` to bid `e**(-pbnj)` and ask `e**(pbnj)`
 
 
 ##### OverlayV1UniswapV3Market.sol:
 
-`price(uint _ago):`
+`fetchPricePoint():`
 
-- External calls `IUniswapV3Pool(marketFeed).observe()` for tick cumulative snapshots from `_ago`, `_ago+microWindow`, and `_ago+macroWindow` seconds ago
-- Calculates TWAP values for both the `macroWindow` and `microWindow` window sizes
-- Returns a new price point through internal call to `OverlayV1PricePoint.insertSpread()`
+- External calls `IUniswapV3Pool(marketFeed).observe()` for tick cumulative snapshots from `0`, `microWindow`, and `macroWindow` seconds ago
+- Calculates TWAT values for both the `macroWindow` and `microWindow` window sizes
+- Calculates time-weighted average liquidity in ETH for underlying spot market
+- Fetches TWAT from OVL/ETH price feed to convert liquidity in ETH to OVL in `computeDepth()`
+- Returns a new price point
 
-`depth():`
+`computeDepth(uint _marketLiquidity, uint _ovlPrice):`
 
-- External calls `IUniswapV3Pool(marketFeed).observe()` for `secondsPerLiquidityCumulativeX128` snapshots from now and `microWindow` seconds ago to calculate amount of virtual ETH reserves in Uniswap V3 pool: `_ethAmount`
-- External calls `IUniswapV3Pool(ovlFeed).observe()` for `tickCumulative` snapshots from now and `microWindow` seconds ago to calculate current OVL price relative to ETH: `_price`
-- Returns bound on open interest cap from virtual liquidity in Uniswap pool: `(lmbda * _ethAmount / _price) / 2`
-
-`entryUpdate():`
-
-- Internal calls `price()` to fetch a new price point if at least one `updatePeriod` has passed since the last fetch
-- Internal calls `OverlayV1PricePoint.setPricePointCurrent()` to store fetched price
-- Internal calls `updateFunding()` if at least one `compoundingPeriod` has passed since the last funding
-
-`exitUpdate():`
-
-- Internal calls `price()` to fetch a new price point for the last position built, `entryPrice`, if at least one `updatePeriod` has passed since the last fetch
-- Internal calls `OverlayV1PricePoint.setPricePointCurrent()` to store the fetched price for last position built
-- Internal calls `price()` again to fetch the latest price point for an `exitPrice`, if more than one `updatePeriod` has passed
-- Internal calls `OverlayV1PricePoint.setPricePointCurrent()` again to store the fetched price for exit
-- Internal calls `updateFunding()` if at least one `compoundingPeriod` has passed since the last funding
-
-`staticUpdate():`
-
-- Internal calls `price()` to fetch a new price point if at least one `updatePeriod` has passed since the last fetch
-- Internal calls `OverlayV1PricePoint.setPricePointCurrent()` to store fetched price
-- Internal calls `updateFunding()` if at least one `compoundingPeriod` has passed since the last funding
-- Needed to update the market in the event no recent trading activity has occurred, since Uniswap V3 pools only store a limited number of historical snapshots for the tick and liquidity oracle
-
-
-### Nuances:
-
-Queued open interest:
-
-- Queued open interest (`__queuedOiLong__`, `__queuedOiShort__`) is open interest that is not yet eligible for funding. It is transferred over to (`__oiLong__`, `__oiShort__`) after the last `compoundingPeriod` has passed through an internal call to `updateOi()`
-
-
-Price updates:
-
-- Positions settle at the price that occurs one `updatePeriod` after the block in which the position was built: what we call `t+1`. This is to prevent front-running within the update period
-- Positions exit, however, at the last price available from the oracle. As there isn't a front-running issue on exit.
-- `OverlayV1UniswapV3Market.entryUpdate()` fetches the price for previously built positions one `updatePeriod` after they were built using historical tick cumulative snapshots from Uniswap V3
-- `OverlayV1UniswapV3Market.exitUpdate()` also needs the latest price for the position exiting. Performs a double fetch if more than one update period has passed: 1. Fetches price for the last position built several update periods ago; 2. Fetches latest price for position exiting at current time.
+- Returns bound on open interest cap from virtual liquidity in Uniswap pool: `(lmbda * _marketLiquidity / _price) / 2`
