@@ -46,39 +46,16 @@ contract OverlayV1BalancerV2Market is OverlayV1Market {
 
         // immutables
         eth = _eth;
-        ethIs0 = IUniswapV3Pool(_ovlFeed).token0() == _eth;
+        ethIs0 = false;
         ovlFeed = _ovlFeed;
         marketFeed = _marketFeed;
         baseAmount = _baseAmount;
         macroWindow = _macroWindow;
         microWindow = _microWindow;
 
-        address _token0 = IUniswapV3Pool(_marketFeed).token0();
-        address _token1 = IUniswapV3Pool(_marketFeed).token1();
-
-        base = _token0 != _quote ? _token0 : _token1;
-        quote = _token0 == _quote ? _token0 : _token1;
-
-        int24 _tick = OracleLibraryV2.consult(
-            _marketFeed,
-            uint32(_macroWindow),
-            uint32(0)
-        );
-
-        _pricePoints.push(PricePoint(
-            _tick, 
-            _tick, 
-            0
-        ));
-
-        uint _price = OracleLibraryV2.getQuoteAtTick(
-            _tick,
-            uint128(_baseAmount),
-            _token0 != _quote ? _token0 : _token1,
-            _token0 == _quote ? _token0 : _token1
-        );
-
-        emit NewPricePoint(_price, _price, 0);
+        // TODO: just to compile for now.
+        base = _quote;
+        quote = _quote;
 
     }
 
@@ -88,64 +65,7 @@ contract OverlayV1BalancerV2Market is OverlayV1Market {
     /// @return price_ Price point
     function fetchPricePoint () public view override returns (
         PricePoint memory price_
-    ) {
-
-        int56[] memory _ticks;
-        uint160[] memory _liqs;
-
-        uint _ovlPrice;
-        uint _marketLiquidity;
-
-        int24 _microTick;
-        int24 _macroTick;
-
-        {
-
-            uint32[] memory _secondsAgo = new uint32[](3);
-            _secondsAgo[2] = uint32(macroWindow);
-            _secondsAgo[1] = uint32(microWindow);
-
-            ( _ticks, _liqs ) = IUniswapV3Pool(marketFeed).observe(_secondsAgo);
-
-            _macroTick = int24(( _ticks[0] - _ticks[2]) / int56(int32(int(macroWindow))));
-
-            _microTick = int24((_ticks[0] - _ticks[1]) / int56(int32(int(microWindow))));
-
-            uint _sqrtPrice = TickMath.getSqrtRatioAtTick(_microTick);
-
-            uint _liquidity = (uint160(microWindow) << 128) / ( _liqs[0] - _liqs[1] );
-
-            _marketLiquidity = ethIs0
-                ? ( uint256(_liquidity) << 96 ) / _sqrtPrice
-                : FullMath.mulDiv(uint256(_liquidity), _sqrtPrice, X96);
-
-        }
-
-
-        {
-
-            uint32[] memory _secondsAgo = new uint32[](2);
-
-            _secondsAgo[1] = uint32(macroWindow);
-
-            ( _ticks, ) = IUniswapV3Pool(ovlFeed).observe(_secondsAgo);
-
-            _ovlPrice = OracleLibraryV2.getQuoteAtTick(
-                int24((_ticks[0] - _ticks[1]) / int56(int32(int(macroWindow)))),
-                1e18,
-                ovl,
-                eth
-            );
-
-        }
-
-        price_ = PricePoint(
-            _microTick, 
-            _macroTick, 
-            computeDepth(_marketLiquidity, _ovlPrice)
-        );
-
-    }
+    ) { }
 
 
     /// @notice Arithmetic to get depth
@@ -171,29 +91,6 @@ contract OverlayV1BalancerV2Market is OverlayV1Market {
         int24 _tick
     ) public override view returns (
         uint quote_
-    ) {
-
-        uint160 sqrtRatioX96 = TickMath.getSqrtRatioAtTick(_tick);
-
-        // better precision if no overflow when squared
-        if (sqrtRatioX96 <= type(uint128).max) {
-
-            uint256 ratioX192 = uint256(sqrtRatioX96) * sqrtRatioX96;
-
-            quote_ = base < quote
-                ? FullMath.mulDiv(ratioX192, baseAmount, 1 << 192)
-                : FullMath.mulDiv(1 << 192, baseAmount, ratioX192);
-
-        } else {
-
-            uint256 ratioX128 = FullMath.mulDiv(sqrtRatioX96, sqrtRatioX96, 1 << 64);
-
-            quote_ = base < quote
-                ? FullMath.mulDiv(ratioX128, baseAmount, 1 << 128)
-                : FullMath.mulDiv(1 << 128, baseAmount, ratioX128);
-
-        }
-
-    }
+    ) { }
 
 }
