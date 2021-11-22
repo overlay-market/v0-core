@@ -41,5 +41,6 @@ interface IBalancerFeed {
         uint256[] memory
     );
 
+    function getPoolId () external view returns (bytes32 poolId_);
 
 }
