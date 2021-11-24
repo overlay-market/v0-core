@@ -3,9 +3,12 @@ pragma solidity ^0.8.7;
 
 import "../interfaces/IBalancerFeed.sol";
 import "../interfaces/IBalancerVault.sol";
+import "../libraries/FixedPoint.sol";
 
 
 contract BalancerQueries {
+
+    using FixedPoint for uint256;
 
     IBalancerFeed immutable balancer;
     IBalancerVault immutable vault;
@@ -20,30 +23,23 @@ contract BalancerQueries {
 
     }
 
-    function queryBalancer () public view returns (
-        uint256 number
-    ) { }
-
     function twa () public view returns (
         uint ten_,
         uint hour_,
-        uint tenD_
+        uint tenInv_
     ) { 
 
         IBalancerFeed.Query[] memory queries = new IBalancerFeed.Query[](3);
 
-
-        // NOTE: token0 is the quote and token1 is the base
-
-        queries[0] = IBalancerFeed.Query( IBalancerFeed.Variable.PAIR_PRICE, 600, 0 );
+        queries[0] = IBalancerFeed.Query( IBalancerFeed.Variable.PAIR_PRICE, 15, 0 );
         queries[1] = IBalancerFeed.Query( IBalancerFeed.Variable.PAIR_PRICE, 3600, 0 );
-        queries[2] = IBalancerFeed.Query( IBalancerFeed.Variable.INVARIANT, 600, 0 );
+        queries[2] = IBalancerFeed.Query( IBalancerFeed.Variable.INVARIANT, 15, 0 );
 
         uint256[] memory _results = balancer.getTimeWeightedAverage(queries);
 
         ten_ = _results[0];
         hour_ = _results[1];
-        tenD_ = _results[2];
+        tenInv_ = _results[2];
 
     }
 
@@ -64,6 +60,14 @@ contract BalancerQueries {
         bytes32 _id = id();
 
         (  tokens_,, ) = vault.getPoolTokens(_id);
+
+    }
+
+    function balances () public view returns (uint256[] memory balances_) {
+
+        bytes32 _id = id();
+
+        (  ,balances_, ) = vault.getPoolTokens(_id);
 
     }
 
@@ -96,6 +100,15 @@ contract BalancerQueries {
 
         }
 
+        (   uint _ten,,
+            uint _tenInv ) = twa();
+
+        depth_ = _tenInv.mulUp(
+            _ten.mulDown(_w0.divUp(_w1)).powUp(_w1)
+        );
+
+
     }
+
 
 }

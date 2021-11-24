@@ -18,13 +18,6 @@ def main():
         "0xBA12222222228d8Ba445958a75a0704d566BF2C8"
     )
 
-    ten, hour, ten_d = balancer.twa()
-
-    print("ten", ten)
-
-    print("hour", hour)
-
-    print("ten_d", ten_d)
 
     weights = balancer.weights()
 
@@ -37,3 +30,19 @@ def main():
     tokens = balancer.tokens()
 
     print("tokens", tokens)
+
+    balances = balancer.balances()
+
+    print("balances", balances)
+
+    ten, hour, ten_inv = balancer.twa()
+
+    print("ten", ten)
+
+    print("hour", hour)
+
+    print("ten_inv", ten_inv)
+
+    depth = balancer.depth()
+
+    print("depth", depth)

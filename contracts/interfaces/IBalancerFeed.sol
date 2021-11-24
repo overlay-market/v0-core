@@ -37,6 +37,8 @@ interface IBalancerFeed {
         uint256[] memory results
     );
 
+    function getLatest(Variable variable) external view returns (uint256);
+
     function getNormalizedWeights () external view returns (
         uint256[] memory
     );
