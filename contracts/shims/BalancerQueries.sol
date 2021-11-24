@@ -103,9 +103,10 @@ contract BalancerQueries {
         (   uint _ten,,
             uint _tenInv ) = twa();
 
-        depth_ = _tenInv.mulUp(
-            _ten.mulDown(_w0.divUp(_w1)).powUp(_w1)
-        );
+        depth_ = _ten
+            .mulDown(_w0.divUp(_w1))
+            .powUp(_w1)
+            .mulUp(_tenInv);
 
 
     }
