@@ -101,6 +101,18 @@ contract OverlayV1OVLCollateral is ERC1155 {
        
     }
 
+    function balanceOf (
+        address _account, 
+        uint256 _positionId
+    ) public view override returns (
+        uint256 balance_ 
+    ) {
+
+        if (positions[_positionId].oiShares == 0) balance_ = 0;
+        else balance_ = super.balanceOf(_account, _positionId);
+
+    }
+
     function setMarketInfo (
         address _market,
         uint _marginMaintenance,
