@@ -213,7 +213,7 @@ def test_liquidate_revert_unwind_after_liquidation(
 
     assert pos_oi_shares_after == 0
 
-    EXPECTED_ERROR_MESSAGE = "OVLV1:liquidated"
+    EXPECTED_ERROR_MESSAGE = "OVLV1:!shares"
     with brownie.reverts(EXPECTED_ERROR_MESSAGE):
         ovl_collateral.unwind(
             pos_id,
