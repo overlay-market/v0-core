@@ -4,13 +4,13 @@ pragma solidity ^0.8.7;
 
 import "../libraries/Position.sol";
 import "../libraries/FixedPoint.sol";
-import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
+import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "../interfaces/IOverlayV1Market.sol";
 import "../interfaces/IOverlayV1Mothership.sol";
 import "../interfaces/IOverlayToken.sol";
 import "../interfaces/IOverlayTokenNew.sol";
 
-contract OverlayV1OVLCollateral is ERC1155Supply {
+contract OverlayV1OVLCollateral is ERC1155 {
 
     event log(string k, uint v);
     event log_addr(string k, address v);
@@ -291,7 +291,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
                     pos.pricePoint
                 );
 
-        uint _totalPosShares = totalSupply(_positionId);
+        uint _totalPosShares = pos.oiShares;
 
         uint _userOiShares = _shares;
         uint _userNotional = _shares * pos.notional(_oi, _oiShares, _priceFrame) / _totalPosShares;
