@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import "./libraries/FixedPoint.sol";
 import "./libraries/UniswapV3OracleLibrary/UniswapV3OracleLibraryV2.sol";
+import "./libraries/UniswapV3OracleLibrary/TickMath.sol";
+import "./libraries/FixedPoint.sol";
 import "./interfaces/IUniswapV3Pool.sol";
 import "./market/OverlayV1Market.sol";
-import "./libraries/UniswapV3OracleLibrary/TickMath.sol";
 
 contract OverlayV1UniswapV3Market is OverlayV1Market {
 

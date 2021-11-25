@@ -118,7 +118,7 @@ def feed_infos():
     )
 
 
-def get_uni_feeds(feed_owner, feed_info):
+def get_uni_feeds (feed_owner, feed_info):
 
     market_obs = feed_info.market_info[0]
     market_shims = feed_info.market_info[1]
@@ -301,7 +301,7 @@ def notamarket(accounts):
 
 
 @pytest.fixture(scope="module")
-def uni_test(gov, rewards, accounts):
+def uni_test(rewards, feed_infos):
 
     #  dai_eth = "0xc2e9f25be6257c210d7adf0d4cd6e3e881ba25f8"
     usdc_eth = "0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8"
@@ -317,16 +317,31 @@ def uni_test(gov, rewards, accounts):
     #  link = "0x514910771AF9Ca656af840dff83E8264EcF986CA"
     aave = "0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9"
 
-    # we are trying to find amount USDC in OVL terms
+    factory, market, depth, _ = get_uni_feeds(rewards, feed_infos)
+    market_token0 = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+    market_token1 = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+    depth_token0 = "0xBB0E17EF65F82Ab018d8EDd776e8DD940327B28b"
+    depth_token1 = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 
     unitest = rewards.deploy(
         UniTest,
-        eth,
-        usdc,
-        usdc_eth,
-        aave,
-        eth,
-        aave_eth
+        market_token1,
+        market_token0,
+        market,
+        depth_token0,
+        depth_token1,
+        depth
     )
+
+
+    # unitest = rewards.deploy(
+    #     UniTest,
+    #     eth,
+    #     usdc,
+    #     usdc_eth,
+    #     aave,
+    #     eth,
+    #     aave_eth
+    # )
 
     yield unitest
