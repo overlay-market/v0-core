@@ -133,3 +133,41 @@ def test_transfer_from_mint(token, market, gov, alice, bob):
     assert total_supply_after == total_supply_before + 2e18
 
 
+
+def test_transfer_from_burn (token, market, gov, alice, bob):
+
+    mint_amount = 4e18
+
+    token.mint(alice, mint_amount, { 'from': market })
+
+    token.approve(bob, 4e18, { 'from': alice })
+
+    bob_before = token.balanceOf(bob)
+
+    alice_before = token.balanceOf(alice)
+
+    alice_approve_bob_before = token.allowance(alice, bob)
+
+    total_supply_before = token.totalSupply()
+
+    token.grantRole(token.BURNER_ROLE(), bob, { 'from': gov })
+
+    token.transferFromBurn(alice, bob, 2e18, 2e18, { 'from': bob })
+
+    alice_after = token.balanceOf(alice)
+
+    bob_after = token.balanceOf(bob)
+
+    alice_approve_bob_after = token.allowance(alice, bob)
+
+    total_supply_after = token.totalSupply()
+
+    assert alice_after == alice_before - 4e18
+
+    assert bob_after == bob_before + 2e18
+
+    assert alice_approve_bob_after == alice_approve_bob_before - 4e18
+
+    assert total_supply_after == total_supply_before - 2e18
+
+
