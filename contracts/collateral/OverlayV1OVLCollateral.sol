@@ -301,8 +301,6 @@ contract OverlayV1OVLCollateral is ERC1155 {
 
         Position.Info storage pos = positions[_positionId];
 
-        require(0 < pos.oiShares, "OVLV1:liquidated");
-
         {
 
         (   uint _oi,
