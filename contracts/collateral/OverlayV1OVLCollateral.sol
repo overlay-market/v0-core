@@ -97,7 +97,11 @@ contract OverlayV1OVLCollateral is ERC1155 {
         uint256 totalSupply_
     ) {
 
-        totalSupply_ = positions[_positionId].oiShares;
+        if (_positionId >= positions.length) {
+
+            totalSupply_ = 0;
+
+        } else totalSupply_ = positions[_positionId].oiShares;
        
     }
 
@@ -108,8 +112,16 @@ contract OverlayV1OVLCollateral is ERC1155 {
         uint256 balance_ 
     ) {
 
-        if (positions[_positionId].oiShares == 0) balance_ = 0;
-        else balance_ = super.balanceOf(_account, _positionId);
+        if ( positions.length <= _positionId ) {
+
+            balance_ = 0;
+
+        } else if ( positions[_positionId].oiShares == 0 ) {
+
+            balance_ = 0;
+
+        } else balance_ = super.balanceOf(_account, _positionId);
+
 
     }
 
