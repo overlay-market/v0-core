@@ -2,13 +2,7 @@ import pytest
 import brownie
 import os
 import json
-from brownie import (
-    OverlayTokenNew,
-    ComptrollerShim,
-    chain,
-    interface,
-    UniTest
-)
+from brownie import (OverlayTokenNew, ComptrollerShim, chain, interface, UniTest)
 
 TOKEN_DECIMALS = 18
 TOKEN_TOTAL_SUPPLY = 8000000e18
@@ -24,11 +18,14 @@ COMPOUND_PERIOD = 600
 
 IMPACT_WINDOW = PRICE_WINDOW_MICRO
 
-LAMBDA = .6e18
+LAMBDA = 0.6e18
 STATIC_CAP = 370400e18
 BRRRR_EXPECTED = 26320e18
 BRRRR_WINDOW_MACRO = 2592000
 BRRRR_WINDOW_MICRO = 86400
+
+
+WRAPPED_ETH_ADDR = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 
 
 @pytest.fixture(autouse=True)
@@ -68,9 +65,17 @@ def fees(accounts):
 
 @pytest.fixture(scope="module")
 def create_token(gov, alice, bob):
-    sup = TOKEN_TOTAL_SUPPLY
+    '''
+    Instantiates an OverlyTokenNew token contract.
+    Inputs:
+      gov   [EthAddress]:  Governor role account address
+      alice [EthAddress]:  Trader Alice account address
+      bob   [EthAddress]:  Trader Bob account address
 
-    def create_token(supply=sup):
+    Outputs:
+      Produces a `create_token` function generator
+    '''
+    def create_token(supply=TOKEN_TOTAL_SUPPLY):
         tok = gov.deploy(OverlayTokenNew)
         tok.mint(gov, supply, {"from": gov})
         tok.transfer(bob, supply/2, {"from": gov})
@@ -82,6 +87,9 @@ def create_token(gov, alice, bob):
 
 @pytest.fixture(scope="module")
 def token(create_token):
+    '''
+    Produces an instantiated OverlayTokenNew contract when called
+    '''
     yield create_token()
 
 
@@ -131,9 +139,9 @@ def get_uni_feeds(feed_owner, feed_info):
     uniswapv3_factory = feed_owner.deploy(UniswapV3MockFactory)
 
     market_token0 = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
-    market_token1 = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+    market_token1 = WRAPPED_ETH_ADDR
     depth_token0 = "0xBB0E17EF65F82Ab018d8EDd776e8DD940327B28b"
-    depth_token1 = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+    depth_token1 = WRAPPED_ETH_ADDR
 
     # TODO: place token0 and token1 into the json
     uniswapv3_factory.createPool(market_token0, market_token1)
@@ -149,14 +157,27 @@ def get_uni_feeds(feed_owner, feed_info):
 
     chain.mine(timestamp=feed_info.market_info[2]['timestamp'][0])
 
-    return uniswapv3_factory.address, market_mock.address, depth_mock.address, market_token1  # noqa: E501
+    return uniswapv3_factory.address, market_mock.address, depth_mock.address, market_token1
 
 
 @pytest.fixture(scope="module")
 def comptroller(gov, feed_infos, token, feed_owner):
+    '''
+    Instantiates the ComptrollerShim contract.
+    Inputs:
+      gov        [EthAddress]:      Governor role account address
+      feed_infos []:                TODO
+      token      [ProjectContract]: OverlayToken contract instance
+      feed_owner [EthAddress]:      TODO
 
+    Outputs:
+      Produces a `comptroller` function generator
+    '''
+    # Calls `get_uni_feeds` to return Uniswap V3 test feed info
     _, marketFeed, depthFeed, quote = get_uni_feeds(feed_owner, feed_infos)
 
+    # Governor deploys ComptrollerShim contract which takes relevant risk parameters, the market
+    # and depth feed addresses, and the OVL token and wrapped eth token addresses
     comptroller = gov.deploy(ComptrollerShim,
                              LAMBDA,
                              STATIC_CAP,
@@ -168,7 +189,7 @@ def comptroller(gov, feed_infos, token, feed_owner):
                              marketFeed,
                              depthFeed,
                              token.address,
-                             "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+                             WRAPPED_ETH_ADDR
                              )
 
     yield comptroller
@@ -177,40 +198,59 @@ def comptroller(gov, feed_infos, token, feed_owner):
 @pytest.fixture(
     scope="module",
     params=[
-        ("OverlayV1Mothership", [
-            .0015e18,      # fee
-            .5e18,         # fee burn rate
-            .5e18,         # margin burn rate
-        ],
-         "OverlayV1UniswapV3MarketZeroLambdaShim", [
-            1e18,                # amount in
-            PRICE_WINDOW_MACRO,  # macro window
-            PRICE_WINDOW_MICRO,  # micro price window
-            5e18,                # price frame cap
-            343454218783234,     # k
-            .00573e18,           # spread
-            COMPOUND_PERIOD,     # compound period
-            0,                   # lambda
-            OI_CAP*1e18,         # oi cap
-            BRRRR_EXPECTED,      # brrrr expected
-            BRRRR_WINDOW_MACRO,  # brrrr window macro - roller window
-            BRRRR_WINDOW_MICRO   # brrrr window micro - accumulator window
-         ],
-         "OverlayV1OVLCollateral", [
-             .06e18,             # margin maintenance
-             .5e18,              # margin reward rate
-             100,                # max leverage
-         ],
-         get_uni_feeds,
-        ),
-    ])
-def create_mothership(token, feed_infos, fees, alice, bob, gov, feed_owner, request):  # noqa: E501
-    ovlms_name, ovlms_args, ovlm_name, ovlm_args, ovlc_name, ovlc_args, get_feed = request.param  # noqa: E501
+        ("OverlayV1Mothership", [0.0015e18, 0.5e18, 0.5e18],
+          "OverlayV1UniswapV3MarketZeroLambdaShim",
+          [1e18, PRICE_WINDOW_MACRO, PRICE_WINDOW_MICRO, 5e18, 343454218783234, 0.00573e18,
+           COMPOUND_PERIOD, 0, OI_CAP*1e18, BRRRR_EXPECTED, BRRRR_WINDOW_MACRO, BRRRR_WINDOW_MICRO],
+         "OverlayV1OVLCollateral", [0.06e18, 0.5e18, 100], get_uni_feeds)])
+def create_mothership(token, feed_infos, fees, alice, bob, gov, feed_owner, request):
+    '''
+    Inputs:
+      token       [ProjectContract]: OverlayToken contract instance
+      feed_infos  []:                TODO
+      alice       [EthAddress]:      Alice's account
+      bob         [EthAddress]:      Bob's account
+      gov         [EthAddress]:      Governor Role account
+      feed_owner [EthAddress]:       TODO
+      request     [arr]:             Parameters passed in the pytest fixture
+        request.params:
+          ovlms_name [str]: OverlayV1Mothership contract name
+          ovlms_args [arr]: OverlayV1Mothership initialization parameters
+                   [int]:   fee [uint]
+                   [int]:   fee burn rate [uint]
+                   [int]:   margin burn rate [uint]
+          ovlm_name [str]:  OverlayV1UniswapV3MarketZeroLambdaShim contract name
+          ovlm_args:
+                   [int]:   amount in [uint128]
+                   [int]:   macro price window [uint256]
+                   [int]:   micro price window [uint256]
+                   [int]:   micro price window [uint256]
+                   [int]:   k constant
+                   [int]:   spread
+                   [int]:   compound period, 600s = 10 min
+                   [int]:   lambda, 0
+                   [int]:   OI cap
+                   [int]:   Expected brrrr
+                   [int]:   Roller window - brrrr window macro
+                   [int]:   Accumulator window - brrrr window micro
+          ovlc_name [str]:  OverlayV1OVLCollateral contract name
+          ovlc_args:
+                   [int]:   maintenance margin [uint]
+                   [int]:   margin reward rate [uint]
+                   [int]:   max leverage
+          get_uni_feeds []: TODO
+    Output:
+      create_mothership generator produces an instantiated Mothership contract when called
+    '''
+    # Set OverlayV1Mothership, OverlayV1UniswapV3Market, and OverlayV1OVLCollateral contract
+    # constructor arguments from pytest fixture
+    ovlms_name, ovlms_args, ovlm_name, ovlm_args, ovlc_name, ovlc_args, get_feed = request.param
 
     ovlms = getattr(brownie, ovlms_name)
     ovlm = getattr(brownie, ovlm_name)
     ovlc = getattr(brownie, ovlc_name)
 
+    # Prepend fee as first argument to OverlayV1Mothership contract constructor
     ovlms_args_w_feeto = [fees] + ovlms_args
 
     def create_mothership(
@@ -223,36 +263,53 @@ def create_mothership(token, feed_infos, fees, alice, bob, gov, feed_owner, requ
         ovlc_args=ovlc_args,
         fd_getter=get_feed
     ):
+        # Calls `get_uni_feeds` to return Uniswap V3 test feed info
         _, market_feed, ovl_feed, quote = fd_getter(feed_owner, feed_infos)
 
+        # Account that deploys the OverlayV1Mothership contract takes on the Governor Role
         mothership = gov.deploy(ovlms_type, *ovlms_args)
 
-        eth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-
+        # Governor grants the Mothership contract with the Admin Role in the OVL ERC20 contract
         tok.grantRole(tok.ADMIN_ROLE(), mothership, {"from": gov})
 
+        # Governor sets the `ovl` state variable as the `tok` OVL ERC20 token address
         mothership.setOVL(tok, {'from': gov})
 
-        market = gov.deploy(
-            ovlm_type,
-            mothership,
-            ovl_feed,
-            market_feed,
-            quote,
-            eth,
-            *ovlm_args[:4]
-        )
+        # Governor deploys the OverlayV1UniswapV3MarketZeroLambdaShim contract which takes in the
+        # Mothership address, the mock depth and mock market addresses, the market token 1 address
+        # and eth address that make up the pair, and the first four variables in `ovlm_args`
+        market = gov.deploy(ovlm_type, mothership, ovl_feed, market_feed, quote, WRAPPED_ETH_ADDR,
+                            *ovlm_args[:4])
 
+        # Governor sets important variables in the operation of the market contract, including k,
+        # spread, compound period, and the Comptroller parameters
+        # RR NOTE: should remove setEverything function in sol and call each function explicitly
         market.setEverything(*ovlm_args[4:], {"from": gov})
+
+        # Governor makes call to mothership contract, making it aware of the new market contract
+        # RR TODO: check that call fails if market contract already accounted for
         mothership.initializeMarket(market, {"from": gov})
 
+        # Governor deploys the OverlayV1OVLCollateral contract which takes a URI and the Mothership
+        # contract address, creates a `Positions.Info` struct containing default position parameter
+        # values and appends the struct to the `positions` array to track them
         ovl_collateral = gov.deploy(ovlc_type, "our_uri", mothership)
+
+        # Governor sets the market information which includes the maintenance margin, margin
+        # reward rate, and max leverage
         ovl_collateral.setMarketInfo(market, *ovlc_args, {"from": gov})
+
+        # Governor makes call to mothership contract, making it aware of the new collateral contract
         mothership.initializeCollateral(ovl_collateral, {"from": gov})
 
+        # Governor makes call to market contract, making it aware of the new collateral contract
+        # RR Q: must `mothership.initializeCollateral` and `market.addCollateral` be called in this
+        # order? Is there some check that can be made to ensure `initializeCollateral` is called?
         market.addCollateral(ovl_collateral, {'from': gov})
 
+        # Alice approves the collateral contract to spend from her balance
         tok.approve(ovl_collateral, 1e50, {"from": alice})
+        # Bob approves the collateral contract to spend from his balance
         tok.approve(ovl_collateral, 1e50, {"from": bob})
 
         return mothership
@@ -270,27 +327,21 @@ def mothership(create_mothership):
     yield create_mothership()
 
 
-@pytest.fixture(
-    scope="module",
-    params=['IOverlayV1OVLCollateral'])
+@pytest.fixture(scope="module", params=['IOverlayV1OVLCollateral'])
 def ovl_collateral(mothership, request):
     addr = mothership.allCollateral(0)
     ovl_collateral = getattr(interface, request.param)(addr)
     yield ovl_collateral
 
 
-@pytest.fixture(
-    scope="module",
-    params=["IOverlayV1Market"])
+@pytest.fixture(scope="module", params=["IOverlayV1Market"])
 def market(mothership, request):
     addr = mothership.allMarkets(0)
     market = getattr(interface, request.param)(addr)
     yield market
 
 
-@pytest.fixture(
-    scope="module",
-    params=["IOverlayV1Market"])
+@pytest.fixture(scope="module", params=["IOverlayV1Market"])
 def notamarket(accounts):
     '''We need this because we cannot mutate the market object in tests
     (mutated state is inherited by all future tests :HORROR:) And we cannot
@@ -311,7 +362,7 @@ def uni_test(gov, rewards, accounts):
     aave_eth = "0x5aB53EE1d50eeF2C1DD3d5402789cd27bB52c1bB"
 
     usdc = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
-    eth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+    eth = WRAPPED_ETH_ADDR
     #  wbtc = "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599"
     #  uni = "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984"
     #  link = "0x514910771AF9Ca656af840dff83E8264EcF986CA"
@@ -319,14 +370,6 @@ def uni_test(gov, rewards, accounts):
 
     # we are trying to find amount USDC in OVL terms
 
-    unitest = rewards.deploy(
-        UniTest,
-        eth,
-        usdc,
-        usdc_eth,
-        aave,
-        eth,
-        aave_eth
-    )
+    unitest = rewards.deploy(UniTest, eth, usdc, usdc_eth, aave, eth, aave_eth)
 
     yield unitest
