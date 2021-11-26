@@ -70,6 +70,12 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         _;
     }
 
+    /**
+      @notice Constructor method
+      @dev  Creates a `Position.Info` struct and appends it to `positions` array to track them
+      @param _uri Unique Resource Identifier of a token
+      @param _mothership OverlayV1Mothership contract address
+     */
     constructor (
         string memory _uri,
         address _mothership
@@ -91,6 +97,15 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     }
 
+    /**
+      @notice Sets market information
+      @dev Only the Governor can set market info
+      @dev Adds market information to the `marketInfo` mapping
+      @param _market Overlay Market contract address
+      @param _marginMaintenance maintenance margin
+      @param _marginRewardRate margin reward rate
+      @param _maxLeverage maximum leverage amount
+      */
     function setMarketInfo (
         address _market,
         uint _marginMaintenance,
@@ -98,9 +113,17 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         uint _maxLeverage
     ) external onlyGovernor {
 
+      // RR Q: How often is this function called? Is it a one time call when a new market is
+      // instantiated? Or is this function called more frequently/is ever marketInfo updated?
+
+      // RR TODO: if only called once for each market, but in a require statement
+      // require(!marketInfo[_market], "OVLV1:!!initiliazed");
+
         marketInfo[_market].marginMaintenance = _marginMaintenance;
         marketInfo[_market].marginRewardRate = _marginRewardRate;
         marketInfo[_market].maxLeverage = _maxLeverage;
+
+        // RR TODO: Fire and event when new market info is set
 
     }
 
