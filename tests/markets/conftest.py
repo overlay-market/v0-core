@@ -35,32 +35,90 @@ def isolation(fn_isolation):
 
 @pytest.fixture(scope="module")
 def gov(accounts):
+    '''
+    Input:
+      accounts [Accounts]: List of brownie provided eth account addresses
+
+    Output:
+      [Account]: Brownie provided eth account address for the Governor role
+    '''
     yield accounts[0]
 
 
 @pytest.fixture(scope="module")
 def rewards(accounts):
+    '''
+    Input:
+      accounts [Accounts]: List of brownie provided eth account addresses
+
+    Output:
+      [Account]: Brownie provided eth account address for the rewards
+    '''
     yield accounts[1]
 
 
 @pytest.fixture(scope="module")
 def alice(accounts):
+    '''
+    Input:
+      accounts [Accounts]: List of brownie provided eth account addresses
+
+    Output:
+      [Account]: Brownie provided eth account address for Alice the trader
+    '''
     yield accounts[2]
 
 
 @pytest.fixture(scope="module")
 def bob(accounts):
+    '''
+    Input:
+      accounts [Accounts]: List of brownie provided eth account addresses
+
+    Output:
+      [Account]: Brownie provided eth account address for Bob the trader
+    '''
     yield accounts[3]
 
 
 @pytest.fixture(scope="module")
-def feed_owner(accounts):
-    yield accounts[6]
+def fees(accounts):
+    '''
+    Input:
+      accounts [Accounts]: List of brownie provided eth account addresses
+
+    Output:
+      [Account]: Brownie provided eth account address for the fees
+    '''
+    yield accounts[4]
+
+
+@pytest.fixture(scope="module", params=["IOverlayV1Market"])
+def notamarket(accounts):
+    '''
+    We need this because we cannot mutate the market object in tests (mutated state is inherited by
+    all future tests :HORROR:) And we cannot copy or deepcopy contract objects owing to
+    RecursionError: maximum recursion depth exceeded while calling a Python object.
+
+    Input:
+      accounts [Accounts]: List of brownie provided eth account addresses
+
+    Output:
+      [Account]: Brownie provided eth account address for market object in tests
+    '''
+    yield accounts[5]
 
 
 @pytest.fixture(scope="module")
-def fees(accounts):
-    yield accounts[4]
+def feed_owner(accounts):
+    '''
+    Input:
+      accounts [Accounts]: List of brownie provided eth account addresses
+
+    Output:
+      [Account]: Brownie provided eth account address for feed owner
+    '''
+    yield accounts[6]
 
 
 @pytest.fixture(scope="module")
@@ -87,9 +145,6 @@ def create_token(gov, alice, bob):
 
 @pytest.fixture(scope="module")
 def token(create_token):
-    '''
-    Produces an instantiated OverlayTokenNew contract when called
-    '''
     yield create_token()
 
 
@@ -205,13 +260,15 @@ def comptroller(gov, feed_infos, token, feed_owner):
          "OverlayV1OVLCollateral", [0.06e18, 0.5e18, 100], get_uni_feeds)])
 def create_mothership(token, feed_infos, fees, alice, bob, gov, feed_owner, request):
     '''
+    Deploys and sets up OverlayV1Mothership contract for the market related tests.
+
     Inputs:
       token       [ProjectContract]: OverlayToken contract instance
       feed_infos  []:                TODO
       alice       [EthAddress]:      Alice's account
       bob         [EthAddress]:      Bob's account
       gov         [EthAddress]:      Governor Role account
-      feed_owner [EthAddress]:       TODO
+      feed_owner  [EthAddress]:      TODO
       request     [arr]:             Parameters passed in the pytest fixture
         request.params:
           ovlms_name [str]: OverlayV1Mothership contract name
@@ -239,6 +296,7 @@ def create_mothership(token, feed_infos, fees, alice, bob, gov, feed_owner, requ
                    [int]:   margin reward rate [uint]
                    [int]:   max leverage
           get_uni_feeds []: TODO
+
     Output:
       create_mothership generator produces an instantiated Mothership contract when called
     '''
@@ -319,6 +377,10 @@ def create_mothership(token, feed_infos, fees, alice, bob, gov, feed_owner, requ
 
 @pytest.fixture(scope="module")
 def start_time():
+    '''
+    Output:
+        [int]: current chain time from brownie plus 200 seconds (RR CHECK)
+    '''
     return chain.time() + 200
 
 
@@ -329,6 +391,19 @@ def mothership(create_mothership):
 
 @pytest.fixture(scope="module", params=['IOverlayV1OVLCollateral'])
 def ovl_collateral(mothership, request):
+    '''
+    Gets the IOverlayV1OVLCollateral contract address for 0th collateral index stored in the
+    OverlayV1Mothership contract.
+
+    Inputs:
+      mothership [ProjectContract]: OverlayV1Mothership contract instance
+      request    [arr]:             Parameters passed in the pytest fixture
+        request.param [str]:        Collateral contract string
+
+    Output:
+      ovl_collateral generator produces a collateral contract instance of the 0th collateral index
+      stored in the mothership contract
+    '''
     addr = mothership.allCollateral(0)
     ovl_collateral = getattr(interface, request.param)(addr)
     yield ovl_collateral
@@ -336,19 +411,22 @@ def ovl_collateral(mothership, request):
 
 @pytest.fixture(scope="module", params=["IOverlayV1Market"])
 def market(mothership, request):
+    '''
+    Gets the IOverlayV1Market contract address for 0th market index stored in the
+    OverlayV1Mothership contract.
+
+    Inputs:
+      mothership [ProjectContract]: OverlayV1Mothership contract instance
+      request    [arr]:             Parameters passed in the pytest fixture
+        request.param [str]:        Market contract string
+
+    Output:
+      market generator produces a market contract instance of the 0th market index stored in the
+      mothership contract
+    '''
     addr = mothership.allMarkets(0)
     market = getattr(interface, request.param)(addr)
     yield market
-
-
-@pytest.fixture(scope="module", params=["IOverlayV1Market"])
-def notamarket(accounts):
-    '''We need this because we cannot mutate the market object in tests
-    (mutated state is inherited by all future tests :HORROR:) And we cannot
-    copy or deepcopy contract objects owing to RecursionError: maximum
-    recursion depth exceeded while calling a Python object
-    '''
-    yield accounts[5]
 
 
 @pytest.fixture(scope="module")
