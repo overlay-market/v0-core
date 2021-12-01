@@ -80,7 +80,9 @@ def deploy_uni_pool(factory, token0, token1, path):
 
     IUniswapV3OracleMock = getattr(interface, 'IUniswapV3OracleMock')
 
-    uniswapv3_pool = IUniswapV3OracleMock(factory.allPools(0))
+    uniswapv3_pool = IUniswapV3OracleMock(
+        factory.allPools(factory.allPoolsLength() - 1)
+    )
 
     uniswapv3_pool.loadObservations(
         data['observations'],
