@@ -6,6 +6,7 @@ from brownie import \
     OverlayV1OVLCollateral, \
     OverlayV1UniswapV3Market, \
     OverlayTokenNew, \
+    ERC20Mock, \
     chain, \
     accounts
 import os
@@ -262,13 +263,18 @@ def transfer_position_shares_batch(
 
 def main():
 
+    _ = GOV.deploy(ERC20Mock, "just so token1<token0", "")
+    WETH_MOCK = GOV.deploy(ERC20Mock, "Wrapped Ether", "WETH")
+    AXS_MOCK = GOV.deploy(ERC20Mock, "Axie Infinity Shard", "AXS")
+    DAI_MOCK = GOV.deploy(ERC20Mock, "Dai Stablecoin", "DAI")
+
     uni_factory = deploy_uni_factory()
 
     feed_depth = deploy_uni_pool(
-        uni_factory, AXS, WETH, '../../feeds/univ3_axs_weth')
+        uni_factory, AXS_MOCK, WETH_MOCK, '../../feeds/univ3_axs_weth')
 
     feed_market = deploy_uni_pool(
-        uni_factory, DAI, WETH, '../../feeds/univ3_dai_weth')
+        uni_factory, DAI_MOCK, WETH_MOCK, '../../feeds/univ3_dai_weth')
 
     ovl = deploy_ovl()
 
