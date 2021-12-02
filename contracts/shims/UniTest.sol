@@ -9,39 +9,105 @@ import "../libraries/UniswapV3OracleLibrary/UniswapV3OracleLibraryV2.sol";
 
 contract UniTest {
 
+    event log(string k, uint v);
+    event log(string k, int v);
+
     uint256 internal X96 = 0x1000000000000000000000000;
 
     address base0;
     address quote0;
-    bool eth0is0;
+    bool base0is0;
+    uint128 baseAmount0;
     IUniswapV3Pool feed0;
 
     address base1;
     address quote1;
-    bool eth1is0;
+    uint128 baseAmount1;
+    bool base1is0;
     IUniswapV3Pool feed1;
 
     uint constant microWindow = 600;
     uint constant macroWindow = 3600;
 
     constructor (
+        uint128 _baseAmount0,
         address _base0,
         address _quote0,
         address _feed0,
+        uint128 _baseAmount1,
         address _base1,
         address _quote1,
         address _feed1
     ) { 
 
+        baseAmount0 = _baseAmount0;
         base0 = _base0;
         quote0 = _quote0;
-        eth0is0 = IUniswapV3Pool(_feed0).token0() == _base0;
+        base0is0 = IUniswapV3Pool(_feed0).token0() == _base0;
         feed0 = IUniswapV3Pool(_feed0);
 
+        baseAmount1 = _baseAmount1;
         base1 = _base1;
         quote1 = _quote1;
-        eth1is0 = IUniswapV3Pool(_feed0).token0() == _base0;
+        base1is0 = IUniswapV3Pool(_feed0).token0() == _base1;
         feed1 = IUniswapV3Pool(_feed1);
+
+    }
+
+    function sanity () public view returns (string memory) {
+
+        return "sanity";
+
+    }
+
+    function testMultiplex () public {
+
+        int56[] memory _ticks;
+
+        uint _usdEthPrice;
+        int24 _usdEthTick;
+        uint _ethBtcPrice;
+        int24 _ethBtcTick;
+
+        uint32[] memory _secondsAgo = new uint32[](2);
+        _secondsAgo[1] = 1;
+
+        ( _ticks, ) = IUniswapV3Pool(feed0).observe(_secondsAgo);
+
+        _usdEthTick = int24(_ticks[0] - _ticks[1]);
+        _usdEthPrice = OracleLibraryV2.getQuoteAtTick(
+            _usdEthTick,
+            baseAmount0, 
+            base0, 
+            quote0
+        );
+
+        ( _ticks, ) = IUniswapV3Pool(feed1).observe(_secondsAgo);
+
+        _ethBtcTick = int24(_ticks[0] - _ticks[1]);
+        _ethBtcPrice = OracleLibraryV2.getQuoteAtTick(
+            _ethBtcTick,
+            baseAmount1, 
+            base1, 
+            quote1
+        );
+
+        emit log("usd/eth tick", _usdEthTick);
+        emit log("eth/btc tick", _ethBtcTick);
+
+        emit log("usd/eth price", _usdEthPrice);
+        emit log("eth/btc price", _ethBtcPrice);
+
+        int24 _multiplexTick = _usdEthTick - _ethBtcTick;
+
+        uint _multiplexPrice = OracleLibraryV2.getQuoteAtTick(
+            _multiplexTick,
+            1e8,
+            quote0,
+            base1
+        );
+
+        emit log("multiplex tick", _multiplexTick);
 
     }
 
@@ -62,12 +128,23 @@ contract UniTest {
 
         ( _ticks, _liqs ) = IUniswapV3Pool(feed0).observe(_secondsAgo);
 
-        _macroTick = int24(( _ticks[0] - _ticks[2]) / int56(int32(int(macroWindow))));
+        _macroTick = int24((_ticks[0] - _ticks[2]) / int56(int32(int(macroWindow))));
 
         _microTick = int24((_ticks[0] - _ticks[1]) / int56(int32(int(microWindow))));
 
-        uint _macro = OracleLibraryV2.getQuoteAtTick(_microTick, 1e18, base0, quote0);
-        uint _micro = OracleLibraryV2.getQuoteAtTick(_macroTick, 1e18, base0, quote0);
+        uint _macro = OracleLibraryV2.getQuoteAtTick(
+            _microTick, 
+            baseAmount0, 
+            base0, 
+            quote0
+        );
+
+        uint _micro = OracleLibraryV2.getQuoteAtTick(
+            _macroTick, 
+            baseAmount0, 
+            base0, 
+            quote0
+        );
 
     }
 
@@ -103,7 +180,7 @@ contract UniTest {
 
             uint _liquidity = (uint160(microWindow) << 128) / ( _liqs[0] - _liqs[1] );
 
-            _marketLiquidity = eth0is0
+            _marketLiquidity = base0is0
                 ? ( uint256(_liquidity) << 96 ) / _sqrtPrice
                 : FullMath.mulDiv(uint256(_liquidity), _sqrtPrice, X96);
 
@@ -120,7 +197,7 @@ contract UniTest {
 
             _ovlPrice = OracleLibraryV2.getQuoteAtTick(
                 int24((_ticks[0] - _ticks[1]) / int56(int32(int(macroWindow)))),
-                1e18,
+                baseAmount1,
                 base1,
                 quote1
             );
@@ -171,7 +248,7 @@ contract UniTest {
 
         uint _price = OracleLibraryV2.getQuoteAtTick(
             int24((_ticks[1] - _ticks[0]) / int56(int32(_ago))),
-            1e18,
+            baseAmount1,
             base1,
             quote1
         );
