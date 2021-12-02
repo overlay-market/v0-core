@@ -104,10 +104,14 @@ def reflect_feed(path):
 
 def main():
 
-    axs_weth_path = '../feeds/univ3_axs_weth'
+    # axs_weth_path = '../feeds/univ3_axs_weth'
 
-    dai_weth_path = '../feeds/univ3_dai_weth'
+    # dai_weth_path = '../feeds/univ3_dai_weth'
 
-    reflect_feed(dai_weth_path)
+    wbtc_weth_path = '../feeds/univ3_wbtc_weth'
 
-    reflect_feed(axs_weth_path)
+    # reflect_feed(dai_weth_path)
+
+    # reflect_feed(axs_weth_path)
+
+    reflect_feed(wbtc_weth_path)
