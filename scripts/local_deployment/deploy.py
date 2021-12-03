@@ -1,4 +1,3 @@
-from brownie import *
 from brownie import interface
 from brownie import \
     UniswapV3FactoryMock, \
@@ -70,10 +69,12 @@ def deploy_uni_pool(factory, token0, token1, path):
 
     base = os.path.dirname(os.path.abspath(__file__))
 
-    with open(os.path.normpath(os.path.join(base, path + '_raw_uni_framed.json'))) as f:
+    with open(os.path.normpath(
+            os.path.join(base, path + '_raw_uni_framed.json'))) as f:
         data = json.load(f)
 
-    with open(os.path.normpath(os.path.join(base, path + '_reflected.json'))) as f:
+    with open(os.path.normpath(
+            os.path.join(base, path + '_reflected.json'))) as f:
         beginning = json.load(f)['timestamp'][0]
 
     factory.createPool(token0, token1)
@@ -220,7 +221,7 @@ def unwind_position(
     unwinder
 ):
 
-    tx_unwind = collateral_manager.unwind(
+    tx_unwind = collateral_manager.unwind(  # noqa: F841
         position_id,
         position_shares,
         {"from": unwinder}
@@ -235,7 +236,7 @@ def transfer_position_shares(
     amount
 ):
 
-    tx_transfer = collateral_manager.safeTransferFrom(
+    tx_transfer = collateral_manager.safeTransferFrom(  # noqa: F841
         sender,
         receiver,
         position_id,
@@ -253,7 +254,7 @@ def transfer_position_shares_batch(
     amounts
 ):
 
-    tx_transfer = collateral_manager.safeBatchTransferFrom(
+    tx_transfer = collateral_manager.safeBatchTransferFrom(  # noqa: F841
         sender,
         receiver,
         position_ids,
@@ -373,7 +374,7 @@ def main():
 
     chain.mine(timedelta=UPDATE_PERIOD)
 
-    position_6 = build_position(
+    position_6 = build_position(  # noqa: F841
         ovl_collateral,
         market,
         5e18,

@@ -10,10 +10,12 @@ from brownie import \
 START = chain.time()
 ONE_DAY = 86400
 
+
 def reflect_feed(path):
 
     base = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.normpath(os.path.join(base, path + '_raw_uni.json'))) as f:
+    with open(os.path.normpath(
+            os.path.join(base, path + '_raw_uni.json'))) as f:
         feed = json.load(f)
 
     feed.reverse()
@@ -21,8 +23,6 @@ def reflect_feed(path):
     chain.mine(timestamp=START)
     now = chain.time()
     earliest = feed[0]['observation'][0]
-
-    diff = 0
 
     obs = []
     shims = []
@@ -32,7 +32,8 @@ def reflect_feed(path):
     for f in feed:
         ob = f['observation']
         shim = f['shim']
-        if earliest + ONE_DAY < ob[0]: break
+        if earliest + ONE_DAY < ob[0]:
+            break
         time_diff = ob[0] - earliest
         ob[0] = shim[0] = mock_start + time_diff
         obs.append(ob)
@@ -47,7 +48,7 @@ def reflect_feed(path):
 
     mock = IUniswapV3OracleMock(factory.allPools(0))
 
-    mock.loadObservations( obs, shims, { 'from': accounts[0] } )
+    mock.loadObservations(obs, shims, {'from': accounts[0]})
 
     breadth = obs[-1][0] - obs[0][0] - 3600
 
@@ -68,9 +69,9 @@ def reflect_feed(path):
 
         ob = mock.observe([3600, 600, 1, 0])
 
-        ten_min = 1.0001 ** (( ob[0][3] - ob[0][1] ) / 600)
-        one_hr = 1.0001 ** (( ob[0][3] - ob[0][0] ) / 3600)
-        spot = 1.0001 ** (( ob[0][3] - ob[0][2] ))
+        ten_min = 1.0001 ** ((ob[0][3] - ob[0][1]) / 600)
+        one_hr = 1.0001 ** ((ob[0][3] - ob[0][0]) / 3600)
+        spot = 1.0001 ** ((ob[0][3] - ob[0][2]))
         bid = min(ten_min, one_hr) * math.exp(-pbnj)
         ask = max(ten_min, one_hr) * math.exp(pbnj)
 
@@ -81,7 +82,6 @@ def reflect_feed(path):
         bids.append(bid)
         asks.append(ask)
 
-        
     reflected = {
         'timestamp': timestamps,
         'one_hr': one_hrs,
@@ -96,11 +96,14 @@ def reflect_feed(path):
         'shims': shims
     }
 
-    with open(os.path.normpath(os.path.join(base, path + '_reflected.json')), 'w+') as f:
-        json.dump(reflected, f) 
+    with open(os.path.normpath(
+            os.path.join(base, path + '_reflected.json')), 'w+') as f:
+        json.dump(reflected, f)
 
-    with open(os.path.normpath(os.path.join(base, path + '_raw_uni_framed.json')), 'w+') as f:
-        json.dump(mock, f) 
+    with open(os.path.normpath(
+            os.path.join(base, path + '_raw_uni_framed.json')), 'w+') as f:
+        json.dump(mock, f)
+
 
 def main():
 

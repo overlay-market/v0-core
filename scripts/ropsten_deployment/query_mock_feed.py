@@ -4,10 +4,10 @@ from brownie import \
     UniswapV3OracleMock
 
 
-
 def main():
 
-    uv3_pool = UniswapV3OracleMock.at('0x155F4dB9c0B7Aa9a84d25228205B0aC1d1971683')
+    uv3_pool = UniswapV3OracleMock.at(
+        '0x155F4dB9c0B7Aa9a84d25228205B0aC1d1971683')
 
     card = uv3_pool.cardinality()
 
@@ -23,7 +23,6 @@ def main():
 
     print("now", now)
 
-    ( obs, shims ) = uv3_pool.observe( [60], { 'gas': 1250000 } )
+    (obs, shims) = uv3_pool.observe([60], {'gas': 1250000})
     print("obs", obs)
     print("shims", shims)
-

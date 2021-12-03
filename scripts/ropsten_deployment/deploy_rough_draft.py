@@ -57,8 +57,8 @@ def FIRST_deploy_ovl_mock_feed():
 
     uv3_pool = UniswapV3OracleMock.at(uv3_factory.allPools(0))
 
-    ob_chunks = [ obs[x:x+175] for x in range(0, len(obs), 175) ]
-    shim_chunks = [ shims[x:x+175] for x in range(0, len(shims), 175) ]
+    ob_chunks = [obs[x:x+175] for x in range(0, len(obs), 175)]
+    shim_chunks = [shims[x:x+175] for x in range(0, len(shims), 175)]
 
     for i in range(len(ob_chunks)):
         success = False
@@ -67,9 +67,10 @@ def FIRST_deploy_ovl_mock_feed():
                 uv3_pool.loadObservations(
                     ob_chunks[i],
                     shim_chunks[i],
-                    { 'from': DEPLOYER } )
+                    {'from': DEPLOYER})
                 success = True
-            except: print("Retrying.")
+            except:                                             # noqa: E722
+                print("Retrying.")
 
     print("WETH/AXS Mock Address: ", uv3_pool.address)
 
@@ -80,6 +81,8 @@ DAI = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
 WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 MOCK_ETH_DAI_FEED_TOKEN0 = DAI
 MOCK_ETH_DAI_FEED_TOKEN1 = WETH
+
+
 def SECOND_deploy_weth_dai_mock_feed():
 
     base = os.path.dirname(os.path.abspath(__file__))
@@ -118,8 +121,8 @@ def SECOND_deploy_weth_dai_mock_feed():
 
     uv3_pool = UniswapV3OracleMock.at(uv3_factory.allPools(0))
 
-    ob_chunks = [ obs[x:x+175] for x in range(0, len(obs), 175) ]
-    shim_chunks = [ shims[x:x+175] for x in range(0, len(shims), 175) ]
+    ob_chunks = [obs[x:x+175] for x in range(0, len(obs), 175)]
+    shim_chunks = [shims[x:x+175] for x in range(0, len(shims), 175)]
 
     for i in range(len(ob_chunks)):
         success = False
@@ -128,41 +131,47 @@ def SECOND_deploy_weth_dai_mock_feed():
                 uv3_pool.loadObservations(
                     ob_chunks[i],
                     shim_chunks[i],
-                    { 'from': DEPLOYER } )
+                    {'from': DEPLOYER})
                 success = True
-            except: print("Retrying.")
+            except:                                         # noqa: E722
+                print("Retrying.")
 
     print("WETH/DAI Mock Address: ", uv3_pool.address)
 
     return uv3_pool
-    
+
 
 TOTAL_SUPPLY = 8_000_000e18
+
+
 def THIRD_deploy_ovl_token():
 
     ovl = DEPLOYER.deploy(OverlayToken)
 
-    ovl.mint(DEPLOYER, TOTAL_SUPPLY, { 'from': DEPLOYER })
+    ovl.mint(DEPLOYER, TOTAL_SUPPLY, {'from': DEPLOYER})
 
     print("Overlay Token Address: ", ovl.address)
 
     return ovl
 
+
 FEE = .0015e18
 FEE_BURN_RATE = .5e18
 MARGIN_BURN_RATE = .5e18
+
+
 def FOURTH_deploy_mothership(ovl_token):
 
     mothership = DEPLOYER.deploy(OverlayV1Mothership,
-        DEPLOYER,
-        FEE,
-        FEE_BURN_RATE,
-        MARGIN_BURN_RATE )
+                                 DEPLOYER,
+                                 FEE,
+                                 FEE_BURN_RATE,
+                                 MARGIN_BURN_RATE)
 
     ovl_token.grantRole(
-        ovl_token.ADMIN_ROLE(), 
-        mothership, 
-        { 'from': DEPLOYER } )
+        ovl_token.ADMIN_ROLE(),
+        mothership,
+        {'from': DEPLOYER})
 
     return mothership
 
@@ -183,8 +192,10 @@ OI_CAP = 800_000e18
 BRRRR_EXPECTED = 26_320e18
 BRRRR_WINDOW_MACRO = SEVEN_DAYS
 BRRRR_WINDOW_MICRO = TEN_MINUTES
+
+
 def FIFTH_deploy_overlay_eth_dai_market(
-    mothership, 
+    mothership,
     market_feed,
     ovl_feed
 ):
@@ -194,7 +205,7 @@ def FIFTH_deploy_overlay_eth_dai_market(
         mothership,
         ovl_feed,
         market_feed,
-        WETH, # TODO: What is the deal with this market quote.
+        WETH,  # TODO: What is the deal with this market quote.
         WETH,
         BASE_AMOUNT,
         PRICE_WINDOW_MACRO,
@@ -211,7 +222,7 @@ def FIFTH_deploy_overlay_eth_dai_market(
         BRRRR_EXPECTED,
         BRRRR_WINDOW_MACRO,
         BRRRR_WINDOW_MICRO,
-        { 'from': DEPLOYER }
+        {'from': DEPLOYER}
     )
 
     print("Overlay WETH/DAI Market Address: ", market)
@@ -223,10 +234,12 @@ URI = "https://degenscore.com"
 MARGIN_MAINTENANCE = .06e18
 MARGIN_REWARD_RATE = .5e18
 MAX_LEVERAGE = 100
+
+
 def SIXTH_deploy_ovl_collateral(mothership, eth_dai_market):
 
     ovl_collateral = DEPLOYER.deploy(
-        OverlayV1OVLCollateral, 
+        OverlayV1OVLCollateral,
         URI, mothership
     )
 
@@ -235,10 +248,10 @@ def SIXTH_deploy_ovl_collateral(mothership, eth_dai_market):
         MARGIN_MAINTENANCE,
         MARGIN_REWARD_RATE,
         MAX_LEVERAGE,
-        { 'from': DEPLOYER }
+        {'from': DEPLOYER}
     )
 
-    eth_dai_market.addCollateral(ovl_collateral, { 'from': DEPLOYER })
+    eth_dai_market.addCollateral(ovl_collateral, {'from': DEPLOYER})
 
     print("Overlay Collateral Address: ", ovl_collateral.address)
 
@@ -247,26 +260,20 @@ def SIXTH_deploy_ovl_collateral(mothership, eth_dai_market):
 
 def main():
 
-    mock_ovl_feed       = FIRST_deploy_ovl_mock_feed()
+    mock_ovl_feed = FIRST_deploy_ovl_mock_feed()
 
-    mock_weth_dai_feed  = SECOND_deploy_weth_dai_mock_feed()
+    mock_weth_dai_feed = SECOND_deploy_weth_dai_mock_feed()
 
-    ovl_token           = THIRD_deploy_ovl_token()
+    ovl_token = THIRD_deploy_ovl_token()
 
-    mothership          = FOURTH_deploy_mothership(ovl_token)
+    mothership = FOURTH_deploy_mothership(ovl_token)
 
-    eth_dai_market      = FIFTH_deploy_overlay_eth_dai_market(
+    eth_dai_market = FIFTH_deploy_overlay_eth_dai_market(
         mothership,
-        mock_weth_dai_feed, 
-        mock_ovl_feed, 
+        mock_weth_dai_feed,
+        mock_ovl_feed,
     )
 
-    ovl_collateral      = SIXTH_deploy_ovl_collateral(
-        mothership,
-        eth_dai_market
-    )
+    ovl_collateral = SIXTH_deploy_ovl_collateral(mothership, eth_dai_market)  # noqa: F841 E501
 
     print("deployed")
-
-
-
