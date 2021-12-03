@@ -118,7 +118,7 @@ def feed_infos():
     )
 
 
-def get_uni_feeds (feed_owner, feed_info):
+def get_uni_feeds(feed_owner, feed_info):
 
     market_obs = feed_info.market_info[0]
     market_shims = feed_info.market_info[1]
@@ -182,7 +182,7 @@ def comptroller(gov, feed_infos, token, feed_owner):
             .5e18,         # fee burn rate
             .5e18,         # margin burn rate
         ],
-         "OverlayV1UniswapV3MarketZeroLambdaShim", [
+            "OverlayV1UniswapV3MarketZeroLambdaShim", [
             1e18,                # amount in
             PRICE_WINDOW_MACRO,  # macro window
             PRICE_WINDOW_MICRO,  # micro price window
@@ -195,13 +195,13 @@ def comptroller(gov, feed_infos, token, feed_owner):
             BRRRR_EXPECTED,      # brrrr expected
             BRRRR_WINDOW_MACRO,  # brrrr window macro - roller window
             BRRRR_WINDOW_MICRO   # brrrr window micro - accumulator window
-         ],
-         "OverlayV1OVLCollateral", [
-             .06e18,             # margin maintenance
-             .5e18,              # margin reward rate
-             100,                # max leverage
-         ],
-         get_uni_feeds,
+        ],
+            "OverlayV1OVLCollateral", [
+            .06e18,             # margin maintenance
+            .5e18,              # margin reward rate
+            100,                # max leverage
+        ],
+            get_uni_feeds,
         ),
     ])
 def create_mothership(token, feed_infos, fees, alice, bob, gov, feed_owner, request):  # noqa: E501
@@ -304,18 +304,18 @@ def notamarket(accounts):
 def uni_test(rewards, feed_infos):
 
     #  dai_eth = "0xc2e9f25be6257c210d7adf0d4cd6e3e881ba25f8"
-    usdc_eth = "0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8"
+    # usdc_eth = "0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8"
     #  wbtc_eth = "0xcbcdf9626bc03e24f779434178a73a0b4bad62ed"
     #  uni_eth = "0x1d42064Fc4Beb5F8aAF85F4617AE8b3b5B8Bd801"
     #  link_eth = "0xa6Cc3C2531FdaA6Ae1A3CA84c2855806728693e8"
-    aave_eth = "0x5aB53EE1d50eeF2C1DD3d5402789cd27bB52c1bB"
+    # aave_eth = "0x5aB53EE1d50eeF2C1DD3d5402789cd27bB52c1bB"
 
-    usdc = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
-    eth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+    # usdc = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+    # eth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
     #  wbtc = "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599"
     #  uni = "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984"
     #  link = "0x514910771AF9Ca656af840dff83E8264EcF986CA"
-    aave = "0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9"
+    # aave = "0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9"
 
     factory, market, depth, _ = get_uni_feeds(rewards, feed_infos)
     market_token0 = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
@@ -332,7 +332,6 @@ def uni_test(rewards, feed_infos):
         depth_token1,
         depth
     )
-
 
     # unitest = rewards.deploy(
     #     UniTest,
