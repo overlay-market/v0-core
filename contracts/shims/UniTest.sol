@@ -104,95 +104,64 @@ contract UniTest {
         emit log("usd/eth price", _usdEthPrice);
         emit log("eth/btc price", _ethBtcPrice);
 
+        emit log("multiplexBaseAmount", multiplexBaseAmount);
+
         int24 _multiplexTick = _usdEthTick + _ethBtcTick;
 
-        uint _multiplexPrice = OracleLibraryV2.getQuoteAtTick(
+        uint _multiplexPrice = getQuoteAtTick(
             _multiplexTick,
             multiplexBaseAmount,
-            base1,
-            quote1
+            true
         );
 
-        emit log("adding multiplex price base=base1 ", _multiplexPrice);
+        emit log("adding && reciprocal           ", _multiplexPrice);
 
-        _multiplexPrice = OracleLibraryV2.getQuoteAtTick(
+        _multiplexPrice = getQuoteAtTick(
             _multiplexTick,
             multiplexBaseAmount,
-            quote1,
-            base1
+            false
         );
 
-        emit log("adding multiplex price base=quote1", _multiplexPrice);
-
-        _multiplexPrice = OracleLibraryV2.getQuoteAtTick(
-            _multiplexTick,
-            multiplexBaseAmount,
-            base0,
-            quote1
-        );
-
-        emit log("adding multiplex price base=base0 ", _multiplexPrice);
+        emit log("adding && !reciprocal          ", _multiplexPrice);
 
         _multiplexTick = _ethBtcTick - _usdEthTick;
 
-        _multiplexPrice = OracleLibraryV2.getQuoteAtTick(
+        _multiplexPrice = getQuoteAtTick(
             _multiplexTick,
             multiplexBaseAmount,
-            base1,
-            quote1
+            true
         );
 
-        emit log("subtracting usdeth from ethbtc multiplex price base=base1 ", _multiplexPrice);
+        emit log("ethbtc - usdeth &&  reciprocal ", _multiplexPrice);
 
-        _multiplexPrice = OracleLibraryV2.getQuoteAtTick(
+        _multiplexPrice = getQuoteAtTick(
             _multiplexTick,
             multiplexBaseAmount,
-            quote1,
-            base1
+            false
         );
 
-        emit log("subtracting usdeth from ethbtc multiplex price base=quote1", _multiplexPrice);
+        emit log("ethbtc - usdeth && !reciprocal ", _multiplexPrice);
 
         _multiplexTick = _usdEthTick - _ethBtcTick;
 
-        _multiplexPrice = OracleLibraryV2.getQuoteAtTick(
+        _multiplexPrice = getQuoteAtTick(
             _multiplexTick,
             multiplexBaseAmount,
-            base1,
-            quote1
+            true
         );
 
-        emit log("subtracting ethbtc from usdeth multiplex price base=base1 ", _multiplexPrice);
+        emit log("usdeth - ethbtc && reciprocal  ", _multiplexPrice);
 
-        _multiplexPrice = OracleLibraryV2.getQuoteAtTick(
+        _multiplexPrice = getQuoteAtTick(
             _multiplexTick,
             multiplexBaseAmount,
-            quote1,
-            base1
+            false
         );
 
-        emit log("subtracting ethbtc from usdeth multiplex price base=quote1", _multiplexPrice);
+        emit log("usdeth - ethbtc && !reciprocal  ", _multiplexPrice);
 
-        _multiplexPrice = OracleLibraryV2.getQuoteAtTick(
-            _multiplexTick,
-            multiplexBaseAmount,
-            quote0,
-            base1
-        );
-
-        emit log("subtracting ethbtc from usdeth multiplex price base=quote0", _multiplexPrice);
-
-        _multiplexPrice = OracleLibraryV2.getQuoteAtTick(
-            _multiplexTick,
-            multiplexBaseAmount,
-            base0,
-            quote1
-        );
-
-        emit log("subtracting ethbtc from usdeth multiplex price base=base0", _multiplexPrice);
-
-        emit log("quote1>base1", quote1 > base1 ? 1 : 0);
-        emit log("quote0>base0", quote0 > base0 ? 1 : 0);
+        emit log("1 if quote0>base0", quote0 > base0 ? 1 : 0);
+        emit log("1 if quote1>base1", quote1 > base1 ? 1 : 0);
 
         emit log("multiplex tick", _multiplexTick);
 
@@ -358,6 +327,28 @@ contract UniTest {
 
         return _brrrrd;
 
+    }
+
+
+    function getQuoteAtTick(
+        int24 tick,
+        uint128 baseAmount,
+        bool reciprocal
+    ) internal pure returns (uint256 quoteAmount) {
+        uint160 sqrtRatioX96 = TickMath.getSqrtRatioAtTick(tick);
+
+        // Calculate quoteAmount with better precision if it doesn't overflow when multiplied by itself
+        if (sqrtRatioX96 <= type(uint128).max) {
+            uint256 ratioX192 = uint256(sqrtRatioX96) * sqrtRatioX96;
+            quoteAmount = reciprocal
+                ? FullMath.mulDiv(ratioX192, baseAmount, 1 << 192)
+                : FullMath.mulDiv(1 << 192, baseAmount, ratioX192);
+        } else {
+            uint256 ratioX128 = FullMath.mulDiv(sqrtRatioX96, sqrtRatioX96, 1 << 64);
+            quoteAmount = reciprocal
+                ? FullMath.mulDiv(ratioX128, baseAmount, 1 << 128)
+                : FullMath.mulDiv(1 << 128, baseAmount, ratioX128);
+        }
     }
 
 }
