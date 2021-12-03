@@ -6,6 +6,7 @@ import "../interfaces/IUniswapV3Pool.sol";
 import "../libraries/UniswapV3OracleLibrary/TickMath.sol";
 import "../libraries/UniswapV3OracleLibrary/FullMath.sol";
 import "../libraries/UniswapV3OracleLibrary/UniswapV3OracleLibraryV2.sol";
+import "../libraries/FixedPoint.sol";
 
 contract UniTest {
 
@@ -26,6 +27,8 @@ contract UniTest {
     bool base1is0;
     IUniswapV3Pool feed1;
 
+    uint128 multiplexBaseAmount;
+
     uint constant microWindow = 600;
     uint constant macroWindow = 3600;
 
@@ -37,7 +40,8 @@ contract UniTest {
         uint128 _baseAmount1,
         address _base1,
         address _quote1,
-        address _feed1
+        address _feed1,
+        uint128 _multiplexBaseAmount
     ) { 
 
         baseAmount0 = _baseAmount0;
@@ -51,6 +55,8 @@ contract UniTest {
         quote1 = _quote1;
         base1is0 = IUniswapV3Pool(_feed0).token0() == _base1;
         feed1 = IUniswapV3Pool(_feed1);
+
+        multiplexBaseAmount = _multiplexBaseAmount;
 
     }
 
@@ -98,14 +104,95 @@ contract UniTest {
         emit log("usd/eth price", _usdEthPrice);
         emit log("eth/btc price", _ethBtcPrice);
 
-        int24 _multiplexTick = _usdEthTick - _ethBtcTick;
+        int24 _multiplexTick = _usdEthTick + _ethBtcTick;
 
         uint _multiplexPrice = OracleLibraryV2.getQuoteAtTick(
             _multiplexTick,
-            1e8,
+            multiplexBaseAmount,
+            base1,
+            quote1
+        );
+
+        emit log("adding multiplex price base=base1 ", _multiplexPrice);
+
+        _multiplexPrice = OracleLibraryV2.getQuoteAtTick(
+            _multiplexTick,
+            multiplexBaseAmount,
+            quote1,
+            base1
+        );
+
+        emit log("adding multiplex price base=quote1", _multiplexPrice);
+
+        _multiplexPrice = OracleLibraryV2.getQuoteAtTick(
+            _multiplexTick,
+            multiplexBaseAmount,
+            base0,
+            quote1
+        );
+
+        emit log("adding multiplex price base=base0 ", _multiplexPrice);
+
+        _multiplexTick = _ethBtcTick - _usdEthTick;
+
+        _multiplexPrice = OracleLibraryV2.getQuoteAtTick(
+            _multiplexTick,
+            multiplexBaseAmount,
+            base1,
+            quote1
+        );
+
+        emit log("subtracting usdeth from ethbtc multiplex price base=base1 ", _multiplexPrice);
+
+        _multiplexPrice = OracleLibraryV2.getQuoteAtTick(
+            _multiplexTick,
+            multiplexBaseAmount,
+            quote1,
+            base1
+        );
+
+        emit log("subtracting usdeth from ethbtc multiplex price base=quote1", _multiplexPrice);
+
+        _multiplexTick = _usdEthTick - _ethBtcTick;
+
+        _multiplexPrice = OracleLibraryV2.getQuoteAtTick(
+            _multiplexTick,
+            multiplexBaseAmount,
+            base1,
+            quote1
+        );
+
+        emit log("subtracting ethbtc from usdeth multiplex price base=base1 ", _multiplexPrice);
+
+        _multiplexPrice = OracleLibraryV2.getQuoteAtTick(
+            _multiplexTick,
+            multiplexBaseAmount,
+            quote1,
+            base1
+        );
+
+        emit log("subtracting ethbtc from usdeth multiplex price base=quote1", _multiplexPrice);
+
+        _multiplexPrice = OracleLibraryV2.getQuoteAtTick(
+            _multiplexTick,
+            multiplexBaseAmount,
             quote0,
             base1
         );
+
+        emit log("subtracting ethbtc from usdeth multiplex price base=quote0", _multiplexPrice);
+
+        _multiplexPrice = OracleLibraryV2.getQuoteAtTick(
+            _multiplexTick,
+            multiplexBaseAmount,
+            base0,
+            quote1
+        );
+
+        emit log("subtracting ethbtc from usdeth multiplex price base=base0", _multiplexPrice);
+
+        emit log("quote1>base1", quote1 > base1 ? 1 : 0);
+        emit log("quote0>base0", quote0 > base0 ? 1 : 0);
 
         emit log("multiplex tick", _multiplexTick);
 
