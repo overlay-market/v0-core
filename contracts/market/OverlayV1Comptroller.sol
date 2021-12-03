@@ -15,6 +15,8 @@ abstract contract OverlayV1Comptroller {
 
     // length of roller arrays when we circle
     uint256 constant CHORD = 60;
+    uint256 constant impactChord = 60;
+    uint256 constant brrrrdChord = 7;
 
     // current element for new rolls
     uint256 public impactCycloid;
@@ -71,6 +73,44 @@ abstract contract OverlayV1Comptroller {
 
     }
 
+    function setImpactRoller(
+        uint _index,
+        Roller memory _roller
+    ) internal {
+
+        impactRollers[_index] = _roller;
+
+    }
+
+    function setBrrrrdRoller (
+        uint _index,
+        Roller memory _roller
+    ) internal {
+
+        brrrrdRollers[_index] = _roller;
+
+    }
+
+    function getImpactRoller (
+        uint _index
+    ) internal view returns (
+        Roller memory roller_
+    ) {
+
+        roller_ = impactRollers[_index];
+
+    }
+
+    function getBrrrrdRoller (
+        uint _index
+    ) internal view returns (
+        Roller memory roller_
+    ) {
+
+        roller_ = brrrrdRollers[_index];
+
+    }
+
     function brrrr (
         uint _brrrr,
         uint _antiBrrrr
@@ -91,7 +131,13 @@ abstract contract OverlayV1Comptroller {
             _roller.ying += brrrrdAccumulator[0];
             _roller.yang += brrrrdAccumulator[1];
 
-            brrrrdCycloid = roll(brrrrdRollers, _roller, _lastMoment, _brrrrdCycloid);
+            brrrrdCycloid = roll(
+                setBrrrrdRoller, 
+                _roller, 
+                brrrrdChord,
+                _brrrrdCycloid,
+                _lastMoment
+            );
 
             brrrrdAccumulator[0] = _brrrr;
             brrrrdAccumulator[1] = _antiBrrrr;
@@ -117,7 +163,8 @@ abstract contract OverlayV1Comptroller {
 
         (  ,Roller memory _rollerNow,
             Roller memory _rollerThen ) = scry(
-                brrrrdRollers,
+                getBrrrrdRoller,
+                brrrrdChord,
                 brrrrdCycloid,
                 brrrrdWindowMacro
             );
@@ -152,10 +199,11 @@ abstract contract OverlayV1Comptroller {
             uint _impact ) = _intake(_isLong, _oi, _cap);
 
         impactCycloid = roll(
-            impactRollers,
+            setImpactRoller,
             _rollerImpact,
-            _lastMoment,
-            impactCycloid
+            impactChord,
+            impactCycloid,
+            _lastMoment
         );
 
         impact_ = _oi.mulUp(_impact);
@@ -196,7 +244,8 @@ abstract contract OverlayV1Comptroller {
         (   uint _lastMoment,
             Roller memory _rollerNow,
             Roller memory _rollerImpact ) = scry(
-                impactRollers,
+                getImpactRoller,
+                impactChord,
                 impactCycloid,
                 impactWindow );
 
@@ -303,7 +352,8 @@ abstract contract OverlayV1Comptroller {
         (   ,
             Roller memory _rollerNow,
             Roller memory _rollerImpact ) = scry(
-                impactRollers,
+                getImpactRoller,
+                impactChord,
                 impactCycloid,
                 impactWindow );
 
@@ -341,19 +391,17 @@ abstract contract OverlayV1Comptroller {
     /// cycloid to point to the next roller index. It konws when it needs needs
     /// to write to the next roller or if it can safely write to the current one.
     /// If the current cycloid is the length of the array, then it sets to zero.
-    /// @param rollers The set of rollers array from storage. It can operate on
-    /// either the brrrrd rollers or the impact rollers.
+    /// @param _setter Setter for either impact or brrrrd rollers.
     /// @param _roller The current roller to be written.
-    /// @param _lastMoment The moment of the last write to determine to write to
-    /// a new roller or the current one.
-    /// @param _cycloid The current position of the circular buffer which
-    /// always points to the most recent time.
+    /// @param _lastMoment Moment of last write to decide writing new or current.
+    /// @param _cycloid Current position circular buffer, points to most recent.
     /// @return cycloid_ The next value of the cycloid.
     function roll (
-        Roller[60] storage rollers,
+        function ( uint, Roller memory ) internal _setter,
         Roller memory _roller,
-        uint _lastMoment,
-        uint _cycloid
+        uint _chord,
+        uint _cycloid,
+        uint _lastMoment
     ) internal returns (
         uint cycloid_
     ) {
@@ -362,23 +410,13 @@ abstract contract OverlayV1Comptroller {
 
             _cycloid += 1;
 
-            if (_cycloid < CHORD) {
-
-                rollers[_cycloid] = _roller;
-
-            } else {
+            if (_cycloid >= CHORD) {
 
                 _cycloid = 0;
-
-                rollers[_cycloid] = _roller;
-
             }
-
-        } else {
-
-            rollers[_cycloid] = _roller;
-
         }
+
+        _setter(_cycloid, _roller);
 
         cycloid_ = _cycloid;
 
@@ -388,14 +426,16 @@ abstract contract OverlayV1Comptroller {
     /// @notice First part of retrieving historic roller values
     /// @dev Checks to see if the current roller is satisfactory and if not
     /// searches deeper into the roller array.
-    /// @param rollers The roller array, either impact or brrrrd
+    /// @param _getter The getter for either impact or brrrrd rollers
+    /// @param _chord The length of roller array in question
     /// @param _cycloid The current impact or brrrrd cycloid
     /// @param _ago The target time
     /// @return lastMoment_ The time the most recent roller was written
     /// @return rollerNow_ The current roller with the time set to now
     /// @return rollerThen_ The roller closest and earlier to the target time
     function scry (
-        Roller[60] storage rollers,
+        function (uint) internal view returns(Roller memory) _getter,
+        uint _chord,
         uint _cycloid,
         uint _ago
     ) internal view returns (
@@ -406,7 +446,7 @@ abstract contract OverlayV1Comptroller {
 
         uint _time = block.timestamp;
 
-        rollerNow_ = rollers[_cycloid];
+        rollerNow_ = _getter(_cycloid);
 
         lastMoment_ = rollerNow_.time;
 
@@ -427,7 +467,12 @@ abstract contract OverlayV1Comptroller {
         }
 
         (   Roller memory _beforeOrAt,
-            Roller memory _atOrAfter ) = scryRollers(rollers, _cycloid, _target);
+            Roller memory _atOrAfter ) = scryRollers(
+                _getter, 
+                _chord,
+                _cycloid, 
+                _target
+            );
 
         rollerThen_ = _beforeOrAt;
 
@@ -435,7 +480,8 @@ abstract contract OverlayV1Comptroller {
 
 
     function scryRollers (
-        Roller[60] storage rollers,
+        function (uint) internal view returns(Roller memory) _getter,
+        uint _chord,
         uint _cycloid,
         uint _target
     ) internal view returns (
@@ -443,7 +489,7 @@ abstract contract OverlayV1Comptroller {
         Roller memory atOrAfter_
     ) {
 
-        beforeOrAt_ = rollers[_cycloid];
+        beforeOrAt_ = _getter(_cycloid);
 
         // if the target is at or after the newest roller, we can return early
         if (beforeOrAt_.time <= _target) {
@@ -467,44 +513,42 @@ abstract contract OverlayV1Comptroller {
         // now, set before to the oldest roller
         _cycloid = ( _cycloid + 1 ) % CHORD;
 
-        beforeOrAt_ = rollers[_cycloid];
+        beforeOrAt_ = _getter(_cycloid);
 
-        if ( beforeOrAt_.time <= 1 ) {
-
-            beforeOrAt_ = rollers[0];
-
-        }
+        if ( beforeOrAt_.time <= 1 ) beforeOrAt_ = _getter(0);
 
         if (_target <= beforeOrAt_.time) return ( beforeOrAt_, beforeOrAt_ );
         else return binarySearch(
-            rollers,
-            uint32(_target),
-            uint16(_cycloid)
+            _getter,
+            uint16(_chord),
+            uint16(_cycloid),
+            uint32(_target)
         );
 
     }
 
     function binarySearch(
-        Roller[60] storage self,
-        uint32 _target,
-        uint16 _cycloid
+        function (uint) internal view returns(Roller memory) _getter,
+        uint16 _cycloid,
+        uint16 _chord,
+        uint32 _target
     ) private view returns (
         Roller memory beforeOrAt_,
         Roller memory atOrAfter_
     ) {
 
-        uint256 l = (_cycloid + 1) % CHORD; // oldest print
-        uint256 r = l + CHORD - 1; // newest print
+        uint256 l = (_cycloid + 1) % _chord; // oldest print
+        uint256 r = l + _chord - 1; // newest print
         uint256 i;
         while (true) {
             i = (l + r) / 2;
 
-            beforeOrAt_ = self[ i % CHORD ];
+            beforeOrAt_ = _getter(i % _chord);
 
             // we've landed on an uninitialized roller, keep searching
             if (beforeOrAt_.time <= 1) { l = i + 1; continue; }
 
-            atOrAfter_ = self[ (i + 1) % CHORD ];
+            atOrAfter_ = _getter((i + 1) % _chord);
 
             bool _targetAtOrAfter = beforeOrAt_.time <= _target;
 

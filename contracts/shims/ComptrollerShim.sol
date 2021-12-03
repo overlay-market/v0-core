@@ -137,7 +137,12 @@ contract ComptrollerShim is OverlayV1Comptroller {
 
         (   lastMoment,
             rollerNow_,
-            rollerThen_ ) = scry(impactRollers, impactCycloid, _ago);
+            rollerThen_ ) = scry(
+                getImpactRoller, 
+                impactChord,
+                impactCycloid, 
+                _ago
+            );
 
 
     }
