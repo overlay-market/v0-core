@@ -438,8 +438,6 @@ def test_entry_update_price_fetching(
 
     market_idx = market.pricePointNextIndex()
 
-    print("market_idx", market_idx)
-
     # Mine to the entry time then build
     brownie.chain.mine(timestamp=price["entry"]["timestamp"])
 
