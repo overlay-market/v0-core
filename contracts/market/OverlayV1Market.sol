@@ -33,7 +33,7 @@ abstract contract OverlayV1Market is OverlayV1Governance {
     /// @return oiAdjusted_ Amount of open interest after impact and fees.
     /// @return collateralAdjusted_ Amount of collateral after impact and fees.
     /// @return debtAdjusted_ Amount of debt after impact and fees.
-    /// @return fee_ The protocol fee to be taken.
+    /// @return exactedFee_ The protocol fee to be taken.
     /// @return impact_ The market impact for the build.
     /// @return pricePointNext_ The index of the price point for the position.
     function enterOI (

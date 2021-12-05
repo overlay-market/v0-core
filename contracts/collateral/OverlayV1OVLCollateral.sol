@@ -280,13 +280,13 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         ovl.transferFromBurn(
             msg.sender, 
             address(this), 
-            _collateralAdjusted + _fee, 
+            _collateralAdjusted + _exactedFee, 
             _impact
         );
 
-        emit Build(_market, _positionId, _oiAdjusted, _debtAdjusted);
+        emit Build(_market, positionId_, _oiAdjusted, _debtAdjusted);
 
-        _mint(msg.sender, _positionId, _oiAdjusted, ""); // WARNING: last b/c erc1155 callback
+        _mint(msg.sender, positionId_, _oiAdjusted, ""); // WARNING: last b/c erc1155 callback
 
     }
 
