@@ -12,60 +12,47 @@ abstract contract OverlayV1Comptroller {
 
     uint256 private constant INVERSE_E = 0x51AF86713316A9A;
     uint256 private constant ONE = 1e18;
-
-    // length of roller arrays when we circle
-    uint256 constant impactChord = 60;
-    uint256 constant brrrrdChord = 7;
-
-    // current element for new rolls
-    uint256 public impactCycloid;
-    uint256 public brrrrdCycloid;
+    struct Roller {
+        uint32 time;
+        uint112 ying; // long pressure for impact; brrrrd for brrrrd
+        uint112 yang; // short pressure for impact; anti brrrrd for brrrrd
+    }
 
     Roller[60] public impactRollers;
-    Roller[60] public brrrrdRollers;
 
-    struct Roller {
-        uint time;
-        uint ying;
-        uint yang;
-    }
-
-    struct ImpactRoller {
-        uint time;
-        uint lPressure;
-        uint sPressure;
-    }
-
-    struct BrrrrRoller {
-        uint time;
-        uint brrr;
-        uint anti;
-    }
-
-    uint256 public immutable impactWindow;
+    uint32 public immutable impactWindow;
+    uint constant impactChord = 60;
     uint256 internal staticCap;
+    uint256 public impactCycloid;
     uint256 public lmbda;
 
-    uint256[2] public brrrrdAccumulator;
-    uint256 public brrrrdWindowMicro;
-    uint256 public brrrrdWindowMacro;
+    Roller[7] public brrrrdRollers;
+
+    uint constant brrrrdChord = 7;
+
     uint256 public brrrrdExpected;
-    uint256 public brrrrdFiling;
+    uint256 public brrrrdCycloid;
+
+    uint32 public brrrrdFiling;
+    uint112[2] public brrrrdAccumulator;
+
+    uint32 public brrrrdWindowMicro;
+    uint32 public brrrrdWindowMacro;
 
     constructor (
         uint256 _impactWindow
     ) {
 
-        impactWindow = _impactWindow;
+        impactWindow = uint32(_impactWindow);
 
         impactRollers[0] = Roller({
-            time: block.timestamp,
+            time: uint32(block.timestamp),
             ying: 0,
             yang: 0
         });
 
         brrrrdRollers[0] = Roller({
-            time: block.timestamp,
+            time: uint32(block.timestamp),
             ying: 0,
             yang: 0
         });
@@ -115,8 +102,8 @@ abstract contract OverlayV1Comptroller {
         uint _antiBrrrr
     ) internal {
 
-        uint _now = block.timestamp;
-        uint _brrrrdFiling = brrrrdFiling;
+        uint32 _now = uint32(block.timestamp);
+        uint32 _brrrrdFiling = brrrrdFiling;
 
         if ( _now > _brrrrdFiling ) { // time to roll in the brrrrr
 
@@ -138,18 +125,20 @@ abstract contract OverlayV1Comptroller {
                 _lastMoment
             );
 
-            brrrrdAccumulator[0] = _brrrr;
-            brrrrdAccumulator[1] = _antiBrrrr;
+            brrrrdAccumulator[0] = uint112(_brrrr);
+            brrrrdAccumulator[1] = uint112(_antiBrrrr);
 
-            uint _brrrrdWindowMicro = brrrrdWindowMicro;
+            uint32 _brrrrdWindowMicro = brrrrdWindowMicro;
 
-            brrrrdFiling += _brrrrdWindowMicro
-                + ( ( ( _now - _brrrrdFiling ) / _brrrrdWindowMicro ) * _brrrrdWindowMicro );
+            brrrrdFiling += _brrrrdWindowMicro + ( 
+                ( ( _now - _brrrrdFiling ) / _brrrrdWindowMicro ) 
+                * _brrrrdWindowMicro 
+            );
 
         } else { // add to the brrrr accumulator
 
-            brrrrdAccumulator[0] += _brrrr;
-            brrrrdAccumulator[1] += _antiBrrrr;
+            brrrrdAccumulator[0] += uint112(_brrrr);
+            brrrrdAccumulator[1] += uint112(_antiBrrrr);
 
         }
 
@@ -242,7 +231,7 @@ abstract contract OverlayV1Comptroller {
 
         (   uint _lastMoment,
             Roller memory _rollerNow,
-            Roller memory _rollerImpact ) = scry(
+            Roller memory _rollerThen ) = scry(
                 getImpactRoller,
                 impactChord,
                 impactCycloid,
@@ -250,12 +239,12 @@ abstract contract OverlayV1Comptroller {
 
         uint _pressure = _oi.divDown(_cap);
 
-        if (_isLong) _rollerNow.ying += _pressure;
-        else _rollerNow.yang += _pressure;
+        if (_isLong) _rollerNow.ying += uint112(_pressure);
+        else _rollerNow.yang += uint112(_pressure);
 
         uint _power = lmbda.mulDown(_isLong
-            ? _rollerNow.ying - _rollerImpact.ying
-            : _rollerNow.yang - _rollerImpact.yang
+            ? uint(_rollerNow.ying - _rollerThen.ying)
+            : uint(_rollerNow.yang - _rollerThen.yang)
         );
 
         lastMoment_ = _lastMoment;
@@ -348,18 +337,17 @@ abstract contract OverlayV1Comptroller {
         uint _oi,
         uint _cap
     ) public view returns (uint pressure_) {
-        (   ,
-            Roller memory _rollerNow,
-            Roller memory _rollerImpact ) = scry(
+
+        (  ,Roller memory _rollerNow,
+            Roller memory _rollerThen ) = scry(
                 getImpactRoller,
                 impactChord,
                 impactCycloid,
                 impactWindow );
 
-        pressure_ = (_isLong
-            ? _rollerNow.ying - _rollerImpact.ying
-            : _rollerNow.yang - _rollerImpact.yang
-        );
+        pressure_ = _isLong
+            ? uint(_rollerNow.ying - _rollerThen.ying)
+            : uint(_rollerNow.yang - _rollerThen.yang);
 
         pressure_ += _oi.divDown(_cap);
 
@@ -434,20 +422,20 @@ abstract contract OverlayV1Comptroller {
         function (uint) internal view returns(Roller memory) _getter,
         uint _chord,
         uint _cycloid,
-        uint _ago
+        uint32 _ago
     ) internal view returns (
         uint lastMoment_,
         Roller memory rollerNow_,
         Roller memory rollerThen_
     ) {
 
-        uint _time = block.timestamp;
+        uint32 _time = uint32(block.timestamp);
 
         rollerNow_ = _getter(_cycloid);
 
         lastMoment_ = rollerNow_.time;
 
-        uint _target = _time - _ago;
+        uint32 _target = _time - _ago;
 
         if (rollerNow_.time <= _target) {
 
@@ -457,11 +445,7 @@ abstract contract OverlayV1Comptroller {
 
             return ( lastMoment_, rollerNow_, rollerThen_ );
 
-        } else if (_time != rollerNow_.time) {
-
-            rollerNow_.time = _time;
-
-        }
+        } else if (_time != rollerNow_.time) rollerNow_.time = _time;
 
         rollerThen_ = scryRollers(
             _getter, 
@@ -477,11 +461,18 @@ abstract contract OverlayV1Comptroller {
         function (uint) internal view returns(Roller memory) _getter,
         uint _chord,
         uint _cycloid,
-        uint _target
+        uint32 _target
     ) internal view returns (
         Roller memory beforeOrAt_
     ) {
 
+        // TODO: Should be made to be one index before cycloid 
+        // since .time <= target was checked already in scry()
+        // Also, could also decide on immediate binary search
+        // by starting at oldest, or by starting in the middle
+        // and directing binary search from there. However, we
+        // need to ascertain the oldest to avoid infinitely 
+        // recursing when a timestamp is never reached.
         beforeOrAt_ = _getter(_cycloid);
 
         // return early if target is at or after newest roller 
