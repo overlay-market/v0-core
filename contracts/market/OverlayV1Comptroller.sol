@@ -463,15 +463,12 @@ abstract contract OverlayV1Comptroller {
 
         }
 
-        (   Roller memory _beforeOrAt,
-            Roller memory _atOrAfter ) = scryRollers(
-                _getter, 
-                _chord,
-                _cycloid, 
-                _target
-            );
-
-        rollerThen_ = _beforeOrAt;
+        rollerThen_ = scryRollers(
+            _getter, 
+            _chord,
+            _cycloid, 
+            _target
+        );
 
     }
 
@@ -487,24 +484,8 @@ abstract contract OverlayV1Comptroller {
 
         beforeOrAt_ = _getter(_cycloid);
 
-        // if the target is at or after the newest roller, we can return early
-        if (beforeOrAt_.time <= _target) {
-
-            if (beforeOrAt_.time == _target) {
-
-                // if newest roller equals target, we're in the same block, so we can ignore atOrAfter
-                return ( beforeOrAt_, atOrAfter_ );
-
-            } else {
-
-                atOrAfter_.time = block.timestamp;
-                atOrAfter_.ying = beforeOrAt_.ying;
-                atOrAfter_.yang = beforeOrAt_.yang;
-
-                return ( beforeOrAt_, atOrAfter_ );
-
-            }
-        }
+        // return early if target is at or after newest roller 
+        if (beforeOrAt_.time <= _target) return beforeOrAt_;
 
         // now set before to the oldest roller
         _cycloid = ( _cycloid + 1 ) % _chord;
@@ -513,7 +494,7 @@ abstract contract OverlayV1Comptroller {
 
         if ( beforeOrAt_.time <= 1 ) beforeOrAt_ = _getter(0);
 
-        if (_target <= beforeOrAt_.time) return ( beforeOrAt_, beforeOrAt_ );
+        if (_target <= beforeOrAt_.time) return beforeOrAt_;
         else return binarySearch(
             _getter,
             uint16(_chord),
@@ -529,9 +510,10 @@ abstract contract OverlayV1Comptroller {
         uint16 _chord,
         uint32 _target
     ) private view returns (
-        Roller memory beforeOrAt_,
-        Roller memory atOrAfter_
+        Roller memory beforeOrAt_
     ) {
+
+        Roller memory _atOrAfter;
 
         uint256 l = (_cycloid + 1) % _chord; // oldest print
         uint256 r = l + _chord - 1; // newest print
@@ -544,11 +526,11 @@ abstract contract OverlayV1Comptroller {
             // we've landed on an uninitialized roller, keep searching
             if (beforeOrAt_.time <= 1) { l = i + 1; continue; }
 
-            atOrAfter_ = _getter((i + 1) % _chord);
+            _atOrAfter = _getter((i + 1) % _chord);
 
             bool _targetAtOrAfter = beforeOrAt_.time <= _target;
 
-            if (_targetAtOrAfter && _target <= atOrAfter_.time) break;
+            if (_targetAtOrAfter && _target <= _atOrAfter.time) break;
 
             if (!_targetAtOrAfter) r = i - 1;
             else l = i + 1;
