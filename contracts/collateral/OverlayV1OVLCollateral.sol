@@ -271,8 +271,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             _isLong,
             _leverage,
             _oiAdjusted,
-            _collateralAdjusted,
             _debtAdjusted,
+            _collateralAdjusted,
             _pricePointNext
         );
 
