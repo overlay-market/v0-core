@@ -14,7 +14,6 @@ abstract contract OverlayV1Comptroller {
     uint256 private constant ONE = 1e18;
 
     // length of roller arrays when we circle
-    uint256 constant CHORD = 60;
     uint256 constant impactChord = 60;
     uint256 constant brrrrdChord = 7;
 
@@ -408,12 +407,10 @@ abstract contract OverlayV1Comptroller {
 
         if (_roller.time != _lastMoment) {
 
-            _cycloid += 1;
+            _cycloid = _cycloid < _chord
+                ? _cycloid + 1
+                : 0;
 
-            if (_cycloid >= CHORD) {
-
-                _cycloid = 0;
-            }
         }
 
         _setter(_cycloid, _roller);
@@ -485,8 +482,7 @@ abstract contract OverlayV1Comptroller {
         uint _cycloid,
         uint _target
     ) internal view returns (
-        Roller memory beforeOrAt_,
-        Roller memory atOrAfter_
+        Roller memory beforeOrAt_
     ) {
 
         beforeOrAt_ = _getter(_cycloid);
@@ -510,8 +506,8 @@ abstract contract OverlayV1Comptroller {
             }
         }
 
-        // now, set before to the oldest roller
-        _cycloid = ( _cycloid + 1 ) % CHORD;
+        // now set before to the oldest roller
+        _cycloid = ( _cycloid + 1 ) % _chord;
 
         beforeOrAt_ = _getter(_cycloid);
 
