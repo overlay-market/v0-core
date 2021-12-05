@@ -187,8 +187,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             positions.push(Position.Info({
                 market: _market,
                 isLong: _isLong,
-                leverage: _leverage,
-                pricePoint: _pricePointNext,
+                leverage: uint8(_leverage),
+                pricePoint: uint32(_pricePointNext),
                 oiShares: 0,
                 debt: 0,
                 cost: 0
@@ -248,9 +248,9 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         Position.Info storage pos = positions[_positionId];
 
-        pos.oiShares += _oiAdjusted;
-        pos.cost += _collateralAdjusted;
-        pos.debt += _debtAdjusted;
+        pos.oiShares += uint112(_oiAdjusted);
+        pos.cost += uint112(_collateralAdjusted);
+        pos.debt += uint112(_debtAdjusted);
 
         fees += _fee;
 
@@ -310,9 +310,9 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         fees += _feeAmount; // adds to fee pot, which is transferred on update
 
-        pos.debt -= _userDebt;
-        pos.cost -= _userCost;
-        pos.oiShares -= _userOiShares;
+        pos.debt -= uint112(_userDebt);
+        pos.cost -= uint112(_userCost);
+        pos.oiShares -= uint112(_userOiShares);
 
         // ovl.transfer(msg.sender, _userCost);
 
