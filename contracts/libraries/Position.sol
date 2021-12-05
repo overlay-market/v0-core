@@ -22,7 +22,7 @@ library Position {
 
     function _initialOi (
         Info memory _self
-    ) private pure returns (
+    ) internal pure returns (
         uint initialOi_
     ) {
 
@@ -34,7 +34,7 @@ library Position {
         Info memory _self,
         uint256 totalOi,
         uint256 totalOiShares
-    ) private pure returns (uint256 oi_) {
+    ) internal pure returns (uint256 oi_) {
 
         oi_ = uint(_self.oiShares)
             .mulDown(totalOi)
@@ -48,7 +48,7 @@ library Position {
         uint256 totalOi,
         uint256 totalOiShares,
         uint256 priceFrame
-    ) private pure returns (uint256 val_) {
+    ) internal pure returns (uint256 val_) {
 
         uint256 __oi = _oi(_self, totalOi, totalOiShares);
 
@@ -72,7 +72,7 @@ library Position {
         uint256 totalOi,
         uint256 totalOiShares,
         uint256 priceFrame
-    ) private pure returns (bool isUnder) {
+    ) internal pure returns (bool isUnder) {
 
         uint256 __oi = _oi(_self, totalOi, totalOiShares);
 
@@ -89,7 +89,7 @@ library Position {
         uint256 totalOi,
         uint256 totalOiShares,
         uint256 priceFrame
-    ) private pure returns (uint256 notion) {
+    ) internal pure returns (uint256 notion) {
 
         uint256 val = _value(
             _self,
@@ -108,7 +108,7 @@ library Position {
         uint256 totalOi,
         uint256 totalOiShares,
         uint256 priceFrame
-    ) private pure returns (uint lev) {
+    ) internal pure returns (uint lev) {
 
         uint val = _value(
             _self,
@@ -138,7 +138,7 @@ library Position {
         uint256 totalOi,
         uint256 totalOiShares,
         uint256 priceFrame
-    ) private pure returns (uint margin) {
+    ) internal pure returns (uint margin) {
 
         uint notion = _notional(
             _self,
@@ -169,7 +169,7 @@ library Position {
         uint256 _totalOiShares,
         uint256 _priceFrame,
         uint256 _marginMaintenance
-    ) private pure returns (
+    ) internal pure returns (
         bool can_
     ) {
 
@@ -194,7 +194,7 @@ library Position {
         uint256 _totalOiShares,
         uint256 _priceEntry,
         uint256 _marginMaintenance
-    ) private pure returns (uint256 liqPrice) {
+    ) internal pure returns (uint256 liqPrice) {
 
         uint256 _posOi = _oi(_self, _totalOi, _totalOiShares);
         uint256 _posInitialOi = _initialOi(_self);

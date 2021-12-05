@@ -296,7 +296,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         require( 0 < _shares && _shares <= balanceOf(msg.sender, _positionId), "OVLV1:!shares");
 
-        Position.Info storage pos = positions[_positionId];
+        Position.Info memory pos = positions[_positionId];
 
         require(0 < pos.oiShares, "OVLV1:liquidated");
 
@@ -310,13 +310,16 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
                     pos.pricePoint
                 );
 
-        uint _totalPosShares = totalSupply(_positionId);
-
         uint _userOiShares = _shares;
-        uint _userNotional = _shares * pos.notional(_oi, _oiShares, _priceFrame) / _totalPosShares;
-        uint _userDebt = _shares * pos.debt / _totalPosShares;
-        uint _userCost = _shares * pos.cost / _totalPosShares;
-        uint _userOi = _shares * pos.oi(_oi, _oiShares) / _totalPosShares;
+        uint _totalPosShares = totalSupply(_positionId);
+        uint _userDebt = _userOiShares * pos.debt / _totalPosShares;
+        uint _userCost = _userOiShares * pos.cost / _totalPosShares;
+        uint _userOi = _userOiShares * pos._oi(_oi, _oiShares) / _totalPosShares;
+        uint _userNotional = _shares * pos._notional(
+            _oi, 
+            _oiShares, 
+            _priceFrame
+        ) / _totalPosShares;
 
         emit Unwind(pos.market, _positionId, _userOi, _userDebt);
 
@@ -332,6 +335,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         pos.debt -= uint112(_userDebt);
         pos.cost -= uint112(_userCost);
         pos.oiShares -= uint112(_userOiShares);
+
+        positions[_positionId] = pos;
 
         // ovl.transfer(msg.sender, _userCost);
 
