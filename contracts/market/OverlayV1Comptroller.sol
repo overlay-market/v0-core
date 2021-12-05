@@ -340,7 +340,7 @@ abstract contract OverlayV1Comptroller {
     function computeDepth (
         uint _marketLiquidity,
         uint _ovlPrice
-    ) public virtual view returns (uint depth_);
+    ) public virtual view returns (uint112 depth_);
 
 
     function pressure (
