@@ -39,12 +39,13 @@ abstract contract OverlayV1Market is OverlayV1Governance {
     function enterOI (
         bool _isLong,
         uint _collateral,
-        uint _leverage
+        uint _leverage,
+        uint _fee
     ) external onlyCollateral returns (
         uint oiAdjusted_,
         uint collateralAdjusted_,
         uint debtAdjusted_,
-        uint fee_,
+        uint exactedFee_,
         uint impact_,
         uint pricePointNext_
     ) {
@@ -57,13 +58,13 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
         uint _impact = intake(_isLong, _oi, _cap);
 
-        fee_ = _oi.mulDown(mothership.fee());
+        exactedFee_ = _oi.mulDown(_fee);
 
         impact_ = _impact;
 
-        require(_collateral >= MIN_COLLAT + impact_ + fee_ , "OVLV1:collat<min");
+        require(_collateral >= MIN_COLLAT + impact_ + exactedFee_ , "OVLV1:collat<min");
 
-        collateralAdjusted_ = _collateral - _impact - fee_;
+        collateralAdjusted_ = _collateral - _impact - exactedFee_;
 
         oiAdjusted_ = collateralAdjusted_ * _leverage;
 

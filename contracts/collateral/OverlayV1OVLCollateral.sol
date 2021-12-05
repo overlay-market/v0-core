@@ -252,18 +252,19 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         (   uint _oiAdjusted,
             uint _collateralAdjusted,
             uint _debtAdjusted,
-            uint _fee,
+            uint _exactedFee,
             uint _impact,
             uint _pricePointNext ) = IOverlayV1Market(_market)
                 .enterOI(
                     _isLong,
                     _collateral,
-                    _leverage
+                    _leverage,
+                    mothership.fee()
                 );
 
         require(_oiAdjusted >= _oiMinimum, "OVLV1:oi<min");
 
-        fees += _fee;
+        fees += _exactedFee;
 
         positionId_ = storePosition(
             _market,
