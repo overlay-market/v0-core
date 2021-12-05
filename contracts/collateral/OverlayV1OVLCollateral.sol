@@ -263,7 +263,9 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         require(_oiAdjusted >= _oiMinimum, "OVLV1:oi<min");
 
-        uint _positionId = storePosition(
+        fees += _fee;
+
+        positionId_ = storePosition(
             _market,
             _isLong,
             _leverage,
@@ -273,12 +275,13 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             _pricePointNext
         );
 
-        fees += _fee;
-
-        positionId_ = _positionId;
-
         // ovl.burn(msg.sender, _impact);
-        ovl.transferFromBurn(msg.sender, address(this), _collateralAdjusted + _fee, _impact);
+        ovl.transferFromBurn(
+            msg.sender, 
+            address(this), 
+            _collateralAdjusted + _fee, 
+            _impact
+        );
 
         emit Build(_market, _positionId, _oiAdjusted, _debtAdjusted);
 
