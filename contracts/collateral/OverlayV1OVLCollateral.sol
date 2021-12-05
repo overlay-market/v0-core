@@ -20,8 +20,14 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     bytes32 constant private GOVERNOR = keccak256("GOVERNOR");
 
-    mapping (address => mapping(uint => uint)) internal currentBlockPositionsLong;
-    mapping (address => mapping(uint => uint)) internal currentBlockPositionsShort;
+    struct LastPosition { 
+        uint32 pricePoint; 
+        uint32 positionId; 
+    }
+
+    mapping (address => mapping(uint => LastPosition)) internal lastPositionsLong;
+    mapping (address => mapping(uint => LastPosition)) internal lastPositionsShort;
+
     mapping (address => MarketInfo) public marketInfo;
     struct MarketInfo {
         uint marginMaintenance;
@@ -83,8 +89,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             market: address(0),
             isLong: false,
             leverage: 0,
-            pricePoint: 0,
             oiShares: 0,
+            pricePoint: 0,
             debt: 0,
             cost: 0
         }));
@@ -165,38 +171,54 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     }
 
-    function getCurrentBlockPositionId (
+    function storePosition (
         address _market,
         bool _isLong,
         uint _leverage,
+        uint _oi,
+        uint _debt,
+        uint _cost,
         uint _pricePointNext
     ) internal returns (
         uint positionId_
     ) {
 
-        mapping(uint=>uint) storage _currentBlockPositions = _isLong
-            ? currentBlockPositionsLong[_market]
-            : currentBlockPositionsShort[_market];
+        mapping(uint=>LastPosition) storage lastPositions = _isLong
+            ? lastPositionsLong[_market]
+            : lastPositionsShort[_market];
 
-        positionId_ = _currentBlockPositions[_leverage];
+        LastPosition memory _lastPosition = _isLong
+            ? lastPositions[_leverage]
+            : lastPositions[_leverage];
 
-        Position.Info storage position = positions[positionId_];
-
-        if (position.pricePoint < _pricePointNext) {
+        if (_lastPosition.pricePoint < _pricePointNext) {
 
             positions.push(Position.Info({
                 market: _market,
                 isLong: _isLong,
                 leverage: uint8(_leverage),
                 pricePoint: uint32(_pricePointNext),
-                oiShares: 0,
-                debt: 0,
-                cost: 0
+                oiShares: uint112(_oi),
+                debt: uint112(_debt),
+                cost: uint112(_cost)
             }));
 
             positionId_ = positions.length - 1;
 
-            _currentBlockPositions[_leverage] = positionId_;
+            lastPositions[_leverage] = LastPosition(
+                uint32(_pricePointNext),
+                uint32(positionId_)
+            );
+
+        } else {
+            
+            positionId_ = _lastPosition.positionId;
+
+            Position.Info storage pos = positions[positionId_];
+
+            pos.oiShares += uint112(_oi);
+            pos.debt += uint112(_debt);
+            pos.cost += uint112(_cost);
 
         }
 
@@ -239,18 +261,15 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         require(_oiAdjusted >= _oiMinimum, "OVLV1:oi<min");
 
-        uint _positionId = getCurrentBlockPositionId(
+        uint _positionId = storePosition(
             _market,
             _isLong,
             _leverage,
+            _oiAdjusted,
+            _collateralAdjusted,
+            _debtAdjusted,
             _pricePointNext
         );
-
-        Position.Info storage pos = positions[_positionId];
-
-        pos.oiShares += uint112(_oiAdjusted);
-        pos.cost += uint112(_collateralAdjusted);
-        pos.debt += uint112(_debtAdjusted);
 
         fees += _fee;
 
