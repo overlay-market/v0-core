@@ -214,11 +214,13 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             
             positionId_ = _lastPosition.positionId;
 
-            Position.Info storage pos = positions[positionId_];
+            Position.Info memory pos = positions[positionId_];
 
             pos.oiShares += uint112(_oi);
             pos.debt += uint112(_debt);
             pos.cost += uint112(_cost);
+
+            positions[positionId_] = pos;
 
         }
 
