@@ -103,25 +103,6 @@ def test_set_comptroller_params(market, gov):
     assert int(current_brrrr_window_micro) == int(input_brrrr_window_micro)
 
 
-def test_set_compounding_period(market, gov):
-
-    input_compounding_period = 660
-
-    # grab initial _compoundingPeriod
-    initial_compounding_period = market.compoundingPeriod()
-
-    assert int(initial_compounding_period) != int(input_compounding_period)
-
-    # set _compoundingPeriod
-    market.setPeriods(input_compounding_period, {"from": gov})
-
-    # grab current _compoundingPeriod
-    current_compounding_period = market.compoundingPeriod()
-
-    # test _compoundingPeriod updated to input value
-    assert int(current_compounding_period) == int(input_compounding_period)
-
-
 def test_set_k(market, gov):
 
     input_k = 346888760971066
