@@ -20,7 +20,11 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
     modifier lock() { require(unlocked == 1, "OVLV1:!unlocked"); unlocked = 0; _; unlocked = 1; }
 
-    constructor(address _mothership) OverlayV1Governance( _mothership) { }
+    constructor(
+        address _mothership
+    ) OverlayV1Governance(
+        _mothership
+    ) { }
 
     /// @notice Adds open interest to the market
     /// @dev This is invoked by Overlay collateral manager contracts, which
@@ -137,6 +141,7 @@ abstract contract OverlayV1Market is OverlayV1Governance {
         uint cap_
     ) {
 
+        uint _depth;
         uint _now = block.timestamp;
         uint _updated = updated;
 
@@ -144,11 +149,13 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
             PricePoint memory _pricePoint = fetchPricePoint();
 
+            _depth = _pricePoint.depth;
+
             setPricePointNext(_pricePoint);
 
             updated = _now;
 
-        } 
+        } else (,,_depth) = pricePointCurrent();
 
         (   uint _compoundings,
             uint _tCompounding  ) = epochs(_now, compounded);
@@ -160,7 +167,7 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
         }
 
-        cap_ = oiCap();
+        cap_ = _oiCap(_depth);
 
     }
 

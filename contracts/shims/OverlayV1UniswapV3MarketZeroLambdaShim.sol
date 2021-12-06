@@ -47,6 +47,17 @@ contract OverlayV1UniswapV3MarketZeroLambdaShim is OverlayV1UniswapV3Market {
 
     }
 
+    function _oiCap (
+        uint _depth
+    ) internal override view returns (
+        uint cap_
+    ) {
+
+        cap_ = super._oiCap(_depth);
+        cap_ = lmbda == 0 ? staticCap : cap_;
+
+    }
+
 
 
 }

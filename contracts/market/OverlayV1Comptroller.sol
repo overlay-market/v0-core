@@ -266,7 +266,7 @@ abstract contract OverlayV1Comptroller {
     /// has occurred.
     /// @param _brrrrdExpected How much the market expects to print before
     /// engaging the dynamic cap. Only passed if printing has occurred.
-    function _oiCap (
+    function _computeOiCap (
         bool _dynamic,
         uint _depth,
         uint _staticCap,
@@ -293,6 +293,16 @@ abstract contract OverlayV1Comptroller {
         uint cap_
     ) {
 
+        cap_ = _oiCap(depth());
+
+    }
+
+    function _oiCap (
+        uint _depth
+    ) internal virtual view returns (
+        uint cap_
+    ) {
+
         (   uint _brrrrd,
             uint _antiBrrrrd ) = getBrrrrd();
 
@@ -310,8 +320,8 @@ abstract contract OverlayV1Comptroller {
         }
 
         cap_ = _surpassed ? 0 : _burnt || _expected
-            ? _oiCap(false, depth(), staticCap, 0, 0)
-            : _oiCap(true, depth(), staticCap, _brrrrd, brrrrdExpected);
+            ? _computeOiCap(false, _depth, staticCap, 0, 0)
+            : _computeOiCap(true, _depth, staticCap, _brrrrd, brrrrdExpected);
 
     }
 
