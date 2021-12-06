@@ -31,11 +31,11 @@ contract OverlayV1UniswapV3MarketZeroLambdaShim is OverlayV1UniswapV3Market {
     ) { }
 
 
-    function update (
+    function _update (
         uint32 _updated,
         uint32 _compounded,
         uint8 _brrrrdCycloid
-    ) public virtual override returns (
+    ) internal virtual override returns (
         uint cap_,
         uint32 updated_,
         uint32 compounded_
@@ -43,7 +43,7 @@ contract OverlayV1UniswapV3MarketZeroLambdaShim is OverlayV1UniswapV3Market {
 
         (   cap_,
             updated_,
-            compounded_ ) = super.update(
+            compounded_ ) = super._update(
                 _updated,
                 _compounded,
                 _brrrrdCycloid

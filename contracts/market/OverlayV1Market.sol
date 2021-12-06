@@ -61,7 +61,7 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
 
         (   _cap, 
             _tempo.updated, 
-            _tempo.compounded ) = update( 
+            _tempo.compounded ) = _update( 
                 _tempo.updated, 
                 _tempo.compounded,
                 _tempo.brrrrdCycloid
@@ -127,7 +127,7 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
         uint _compounded;
 
         (  ,_updated, 
-            _compounded ) = update(
+            _compounded ) = _update(
                 _tempo.updated,
                 _tempo.compounded,
                 _tempo.brrrrdCycloid
@@ -177,16 +177,31 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
 
     }
 
+    function update () public {
+
+        OverlayV1Choreographer.Tempo memory _tempo = tempo;
+
+        (  ,_tempo.updated, 
+            _tempo.compounded ) = _update(
+                _tempo.updated, 
+                _tempo.compounded, 
+                _tempo.brrrrdCycloid
+            );
+
+        tempo = _tempo;
+
+    }
+
     /// @notice Internal update function to price, cap, and pay funding.
     /// @dev This function updates the market with the latest price and
     /// conditionally reads the depth of the market feed. The market needs
     /// an update on the first call of any block.
     /// @return cap_ The open interest cap for the market.
-    function update (
+    function _update (
         uint32 _updated,
         uint32 _compounded,
         uint8 _brrrrdCycloid
-    ) public virtual returns (
+    ) internal virtual returns (
         uint cap_,
         uint32 updated_,
         uint32 compounded_
