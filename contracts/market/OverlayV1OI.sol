@@ -11,7 +11,7 @@ contract OverlayV1OI {
 
     uint256 private constant ONE = 1e18;
 
-    uint256 public compoundingPeriod;
+    uint256 immutable public compoundingPeriod;
     uint256 public compounded;
 
     uint256 internal __oiLong__; // total long open interest

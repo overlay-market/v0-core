@@ -66,7 +66,6 @@ abstract contract OverlayV1Governance is
     function setEverything (
         uint256 _k,
         uint256 _pbnj,
-        uint256 _compoundPeriod,
         uint256 _lmbda,
         uint256 _staticCap,
         uint256 _brrrrdExpected,
@@ -77,10 +76,6 @@ abstract contract OverlayV1Governance is
         setK(_k);
 
         setSpread(_pbnj);
-
-        setPeriods(
-            _compoundPeriod
-        );
 
         setComptrollerParams(
             _lmbda,
@@ -104,14 +99,6 @@ abstract contract OverlayV1Governance is
         uint256 _k
     ) public onlyGovernor {
         k = _k;
-    }
-
-    function setPeriods(
-        uint256 _compoundingPeriod
-    ) public onlyGovernor {
-
-        compoundingPeriod = _compoundingPeriod;
-
     }
 
     function setComptrollerParams (
