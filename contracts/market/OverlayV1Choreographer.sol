@@ -145,14 +145,7 @@ abstract contract OverlayV1Choreographer is
             tempo.compounded
         );
 
-        // return _oi(_compoundings);
-
-        return (
-            tempo.compounded,
-            0,
-            0,
-            0
-        );
+        return _oi(_compoundings);
 
     }
 
