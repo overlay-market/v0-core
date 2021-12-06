@@ -93,8 +93,6 @@ def test_build_success_zero_impact(
     tx = ovl_collateral.build(
         market, collateral, leverage, is_long, oi_adjusted_min, {"from": bob})
 
-    print_logs(tx)
-
     assert 'Build' in tx.events
     assert 'positionId' in tx.events['Build']
     pid = tx.events['Build']['positionId']
@@ -128,9 +126,6 @@ def test_build_success_zero_impact(
     assert approx(pos_debt) == int(oi_adjusted - collateral_adjusted)
     assert approx(pos_cost) == int(collateral_adjusted)
 
-    oi = market.oiLong()
-
-    print("oi", oi)
 
     # # check oi has been added on the market for respective side of trade
     # if is_long:

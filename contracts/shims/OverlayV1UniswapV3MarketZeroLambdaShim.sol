@@ -43,7 +43,7 @@ contract OverlayV1UniswapV3MarketZeroLambdaShim is OverlayV1UniswapV3Market {
 
         (   cap_,
             updated_,
-            compounded ) = super.update(
+            compounded_ ) = super.update(
                 _updated,
                 _compounded,
                 _brrrrdCycloid

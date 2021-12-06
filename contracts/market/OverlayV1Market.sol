@@ -55,14 +55,9 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
 
         OverlayV1Choreographer.Tempo memory _tempo = tempo;
 
-        emit log("tempo.compounded", tempo.compounded);
-
         uint _cap;
         uint _impact;
         uint _oi = _collateral * _leverage;
-
-        emit log("_tempo.updated", _tempo.updated);
-        emit log("_tempo.compounded", _tempo.compounded);
 
         (   _cap, 
             _tempo.updated, 
@@ -71,10 +66,6 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
                 _tempo.compounded,
                 _tempo.brrrrdCycloid
             );
-        
-        emit log("_cap", _cap);
-        emit log("_tempo.updated 2", _tempo.updated);
-        emit log("_tempo.compounded 2", _tempo.compounded);
 
         (   _impact,
             _tempo.impactCycloid,
@@ -89,8 +80,6 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
             );
 
         tempo = _tempo;
-
-        emit log("end tempo.compounded", tempo.compounded);
 
         pricePointNext_ = _pricePoints.length - 1;
 
@@ -134,8 +123,11 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
 
         OverlayV1Choreographer.Tempo memory _tempo = tempo;
 
-        (  ,_tempo.updated, 
-            _tempo.compounded ) = update(
+        uint _updated;
+        uint _compounded;
+
+        (  ,_updated, 
+            _compounded ) = update(
                 _tempo.updated,
                 _tempo.compounded,
                 _tempo.brrrrdCycloid
@@ -203,9 +195,6 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
         uint _depth;
         uint32 _now = uint32(block.timestamp);
 
-        emit log("now", _now);
-        emit log("updated", _updated);
-
         if (_now != _updated) {
 
             PricePoint memory _pricePoint = fetchPricePoint();
@@ -218,14 +207,8 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
 
         } else (,,_depth) = pricePointCurrent();
 
-        emit log("updated now", _updated);
-
         (   uint32 _compoundings,
             uint32 _tCompounding  ) = epochs(_now, _compounded);
-
-        emit log("t compounding", _tCompounding);
-
-        emit log("compounded", _compounded);
 
         if (0 < _compoundings) {
 
@@ -234,20 +217,9 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
 
         }
 
-        emit log("compounded now", _compounded);
-
         cap_ = _oiCap(_depth, _brrrrdCycloid);
         updated_ = _updated;
         compounded_ = _compounded;
-
-        return (
-            _oiCap(_depth, _brrrrdCycloid),
-            updated_,
-            compounded_
-        );
-
-        emit log("--> updated_", updated_);
-        emit log("--> compounded_", compounded_);
 
     }
 
