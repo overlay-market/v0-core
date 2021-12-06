@@ -147,7 +147,6 @@ interface IOverlayV1Market is IERC1155 {
     function setEverything (
         uint256 _k,
         uint256 _pbnj,
-        uint256 _compoundPeriod,
         uint256 _lmbda,
         uint256 _staticCap,
         uint256 _brrrrExpected,
@@ -163,10 +162,6 @@ interface IOverlayV1Market is IERC1155 {
         uint256 _pbnj
     ) external;
 
-    function setPeriods(
-        uint256 _compoundingPeriod
-    ) external;
-
     function setComptrollerParams (
         uint256 _lmbda,
         uint256 _staticCap,
@@ -174,7 +169,5 @@ interface IOverlayV1Market is IERC1155 {
         uint256 _brrrrWindowMacro,
         uint256 _brrrrWindowMicro
     ) external;
-
-
 
 }
