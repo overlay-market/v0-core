@@ -7,14 +7,15 @@ from brownie import \
 import os
 import json
 
+def print_logs(tx):
+    for i in range(len(tx.events['log'])):
+        print(tx.events['log'][i]['k'] + ": " + str(tx.events['log'][i]['v']))
 
 def main():
 
     test = accounts[6].deploy(Scratchpad)
 
-    a,b = test.one_and_two()
+    tx = test.failure()
 
-    print("a", a)
-    print("b", b)
-
+    print_logs(tx)
 

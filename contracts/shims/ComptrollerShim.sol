@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+pragma solidity 0.8.10;
 
 import "../market/OverlayV1PricePoint.sol";
 import "../market/OverlayV1Comptroller.sol";
@@ -24,6 +24,16 @@ contract ComptrollerShim is OverlayV1Comptroller {
 
     uint public macroWindow;
     uint public microWindow;
+
+    struct Tempo {
+        uint32 updated;
+        uint32 compounded;
+        uint8 impactCycloid;
+        uint8 brrrrdCycloid;
+        uint32 brrrrdFiling;
+    }
+
+    Tempo public tempo;
 
     constructor (
         uint _lmbda,
@@ -52,8 +62,18 @@ contract ComptrollerShim is OverlayV1Comptroller {
         ovlFeed = _ovlFeed;
         ethIs0 = IUniswapV3Pool(_ovlFeed).token0() == _eth;
 
+        tempo.brrrrdFiling = uint32(block.timestamp);
+
     }
 
+
+    function oiCap () public view virtual override returns (
+        uint cap_
+    ) {
+
+        cap_ = _oiCap( depth() , tempo.brrrrdCycloid);
+
+    }
 
     function depth () public view override returns (uint depth_) {
 
@@ -156,7 +176,14 @@ contract ComptrollerShim is OverlayV1Comptroller {
 
         for (uint i = 0; i < len; i++) {
 
-            brrrr( _brrrr[i], _antiBrrrr[i] );
+            (   tempo.brrrrdCycloid, 
+                tempo.brrrrdFiling ) = brrrr( 
+                    _brrrr[i], 
+                    _antiBrrrr[i],
+                    tempo.brrrrdCycloid,
+                    tempo.brrrrdFiling
+                );
+
 
         }
 
@@ -175,7 +202,19 @@ contract ComptrollerShim is OverlayV1Comptroller {
 
             uint _cap = oiCap();
 
-            impact_ = intake(_isLong[i], _oi[i], _cap);
+            ( impact_,
+                tempo.impactCycloid,
+                tempo.brrrrdCycloid,
+                tempo.brrrrdFiling )= intake(
+                    _isLong[i], 
+                    _oi[i], 
+                    _cap,
+                    tempo.impactCycloid,
+                    tempo.brrrrdCycloid,
+                    tempo.brrrrdFiling
+                );
+
+
 
         }
 
@@ -190,8 +229,14 @@ contract ComptrollerShim is OverlayV1Comptroller {
 
         uint _cap = oiCap();
 
-        ( ,,impact_ ) = _intake(_isLong, _oi, _cap);
+        ( ,,impact_ ) = _intake(
+            _isLong, 
+            _oi, 
+            _cap,
+            tempo.impactCycloid
+        );
 
     }
+
 
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+pragma solidity 0.8.10;
 
 import "./libraries/FixedPoint.sol";
 import "./libraries/UniswapV3OracleLibrary/UniswapV3OracleLibraryV2.sol";
@@ -40,7 +40,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     ) OverlayV1Comptroller (
         _microWindow
     ) OverlayV1OI (
-        _microWindow
+        uint32(_microWindow)
     ) OverlayV1PricePoint (
         _priceFrameCap
     ) {
