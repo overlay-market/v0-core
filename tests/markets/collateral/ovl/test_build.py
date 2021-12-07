@@ -64,14 +64,14 @@ def test_build_success_zero_impact(
     market,
     bob,
     start_time,
-#     collateral,
-#     leverage,
-#     is_long
+    #     collateral,
+    #     leverage,
+    #     is_long
 ):
 
-    collateral=5479762916021281994312
-    leverage=1
-    is_long=True
+    collateral = 5479762916021281994312
+    leverage = 1
+    is_long = True
 
     brownie.chain.mine(timestamp=start_time)
 
@@ -81,9 +81,6 @@ def test_build_success_zero_impact(
     # get prior state of collateral manager
     fee_bucket = ovl_collateral.fees()
     ovl_balance = token.balanceOf(ovl_collateral)
-
-    # get prior state of market
-    market_oi = market.oiLong() if is_long else market.oiShort()
 
     # approve collateral contract to spend bob's ovl to build position
     token.approve(ovl_collateral, collateral, {"from": bob})
@@ -125,7 +122,6 @@ def test_build_success_zero_impact(
     assert approx(pos_oishares) == int(oi_adjusted)
     assert approx(pos_debt) == int(oi_adjusted - collateral_adjusted)
     assert approx(pos_cost) == int(collateral_adjusted)
-
 
     # # check oi has been added on the market for respective side of trade
     # if is_long:
@@ -396,19 +392,19 @@ def test_oi_shares_onesided_zero_funding(
     is_long=strategy(
         'bool'))
 def test_oi_shares_bothsides_zero_funding(
-            ovl_collateral,
-            token,
-            mothership,
-            market,
-            gov,
-            alice,
-            bob,
-            start_time,
-            collateral,
-            leverage,
-            is_long,
-            multiplier
-        ):
+    ovl_collateral,
+    token,
+    mothership,
+    market,
+    gov,
+    alice,
+    bob,
+    start_time,
+    collateral,
+    leverage,
+    is_long,
+    multiplier
+):
     pass
 
 
@@ -652,18 +648,18 @@ def test_entry_update_compounding_oi_imbalance(
     is_long=strategy(
         'bool'))
 def test_oi_shares_bothsides_with_funding(
-            ovl_collateral,
-            token,
-            mothership,
-            market,
-            alice,
-            bob,
-            start_time,
-            collateral,
-            leverage,
-            is_long,
-            multiplier
-        ):
+    ovl_collateral,
+    token,
+    mothership,
+    market,
+    alice,
+    bob,
+    start_time,
+    collateral,
+    leverage,
+    is_long,
+    multiplier
+):
     pass
 
 
