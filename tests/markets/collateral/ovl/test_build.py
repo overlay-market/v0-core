@@ -782,7 +782,7 @@ def test_build_w_impact(
     assert int(impact_fee) == approx(act_impact_fee, rel=1e-04)
 
     # check new state of market pressure
-    act_pressure = market.pressure(is_long, 0, oi_cap())
+    act_pressure = market.pressure(is_long, 0, market.oiCap())
     assert int(q*1e18) == approx(act_pressure, rel=1e-04)
 
 
