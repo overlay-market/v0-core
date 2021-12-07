@@ -68,6 +68,20 @@ contract ComptrollerShim is OverlayV1Comptroller {
 
     }
 
+    function pressure (
+        bool _isLong,
+        uint _oi,
+        uint _cap
+    ) public view override returns (uint pressure_) {
+
+        pressure_ = _pressure(
+            _isLong,
+            _oi,
+            _cap,
+            tempo.impactCycloid
+        );
+
+    }
 
     function oiCap () public view virtual override returns (
         uint cap_

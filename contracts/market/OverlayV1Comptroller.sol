@@ -212,6 +212,7 @@ abstract contract OverlayV1Comptroller {
             _lastMoment
         );
 
+        // TODO: Can be consolidated in _intake.
         impact_ = _oi.mulUp(_impact);
 
         (   brrrrdCycloid_,
@@ -262,10 +263,10 @@ abstract contract OverlayV1Comptroller {
                 _impactCycloid,
                 impactWindow );
 
-        uint _pressure = _oi.divDown(_cap);
+        uint _p = _oi.divDown(_cap);
 
-        if (_isLong) _rollerNow.ying += uint112(_pressure);
-        else _rollerNow.yang += uint112(_pressure);
+        if (_isLong) _rollerNow.ying += uint112(_p);
+        else _rollerNow.yang += uint112(_p);
 
         uint _power = lmbda.mulDown(_isLong
             ? uint(_rollerNow.ying - _rollerThen.ying)
@@ -274,7 +275,7 @@ abstract contract OverlayV1Comptroller {
 
         lastMoment_ = _lastMoment;
         rollerNow_ = _rollerNow;
-        impact_ = _pressure != 0
+        impact_ = _p != 0
             ? ONE.sub(INVERSE_E.powUp(_power))
             : 0;
 
@@ -360,18 +361,24 @@ abstract contract OverlayV1Comptroller {
         uint _ovlPrice
     ) public virtual view returns (uint depth_);
 
-
     function pressure (
         bool _isLong,
         uint _oi,
         uint _cap
-    ) public view returns (uint pressure_) {
+    ) public view virtual returns (uint pressure_);
+
+    function _pressure (
+        bool _isLong,
+        uint _oi,
+        uint _cap,
+        uint8 _impactCycloid
+    ) internal view returns (uint pressure_) {
 
         (  ,Roller memory _rollerNow,
             Roller memory _rollerThen ) = scry(
                 getImpactRoller,
                 impactChord,
-                impactCycloid,
+                _impactCycloid,
                 impactWindow );
 
         pressure_ = _isLong
@@ -388,11 +395,11 @@ abstract contract OverlayV1Comptroller {
         uint _cap
     ) public view returns (uint impact_) {
 
-        uint _pressure = pressure(_isLong, _oi, _cap);
+        uint _p = pressure(_isLong, _oi, _cap);
 
-        uint _power = lmbda.mulDown(_pressure);
+        uint _power = lmbda.mulDown(_p);
 
-        uint _impact = _pressure != 0
+        uint _impact = _p != 0
             ? ONE.sub(INVERSE_E.powUp(_power))
             : 0;
 
