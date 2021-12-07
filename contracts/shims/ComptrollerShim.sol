@@ -10,6 +10,8 @@ import "../libraries/FixedPoint.sol";
 
 contract ComptrollerShim is OverlayV1Comptroller {
 
+    event log(string k, uint v);
+
     using FixedPoint for uint256;
 
     uint256 internal X96 = 0x1000000000000000000000000;
@@ -197,12 +199,15 @@ contract ComptrollerShim is OverlayV1Comptroller {
     ) {
 
         uint len = _isLong.length;
+        uint8 _impactCycloid;
+        uint8 _brrrrdCycloid;
+        uint _brrrrdFiling;
 
         for (uint i = 0; i < len; i++) {
 
             uint _cap = oiCap();
 
-            ( impact_,
+            (   impact_,
                 tempo.impactCycloid,
                 tempo.brrrrdCycloid,
                 tempo.brrrrdFiling )= intake(
@@ -213,8 +218,6 @@ contract ComptrollerShim is OverlayV1Comptroller {
                     tempo.brrrrdCycloid,
                     tempo.brrrrdFiling
                 );
-
-
 
         }
 

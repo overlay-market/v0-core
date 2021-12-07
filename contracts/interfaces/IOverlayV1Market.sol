@@ -14,6 +14,14 @@ interface IOverlayV1Market is IERC1155 {
         uint256 index;
     }
 
+    struct Tempo {
+        uint32 updated;
+        uint32 compounded;
+        uint8 impactCycloid;
+        uint8 brrrrdCycloid;
+        uint32 brrrrdFiling;
+    }
+
     event NewPrice(uint bid, uint ask, uint index);
     event FundingPaid(uint oiLong, uint oiShort, int fundingPaid);
 
@@ -26,6 +34,8 @@ interface IOverlayV1Market is IERC1155 {
     function update () external;
     function compounded () external view returns (uint256);
     function compoundingPeriod () external view returns (uint256);
+
+    function tempo () external view returns (Tempo memory);
 
     function leverageMax () external view returns (uint8);
 
