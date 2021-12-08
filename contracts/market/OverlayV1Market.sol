@@ -53,26 +53,25 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
         uint pricePointNext_
     ) {
 
-        OverlayV1Choreographer.Tempo memory _tempo = tempo;
-
         uint _cap;
-        uint _impact;
         uint _oi = _collateral * _leverage;
+
+        OverlayV1Choreographer.Tempo memory _tempo = tempo;
 
         (   _cap, 
             _tempo.updated, 
             _tempo.compounded ) = _update( 
-                _tempo.updated, 
+                _tempo.updated,
                 _tempo.compounded,
                 _tempo.brrrrdCycloid
             );
 
-        (   _impact,
+        (   impact_,
             _tempo.impactCycloid,
             _tempo.brrrrdCycloid,
             _tempo.brrrrdFiling ) = intake(
-                _isLong, 
-                _oi, 
+                _isLong,
+                _oi,
                 _cap,
                 _tempo.impactCycloid,
                 _tempo.brrrrdCycloid,
@@ -85,18 +84,15 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
 
         fee_ = _oi.mulDown(mothership.fee());
 
-        impact_ = _impact;
-
         require(_collateral >= MIN_COLLAT + impact_ + fee_ , "OVLV1:collat<min");
 
-        collateralAdjusted_ = _collateral - _impact - fee_;
+        collateralAdjusted_ = _collateral - impact_ - fee_;
 
-        oiAdjusted_ = collateralAdjusted_ * _leverage;
+        oiAdjusted_ = _leverage * collateralAdjusted_;
 
         debtAdjusted_ = oiAdjusted_ - collateralAdjusted_;
 
         addOi(_isLong, oiAdjusted_, _cap);
-
 
     }
 
@@ -121,13 +117,13 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
         uint priceFrame_
     ) {
 
-        OverlayV1Choreographer.Tempo memory _tempo = tempo;
-
         uint _updated;
         uint _compounded;
 
-        (  ,_updated, 
-            _compounded ) = _update(
+        OverlayV1Choreographer.Tempo memory _tempo = tempo;
+
+        (  ,_tempo.updated, 
+            _tempo.compounded ) = _update(
                 _tempo.updated,
                 _tempo.compounded,
                 _tempo.brrrrdCycloid
