@@ -66,12 +66,13 @@ contract ComptrollerShim is OverlayV1Comptroller {
         uint _marketLiquidity,
         uint _ovlPrice
     ) public override view returns (
-        uint depth_
+        uint112 depth_
     ) {
 
-        depth_ = ((_marketLiquidity * 1e18) / _ovlPrice)
+        depth_ = uint112(((_marketLiquidity * 1e18) / _ovlPrice)
             .mulUp(lmbda)    
-            .divDown(2e18);
+            .divDown(2e18)
+        );
 
     }
 
@@ -137,7 +138,12 @@ contract ComptrollerShim is OverlayV1Comptroller {
 
         (   lastMoment,
             rollerNow_,
-            rollerThen_ ) = scry(impactRollers, impactCycloid, _ago);
+            rollerThen_ ) = scry(
+                getImpactRoller, 
+                impactChord,
+                impactCycloid, 
+                _ago
+            );
 
 
     }

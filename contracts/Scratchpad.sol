@@ -4,20 +4,26 @@ pragma solidity ^0.8.7;
 
 contract Scratchpad {
 
-    int56[][] public observations;
+    constructor () { }
 
-    constructor( int56[][] memory _observations ) {
-
-        uint len = _observations.length;
-        for (uint i = 0; i < len; i++) observations.push(_observations[i]);
-
-        // immutables
+    function one () internal pure returns (uint) {
+        return 1;
     }
 
-    function include_observations ( int56[][] calldata _observations ) external {
+    function two () internal pure returns (uint) { 
+        return 2;
+    }
 
-        uint len = _observations.length;
-        for (uint i = 0; i < len; i++) observations.push(_observations[i]);
+    function curry (function() internal pure returns(uint) func) internal pure returns (uint) {
+        return func();
+    }
+
+    function one_and_two () public pure returns (uint, uint) {
+
+        return (
+            curry(one),
+            curry(two)
+        );
 
     }
 

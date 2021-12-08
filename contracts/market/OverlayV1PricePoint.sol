@@ -14,7 +14,7 @@ abstract contract OverlayV1PricePoint {
     struct PricePoint {
         int24 macroTick;
         int24 microTick;
-        uint256 depth;
+        uint112 depth;
     }
 
     uint256 public pbnj;
