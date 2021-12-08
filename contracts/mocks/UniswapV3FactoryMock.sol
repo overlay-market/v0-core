@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+pragma solidity 0.8.10;
 
 import "./UniswapV3OracleMock.sol";
 
@@ -18,6 +18,12 @@ contract UniswapV3FactoryMock {
         pool = new UniswapV3OracleMock(_token0, _token1);
         isPool[address(pool)] = true;
         allPools.push(address(pool));
+
+    }
+
+    function allPoolsLength () public view returns (uint) {
+
+        return allPools.length;
 
     }
 

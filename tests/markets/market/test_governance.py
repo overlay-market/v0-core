@@ -103,25 +103,6 @@ def test_set_comptroller_params(market, gov):
     assert int(current_brrrr_window_micro) == int(input_brrrr_window_micro)
 
 
-def test_set_compounding_period(market, gov):
-
-    input_compounding_period = 660
-
-    # grab initial _compoundingPeriod
-    initial_compounding_period = market.compoundingPeriod()
-
-    assert int(initial_compounding_period) != int(input_compounding_period)
-
-    # set _compoundingPeriod
-    market.setPeriods(input_compounding_period, {"from": gov})
-
-    # grab current _compoundingPeriod
-    current_compounding_period = market.compoundingPeriod()
-
-    # test _compoundingPeriod updated to input value
-    assert int(current_compounding_period) == int(input_compounding_period)
-
-
 def test_set_k(market, gov):
 
     input_k = 346888760971066
@@ -163,7 +144,6 @@ def test_set_everything(market, gov):
     # pass in inputs into setEverything function
     input_k = 346888760971066
     input_spread = .00573e19
-    input_compounding_period = 660
     input_static_cap = int(800000 * 1e19)
     input_brrrr_expected = 1e19
     input_brrrr_window_macro = 6000
@@ -174,7 +154,6 @@ def test_set_everything(market, gov):
     market.setEverything(
       input_k,
       input_spread,
-      input_compounding_period,
       input_lmbda,
       input_static_cap,
       input_brrrr_expected,
@@ -186,7 +165,6 @@ def test_set_everything(market, gov):
     # grab all current variables
     current_k = market.k()
     current_spread = market.pbnj()
-    current_compounding_period = market.compoundingPeriod()
     current_lmbda = market.lmbda()
     # TODO: current_static_cap assertion
     #  current_static_cap = market.oiCap()
@@ -198,8 +176,6 @@ def test_set_everything(market, gov):
     assert int(current_k) == int(input_k)
 
     assert int(current_spread) == int(input_spread)
-
-    assert int(current_compounding_period) == int(input_compounding_period)
 
     assert int(current_lmbda) == int(input_lmbda)
 

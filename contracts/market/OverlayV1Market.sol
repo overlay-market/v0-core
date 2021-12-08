@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+pragma solidity 0.8.10;
 
 import "../libraries/Position.sol";
 import "../libraries/FixedPoint.sol";
 import "../interfaces/IOverlayV1Mothership.sol";
-import "./OverlayV1Governance.sol";
+import "./OverlayV1Choreographer.sol";
 import "./OverlayV1OI.sol";
 import "./OverlayV1PricePoint.sol";
 import "../OverlayToken.sol";
 import "./OverlayV1Comptroller.sol";
 
-abstract contract OverlayV1Market is OverlayV1Governance {
+abstract contract OverlayV1Market is OverlayV1Choreographer {
 
     using FixedPoint for uint256;
 
@@ -20,7 +20,11 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
     modifier lock() { require(unlocked == 1, "OVLV1:!unlocked"); unlocked = 0; _; unlocked = 1; }
 
-    constructor(address _mothership) OverlayV1Governance( _mothership) { }
+    constructor(
+        address _mothership
+    ) OverlayV1Choreographer (
+        _mothership
+    ) { }
 
     /// @notice Adds open interest to the market
     /// @dev This is invoked by Overlay collateral manager contracts, which
@@ -33,39 +37,59 @@ abstract contract OverlayV1Market is OverlayV1Governance {
     /// @return oiAdjusted_ Amount of open interest after impact and fees.
     /// @return collateralAdjusted_ Amount of collateral after impact and fees.
     /// @return debtAdjusted_ Amount of debt after impact and fees.
-    /// @return fee_ The protocol fee to be taken.
+    /// @return exactedFee_ The protocol fee to be taken.
     /// @return impact_ The market impact for the build.
     /// @return pricePointNext_ The index of the price point for the position.
     function enterOI (
         bool _isLong,
         uint _collateral,
-        uint _leverage
+        uint _leverage,
+        uint _fee
     ) external onlyCollateral returns (
         uint oiAdjusted_,
         uint collateralAdjusted_,
         uint debtAdjusted_,
-        uint fee_,
+        uint exactedFee_,
         uint impact_,
         uint pricePointNext_
     ) {
 
-        uint _cap = update();
+        uint _cap;
+        uint _oi = _collateral * _leverage;
+
+        OverlayV1Choreographer.Tempo memory _tempo = tempo;
+
+        (   _cap, 
+            _tempo.updated, 
+            _tempo.compounded ) = _update( 
+                _tempo.updated,
+                _tempo.compounded,
+                _tempo.brrrrdCycloid
+            );
+
+        (   impact_,
+            _tempo.impactCycloid,
+            _tempo.brrrrdCycloid,
+            _tempo.brrrrdFiling ) = intake(
+                _isLong,
+                _oi,
+                _cap,
+                _tempo.impactCycloid,
+                _tempo.brrrrdCycloid,
+                _tempo.brrrrdFiling
+            );
+
+        tempo = _tempo;
 
         pricePointNext_ = _pricePoints.length - 1;
 
-        uint _oi = _collateral * _leverage;
+        exactedFee_ = _oi.mulDown(_fee);
 
-        uint _impact = intake(_isLong, _oi, _cap);
+        require(_collateral >= MIN_COLLAT + impact_ + exactedFee_ , "OVLV1:collat<min");
 
-        fee_ = _oi.mulDown(mothership.fee());
+        collateralAdjusted_ = _collateral - impact_ - exactedFee_;
 
-        impact_ = _impact;
-
-        require(_collateral >= MIN_COLLAT + impact_ + fee_ , "OVLV1:collat<min");
-
-        collateralAdjusted_ = _collateral - _impact - fee_;
-
-        oiAdjusted_ = collateralAdjusted_ * _leverage;
+        oiAdjusted_ = _leverage * collateralAdjusted_;
 
         debtAdjusted_ = oiAdjusted_ - collateralAdjusted_;
 
@@ -94,7 +118,19 @@ abstract contract OverlayV1Market is OverlayV1Governance {
         uint priceFrame_
     ) {
 
-        update();
+        uint _updated;
+        uint _compounded;
+
+        OverlayV1Choreographer.Tempo memory _tempo = tempo;
+
+        (  ,_tempo.updated, 
+            _tempo.compounded ) = _update(
+                _tempo.updated,
+                _tempo.compounded,
+                _tempo.brrrrdCycloid
+            );
+
+        tempo = _tempo;
 
         if (_isLong) ( oi_ = __oiLong__, oiShares_ = oiLongShares );
         else ( oi_ = __oiShort__, oiShares_ = oiShortShares );
@@ -121,10 +157,35 @@ abstract contract OverlayV1Market is OverlayV1Governance {
         uint _antiBrrrr
     ) external onlyCollateral {
 
-        brrrr( _brrrr, _antiBrrrr );
+        OverlayV1Choreographer.Tempo memory _tempo = tempo;
+
+        (   _tempo.brrrrdCycloid,
+            _tempo.brrrrdFiling ) = brrrr( 
+                _brrrr, 
+                _antiBrrrr ,
+                _tempo.brrrrdCycloid,
+                _tempo.brrrrdFiling
+            );
+
+        tempo = _tempo;
 
         if (_isLong) ( __oiLong__ -= _oi, oiLongShares -= _oiShares );
         else ( __oiShort__ -= _oi, oiShortShares -= _oiShares );
+
+    }
+
+    function update () public {
+
+        OverlayV1Choreographer.Tempo memory _tempo = tempo;
+
+        (  ,_tempo.updated, 
+            _tempo.compounded ) = _update(
+                _tempo.updated, 
+                _tempo.compounded, 
+                _tempo.brrrrdCycloid
+            );
+
+        tempo = _tempo;
 
     }
 
@@ -133,12 +194,18 @@ abstract contract OverlayV1Market is OverlayV1Governance {
     /// conditionally reads the depth of the market feed. The market needs
     /// an update on the first call of any block.
     /// @return cap_ The open interest cap for the market.
-    function update () public virtual returns (
-        uint cap_
+    function _update (
+        uint32 _updated,
+        uint32 _compounded,
+        uint8 _brrrrdCycloid
+    ) internal virtual returns (
+        uint cap_,
+        uint32 updated_,
+        uint32 compounded_
     ) {
 
-        uint _now = block.timestamp;
-        uint _updated = updated;
+        uint _depth;
+        uint32 _now = uint32(block.timestamp);
 
         if (_now != _updated) {
 
@@ -146,21 +213,33 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
             setPricePointNext(_pricePoint);
 
+            _depth = _pricePoint.depth;
+
             updated = _now;
 
-        } 
+        } else (,,_depth) = pricePointCurrent();
 
-        (   uint _compoundings,
-            uint _tCompounding  ) = epochs(_now, compounded);
+        (   uint32 _compoundings,
+            uint32 _tCompounding  ) = epochs(_now, _compounded);
 
         if (0 < _compoundings) {
 
             payFunding(k, _compoundings);
-            compounded = _tCompounding;
+            _compounded = _tCompounding;
 
         }
 
-        cap_ = oiCap();
+        cap_ = _oiCap(_depth, _brrrrdCycloid);
+        updated_ = _updated;
+        compounded_ = _compounded;
+
+    }
+
+    function oiCap () public view virtual override returns (
+        uint cap_
+    ) {
+
+        cap_ = _oiCap( depth() , tempo.brrrrdCycloid);
 
     }
 
@@ -173,64 +252,6 @@ abstract contract OverlayV1Market is OverlayV1Governance {
     ) {
 
         ( ,,depth_ )= pricePointCurrent();
-
-    }
-
-    /// @notice Exposes important info for calculating position metrics.
-    /// @dev These values are required to feed to the position calculations.
-    /// @param _isLong Whether position is on short or long side of market.
-    /// @param _priceEntry Index of entry price
-    /// @return oi_ The current open interest on the chosen side.
-    /// @return oiShares_ The current open interest shares on the chosen side.
-    /// @return priceFrame_ Price frame resulting from e entry and exit prices.
-    function positionInfo (
-        bool _isLong,
-        uint _priceEntry
-    ) external view returns (
-        uint256 oi_,
-        uint256 oiShares_,
-        uint256 priceFrame_
-    ) {
-
-        (   uint _compoundings, ) = epochs(block.timestamp, compounded);
-
-        (   uint _oiLong,
-            uint _oiShort,
-            uint _oiLongShares,
-            uint _oiShortShares ) = _oi(_compoundings);
-
-        if (_isLong) ( oi_ = _oiLong, oiShares_ = _oiLongShares );
-        else ( oi_ = _oiShort, oiShares_ = _oiShortShares );
-
-        priceFrame_ = priceFrame(
-            _isLong,
-            _priceEntry
-        );
-
-    }
-
-
-    /// @notice Computes the price frame for a given position
-    /// @dev Computes the price frame conditionally giving shorts the bid
-    /// on entry and ask on exit and longs the bid on exit and short on
-    /// entry. Capped at the priceFrameCap for longs.
-    /// @param _isLong If price frame is for a long or a short.
-    /// @param _pricePoint The index of the entry price.
-    /// @return priceFrame_ The exit price divided by the entry price.
-    function priceFrame (
-        bool _isLong,
-        uint _pricePoint
-    ) internal view returns (
-        uint256 priceFrame_
-    ) {
-
-        ( uint _entryBid, uint _entryAsk, ) = readPricePoint(_pricePoint);
-
-        ( uint _exitBid, uint _exitAsk, ) = pricePointCurrent();
-
-        priceFrame_ = _isLong
-            ? Math.min(_exitBid.divDown(_entryAsk), priceFrameCap)
-            : _exitAsk.divUp(_entryBid);
 
     }
 

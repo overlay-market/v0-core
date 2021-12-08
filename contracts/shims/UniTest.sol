@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+pragma solidity 0.8.10;
 
 import "../market/OverlayV1Comptroller.sol";
 import "../interfaces/IUniswapV3Pool.sol";

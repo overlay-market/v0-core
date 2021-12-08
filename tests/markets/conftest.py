@@ -189,7 +189,6 @@ def comptroller(gov, feed_infos, token, feed_owner):
             5e18,                # price frame cap
             343454218783234,     # k
             .00573e18,           # spread
-            COMPOUND_PERIOD,     # compound period
             0,                   # lambda
             OI_CAP*1e18,         # oi cap
             BRRRR_EXPECTED,      # brrrr expected

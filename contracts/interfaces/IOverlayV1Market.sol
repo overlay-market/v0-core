@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+pragma solidity 0.8.10;
 
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "../libraries/Position.sol";
@@ -14,6 +14,14 @@ interface IOverlayV1Market is IERC1155 {
         uint256 index;
     }
 
+    struct Tempo {
+        uint32 updated;
+        uint32 compounded;
+        uint8 impactCycloid;
+        uint8 brrrrdCycloid;
+        uint32 brrrrdFiling;
+    }
+
     event NewPrice(uint bid, uint ask, uint index);
     event FundingPaid(uint oiLong, uint oiShort, int fundingPaid);
 
@@ -26,6 +34,8 @@ interface IOverlayV1Market is IERC1155 {
     function update () external;
     function compounded () external view returns (uint256);
     function compoundingPeriod () external view returns (uint256);
+
+    function tempo () external view returns (Tempo memory);
 
     function leverageMax () external view returns (uint8);
 
@@ -108,12 +118,13 @@ interface IOverlayV1Market is IERC1155 {
     function enterOI (
         bool _isLong,
         uint _collateral,
-        uint _leverage
+        uint _leverage,
+        uint _fee
     ) external returns (
         uint oiAdjusted_,
         uint collateralAdjusted_,
         uint debtAdjusted_,
-        uint fee_,
+        uint exactedFee_,
         uint impact_,
         uint pricePointNext_
     );
@@ -147,7 +158,6 @@ interface IOverlayV1Market is IERC1155 {
     function setEverything (
         uint256 _k,
         uint256 _pbnj,
-        uint256 _compoundPeriod,
         uint256 _lmbda,
         uint256 _staticCap,
         uint256 _brrrrExpected,
@@ -163,10 +173,6 @@ interface IOverlayV1Market is IERC1155 {
         uint256 _pbnj
     ) external;
 
-    function setPeriods(
-        uint256 _compoundingPeriod
-    ) external;
-
     function setComptrollerParams (
         uint256 _lmbda,
         uint256 _staticCap,
@@ -174,7 +180,5 @@ interface IOverlayV1Market is IERC1155 {
         uint256 _brrrrWindowMacro,
         uint256 _brrrrWindowMicro
     ) external;
-
-
 
 }
