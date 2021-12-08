@@ -37,18 +37,19 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
     /// @return oiAdjusted_ Amount of open interest after impact and fees.
     /// @return collateralAdjusted_ Amount of collateral after impact and fees.
     /// @return debtAdjusted_ Amount of debt after impact and fees.
-    /// @return fee_ The protocol fee to be taken.
+    /// @return exactedFee_ The protocol fee to be taken.
     /// @return impact_ The market impact for the build.
     /// @return pricePointNext_ The index of the price point for the position.
     function enterOI (
         bool _isLong,
         uint _collateral,
-        uint _leverage
+        uint _leverage,
+        uint _fee
     ) external onlyCollateral returns (
         uint oiAdjusted_,
         uint collateralAdjusted_,
         uint debtAdjusted_,
-        uint fee_,
+        uint exactedFee_,
         uint impact_,
         uint pricePointNext_
     ) {
@@ -82,11 +83,11 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
 
         pricePointNext_ = _pricePoints.length - 1;
 
-        fee_ = _oi.mulDown(mothership.fee());
+        exactedFee_ = _oi.mulDown(_fee);
 
-        require(_collateral >= MIN_COLLAT + impact_ + fee_ , "OVLV1:collat<min");
+        require(_collateral >= MIN_COLLAT + impact_ + exactedFee_ , "OVLV1:collat<min");
 
-        collateralAdjusted_ = _collateral - impact_ - fee_;
+        collateralAdjusted_ = _collateral - impact_ - exactedFee_;
 
         oiAdjusted_ = _leverage * collateralAdjusted_;
 

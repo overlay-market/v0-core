@@ -1,3 +1,4 @@
+from brownie import *
 from brownie import interface
 from brownie import \
     UniswapV3FactoryMock, \
@@ -75,6 +76,7 @@ def deploy_uni_pool(factory, token0, token1, path):
 
     with open(os.path.normpath(
             os.path.join(base, path + '_reflected.json'))) as f:
+
         beginning = json.load(f)['timestamp'][0]
 
     factory.createPool(token0, token1)
@@ -82,8 +84,9 @@ def deploy_uni_pool(factory, token0, token1, path):
     IUniswapV3OracleMock = getattr(interface, 'IUniswapV3OracleMock')
 
     uniswapv3_pool = IUniswapV3OracleMock(
-        factory.allPools(factory.allPoolsLength() - 1)
-    )
+        factory.allPools(factory.allPoolsLength() - 1))
+
+    uniswapv3_pool = IUniswapV3OracleMock(factory.allPools(0))
 
     uniswapv3_pool.loadObservations(
         data['observations'],
@@ -229,7 +232,6 @@ def unwind_position(
     )
 
     print("unwind gas", tx_unwind.gas_used)
-
 
 def transfer_position_shares(
     collateral_manager,

@@ -102,12 +102,13 @@ contract ComptrollerShim is OverlayV1Comptroller {
         uint _marketLiquidity,
         uint _ovlPrice
     ) public override view returns (
-        uint depth_
+        uint112 depth_
     ) {
 
-        depth_ = ((_marketLiquidity * 1e18) / _ovlPrice)
+        depth_ = uint112(((_marketLiquidity * 1e18) / _ovlPrice)
             .mulUp(lmbda)    
-            .divDown(2e18);
+            .divDown(2e18)
+        );
 
     }
 

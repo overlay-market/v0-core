@@ -4,13 +4,13 @@ pragma solidity 0.8.10;
 
 import "../libraries/Position.sol";
 import "../libraries/FixedPoint.sol";
-import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
+import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "../interfaces/IOverlayV1Market.sol";
 import "../interfaces/IOverlayV1Mothership.sol";
 import "../interfaces/IOverlayToken.sol";
 import "../interfaces/IOverlayTokenNew.sol";
 
-contract OverlayV1OVLCollateral is ERC1155Supply {
+contract OverlayV1OVLCollateral is ERC1155 {
 
     event log(string k, uint v);
     event log_addr(string k, address v);
@@ -20,8 +20,14 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     bytes32 constant private GOVERNOR = keccak256("GOVERNOR");
 
-    mapping (address => mapping(uint => uint)) internal currentBlockPositionsLong;
-    mapping (address => mapping(uint => uint)) internal currentBlockPositionsShort;
+    struct LastPosition { 
+        uint32 pricePoint; 
+        uint32 positionId; 
+    }
+
+    mapping (address => mapping(uint => LastPosition)) internal lastPositionsLong;
+    mapping (address => mapping(uint => LastPosition)) internal lastPositionsShort;
+
     mapping (address => MarketInfo) public marketInfo;
     struct MarketInfo {
         uint marginMaintenance;
@@ -83,11 +89,45 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             market: address(0),
             isLong: false,
             leverage: 0,
-            pricePoint: 0,
             oiShares: 0,
+            pricePoint: 0,
             debt: 0,
             cost: 0
         }));
+
+    }
+
+    function totalSupply (
+        uint _positionId
+    ) public view returns (
+        uint256 totalSupply_
+    ) {
+
+        if (_positionId >= positions.length) {
+
+            totalSupply_ = 0;
+
+        } else totalSupply_ = positions[_positionId].oiShares;
+       
+    }
+
+    function balanceOf (
+        address _account, 
+        uint256 _positionId
+    ) public view override returns (
+        uint256 balance_ 
+    ) {
+
+        if ( positions.length <= _positionId ) {
+
+            balance_ = 0;
+
+        } else if ( positions[_positionId].oiShares == 0 ) {
+
+            balance_ = 0;
+
+        } else balance_ = super.balanceOf(_account, _positionId);
+
 
     }
 
@@ -165,38 +205,56 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     }
 
-    function getCurrentBlockPositionId (
+    function storePosition (
         address _market,
         bool _isLong,
         uint _leverage,
+        uint _oi,
+        uint _debt,
+        uint _cost,
         uint _pricePointNext
     ) internal returns (
         uint positionId_
     ) {
 
-        mapping(uint=>uint) storage _currentBlockPositions = _isLong
-            ? currentBlockPositionsLong[_market]
-            : currentBlockPositionsShort[_market];
+        mapping(uint=>LastPosition) storage lastPositions = _isLong
+            ? lastPositionsLong[_market]
+            : lastPositionsShort[_market];
 
-        positionId_ = _currentBlockPositions[_leverage];
+        LastPosition memory _lastPosition = _isLong
+            ? lastPositions[_leverage]
+            : lastPositions[_leverage];
 
-        Position.Info storage position = positions[positionId_];
-
-        if (position.pricePoint < _pricePointNext) {
+        if (_lastPosition.pricePoint < _pricePointNext) {
 
             positions.push(Position.Info({
                 market: _market,
                 isLong: _isLong,
-                leverage: _leverage,
-                pricePoint: _pricePointNext,
-                oiShares: 0,
-                debt: 0,
-                cost: 0
+                leverage: uint8(_leverage),
+                pricePoint: uint32(_pricePointNext),
+                oiShares: uint112(_oi),
+                debt: uint112(_debt),
+                cost: uint112(_cost)
             }));
 
             positionId_ = positions.length - 1;
 
-            _currentBlockPositions[_leverage] = positionId_;
+            lastPositions[_leverage] = LastPosition(
+                uint32(_pricePointNext),
+                uint32(positionId_)
+            );
+
+        } else {
+            
+            positionId_ = _lastPosition.positionId;
+
+            Position.Info memory pos = positions[positionId_];
+
+            pos.oiShares += uint112(_oi);
+            pos.debt += uint112(_debt);
+            pos.cost += uint112(_cost);
+
+            positions[positionId_] = pos;
 
         }
 
@@ -228,41 +286,41 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         (   uint _oiAdjusted,
             uint _collateralAdjusted,
             uint _debtAdjusted,
-            uint _fee,
+            uint _exactedFee,
             uint _impact,
             uint _pricePointNext ) = IOverlayV1Market(_market)
                 .enterOI(
                     _isLong,
                     _collateral,
-                    _leverage
+                    _leverage,
+                    mothership.fee()
                 );
 
         require(_oiAdjusted >= _oiMinimum, "OVLV1:oi<min");
 
-        uint _positionId = getCurrentBlockPositionId(
+        fees += _exactedFee;
+
+        positionId_ = storePosition(
             _market,
             _isLong,
             _leverage,
+            _oiAdjusted,
+            _debtAdjusted,
+            _collateralAdjusted,
             _pricePointNext
         );
 
-        Position.Info storage pos = positions[_positionId];
-
-        pos.oiShares += _oiAdjusted;
-        pos.cost += _collateralAdjusted;
-        pos.debt += _debtAdjusted;
-
-        fees += _fee;
-
-        emit Build(_market, _positionId, _oiAdjusted, _debtAdjusted);
-
-        ovl.transferFromBurn(msg.sender, address(this), _collateralAdjusted + _fee, _impact);
-
         // ovl.burn(msg.sender, _impact);
+        ovl.transferFromBurn(
+            msg.sender, 
+            address(this), 
+            _collateralAdjusted + _exactedFee, 
+            _impact
+        );
 
-        _mint(msg.sender, _positionId, _oiAdjusted, ""); // WARNING: last b/c erc1155 callback
+        emit Build(_market, positionId_, _oiAdjusted, _debtAdjusted);
 
-        positionId_ = _positionId;
+        _mint(msg.sender, positionId_, _oiAdjusted, ""); // WARNING: last b/c erc1155 callback
 
     }
 
@@ -277,9 +335,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         require( 0 < _shares && _shares <= balanceOf(msg.sender, _positionId), "OVLV1:!shares");
 
-        Position.Info storage pos = positions[_positionId];
-
-        require(0 < pos.oiShares, "OVLV1:liquidated");
+        Position.Info memory pos = positions[_positionId];
 
         {
 
@@ -291,13 +347,16 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
                     pos.pricePoint
                 );
 
-        uint _totalPosShares = totalSupply(_positionId);
-
         uint _userOiShares = _shares;
-        uint _userNotional = _shares * pos.notional(_oi, _oiShares, _priceFrame) / _totalPosShares;
-        uint _userDebt = _shares * pos.debt / _totalPosShares;
-        uint _userCost = _shares * pos.cost / _totalPosShares;
-        uint _userOi = _shares * pos.oi(_oi, _oiShares) / _totalPosShares;
+        uint _totalPosShares = pos.oiShares;
+        uint _userDebt = _userOiShares * pos.debt / _totalPosShares;
+        uint _userCost = _userOiShares * pos.cost / _totalPosShares;
+        uint _userOi = _userOiShares * pos._oi(_oi, _oiShares) / _totalPosShares;
+        uint _userNotional = _userOiShares * pos._notional(
+            _oi, 
+            _oiShares, 
+            _priceFrame
+        ) / _totalPosShares;
 
         emit Unwind(pos.market, _positionId, _userOi, _userDebt);
 
@@ -310,9 +369,11 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         fees += _feeAmount; // adds to fee pot, which is transferred on update
 
-        pos.debt -= _userDebt;
-        pos.cost -= _userCost;
-        pos.oiShares -= _userOiShares;
+        pos.debt -= uint112(_userDebt);
+        pos.cost -= uint112(_userCost);
+        pos.oiShares -= uint112(_userOiShares);
+
+        positions[_positionId] = pos;
 
         // ovl.transfer(msg.sender, _userCost);
 
