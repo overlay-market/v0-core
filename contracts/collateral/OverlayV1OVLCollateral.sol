@@ -4,13 +4,13 @@ pragma solidity ^0.8.7;
 
 import "../libraries/Position.sol";
 import "../libraries/FixedPoint.sol";
-import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
+import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "../interfaces/IOverlayV1Market.sol";
 import "../interfaces/IOverlayV1Mothership.sol";
 import "../interfaces/IOverlayToken.sol";
 import "../interfaces/IOverlayTokenNew.sol";
 
-contract OverlayV1OVLCollateral is ERC1155Supply {
+contract OverlayV1OVLCollateral is ERC1155 {
 
     event log(string k, uint v);
     event log_addr(string k, address v);
@@ -94,6 +94,40 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             debt: 0,
             cost: 0
         }));
+
+    }
+
+    function totalSupply (
+        uint _positionId
+    ) public view returns (
+        uint256 totalSupply_
+    ) {
+
+        if (_positionId >= positions.length) {
+
+            totalSupply_ = 0;
+
+        } else totalSupply_ = positions[_positionId].oiShares;
+       
+    }
+
+    function balanceOf (
+        address _account, 
+        uint256 _positionId
+    ) public view override returns (
+        uint256 balance_ 
+    ) {
+
+        if ( positions.length <= _positionId ) {
+
+            balance_ = 0;
+
+        } else if ( positions[_positionId].oiShares == 0 ) {
+
+            balance_ = 0;
+
+        } else balance_ = super.balanceOf(_account, _positionId);
+
 
     }
 
@@ -303,8 +337,6 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         Position.Info memory pos = positions[_positionId];
 
-        require(0 < pos.oiShares, "OVLV1:liquidated");
-
         {
 
         (   uint _oi,
@@ -316,11 +348,11 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
                 );
 
         uint _userOiShares = _shares;
-        uint _totalPosShares = totalSupply(_positionId);
+        uint _totalPosShares = pos.oiShares;
         uint _userDebt = _userOiShares * pos.debt / _totalPosShares;
         uint _userCost = _userOiShares * pos.cost / _totalPosShares;
         uint _userOi = _userOiShares * pos._oi(_oi, _oiShares) / _totalPosShares;
-        uint _userNotional = _shares * pos._notional(
+        uint _userNotional = _userOiShares * pos._notional(
             _oi, 
             _oiShares, 
             _priceFrame

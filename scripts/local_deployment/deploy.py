@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+from brownie import *
+>>>>>>> erc1155-supply-remove
 from brownie import interface
 from brownie import \
     UniswapV3FactoryMock, \
@@ -5,7 +9,10 @@ from brownie import \
     OverlayV1OVLCollateral, \
     OverlayV1UniswapV3Market, \
     OverlayTokenNew, \
+<<<<<<< HEAD
     ERC20Mock, \
+=======
+>>>>>>> erc1155-supply-remove
     chain, \
     accounts
 import os
@@ -69,21 +76,32 @@ def deploy_uni_pool(factory, token0, token1, path):
 
     base = os.path.dirname(os.path.abspath(__file__))
 
+<<<<<<< HEAD
     with open(os.path.normpath(
             os.path.join(base, path + '_raw_uni_framed.json'))) as f:
         data = json.load(f)
 
     with open(os.path.normpath(
             os.path.join(base, path + '_reflected.json'))) as f:
+=======
+    with open(os.path.normpath(os.path.join(base, path + '_raw_uni_framed.json'))) as f:
+        data = json.load(f)
+
+    with open(os.path.normpath(os.path.join(base, path + '_reflected.json'))) as f:
+>>>>>>> erc1155-supply-remove
         beginning = json.load(f)['timestamp'][0]
 
     factory.createPool(token0, token1)
 
     IUniswapV3OracleMock = getattr(interface, 'IUniswapV3OracleMock')
 
+<<<<<<< HEAD
     uniswapv3_pool = IUniswapV3OracleMock(
         factory.allPools(factory.allPoolsLength() - 1)
     )
+=======
+    uniswapv3_pool = IUniswapV3OracleMock(factory.allPools(0))
+>>>>>>> erc1155-supply-remove
 
     uniswapv3_pool.loadObservations(
         data['observations'],
@@ -198,8 +216,11 @@ def build_position(
         {"from": taker}
     )
 
+<<<<<<< HEAD
     print("build gas ", tx_build.gas_used)
 
+=======
+>>>>>>> erc1155-supply-remove
     position = tx_build.events['Build']['positionId']
     oi = tx_build.events['Build']['oi']
     debt = tx_build.events['Build']['debt']
@@ -223,14 +244,21 @@ def unwind_position(
     unwinder
 ):
 
+<<<<<<< HEAD
     tx_unwind = collateral_manager.unwind(  # noqa: F841
+=======
+    tx_unwind = collateral_manager.unwind(
+>>>>>>> erc1155-supply-remove
         position_id,
         position_shares,
         {"from": unwinder}
     )
 
+<<<<<<< HEAD
     print("unwind gas", tx_unwind.gas_used)
 
+=======
+>>>>>>> erc1155-supply-remove
 
 def transfer_position_shares(
     collateral_manager,
@@ -240,7 +268,11 @@ def transfer_position_shares(
     amount
 ):
 
+<<<<<<< HEAD
     tx_transfer = collateral_manager.safeTransferFrom(  # noqa: F841
+=======
+    tx_transfer = collateral_manager.safeTransferFrom(
+>>>>>>> erc1155-supply-remove
         sender,
         receiver,
         position_id,
@@ -258,7 +290,11 @@ def transfer_position_shares_batch(
     amounts
 ):
 
+<<<<<<< HEAD
     tx_transfer = collateral_manager.safeBatchTransferFrom(  # noqa: F841
+=======
+    tx_transfer = collateral_manager.safeBatchTransferFrom(
+>>>>>>> erc1155-supply-remove
         sender,
         receiver,
         position_ids,
@@ -378,7 +414,11 @@ def main():
 
     chain.mine(timedelta=UPDATE_PERIOD)
 
+<<<<<<< HEAD
     position_6 = build_position(  # noqa: F841
+=======
+    position_6 = build_position(
+>>>>>>> erc1155-supply-remove
         ovl_collateral,
         market,
         5e18,
