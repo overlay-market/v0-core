@@ -153,7 +153,7 @@ library MarketCodex {
         bool active_
     ) { 
 
-        active_ = (uint256(_codex >> 160) & BOOL_MASK) == 1;
+        active_ = ( uint256(_codex >> 160) & BOOL_MASK ) == 1;
 
     }
 

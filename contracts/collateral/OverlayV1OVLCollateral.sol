@@ -310,57 +310,47 @@ contract OverlayV1OVLCollateral is ERC1155 {
 
         bytes32 _market = marketLineup[_marketIx];
 
-        emit log("active", _market.getActive() ? 1 : 0);
+        require(_market.getActive(), "OVLV1:!market");
+        require(_market.getMaxLeverage() >= _leverage, "OVLV1:lev>max");
 
-        emit log("fee", _market.getFee());
+        (   uint _oiAdjusted,
+            uint _collateralAdjusted,
+            uint _debtAdjusted,
+            uint _exactedFee,
+            uint _impact,
+            uint _pricePointNext ) = IOverlayV1Market(_market.getMarket())
+                .enterOI(
+                    _isLong,
+                    _collateral,
+                    _leverage,
+                    _market.getFee()
+                );
 
-        emit log("max lev", _market.getMaxLeverage());
+        require(_oiAdjusted >= _minOi, "OVLV1:oi<min");
 
-        emit log("rewards", _market.getMarginRewardRate());
+        fees += _exactedFee;
 
-        emit log("margin", _market.getMarginMaintenance());
+        positionId_ = storePosition(
+            _marketIx,
+            _isLong,
+            _leverage,
+            _oiAdjusted,
+            _debtAdjusted,
+            _collateralAdjusted,
+            _pricePointNext
+        );
 
-        // require(_market.getActive(), "OVLV1:!market");
-        // require(_market.getMaxLeverage() >= _leverage, "OVLV1:lev>max");
+        // ovl.burn(msg.sender, _impact);
+        ovl.transferFromBurn(
+            msg.sender, 
+            address(this), 
+            _collateralAdjusted + _exactedFee, 
+            _impact
+        );
 
-        // (   uint _oiAdjusted,
-        //     uint _collateralAdjusted,
-        //     uint _debtAdjusted,
-        //     uint _exactedFee,
-        //     uint _impact,
-        //     uint _pricePointNext ) = IOverlayV1Market(_market.getMarket())
-        //         .enterOI(
-        //             _isLong,
-        //             _collateral,
-        //             _leverage,
-        //             _market.getFee()
-        //         );
+        emit Build(_market.getMarket(), positionId_, _oiAdjusted, _debtAdjusted);
 
-        // require(_oiAdjusted >= _minOi, "OVLV1:oi<min");
-
-        // fees += _exactedFee;
-
-        // positionId_ = storePosition(
-        //     _marketIx,
-        //     _isLong,
-        //     _leverage,
-        //     _oiAdjusted,
-        //     _debtAdjusted,
-        //     _collateralAdjusted,
-        //     _pricePointNext
-        // );
-
-        // // ovl.burn(msg.sender, _impact);
-        // ovl.transferFromBurn(
-        //     msg.sender, 
-        //     address(this), 
-        //     _collateralAdjusted + _exactedFee, 
-        //     _impact
-        // );
-
-        // emit Build(_market.getMarket(), positionId_, _oiAdjusted, _debtAdjusted);
-
-        // _mint(msg.sender, positionId_, _oiAdjusted, ""); // WARNING: last b/c erc1155 callback
+        _mint(msg.sender, positionId_, _oiAdjusted, ""); // WARNING: last b/c erc1155 callback
 
     }
 
