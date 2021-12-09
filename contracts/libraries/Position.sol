@@ -9,7 +9,7 @@ library Position {
     using FixedPoint for uint256;
 
     struct Info {
-        address market; // the market for the position
+        uint market; // the market for the position
         bool isLong; // whether long or short
         uint8 leverage; // discrete initial leverage amount
         uint32 pricePoint; // pricePointIndex
