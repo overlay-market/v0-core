@@ -65,6 +65,9 @@ interface IOverlayV1OVLCollateral is IERC1155 {
     function positions (uint positionId) external view returns (Position.Info memory);
     function ovl () external view returns (IOverlayToken);
     function mothership () external view returns (IOverlayV1Mothership);
+
+    function marketIndexes (address _market) external view returns (uint index_);
+
     function marketInfo(address) external view returns (MarketInfo memory);
     function fees () external view returns (uint);
     function liquidations () external view returns (uint);
