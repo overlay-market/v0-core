@@ -106,6 +106,8 @@ def test_build_success_zero_impact(
     oi_adjusted = collateral_adjusted * leverage
     assert approx(ovl_collateral.balanceOf(bob, pid)) == int(oi_adjusted)
 
+    market_ix = ovl_collateral.marketIndexes(market)
+
     # check position attributes for PID
     (pos_market,
      pos_islong,
@@ -115,7 +117,7 @@ def test_build_success_zero_impact(
      pos_debt,
      pos_cost) = ovl_collateral.positions(pid)
 
-    assert pos_market == market
+    assert pos_market == market_ix
     assert pos_islong == is_long
     assert pos_lev == leverage
     assert pos_price_idx == market.pricePointNextIndex() - 1
