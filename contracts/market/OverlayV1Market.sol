@@ -55,7 +55,7 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
     ) {
 
         uint _cap;
-        uint _oi = _collateral * _leverage;
+        uint _oi = _collateral.mulDown(_leverage);
 
         OverlayV1Choreographer.Tempo memory _tempo = tempo;
 
@@ -89,7 +89,7 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
 
         collateralAdjusted_ = _collateral - impact_ - exactedFee_;
 
-        oiAdjusted_ = _leverage * collateralAdjusted_;
+        oiAdjusted_ = _leverage.mulUp(collateralAdjusted_);
 
         debtAdjusted_ = oiAdjusted_ - collateralAdjusted_;
 

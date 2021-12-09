@@ -38,7 +38,7 @@ library MarketCodex {
         _codex = _clear | bytes32( (_fee/1e12) << 161);
 
         _clear = bytes32(uint256(_codex) & ~ (UINT20_MASK << 181));
-        _codex = _clear | bytes32( (_maxLeverage/1e12) << 181);
+        _codex = _clear | bytes32( (_maxLeverage/1e16) << 181);
 
         _clear = bytes32(uint256(_codex) & ~ (UINT20_MASK << 201));
         _codex = _clear | bytes32( (_marginRewardRate/1e12) << 201);
@@ -83,7 +83,7 @@ library MarketCodex {
 
         bytes32 _clearCodex = bytes32(uint256(_codex) & ~ (UINT20_MASK << 181));
 
-        codex_ = _clearCodex | bytes32((_maxLeverage / 1e12) << 181);
+        codex_ = _clearCodex | bytes32((_maxLeverage / 1e16) << 181);
 
     }
 
@@ -129,7 +129,7 @@ library MarketCodex {
 
         fee_ = 1e12 * ( uint256(_codex >> 161 ) & UINT20_MASK );
 
-        maxLeverage_ = 1e12 * ( uint256(_codex >> 181) & UINT20_MASK );
+        maxLeverage_ = 1e16 * ( uint256(_codex >> 181) & UINT20_MASK );
 
         marginRewardRate_ = 1e12 * ( uint256(_codex >> 201) & UINT20_MASK );
 
@@ -173,7 +173,7 @@ library MarketCodex {
         uint maxLeverage_
     ) {
 
-        maxLeverage_ = 1e12 * ( uint256(_codex >> 181) & UINT20_MASK );
+        maxLeverage_ = 1e16 * ( uint256(_codex >> 181) & UINT20_MASK );
 
     }
     

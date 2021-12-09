@@ -21,7 +21,7 @@ POSITIONS = [
         "liquidation": {"timestamp": 1633546772, "price": 318674244785741},
         "unliquidatable": {"timestamp": 1633520312, "price": 310411480531706},
         "collateral": COLLATERAL,
-        "leverage": 10,
+        "leverage": 10e18,
         "is_long": False,
     },
     {
@@ -29,7 +29,7 @@ POSITIONS = [
         "liquidation": {"timestamp": 1633512812, "price": 306336694541566},
         "unliquidatable": {"timestamp": 1633504232, "price": 315040205244259},
         "collateral": COLLATERAL,
-        "leverage": 10,
+        "leverage": 10e18,
         "is_long": True,
     },
 ]

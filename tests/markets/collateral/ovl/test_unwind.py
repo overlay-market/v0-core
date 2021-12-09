@@ -50,8 +50,16 @@ def test_unwind_revert_insufficient_shares(
 
 @given(
     is_long=strategy('bool'),
-    oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
-    leverage=strategy('uint256', min_value=1, max_value=100))
+    oi=strategy(
+        'uint256',
+        min_value=1,
+        max_value=OI_CAP/1e16
+    ),
+    leverage=strategy(
+        'uint256',
+        min_value=1,
+        max_value=100
+    ))
 @settings(max_examples=50)
 def test_unwind_oi_removed(
         ovl_collateral,
@@ -64,6 +72,8 @@ def test_unwind_oi_removed(
         oi,
         leverage,
         is_long):
+
+    leverage *= 1e18
 
     brownie.chain.mine(timestamp=start_time)
 
@@ -116,10 +126,20 @@ def test_unwind_oi_removed(
 
 @given(
     is_long=strategy('bool'),
-    oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
-    leverage=strategy('uint256', min_value=1, max_value=100),
-    time_delta=strategies.floats(min_value=0.1, max_value=1),
-)
+    oi=strategy(
+        'uint256',
+        min_value=1,
+        max_value=OI_CAP/1e16
+    ),
+    leverage=strategy(
+        'uint256',
+        min_value=1,
+        max_value=100
+    ),
+    time_delta=strategies.floats(
+        min_value=0.1,
+        max_value=1
+    ))
 def test_unwind_expected_fee(
     ovl_collateral,
     mothership,
@@ -133,6 +153,8 @@ def test_unwind_expected_fee(
     is_long,
     time_delta
 ):
+
+    leverage *= 1e18
 
     brownie.chain.mine(timestamp=start_time)
 
@@ -216,9 +238,21 @@ def test_unwind_expected_fee(
 
 @given(
     is_long=strategy('bool'),
-    bob_oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
-    alice_oi=strategy('uint256', min_value=3, max_value=OI_CAP/1e16),
-    leverage=strategy('uint256', min_value=1, max_value=100))
+    bob_oi=strategy(
+        'uint256',
+        min_value=1,
+        max_value=OI_CAP/1e16
+    ),
+    alice_oi=strategy(
+        'uint256',
+        min_value=3,
+        max_value=OI_CAP/1e16
+    ),
+    leverage=strategy(
+        'uint256',
+        min_value=1,
+        max_value=100
+    ))
 def test_partial_unwind(
   ovl_collateral,
   mothership,
@@ -232,6 +266,8 @@ def test_partial_unwind(
   leverage,
   is_long
 ):
+
+    leverage *= 1e18
 
     brownie.chain.mine(timestamp=start_time)
 
@@ -323,8 +359,16 @@ def test_partial_unwind(
 
 @given(
     is_long=strategy('bool'),
-    oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
-    leverage=strategy('uint256', min_value=1, max_value=100))
+    oi=strategy(
+        'uint256',
+        min_value=1,
+        max_value=OI_CAP/1e16
+    ),
+    leverage=strategy(
+        'uint256',
+        min_value=1,
+        max_value=100
+    ))
 def test_unwind_after_transfer(
     ovl_collateral,
     mothership,
@@ -337,6 +381,8 @@ def test_unwind_after_transfer(
     leverage,
     is_long
 ):
+
+    leverage *= 1e18
 
     brownie.chain.mine(timestamp=start_time)
 
@@ -384,8 +430,16 @@ def test_unwind_after_transfer(
 
 @given(
     is_long=strategy('bool'),
-    oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
-    leverage=strategy('uint256', min_value=1, max_value=100))
+    oi=strategy(
+        'uint256',
+        min_value=1,
+        max_value=OI_CAP/1e16
+    ),
+    leverage=strategy(
+        'uint256',
+        min_value=1,
+        max_value=100
+    ))
 def test_comptroller_recorded_mint_or_burn(
     ovl_collateral,
     token,
@@ -408,10 +462,23 @@ def test_comptroller_recorded_mint_or_burn(
 
 
 @given(
-    is_long=strategy('bool'),
-    oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
-    leverage=strategy('uint256', min_value=1, max_value=100),
-    time_delta=strategies.floats(min_value=0.1, max_value=1),)
+    is_long=strategy(
+        'bool'
+    ),
+    oi=strategy(
+        'uint256',
+        min_value=1,
+        max_value=OI_CAP/1e16
+    ),
+    leverage=strategy(
+        'uint256',
+        min_value=1,
+        max_value=100
+    ),
+    time_delta=strategies.floats(
+        min_value=0.1,
+        max_value=1
+    ))
 def test_unwind_pnl_mint_burn(
     ovl_collateral,
     token,
@@ -428,6 +495,8 @@ def test_unwind_pnl_mint_burn(
     '''
     Check if whatever was minted/burnt is equal to the PnL
     '''
+
+    leverage *= 1e18
 
     brownie.chain.mine(timestamp=start_time)
 

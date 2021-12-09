@@ -46,17 +46,17 @@ PRICES = [
 ]
 
 
-# @given(
-#     collateral=strategy(
-#         'uint256',
-#         min_value=1e18,
-#         max_value=(OI_CAP - 1e4)/100),
-#     leverage=strategy(
-#         'uint8',
-#         min_value=1,
-#         max_value=100),
-#     is_long=strategy(
-#         'bool'))
+@given(
+    collateral=strategy(
+        'uint256',
+        min_value=1e18,
+        max_value=(OI_CAP - 1e4)/100),
+    leverage=strategy(
+        'uint8',
+        min_value=1,
+        max_value=100),
+    is_long=strategy(
+        'bool'))
 def test_build_success_zero_impact(
     ovl_collateral,
     token,
@@ -64,14 +64,12 @@ def test_build_success_zero_impact(
     market,
     bob,
     start_time,
-    #     collateral,
-    #     leverage,
-    #     is_long
+    collateral,
+    leverage,
+    is_long
 ):
 
-    collateral = 5479762916021281994312
-    leverage = 1
-    is_long = True
+    leverage *= 1e18
 
     brownie.chain.mine(timestamp=start_time)
 
@@ -144,6 +142,8 @@ def test_build_when_market_not_supported(
     is_long=True  # doesn't matter
 ):
 
+    leverage *= 1e18
+
     brownie.chain.mine(timestamp=start_time)
 
     EXPECTED_ERROR_MESSAGE = 'OVLV1:!market'
@@ -177,6 +177,8 @@ def test_build_min_collateral(
     leverage,
     is_long
 ):
+
+    leverage *= 1e18
 
     brownie.chain.mine(timestamp=start_time)
 
@@ -243,7 +245,7 @@ def test_build_cap(
     market,
     bob,
     start_time,
-    leverage=1,
+    leverage=1e18,
     is_long=True
 ):
 
@@ -289,6 +291,8 @@ def test_oi_added(
     leverage,
     is_long
 ):
+
+    leverage *= 1e18
 
     brownie.chain.mine(timestamp=start_time)
 
@@ -341,6 +345,8 @@ def test_oi_shares_onesided_zero_funding(
     is_long,
     multiplier
 ):
+
+    leverage *= 1e18
 
     brownie.chain.mine(timestamp=start_time)
 
@@ -436,6 +442,8 @@ def test_entry_update_price_fetching(
     is_long,
     price
 ):
+
+    leverage *= 1e18
 
     brownie.chain.mine(timestamp=start_time)
 
