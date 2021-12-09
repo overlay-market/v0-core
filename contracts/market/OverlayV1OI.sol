@@ -39,6 +39,7 @@ contract OverlayV1OI {
     /// the last time funding was paid as well as the timestamp of the
     /// current compounding epoch, which come at regular intervals according
     /// to the compounding period.
+    /// @dev Called by `OverlayV1Market` function: `update`
     /// @param _now The timestamp of the current block.
     /// @param _compounded The last time compounding occurred.
     /// @return compoundings_ The number of compounding periods passed since
@@ -61,7 +62,7 @@ contract OverlayV1OI {
     }
 
 
-    /// @notice Internal utility to pay funding from heavier to ligher side.
+    /// @notice Internal utility to pay funding from heavier to lighter side.
     /// @dev Pure function accepting current open interest, compoundings
     /// to perform, and funding constant.
     /// @dev oiImbalance(period_m) = oiImbalance(period_now) * (1 - 2k) ** period_m
@@ -123,9 +124,11 @@ contract OverlayV1OI {
 
 
     /// @notice Pays funding.
-    /// @dev Invokes internal computeFunding and sets oiLong and oiShort.
     /// @param _k The funding constant.
     /// @param _epochs The number of compounding periods to compute.
+    /// @dev Invokes internal computeFunding and sets oiLong and oiShort.
+    /// @dev Called by OverlayV1Market contract function: update
+    /// @dev Emits FundingPaid event
     /// @return fundingPaid_ Signed integer of how much funding was paid.
     function payFunding (
         uint256 _k,
@@ -153,6 +156,7 @@ contract OverlayV1OI {
 
     /// @notice Adds open interest to one side
     /// @dev Adds open interest to one side, asserting the cap is not breached.
+    /// @dev Called by `OverlayV1Market` function: `enterOI`
     /// @param _isLong If open interest is adding to the long or short side.
     /// @param _openInterest Open interest to add.
     /// @param _oiCap Open interest cap to require not to be breached.

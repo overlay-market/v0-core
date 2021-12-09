@@ -24,11 +24,13 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
     /// @notice Adds open interest to the market
     /// @dev This is invoked by Overlay collateral manager contracts, which
-    /// can be for OVL, ERC20's, Overlay positions, NFTs, or what have you.
-    /// The calculations for impact and fees are performed here.
+    /// @dev can be for OVL, ERC20's, Overlay positions, NFTs, or what have you.
+    /// @dev The calculations for impact and fees are performed here.
+    /// @dev Calls `OverlayV1Comptroller` contract function: `intake`
+    /// @dev Calls `Position` contract function: `mulDown`
+    /// @dev Calls `OverlayV1OI` contract function: `addOi`
     /// @param _isLong The side of the market to enter open interest on.
-    /// @param _collateral The amount of collateral in OVL terms to take the
-    /// position out with.
+    /// @param _collateral The amount of collateral in OVL terms to take the position out with.
     /// @param _leverage The leverage with which to take out the position.
     /// @return oiAdjusted_ Amount of open interest after impact and fees.
     /// @return collateralAdjusted_ Amount of collateral after impact and fees.
@@ -49,14 +51,20 @@ abstract contract OverlayV1Market is OverlayV1Governance {
         uint pricePointNext_
     ) {
 
+        // Call to internal function.
+        // Updates the market with the latest price, cap, and pay funding
         uint _cap = update();
 
         pricePointNext_ = _pricePoints.length - 1;
 
+        // Calculate open interest
         uint _oi = _collateral * _leverage;
 
+        // Call to `OverlayV1Comptroller` contract
+        // Takes in the OI and applies Overlay's monetary policy
         uint _impact = intake(_isLong, _oi, _cap);
 
+        // Call to `Position` contract
         fee_ = _oi.mulDown(mothership.fee());
 
         impact_ = _impact;
@@ -69,6 +77,7 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
         debtAdjusted_ = oiAdjusted_ - collateralAdjusted_;
 
+        // Call to `OverlayV1OI` contract
         addOi(_isLong, oiAdjusted_, _cap);
 
     }
@@ -132,6 +141,11 @@ abstract contract OverlayV1Market is OverlayV1Governance {
     /// @dev This function updates the market with the latest price and
     /// conditionally reads the depth of the market feed. The market needs
     /// an update on the first call of any block.
+    /// @dev Calls `OverlayV1PricePoint` contract function: `fetchPricePoint`
+    /// @dev Calls `OverlayV1PricePoint` contract function: `setPricePointNext`
+    /// @dev Calls `OverlayV1OI` contract function: `epochs`
+    /// @dev Calls `OverlayV1OI` contract function: `payFunding`
+    /// @dev Calls `OverlayV1Comptroller` contract function: `oiCap`
     /// @return cap_ The open interest cap for the market.
     function update () public virtual returns (
         uint cap_
@@ -142,24 +156,29 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
         if (_now != _updated) {
 
+            // Call to `OverlayV1PricePoint` contract
             PricePoint memory _pricePoint = fetchPricePoint();
 
+            // Call to `OverlayV1PricePoint` contract
             setPricePointNext(_pricePoint);
 
             updated = _now;
 
         } 
 
+        // Call to `OverlayV1OI` contract
         (   uint _compoundings,
             uint _tCompounding  ) = epochs(_now, compounded);
 
         if (0 < _compoundings) {
 
+            // Call to `OverlayV1OI` contract
             payFunding(k, _compoundings);
             compounded = _tCompounding;
 
         }
 
+        // Call to `OverlayV1Comptroller` contract
         cap_ = oiCap();
 
     }

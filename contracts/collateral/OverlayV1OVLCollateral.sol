@@ -113,17 +113,12 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         uint _maxLeverage
     ) external onlyGovernor {
 
-      // RR Q: How often is this function called? Is it a one time call when a new market is
-      // instantiated? Or is this function called more frequently/is ever marketInfo updated?
-
-      // RR TODO: if only called once for each market, but in a require statement
-      // require(!marketInfo[_market], "OVLV1:!!initiliazed");
 
         marketInfo[_market].marginMaintenance = _marginMaintenance;
         marketInfo[_market].marginRewardRate = _marginRewardRate;
         marketInfo[_market].maxLeverage = _maxLeverage;
 
-        // RR TODO: Fire and event when new market info is set
+        // TODO: Fire and event when new market info is set - yes
 
     }
 
@@ -205,7 +200,20 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         Position.Info storage position = positions[positionId_];
 
-        if (position.pricePoint < _pricePointNext) {
+        // In a block, which is now the update period (past it was longer)
+        // (related to not making 1155 sharable)
+        // Looks into mapping to see what the position ID of the current
+        // leverage is. Given this leverage and market, is there a current
+        // position being built in the course of this block because that is the
+        // only scenario where the price point would be equal to what we
+        // currently have for the price point
+        // False: if there is a position being built in the same update period
+        // (current block only)
+        // price point of that position would be the price point that has
+        // already been updated and will be updated no more on the market
+        // not smae block then pricepointNext will be greater than prior
+        // position price point - > push new one onto stack
+        if  (position.pricePoint < _pricePointNext) {
 
             positions.push(Position.Info({
                 market: _market,
@@ -229,12 +237,13 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     /// @notice Build a position on Overlay with OVL collateral
     /// @dev This interacts with an Overlay Market to register oi and hold 
     /// positions on behalf of users.
-    /// @param _market The address of the desired market to interact with.
-    /// @param _collateral The amount of OVL to use as collateral in the position.
+    /// @dev Build event emitted
+    /// @param _market The address of the desired market to interact with
+    /// @param _collateral The amount of OVL to use as collateral in the position
     /// @param _leverage The amount of leverage to use in the position
-    /// @param _isLong Whether to take out a position on the long or short side.
-    /// @param _oiMinimum Minimum acceptable amount of OI after impact and fees.
-    /// @return positionId_ Id of the built position for on chain convenience.
+    /// @param _isLong Whether to take out a position on the long or short side
+    /// @param _oiMinimum Minimum acceptable amount of OI after impact and fees
+    /// @return positionId_ Id of the built position for on chain convenience
     function build (
         address _market,
         uint256 _collateral,

@@ -341,11 +341,11 @@ def create_mothership(token, feed_infos, fees, alice, bob, gov, feed_owner, requ
 
         # Governor sets important variables in the operation of the market contract, including k,
         # spread, compound period, and the Comptroller parameters
-        # RR NOTE: should remove setEverything function in sol and call each function explicitly
+        # TODO: should remove setEverything function in sol and call each function explicitly
         market.setEverything(*ovlm_args[4:], {"from": gov})
 
         # Governor makes call to mothership contract, making it aware of the new market contract
-        # RR TODO: check that call fails if market contract already accounted for
+        # TODO: check that call fails if market contract already accounted for
         mothership.initializeMarket(market, {"from": gov})
 
         # Governor deploys the OverlayV1OVLCollateral contract which takes a URI and the Mothership
@@ -358,10 +358,11 @@ def create_mothership(token, feed_infos, fees, alice, bob, gov, feed_owner, requ
         ovl_collateral.setMarketInfo(market, *ovlc_args, {"from": gov})
 
         # Governor makes call to mothership contract, making it aware of the new collateral contract
+        # TODO: check that call fails if collateral contract already accounted for
         mothership.initializeCollateral(ovl_collateral, {"from": gov})
 
         # Governor makes call to market contract, making it aware of the new collateral contract
-        # RR Q: must `mothership.initializeCollateral` and `market.addCollateral` be called in this
+        # TODO: must `mothership.initializeCollateral` and `market.addCollateral` be called in this
         # order? Is there some check that can be made to ensure `initializeCollateral` is called?
         market.addCollateral(ovl_collateral, {'from': gov})
 
@@ -379,7 +380,7 @@ def create_mothership(token, feed_infos, fees, alice, bob, gov, feed_owner, requ
 def start_time():
     '''
     Output:
-        [int]: current chain time from brownie plus 200 seconds (RR CHECK)
+        [int]: current chain time from brownie plus 200 seconds
     '''
     return chain.time() + 200
 

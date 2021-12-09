@@ -32,10 +32,10 @@ contract ComptrollerShim is OverlayV1Comptroller {
       @param _brrrrdExpected expected worst-case inflation rate
       @param _brrrrdWindowMacro macro rolling price window in which _brrrrdExpected is calculated over
       @param _brrrrdWindowMicro micro rolling price window in which _brrrrdExpected is calculated over
-      @param _priceWindowMacro RR TODO
-      @param _priceWindowMicro RR TODO
-      @param _marketFeed Oracle address providing the market feed data (RR TODO: CHECK)
-      @param _ovlFeed Oracle address providing the depth feed data (RR TODO: CHECK)
+      @param _priceWindowMacro only the main TWAP, only used for the price
+      @param _priceWindowMicro short TWAP to temper the bid-ask spread, compounding period, impact window
+      @param _marketFeed Oracle address providing the market feed data
+      @param _ovlFeed Oracle address providing the depth feed data (the OVL feed)
       @param _ovl OVL token contract address
       @param _eth Wrapped eth contract address
      */

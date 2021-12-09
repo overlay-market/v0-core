@@ -86,7 +86,6 @@ contract OverlayV1Mothership is AccessControlEnumerable {
     /**
       @notice Make this contract aware of a new market contract's existence
       @dev Should be called after contract deployment in specific market factory.createMarket
-      @dev RR TODO: ^^^Is there a way to check this? Even with events to check in the python code
       @dev Only the Governor can initialize a market
       @dev Appends new market address to `allMarkets` array to track them
       @param market Overlay market contract address
