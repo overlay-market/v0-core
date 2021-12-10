@@ -152,8 +152,6 @@ contract OverlayV1Mothership is AccessControlEnumerable {
 
     }
 
-    /// @notice Allows gov to adjust per market params
-
     /// @notice Allows gov to adjust global params
     function adjustGlobalParams(
         uint16 _fee,
