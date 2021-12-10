@@ -21,6 +21,11 @@ contract OverlayV1OVLCollateral is ERC1155 {
 
     bytes32 constant private GOVERNOR = keccak256("GOVERNOR");
 
+    // RR CHECK: Mapping of Market contract address to a mapping of leverage to position id for long positions.
+    // becasue we hvae 1155, all pool together
+    // if they try to enter a position in the same block, for the same leverage as someone else trying to enter a position then they get an 1155 together
+    // the mapping helps us know if they need to join an already existing one or create a new one
+    // this saves a lot of gas, but costs a littl emore gas for the first person because they need to update storage slot with their position id
     mapping (uint => mapping(uint => LastPosition)) internal lastPositionsLong;
     mapping (uint => mapping(uint => LastPosition)) internal lastPositionsShort;
     struct LastPosition { 
@@ -73,6 +78,12 @@ contract OverlayV1OVLCollateral is ERC1155 {
         _;
     }
 
+    /**
+      @notice Constructor method
+      @dev  Creates a `Position.Info` struct and appends it to `positions` array to track them
+      @param _uri Unique Resource Identifier of a token
+      @param _mothership OverlayV1Mothership contract address
+     */
     constructor (
         string memory _uri,
         address _mothership
@@ -161,6 +172,15 @@ contract OverlayV1OVLCollateral is ERC1155 {
 
     }
 
+    /**
+      @notice Sets market information
+      @dev Only the Governor can set market info
+      @dev Adds market information to the `marketInfo` mapping
+      @param _market Overlay Market contract address
+      @param _marginMaintenance maintenance margin
+      @param _marginRewardRate margin reward rate
+      @param _maxLeverage maximum leverage amount
+      */
     function setMarketInfo (
         address _marketAddress,
         uint _fee,
@@ -180,6 +200,7 @@ contract OverlayV1OVLCollateral is ERC1155 {
 
         marketLineup[_index] = _market;
 
+        // RR TODO: Fire and event when new market info is set - yes
     }
 
     function marketLineupLength () public view returns (
@@ -269,6 +290,16 @@ contract OverlayV1OVLCollateral is ERC1155 {
 
     }
 
+    /// @notice Build a position on Overlay with OVL collateral
+    /// @dev This interacts with an Overlay Market to register oi and hold 
+    /// positions on behalf of users.
+    /// @dev Build event emitted
+    /// @param _market The address of the desired market to interact with
+    /// @param _collateral The amount of OVL to use as collateral in the position
+    /// @param _leverage The amount of leverage to use in the position
+    /// @param _isLong Whether to take out a position on the long or short side
+    /// @param _oiMinimum Minimum acceptable amount of OI after impact and fees
+    /// @return positionId_ Id of the built position for on chain convenience
     function build (
         address _market,
         uint _collateral,

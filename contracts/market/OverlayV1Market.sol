@@ -28,16 +28,18 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
 
     /// @notice Adds open interest to the market
     /// @dev This is invoked by Overlay collateral manager contracts, which
-    /// can be for OVL, ERC20's, Overlay positions, NFTs, or what have you.
-    /// The calculations for impact and fees are performed here.
+    /// @dev can be for OVL, ERC20's, Overlay positions, NFTs, or what have you.
+    /// @dev The calculations for impact and fees are performed here.
+    /// @dev Calls `OverlayV1Comptroller` contract function: `intake`
+    /// @dev Calls `Position` contract function: `mulDown`
+    /// @dev Calls `OverlayV1OI` contract function: `addOi`
     /// @param _isLong The side of the market to enter open interest on.
-    /// @param _collateral The amount of collateral in OVL terms to take the
-    /// position out with.
+    /// @param _collateral The amount of collateral in OVL terms to take the position out with.
     /// @param _leverage The leverage with which to take out the position.
     /// @return oiAdjusted_ Amount of open interest after impact and fees.
     /// @return collateralAdjusted_ Amount of collateral after impact and fees.
     /// @return debtAdjusted_ Amount of debt after impact and fees.
-    /// @return exactedFee_ The protocol fee to be taken.
+    /// @return fee_ The protocol fee to be taken.
     /// @return impact_ The market impact for the build.
     /// @return pricePointNext_ The index of the price point for the position.
     function enterOI (
@@ -55,10 +57,14 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
     ) {
 
         uint _cap;
+        // Call to `Position` contract
+        // Calculate open interest
         uint _oi = _collateral.mulDown(_leverage);
 
         OverlayV1Choreographer.Tempo memory _tempo = tempo;
 
+        // Call to internal function.
+        // Updates the market with the latest price, cap, and pay funding
         (   _cap, 
             _tempo.updated, 
             _tempo.compounded ) = _update( 
@@ -67,6 +73,8 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
                 _tempo.brrrrdCycloid
             );
 
+        // Call to `OverlayV1Comptroller` contract
+        // Takes in the OI and applies Overlay's monetary policy
         (   impact_,
             _tempo.impactCycloid,
             _tempo.brrrrdCycloid,
@@ -83,6 +91,7 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
 
         pricePointNext_ = _pricePoints.length - 1;
 
+        // Call to `Position` contract
         exactedFee_ = _oi.mulDown(_fee);
 
         require(_collateral >= MIN_COLLAT + impact_ + exactedFee_ , "OVLV1:collat<min");
@@ -93,6 +102,7 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
 
         debtAdjusted_ = oiAdjusted_ - collateralAdjusted_;
 
+        // Call to `OverlayV1OI` contract
         addOi(_isLong, oiAdjusted_, _cap);
 
     }
@@ -174,6 +184,16 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
 
     }
 
+    /// @notice Internal update function to price, cap, and pay funding.
+    /// @dev This function updates the market with the latest price and
+    /// conditionally reads the depth of the market feed. The market needs
+    /// an update on the first call of any block.
+    /// @dev Calls `OverlayV1PricePoint` contract function: `fetchPricePoint`
+    /// @dev Calls `OverlayV1PricePoint` contract function: `setPricePointNext`
+    /// @dev Calls `OverlayV1OI` contract function: `epochs`
+    /// @dev Calls `OverlayV1OI` contract function: `payFunding`
+    /// @dev Calls `OverlayV1Comptroller` contract function: `oiCap`
+    /// @return cap_ The open interest cap for the market.
     function update () public {
 
         OverlayV1Choreographer.Tempo memory _tempo = tempo;

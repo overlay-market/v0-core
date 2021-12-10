@@ -41,6 +41,7 @@ abstract contract OverlayV1PricePoint {
 
     }
 
+    /// @dev Called by `OverlayV1Market` contract function: `update`
     function fetchPricePoint () public view virtual returns (PricePoint memory);
 
     function _tickToPrice (int24 _tick) public virtual view returns (uint quote_);
@@ -118,6 +119,8 @@ abstract contract OverlayV1PricePoint {
     }
 
     /// @notice Allows inheriting contracts to add the latest realized price
+    /// @dev Called by `OverlayV1Market` contract function: `update`
+    /// @dev Emits NewPricePoint event
     function setPricePointNext(
         PricePoint memory _pricePoint
     ) internal {

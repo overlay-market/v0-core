@@ -171,16 +171,17 @@ abstract contract OverlayV1Comptroller {
     }
 
 
-    /// @notice Takes in the open interest and appllies Overlay's monetary policy
+    /// @notice Takes in the open interest and applies Overlay's monetary policy.
     /// @dev The impact is a measure of the demand placed on the market over a
-    /// rolling window. It determines the amount of collateral to be burnt.
-    /// This is akin to slippage in an order book model.
-    /// @param _isLong Is it taking out open interest on the long or short side?
+    /// @dev rolling window. It determines the amount of collateral to be burnt.
+    /// @dev This is akin to slippage in an order book model.
+    /// @dev Called by `OverlayV1Market` contract function: `enterOI`
+    /// @param _isLong Whether it is taking out open interest on the long or short side
     /// @param _oi The amount of open interest attempting to be taken out
     /// @param _cap The current open interest cap
     /// @return impact_ A factor between zero and one to be applied to initial
-    /// open interest to determine how much to take from the initial collateral
-    /// before calculating the final collateral and open interest
+    /// @return open interest to determine how much to take from the initial collateral
+    /// @return before calculating the final collateral and open interest
     function intake (
         bool _isLong,
         uint _oi,
@@ -292,6 +293,7 @@ abstract contract OverlayV1Comptroller {
     /// has occurred.
     /// @param _brrrrdExpected How much the market expects to print before
     /// engaging the dynamic cap. Only passed if printing has occurred.
+    /// @dev Called by `OverlayV1Market` contract function: `update`
     function _computeOiCap (
         bool _dynamic,
         uint _depth,
@@ -313,6 +315,7 @@ abstract contract OverlayV1Comptroller {
 
     /// @notice The open interest cap for the market
     /// @dev Returns the open interest cap for the market.
+    /// @dev Called by `OverlayV1Market` contract function: `update`
     /// @return cap_ The open interest cap.
     function oiCap () public virtual view returns (uint cap_);
 
