@@ -204,7 +204,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
 
     /// @notice Build a position on Overlay with OVL collateral
-    /// @dev This interacts with an Overlay Market to register oi and hold 
+    /// @dev This interacts with an Overlay Market to register oi and hold
     /// positions on behalf of users.
     /// @param _market The address of the desired market to interact with.
     /// @param _collateral The amount of OVL to use as collateral in the position.
@@ -257,8 +257,6 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         emit Build(_market, _positionId, _oiAdjusted, _debtAdjusted);
 
         ovl.transferFromBurn(msg.sender, address(this), _collateralAdjusted + _fee, _impact);
-
-        // ovl.burn(msg.sender, _impact);
 
         _mint(msg.sender, _positionId, _oiAdjusted, ""); // WARNING: last b/c erc1155 callback
 
@@ -314,22 +312,20 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         pos.cost -= _userCost;
         pos.oiShares -= _userOiShares;
 
-        // ovl.transfer(msg.sender, _userCost);
-
         // mint/burn excess PnL = valueAdjusted - cost
         if (_userCost < _userValueAdjusted) {
 
             ovl.transferMint(
-                msg.sender, 
-                _userCost, 
+                msg.sender,
+                _userCost,
                 _userValueAdjusted - _userCost
             );
 
         } else {
 
             ovl.transferBurn(
-                msg.sender, 
-                _userValueAdjusted, 
+                msg.sender,
+                _userValueAdjusted,
                 _userCost - _userValueAdjusted
             );
 
@@ -415,9 +411,9 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     }
 
 
-    /// @notice Retrieves required information from market contract 
+    /// @notice Retrieves required information from market contract
     /// to calculate position value with.
-    /// @dev Gets price frame, total open interest and 
+    /// @dev Gets price frame, total open interest and
     /// total open interest shares from an Overlay market.
     /// @param _positionId ID of position to determine value of.
     /// @return value_ Value of the position
