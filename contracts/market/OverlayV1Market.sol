@@ -128,7 +128,7 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
     }
 
-    /// @notice Internal update function to price, cap, and pay funding.
+    /// @notice Update function to price, cap, and pay funding.
     /// @dev This function updates the market with the latest price and
     /// conditionally reads the depth of the market feed. The market needs
     /// an update on the first call of any block.
