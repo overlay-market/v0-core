@@ -49,7 +49,6 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         // immutables
         eth = _eth;
-        ethIs0 = IUniswapV3Pool(_marketFeed).token0() == _eth;
         ovlFeed = _ovlFeed;
         marketFeed = _marketFeed;
         baseAmount = _baseAmount;
@@ -61,6 +60,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         require(_token0 == _eth || _token1 == _eth, "OVLV1:token!=WETH");
 
+        ethIs0 = _token0 == _eth;
         base = _token0 != _quote ? _token0 : _token1;
         quote = _token0 == _quote ? _token0 : _token1;
 
