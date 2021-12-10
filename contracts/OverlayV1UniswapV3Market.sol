@@ -45,9 +45,11 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         _priceFrameCap
     ) {
 
+        require(_microWindow < _macroWindow, "OVLV1:micro>=macro");
+
         // immutables
         eth = _eth;
-        ethIs0 = IUniswapV3Pool(_ovlFeed).token0() == _eth;
+        ethIs0 = IUniswapV3Pool(_marketFeed).token0() == _eth;
         ovlFeed = _ovlFeed;
         marketFeed = _marketFeed;
         baseAmount = _baseAmount;
@@ -56,6 +58,8 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         address _token0 = IUniswapV3Pool(_marketFeed).token0();
         address _token1 = IUniswapV3Pool(_marketFeed).token1();
+
+        require(_token0 == _eth || _token1 == _eth, "OVLV1:token!=WETH");
 
         base = _token0 != _quote ? _token0 : _token1;
         quote = _token0 == _quote ? _token0 : _token1;
@@ -67,8 +71,8 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         );
 
         _pricePoints.push(PricePoint(
-            _tick, 
-            _tick, 
+            _tick,
+            _tick,
             0
         ));
 
@@ -141,8 +145,8 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         }
 
         price_ = PricePoint(
-            _microTick, 
-            _macroTick, 
+            _microTick,
+            _macroTick,
             computeDepth(_marketLiquidity, _ovlPrice)
         );
 
@@ -150,7 +154,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
 
     /// @notice Arithmetic to get depth
-    /// @dev Derived from cnstant product formula X*Y=K and tailored 
+    /// @dev Derived from cnstant product formula X*Y=K and tailored
     /// to Uniswap V3 selective liquidity provision.
     /// @param _marketLiquidity Amount of liquidity in market in ETH terms.
     /// @param _ovlPrice Price of OVL against ETH.
@@ -163,7 +167,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     ) {
 
         depth_ = ((_marketLiquidity * 1e18) / _ovlPrice)
-            .mulUp(lmbda)    
+            .mulUp(lmbda)
             .divDown(2e18);
 
     }

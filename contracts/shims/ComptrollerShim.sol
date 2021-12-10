@@ -50,7 +50,7 @@ contract ComptrollerShim is OverlayV1Comptroller {
         microWindow = _priceWindowMicro;
         marketFeed = _marketFeed;
         ovlFeed = _ovlFeed;
-        ethIs0 = IUniswapV3Pool(_ovlFeed).token0() == _eth;
+        ethIs0 = IUniswapV3Pool(_marketFeed).token0() == _eth;
 
     }
 
@@ -70,14 +70,14 @@ contract ComptrollerShim is OverlayV1Comptroller {
     ) {
 
         depth_ = ((_marketLiquidity * 1e18) / _ovlPrice)
-            .mulUp(lmbda)    
+            .mulUp(lmbda)
             .divDown(2e18);
 
     }
 
     function readFeed () public view returns (
         uint256 depth_
-    ) { 
+    ) {
 
         int56[] memory _ticks;
         uint160[] memory _liqs;
