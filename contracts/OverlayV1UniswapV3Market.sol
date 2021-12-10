@@ -67,8 +67,8 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         );
 
         _pricePoints.push(PricePoint(
-            _tick, 
-            _tick, 
+            _tick,
+            _tick,
             0
         ));
 
@@ -141,8 +141,8 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         }
 
         price_ = PricePoint(
-            _microTick, 
-            _macroTick, 
+            _microTick,
+            _macroTick,
             computeDepth(_marketLiquidity, _ovlPrice)
         );
 
@@ -150,7 +150,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
 
     /// @notice Arithmetic to get depth
-    /// @dev Derived from cnstant product formula X*Y=K and tailored 
+    /// @dev Derived from cnstant product formula X*Y=K and tailored
     /// to Uniswap V3 selective liquidity provision.
     /// @param _marketLiquidity Amount of liquidity in market in ETH terms.
     /// @param _ovlPrice Price of OVL against ETH.
@@ -163,14 +163,14 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     ) {
 
         depth_ = ((_marketLiquidity * 1e18) / _ovlPrice)
-            .mulUp(lmbda)    
+            .mulUp(lmbda)
             .divDown(2e18);
 
     }
 
     function _tickToPrice (
         int24 _tick
-    ) public override view returns (
+    ) internal override view returns (
         uint quote_
     ) {
 
