@@ -21,11 +21,6 @@ contract OverlayV1OVLCollateral is ERC1155 {
 
     bytes32 constant private GOVERNOR = keccak256("GOVERNOR");
 
-    // RR CHECK: Mapping of Market contract address to a mapping of leverage to position id for long positions.
-    // becasue we hvae 1155, all pool together
-    // if they try to enter a position in the same block, for the same leverage as someone else trying to enter a position then they get an 1155 together
-    // the mapping helps us know if they need to join an already existing one or create a new one
-    // this saves a lot of gas, but costs a littl emore gas for the first person because they need to update storage slot with their position id
     mapping (uint => mapping(uint => LastPosition)) internal lastPositionsLong;
     mapping (uint => mapping(uint => LastPosition)) internal lastPositionsShort;
     struct LastPosition { 
@@ -176,7 +171,7 @@ contract OverlayV1OVLCollateral is ERC1155 {
       @notice Sets market information
       @dev Only the Governor can set market info
       @dev Adds market information to the `marketInfo` mapping
-      @param _market Overlay Market contract address
+      @param _marketAddress Overlay Market contract address
       @param _marginMaintenance maintenance margin
       @param _marginRewardRate margin reward rate
       @param _maxLeverage maximum leverage amount
@@ -290,16 +285,18 @@ contract OverlayV1OVLCollateral is ERC1155 {
 
     }
 
-    /// @notice Build a position on Overlay with OVL collateral
-    /// @dev This interacts with an Overlay Market to register oi and hold 
-    /// positions on behalf of users.
-    /// @dev Build event emitted
-    /// @param _market The address of the desired market to interact with
-    /// @param _collateral The amount of OVL to use as collateral in the position
-    /// @param _leverage The amount of leverage to use in the position
-    /// @param _isLong Whether to take out a position on the long or short side
-    /// @param _oiMinimum Minimum acceptable amount of OI after impact and fees
-    /// @return positionId_ Id of the built position for on chain convenience
+    /**
+      @notice Build a position on Overlay with OVL collateral
+      @dev This interacts with an Overlay Market to register oi and hold 
+      positions on behalf of users.
+      @dev Build event emitted
+      @param _market The address of the desired market to interact with
+      @param _collateral The amount of OVL to use as collateral in the position
+      @param _leverage The amount of leverage to use in the position
+      @param _isLong Whether to take out a position on the long or short side
+      @param _minOi Minimum acceptable amount of OI after impact and fees
+      @return positionId_ Id of the built position for on chain convenience
+     */
     function build (
         address _market,
         uint _collateral,
@@ -320,15 +317,17 @@ contract OverlayV1OVLCollateral is ERC1155 {
 
     }
 
-    /// @notice Build a position on Overlay with OVL collateral
-    /// @dev This interacts with an Overlay Market to register oi and hold 
-    /// positions on behalf of users.
-    /// @param _marketIx The index of the desired market to interact with.
-    /// @param _collateral The amount of OVL to use as collateral in the position.
-    /// @param _leverage The amount of leverage to use in the position
-    /// @param _isLong Whether to take out a position on the long or short side.
-    /// @param _minOi Minimum acceptable amount of OI after impact and fees.
-    /// @return positionId_ Id of the built position for on chain convenience.
+    /**
+      @notice Build a position on Overlay with OVL collateral
+      @dev This interacts with an Overlay Market to register oi and hold 
+      positions on behalf of users.
+      @param _marketIx The index of the desired market to interact with.
+      @param _collateral The amount of OVL to use as collateral in the position.
+      @param _leverage The amount of leverage to use in the position
+      @param _isLong Whether to take out a position on the long or short side.
+      @param _minOi Minimum acceptable amount of OI after impact and fees.
+      @return positionId_ Id of the built position for on chain convenience.
+     */
     function _build (
         uint _marketIx,
         uint _collateral,
@@ -441,10 +440,12 @@ contract OverlayV1OVLCollateral is ERC1155 {
     }
 
 
-    /// @notice Unwinds shares of an existing position.
-    /// @dev Interacts with a market contract to realize the PnL on a position.
-    /// @param _positionId Id of the position to be unwound.
-    /// @param _shares Number of shars to unwind from the position.
+    /**
+      @notice Unwinds shares of an existing position.
+      @dev Interacts with a market contract to realize the PnL on a position.
+      @param _positionId Id of the position to be unwound.
+      @param _shares Number of shars to unwind from the position.
+     */
     function unwind (
         uint256 _positionId,
         uint256 _shares
@@ -533,11 +534,13 @@ contract OverlayV1OVLCollateral is ERC1155 {
 
     }
 
-    /// @notice Liquidates an existing position.
-    /// @dev Interacts with an Overlay Market to exit all open interest
-    /// associated with a liquidatable positoin.
-    /// @param _positionId ID of the position being liquidated.
-    /// @param _rewardsTo Address to send liquidation reward to.
+    /**
+    @notice Liquidates an existing position.
+    @dev Interacts with an Overlay Market to exit all open interest
+    associated with a liquidatable positoin.
+    @param _positionId ID of the position being liquidated.
+    @param _rewardsTo Address to send liquidation reward to.
+    */
     function liquidate (
         uint256 _positionId,
         address _rewardsTo
@@ -601,12 +604,14 @@ contract OverlayV1OVLCollateral is ERC1155 {
     }
 
 
-    /// @notice Retrieves required information from market contract 
-    /// to calculate position value with.
-    /// @dev Gets price frame, total open interest and 
-    /// total open interest shares from an Overlay market.
-    /// @param _positionId ID of position to determine value of.
-    /// @return value_ Value of the position
+    /**
+    @notice Retrieves required information from market contract 
+    to calculate position value with.
+    @dev Gets price frame, total open interest and 
+    total open interest shares from an Overlay market.
+    @param _positionId ID of position to determine value of.
+    @return value_ Value of the position
+    */
     function value (
         uint _positionId
     ) public view returns (
