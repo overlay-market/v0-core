@@ -97,6 +97,15 @@ abstract contract OverlayV1Comptroller {
 
   }
 
+  /**
+  @dev Called by internal contract function: intake
+  @param _brrrr TODO
+  @param _antiBrrrr TODO
+  @param _brrrrdCycloid TODO
+  @param _brrrrdFiling TODO
+  @return brrrrdCycloid_ TODO
+  @return brrrrdFiling_ TODO
+  */
   function brrrr (
     uint _brrrr,
     uint _antiBrrrr,
@@ -134,8 +143,8 @@ abstract contract OverlayV1Comptroller {
       uint32 _brrrrdWindowMicro = brrrrdWindowMicro;
 
       brrrrdFiling_ = _brrrrdFiling + _brrrrdWindowMicro + ( 
-                                                            ( ( _now - _brrrrdFiling ) / _brrrrdWindowMicro ) 
-                                                            * _brrrrdWindowMicro );
+                          ( ( _now - _brrrrdFiling ) / _brrrrdWindowMicro ) 
+                          * _brrrrdWindowMicro );
 
     } else { // add to the brrrr accumulator
 
@@ -163,7 +172,7 @@ abstract contract OverlayV1Comptroller {
   uint antiBrrrrd_
   ) {
 
-    // Call to internal contract function
+    // Call to internal contract
     (  ,Roller memory _rollerNow,
      Roller memory _rollerThen ) = scry(
      getBrrrrdRoller,
@@ -180,12 +189,18 @@ abstract contract OverlayV1Comptroller {
 
 
   /**
-  @notice Takes in the open interest and applies Overlay's monetary policy.
+  @notice Public function that takes in the open interest and applies Overlay's
+  @notice monetary policy.
+  @dev TODO: rename intake function or _intake function
   @dev The impact is a measure of the demand placed on the market over a
   @dev rolling window. It determines the amount of collateral to be burnt.
   @dev This is akin to slippage in an order book model.
   @dev Called by OverlayV1Market contract function: enterOI
-  @param _isLong Whether it is taking out open interest on the long or short side
+  @dev Calls internal contract function: _intake
+  @dev Calls internal contract function: roll
+  @dev Calls internal contract function: brrrr
+  @dev Calls Math contract function: mulUp
+  @param _isLong Whether it is taking out oi on the long or short side
   @param _oi The amount of open interest attempting to be taken out
   @param _cap The current open interest cap
   @return impact_ A factor between zero and one to be applied to initial
@@ -207,6 +222,7 @@ abstract contract OverlayV1Comptroller {
   uint32 brrrrdFiling_
   ) {
 
+    // Calls internal contract function
     (   Roller memory _rollerImpact,
      uint _lastMoment,
      uint _impact ) = _intake(
@@ -216,6 +232,7 @@ abstract contract OverlayV1Comptroller {
      _impactCycloid
      );
 
+    // Calls internal contract function
      impactCycloid_ = roll(
        setImpactRoller,
        _rollerImpact,
@@ -239,19 +256,22 @@ abstract contract OverlayV1Comptroller {
 
 
   /**
-    @notice Internal method to get historic impact data for impact factor
+    @notice Internal method to get historic impact data for impact factor.
     @dev Historic data is represented as a sum of pressure accumulating
-    over the impact window.
+    @dev over the impact window.
     @dev Pressure is the fraction of the open interest cap that any given
-    build tries to take out on one side.  It can range from zero to infinity
-    but will settle at a reasonable value otherwise any build will burn all
-    of its initial collateral and receive a worthless position.
-    @dev The sum of historic pressure is multiplied with lambda to yield
-    the power by which we raise the inverse of Euler's number in order to
-    determine the final impact.
-    @param _isLong The side that open interest is being be taken out on.
-    @param _oi The amount of open interest.
-    @param _cap The open interest cap.
+    @dev build tries to take out on one side.  It can range from zero to
+    @dev infinity but will settle at a reasonable value otherwise any build
+    @dev will burn all of its initial collateral and receive a worthless
+    @dev position.
+    @dev The sum of historic pressure is multiplied with lambda to yield the
+    @dev power by which we raise the inverse of Euler's number in order to
+    @dev determine the final impact.
+    @dev Calls internal contract function: scry
+    @dev Calls FixedPoint contract function: mulDown, divDown
+    @param _isLong The side that open interest is being be taken out on
+    @param _oi The amount of open interest
+    @param _cap The open interest cap
     @return rollerNow_ The current roller for the impact rollers. Impact
     from this particular call is accumulated on it for writing to storage.
     @return lastMoment_ The timestamp of the previously written roller
@@ -269,6 +289,7 @@ abstract contract OverlayV1Comptroller {
   uint impact_
   ) {
 
+    // Calls internal contract function
     (   uint _lastMoment,
      Roller memory _rollerNow,
      Roller memory _rollerThen ) = scry(
@@ -277,11 +298,13 @@ abstract contract OverlayV1Comptroller {
      _impactCycloid,
      impactWindow );
 
+     // Calls FixedPoint contract function
      uint _p = _oi.divDown(_cap);
 
      if (_isLong) _rollerNow.ying += uint112(_p);
      else _rollerNow.yang += uint112(_p);
 
+     // Calls FixedPoint contract function
      uint _power = lmbda.mulDown(_isLong
        ? uint(_rollerNow.ying - _rollerThen.ying)
        : uint(_rollerNow.yang - _rollerThen.yang)
@@ -437,16 +460,18 @@ abstract contract OverlayV1Comptroller {
 
   /**
     @notice The function that saves onto the respective roller array
-    @dev This is multi purpose in that it can write to either the
-    brrrrd rollers or the impact rollers. It knows when to increment the
-    cycloid to point to the next roller index. It konws when it needs needs
-    to write to the next roller or if it can safely write to the current one.
-    If the current cycloid is the length of the array, then it sets to zero.
-    @param _setter Setter for either impact or brrrrd rollers.
-    @param _roller The current roller to be written.
-    @param _lastMoment Moment of last write to decide writing new or current.
-    @param _cycloid Current position circular buffer, points to most recent.
-    @return cycloid_ The next value of the cycloid.
+    @dev This is multi purpose in that it can write to either the brrrrd
+    @dev rollers or the impact rollers. It knows when to increment the cycloid
+    @dev to point to the next roller index. It konws when it needs needs to
+    @dev write to the next roller or if it can safely write to the current one.
+    @dev If the current cycloid is the length of the array, then it sets to
+    @dev zero.
+    @dev Called by internal contract function: intake
+    @param _setter Setter for either impact or brrrrd rollers
+    @param _roller The current roller to be written
+    @param _lastMoment Moment of last write to decide writing new or current
+    @param _cycloid Current position circular buffer, points to most recent
+    @return cycloid_ The next value of the cycloid
    */
   function roll (
     function ( uint, Roller memory ) internal _setter,

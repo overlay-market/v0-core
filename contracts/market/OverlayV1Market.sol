@@ -102,6 +102,7 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
 
         collateralAdjusted_ = _collateral - impact_ - exactedFee_;
 
+        // Call to Position contract
         oiAdjusted_ = _leverage.mulUp(collateralAdjusted_);
 
         debtAdjusted_ = oiAdjusted_ - collateralAdjusted_;

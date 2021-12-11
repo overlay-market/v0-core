@@ -195,7 +195,7 @@ contract OverlayV1OVLCollateral is ERC1155 {
 
         marketLineup[_index] = _market;
 
-        // RR TODO: Fire and event when new market info is set - yes
+        // TODO: Fire and event when new market info is set - yes
     }
 
     function marketLineupLength () public view returns (
