@@ -7,7 +7,6 @@ import "../interfaces/IOverlayV1Mothership.sol";
 import "./OverlayV1Governance.sol";
 import "./OverlayV1OI.sol";
 import "./OverlayV1PricePoint.sol";
-import "../OverlayToken.sol";
 import "./OverlayV1Comptroller.sol";
 
 abstract contract OverlayV1Market is OverlayV1Governance {
@@ -77,7 +76,7 @@ abstract contract OverlayV1Market is OverlayV1Governance {
     /// @notice First part of the flow to remove OI from the system
     /// @dev This is called by the collateral managers to retrieve
     /// the necessary information to calculate the specifics of each position,
-    /// for instance the PnL or if it is liquidatable. 
+    /// for instance the PnL or if it is liquidatable.
     /// @param _isLong Whether the data is being retrieved for a long or short.
     /// @param _pricePoint Index of the initial price point
     /// @param oi_ Total outstanding open interest on that side of the market.
@@ -105,7 +104,7 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
     /// @notice Removes open interest from the market
     /// @dev Called as the second part of exiting oi, this function
-    /// reports the open interest in OVL terms to remove as well as 
+    /// reports the open interest in OVL terms to remove as well as
     /// open interest shares to remove. It also registers printing
     /// or burning of OVL in the process.
     /// @param _isLong The side from which to remove open interest.
@@ -148,7 +147,7 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
             updated = _now;
 
-        } 
+        }
 
         (   uint _compoundings,
             uint _tCompounding  ) = epochs(_now, compounded);

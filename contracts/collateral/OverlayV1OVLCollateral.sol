@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import "../interfaces/IOverlayV1Market.sol";
 import "../interfaces/IOverlayV1Mothership.sol";
 import "../interfaces/IOverlayToken.sol";
-import "../interfaces/IOverlayTokenNew.sol";
 
 contract OverlayV1OVLCollateral is ERC1155Supply {
 
@@ -32,7 +31,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     Position.Info[] public positions;
 
     IOverlayV1Mothership public immutable mothership;
-    IOverlayTokenNew immutable public ovl;
+    IOverlayToken immutable public ovl;
 
     uint256 public fees;
     uint256 public liquidations;
@@ -160,7 +159,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             _liqBurn
         );
 
-        ovl.burn(address(this), _feeBurn + _liqBurn);
+        ovl.burn(_feeBurn + _liqBurn);
         ovl.transfer(_feeTo, _feeForward + _liqForward);
 
     }
@@ -204,7 +203,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
 
     /// @notice Build a position on Overlay with OVL collateral
-    /// @dev This interacts with an Overlay Market to register oi and hold 
+    /// @dev This interacts with an Overlay Market to register oi and hold
     /// positions on behalf of users.
     /// @param _market The address of the desired market to interact with.
     /// @param _collateral The amount of OVL to use as collateral in the position.
@@ -256,9 +255,9 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         emit Build(_market, _positionId, _oiAdjusted, _debtAdjusted);
 
-        ovl.transferFromBurn(msg.sender, address(this), _collateralAdjusted + _fee, _impact);
+        ovl.transferFrom(msg.sender, address(this), _collateralAdjusted + _impact + _fee);
 
-        // ovl.burn(msg.sender, _impact);
+        ovl.burn(_impact);
 
         _mint(msg.sender, _positionId, _oiAdjusted, ""); // WARNING: last b/c erc1155 callback
 
@@ -291,7 +290,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
                     pos.pricePoint
                 );
 
-        uint _totalPosShares = totalSupply(_positionId);
+        uint _totalPosShares = pos.oiShares;
 
         uint _userOiShares = _shares;
         uint _userNotional = _shares * pos.notional(_oi, _oiShares, _priceFrame) / _totalPosShares;
@@ -314,28 +313,6 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         pos.cost -= _userCost;
         pos.oiShares -= _userOiShares;
 
-        // ovl.transfer(msg.sender, _userCost);
-
-        // mint/burn excess PnL = valueAdjusted - cost
-        if (_userCost < _userValueAdjusted) {
-
-            ovl.transferMint(
-                msg.sender, 
-                _userCost, 
-                _userValueAdjusted - _userCost
-            );
-
-        } else {
-
-            ovl.transferBurn(
-                msg.sender, 
-                _userValueAdjusted, 
-                _userCost - _userValueAdjusted
-            );
-
-        }
-
-
         IOverlayV1Market(pos.market).exitOI(
             pos.isLong,
             _userOi,
@@ -343,6 +320,19 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             _userCost < _userValueAdjusted ? _userValueAdjusted - _userCost : 0,
             _userCost < _userValueAdjusted ? 0 : _userCost - _userValueAdjusted
         );
+
+        // mint/burn excess PnL = valueAdjusted - cost
+        if (_userCost < _userValueAdjusted) {
+
+            ovl.mint(address(this), _userValueAdjusted - _userCost);
+
+        } else {
+
+            ovl.burn(_userCost - _userValueAdjusted);
+
+        }
+
+        ovl.transfer(msg.sender, _userValueAdjusted);
 
         }
 
@@ -409,15 +399,15 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             _rewardsTo
         );
 
-        // ovl.burn(address(this), pos.cost - _value);
-        ovl.transferBurn(_rewardsTo, _toReward, pos.cost - _value);
+        ovl.burn(pos.cost - _value);
+        ovl.transfer(_rewardsTo, _toReward);
 
     }
 
 
-    /// @notice Retrieves required information from market contract 
+    /// @notice Retrieves required information from market contract
     /// to calculate position value with.
-    /// @dev Gets price frame, total open interest and 
+    /// @dev Gets price frame, total open interest and
     /// total open interest shares from an Overlay market.
     /// @param _positionId ID of position to determine value of.
     /// @return value_ Value of the position
