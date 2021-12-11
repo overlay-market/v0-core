@@ -47,27 +47,11 @@ PRICES = [
 
 
 @given(
-    collateral=strategy(
-        'uint256',
-        min_value=1e18,
-        max_value=(OI_CAP - 1e4)/100),
-    leverage=strategy(
-        'uint8',
-        min_value=1,
-        max_value=100),
-    is_long=strategy(
-        'bool'))
-def test_build_success_zero_impact(
-    ovl_collateral,
-    token,
-    mothership,
-    market,
-    bob,
-    start_time,
-    collateral,
-    leverage,
-    is_long
-):
+    collateral=strategy('uint256', min_value=1e18, max_value=(OI_CAP - 1e4)/100),
+    leverage=strategy('uint8', min_value=1, max_value=100),
+    is_long=strategy('bool'))
+def test_build_success_zero_impact(ovl_collateral, token, mothership, market, bob, start_time,
+                                   collateral, leverage, is_long):
 
     leverage *= 1e18
 
@@ -76,37 +60,69 @@ def test_build_success_zero_impact(
     oi = collateral * leverage
     trade_fee = oi * mothership.fee() / FEE_RESOLUTION
 
-    # get prior state of collateral manager
+    # Get prior state of collateral manager
     fee_bucket = ovl_collateral.fees()
     ovl_balance = token.balanceOf(ovl_collateral)
 
-    # approve collateral contract to spend bob's ovl to build position
+    # Approve collateral contract to spend Bob's OVL to build position
     token.approve(ovl_collateral, collateral, {"from": bob})
 
-    # build the position
     oi_adjusted_min = oi * (1-SLIPPAGE_TOL)
-    tx = ovl_collateral.build(
-        market, collateral, leverage, is_long, oi_adjusted_min, {"from": bob})
+
+    # Build the position.
+    # Requires: 1) the market to be active in the mothership contract
+    #           2) the leverage is not above maximum
+    # Calls the enterOI function on the OverlayV1Market contract which adds this oi to the market.
+    #  - Calls update to updates the market with the latest price and conditionally reads the
+    #    depth of the market feed. The market needs an update on the first call of any block. The
+    #    price is fetched from the OverlayV1UniswapV3Market contract fetchPricePoint
+    #    function.
+    #    Calls into OverlayV1OI contract computeFunding function which is an internal utility
+    #    to pay funding from the heavier to the lighter side. TODO: look into more later
+    #  - Calculates  adjustedcollateral for market impact and fees:
+    #      collateralAdjusted = collateral - impact - fee;
+    #  - Calculates the adjusted OI: collateralAdjusted * leverage
+    #      oiAdjusted = collateralAdjusted * leverage;
+    #  - Calculates adjusted debt:
+    #      debtAdjusted = oiAdjusted - collateralAdjusted;
+    #  - Adds OI to either long or short side, asserting cap is not breached.
+    # Calls getCurrentBlockPositionId which gets the position id of the position, based on if it
+    # is long or short, its market contract address, and its leverage.
+    # Gets Position.Info struct instance from the positions array with the position id.
+    # Adds ioAdjusted to pos.oiShares - the shares of the total open interest on long/short
+    # side, depending on isLong value.
+    # Adds collateralAdjusted to pos.cost - the total amount of collateral initially locked;
+    # effectively, cost to enter position.
+    # Adds debtAdjusted to pos.debt - the total debt associated with this position.
+    # Add the fees associated with this position to the fees state variable, which will be burned.
+    # Emits a Build event indicated a new position was built.
+    # Transfers collateralAdjusted + fee from the OverlayToken contract address to the
+    # OverlayCollateral contract address.
+    # Burns impact fee from  the OverlayToken contract address.
+    # TODO: Separate transfer and burn logic in OverlayV1OVLCollateral.sol
+    # Returns position id.
+    tx = ovl_collateral.build(market, collateral, leverage, is_long, oi_adjusted_min,
+                              {"from": bob})
 
     assert 'Build' in tx.events
     assert 'positionId' in tx.events['Build']
     pid = tx.events['Build']['positionId']
 
-    # fees should be sent to fee bucket in collateral manager
+    # Fees should be sent to fee bucket in collateral manager
     assert int(fee_bucket + trade_fee) == approx(ovl_collateral.fees())
 
-    # check collateral sent to collateral manager
+    # Check collateral sent to collateral manager
     assert int(ovl_balance + collateral) \
         == approx(token.balanceOf(ovl_collateral))
 
-    # check position token issued with correct oi shares
+    # Check position token issued with correct oi shares
     collateral_adjusted = collateral - trade_fee
     oi_adjusted = collateral_adjusted * leverage
     assert approx(ovl_collateral.balanceOf(bob, pid)) == int(oi_adjusted)
 
     market_ix = ovl_collateral.marketIndexes(market)
 
-    # check position attributes for PID
+    # Check position attributes for PID
     (pos_market,
      pos_islong,
      pos_lev,

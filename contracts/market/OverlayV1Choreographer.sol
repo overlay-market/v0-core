@@ -42,11 +42,17 @@ abstract contract OverlayV1Choreographer is
         _;
     }
 
+    // TODO
     struct Tempo {
+        // TODO
         uint32 updated;
+        // TODO
         uint32 compounded;
+        // TODO
         uint8 impactCycloid;
+        // TODO
         uint8 brrrrdCycloid;
+        // TODO
         uint32 brrrrdFiling;
     }
 
