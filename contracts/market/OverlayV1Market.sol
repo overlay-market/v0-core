@@ -31,18 +31,19 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
       @dev This is invoked by Overlay collateral manager contracts, which
       @dev can be for OVL, ERC20's, Overlay positions, NFTs, or what have you.
       @dev The calculations for impact and fees are performed here.
-      @dev Calls `OverlayV1Comptroller` contract function: `intake`
-      @dev Calls `Position` contract function: `mulDown`
-      @dev Calls `OverlayV1OI` contract function: `addOi`
-      @param _isLong The side of the market to enter open interest on.
-      @param _collateral The amount of collateral in OVL terms to take the position out with.
-      @param _leverage The leverage with which to take out the position.
-      @return oiAdjusted_ Amount of open interest after impact and fees.
-      @return collateralAdjusted_ Amount of collateral after impact and fees.
-      @return debtAdjusted_ Amount of debt after impact and fees.
-      @return exactedFee_ The protocol fee to be taken.
-      @return impact_ The market impact for the build.
-      @return pricePointNext_ The index of the price point for the position.
+      @dev Uses OverlayV1Choreographer contract struct: Tempo
+      @dev Calls OverlayV1Comptroller contract function: intake
+      @dev Calls Position contract function: mulDown
+      @dev Calls OverlayV1OI contract function: addOi
+      @param _isLong The side of the market to enter open interest on
+      @param _collateral The amount of collateral in OVL terms to take the position out with
+      @param _leverage The leverage with which to take out the position
+      @return oiAdjusted_ Amount of open interest after impact and fees
+      @return collateralAdjusted_ Amount of collateral after impact and fees
+      @return debtAdjusted_ Amount of debt after impact and fees
+      @return exactedFee_ The protocol fee to be taken
+      @return impact_ The market impact for the build
+      @return pricePointNext_ The index of the price point for the position
      */
     function enterOI (
       bool _isLong,
@@ -59,13 +60,14 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
     ) {
 
         uint _cap;
-        // Call to `Position` contract
+        // Call to Position contract
         // Calculate open interest
         uint _oi = _collateral.mulDown(_leverage);
 
+        // TODO
         OverlayV1Choreographer.Tempo memory _tempo = tempo;
 
-        // Call to internal function.
+        // Call to internal function
         // Updates the market with the latest price, cap, and pay funding
         (   _cap, 
             _tempo.updated, 
@@ -75,7 +77,7 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
                 _tempo.brrrrdCycloid
             );
 
-        // Call to `OverlayV1Comptroller` contract
+        // Call to OverlayV1Comptroller contract
         // Takes in the OI and applies Overlay's monetary policy
         (   impact_,
             _tempo.impactCycloid,
@@ -93,7 +95,7 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
 
         pricePointNext_ = _pricePoints.length - 1;
 
-        // Call to `Position` contract
+        // Call to Position contract
         exactedFee_ = _oi.mulDown(_fee);
 
         require(_collateral >= MIN_COLLAT + impact_ + exactedFee_ , "OVLV1:collat<min");
@@ -104,7 +106,7 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
 
         debtAdjusted_ = oiAdjusted_ - collateralAdjusted_;
 
-        // Call to `OverlayV1OI` contract
+        // Call to OverlayV1OI contract
         addOi(_isLong, oiAdjusted_, _cap);
 
     }
@@ -115,13 +117,13 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
       @dev This is called by the collateral managers to retrieve the necessary
       @dev information to calculate the specifics of each position, for
       @dev instance the PnL or if it is liquidatable. 
-      @param _isLong Whether the data is being retrieved for a long or short.
+      @param _isLong Whether the data is being retrieved for a long or short
       @param _pricePoint Index of the initial price point
-      @param oi_ Total outstanding open interest on that side of the market.
-      @param oiShares_ Total outstanding open interest shares on that side.
+      @param oi_ Total outstanding open interest on that side of the market
+      @param oiShares_ Total outstanding open interest shares on that side
       @param priceFrame_ The price multiple comprised of the entry and exit
       prices for the position, with the exit price being the current one. Longs
-      receive the bid on exit and the ask on entry shorts the opposite.
+      receive the bid on exit and the ask on entry shorts the opposite
      */
     function exitData (
         bool _isLong,
@@ -159,11 +161,11 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
       @dev open interest in OVL terms to remove as well as open interest shares
       @dev to remove. It also registers printing or burning of OVL in the
       @dev process.
-      @param _isLong The side from which to remove open interest.
-      @param _oi The open interest to remove in OVL terms.
-      @param _oiShares The open interest shares to remove.
-      @param _brrrr How much was printed on closing the position.
-      @param _antiBrrrr How much was burnt on closing the position.
+      @param _isLong The side from which to remove open interest
+      @param _oi The open interest to remove in OVL terms
+      @param _oiShares The open interest shares to remove
+      @param _brrrr How much was printed on closing the position
+      @param _antiBrrrr How much was burnt on closing the position
      */
     function exitOI (
         bool _isLong,
@@ -191,15 +193,14 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
     }
 
     /**
-      @notice Internal update function to price, cap, and pay funding.
-      @dev This function updates the market with the latest price and
-      @dev conditionally reads the depth of the market feed. The market needs
-      @dev an update on the first call of any block.
-      @dev Calls `OverlayV1PricePoint` contract function: `fetchPricePoint`
-      @dev Calls `OverlayV1PricePoint` contract function: `setPricePointNext`
-      @dev Calls `OverlayV1OI` contract function: `epochs`
-      @dev Calls `OverlayV1OI` contract function: `payFunding`
-      @dev Calls `OverlayV1Comptroller` contract function: `oiCap`
+      @notice Public function that calls internal contract function _update, to
+      @notice update price, cap, and pay funding.
+      @dev This function calls the internal _update function which updates the
+      @dev market with the latest price and conditionally reads the depth of
+      @dev the market feed. The market needs an update on the first call of any
+      @dev block.
+      @dev Uses OverlayV1Choreographer contract struct: Tempo.
+      @dev Calls the internal contract function: _update.
      */
     function update () public {
 
@@ -217,11 +218,16 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
     }
 
     /**
-      @notice Internal update function to price, cap, and pay funding.
+      @notice Internal function to update price, cap, and pay funding.
       @dev This function updates the market with the latest price and
       @dev conditionally reads the depth of the market feed. The market needs
       @dev an update on the first call of any block.
-      @return cap_ The open interest cap for the market.
+      @dev Calls OverlayV1PricePoint contract function: fetchPricePoint
+      @dev Calls OverlayV1PricePoint contract function: setPricePointNext
+      @dev Calls OverlayV1PricePoint contract function: pricePointCurrent
+      @dev Calls OverlayV1OI contract function: epochs
+      @dev Calls OverlayV1OI contract function: payFunding
+      @dev Calls OverlayV1Comptroller contract function: oiCap
      */
     function _update (
         uint32 _updated,
@@ -238,26 +244,33 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
 
         if (_now != _updated) {
 
+
+            // Call to OverlayV1PricePoint contract
             PricePoint memory _pricePoint = fetchPricePoint();
 
+            // Call to OverlayV1PricePoint contract
             setPricePointNext(_pricePoint);
 
             _depth = _pricePoint.depth;
 
             updated = _now;
 
+        // Call to OverlayV1PricePoint contract
         } else (,,_depth) = pricePointCurrent();
 
+        // Call to OverlayV1OI contract function
         (   uint32 _compoundings,
             uint32 _tCompounding  ) = epochs(_now, _compounded);
 
         if (0 < _compoundings) {
 
+            // Call to OverlayV1OI contract
             payFunding(k, _compoundings);
             _compounded = _tCompounding;
 
         }
 
+        // Call to OverlayV1Comptroller contract
         cap_ = _oiCap(_depth, _brrrrdCycloid);
         updated_ = _updated;
         compounded_ = _compounded;

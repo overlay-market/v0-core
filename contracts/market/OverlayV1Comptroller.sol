@@ -149,6 +149,13 @@ abstract contract OverlayV1Comptroller {
 
   }
 
+  /**
+    @dev Called by internal contract function: _oiCap
+    @dev Calls internal contract function: scry
+    @param _brrrrdCycloid TODO
+    @returns brrrrd_ TODO
+    @returns antiBrrrrd_ TODO
+   */
   function getBrrrrd (
     uint8 _brrrrdCycloid
   ) public view returns (
@@ -156,6 +163,7 @@ abstract contract OverlayV1Comptroller {
   uint antiBrrrrd_
   ) {
 
+    // Call to internal contract function
     (  ,Roller memory _rollerNow,
      Roller memory _rollerThen ) = scry(
      getBrrrrdRoller,
@@ -176,7 +184,7 @@ abstract contract OverlayV1Comptroller {
   @dev The impact is a measure of the demand placed on the market over a
   @dev rolling window. It determines the amount of collateral to be burnt.
   @dev This is akin to slippage in an order book model.
-  @dev Called by `OverlayV1Market` contract function: `enterOI`
+  @dev Called by OverlayV1Market contract function: enterOI
   @param _isLong Whether it is taking out open interest on the long or short side
   @param _oi The amount of open interest attempting to be taken out
   @param _cap The current open interest cap
@@ -299,7 +307,7 @@ abstract contract OverlayV1Comptroller {
     has occurred.
     @param _brrrrdExpected How much the market expects to print before
     engaging the dynamic cap. Only passed if printing has occurred.
-    @dev Called by `OverlayV1Market` contract function: `update`
+    @dev Called by OverlayV1Market contract function: update
    */
   function _computeOiCap (
     bool _dynamic,
@@ -320,14 +328,16 @@ abstract contract OverlayV1Comptroller {
 
   }
 
-  /**
-    @notice The open interest cap for the market
-    @dev Returns the open interest cap for the market.
-    @dev Called by `OverlayV1Market` contract function: `update`
-    @return cap_ The open interest cap.
-   */
   function oiCap () public virtual view returns (uint cap_);
 
+  /**
+    @notice The open interest cap for the market.
+    @dev Called by OverlayV1Market contract function: update
+    @dev Calls internal contract function: getBrrrrd
+    @param _depth TODO
+    @param _brrrrdCycloid TODO
+    @return cap_ The open interest cap for the market
+   */
   function _oiCap (
     uint _depth,
     uint8 _brrrrdCycloid
@@ -335,6 +345,7 @@ abstract contract OverlayV1Comptroller {
   uint cap_
   ) {
 
+    // Calls internal contract function
     (   uint _brrrrd,
      uint _antiBrrrrd ) = getBrrrrd(_brrrrdCycloid);
 
@@ -465,7 +476,9 @@ abstract contract OverlayV1Comptroller {
   /**
     @notice First part of retrieving historic roller values
     @dev Checks to see if the current roller is satisfactory and if not
-    searches deeper into the roller array.
+    @dev searches deeper into the roller array.
+    @dev Called by internal contract function: getBrrrrd
+    @dev Calls internal contract function: scryRollers
     @param _getter The getter for either impact or brrrrd rollers
     @param _chord The length of roller array in question
     @param _cycloid The current impact or brrrrd cycloid
@@ -503,6 +516,7 @@ abstract contract OverlayV1Comptroller {
 
     } else if (_time != rollerNow_.time) rollerNow_.time = _time;
 
+    // Calls internal contract function
     rollerThen_ = scryRollers(
       _getter, 
       _chord,
@@ -513,6 +527,15 @@ abstract contract OverlayV1Comptroller {
   }
 
 
+  /**
+    @dev Called by internal contract function: scry
+    @dev Calls internal contract function: binarySearch
+    @param _getter TODO
+    @param _chord TODO
+    @param _cycloid TODO
+    @param _target TODO
+    @return beforeOrAt_ TODO
+   */
   function scryRollers (
     function (uint) internal view returns(Roller memory) _getter,
     uint _chord,
@@ -542,6 +565,7 @@ abstract contract OverlayV1Comptroller {
     if ( beforeOrAt_.time <= 1 ) beforeOrAt_ = _getter(0);
 
     if (_target <= beforeOrAt_.time) return beforeOrAt_;
+    // Calls internal contract function
     else return binarySearch(
       _getter,
         uint16(_chord),
@@ -551,6 +575,15 @@ abstract contract OverlayV1Comptroller {
 
   }
 
+  /**
+    @notice TODO
+    @dev Called by internal contract function: scryRollers
+    @param _getter TODO
+    @param _cycloid TODO
+    @param _chord TODO
+    @param _target TODO
+    @return beforeOrAt_ TODO
+   */
   function binarySearch(
     function (uint) internal view returns(Roller memory) _getter,
     uint16 _cycloid,
