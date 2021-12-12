@@ -62,18 +62,22 @@ contract OverlayV1OI {
     }
 
 
-    /// @notice Internal utility to pay funding from heavier to lighter side.
-    /// @dev Pure function accepting current open interest, compoundings
-    /// to perform, and funding constant.
-    /// @dev oiImbalance(period_m) = oiImbalance(period_now) * (1 - 2k) ** period_m
-    /// @param _oiLong Current open interest on the long side.
-    /// @param _oiShort Current open interest on the short side.
-    /// @param _epochs The number of compounding periods to compute for.
-    /// @param _k The funding constant.
-    /// @return oiLong_ Open interest on the long side after funding is paid.
-    /// @return oiShort_ Open interest on the short side after funding is paid.
-    /// @return fundingPaid_ Signed integer of funding paid, negative if longs
-    /// are paying shorts.
+    /**
+      @notice Internal utility to pay funding from heavier to lighter side.
+      @dev Pure function accepting current open interest, compoundings
+      @dev to perform, and funding constant.
+      @dev oiImbalance(period_m) = oiImbalance(period_now)*(1-2k)**period_m
+      @dev Called by internal function: payFunding
+      @dev Calls by FixedPoint contract function: mulDown
+      @param _oiLong Current open interest on the long side
+      @param _oiShort Current open interest on the short side
+      @param _epochs The number of compounding periods to compute for
+      @param _k The funding constant
+      @return oiLong_ Open interest on the long side after funding is paid
+      @return oiShort_ Open interest on the short side after funding is paid
+      @return fundingPaid_ Signed integer of funding paid, negative if longs
+      are paying shorts
+     */
     function computeFunding (
         uint256 _oiLong,
         uint256 _oiShort,
@@ -123,13 +127,16 @@ contract OverlayV1OI {
     }
 
 
-    /// @notice Pays funding.
-    /// @param _k The funding constant.
-    /// @param _epochs The number of compounding periods to compute.
-    /// @dev Invokes internal computeFunding and sets oiLong and oiShort.
-    /// @dev Called by OverlayV1Market contract function: update
-    /// @dev Emits FundingPaid event
-    /// @return fundingPaid_ Signed integer of how much funding was paid.
+    /**
+      @notice Pays funding.
+      @param _k The funding constant
+      @param _epochs The number of compounding periods to compute
+      @dev Invokes internal computeFunding and sets oiLong and oiShort
+      @dev Calls internal function: computeFunding
+      @dev Called by OverlayV1Market contract function: update
+      @dev Emits FundingPaid event
+      @return fundingPaid_ Signed integer of how much funding was paid
+     */
     function payFunding (
         uint256 _k,
         uint256 _epochs

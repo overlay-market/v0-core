@@ -59,12 +59,15 @@ abstract contract OverlayV1PricePoint {
     }
 
 
-    /// @notice All past price points.
-    /// @dev Returns the price point if it exists.
-    /// @param _pricePointIndex Index of the price point being queried.
-    /// @return bid_ Bid.
-    /// @return ask_ Ask.
-    /// @return depth_ Market liquidity in OVL terms.
+    /**
+      @notice All past price points.
+      @dev Returns the price point if it exists.
+      @dev Calls internal contract function: readPricePoint
+      @param _pricePointIndex Index of the price point being queried
+      @return bid_ Bid
+      @return ask_ Ask
+      @return depth_ Market liquidity in OVL terms
+     */
     function pricePoints(
         uint256 _pricePointIndex
     ) external view returns (
@@ -92,11 +95,15 @@ abstract contract OverlayV1PricePoint {
     }
 
 
-    /// @notice Current price point.
-    /// @dev Returns the price point if it exists.
-    /// @return bid_ Bid.
-    /// @return ask_ Ask.
-    /// @return depth_ Market liquidity in OVL terms.
+    /**
+      @notice Current price point.
+      @dev Returns the price point if it exists.
+      @dev Called by OverlayV1Market function: _update
+      @dev Calls internal contract function: readPricePoint
+      @return bid_ Bid
+      @return ask_ Ask
+      @return depth_ Market liquidity in OVL terms
+     */
     function pricePointCurrent () public view returns (
         uint bid_,
         uint ask_,
@@ -118,9 +125,12 @@ abstract contract OverlayV1PricePoint {
 
     }
 
-    /// @notice Allows inheriting contracts to add the latest realized price
-    /// @dev Called by `OverlayV1Market` contract function: `update`
-    /// @dev Emits NewPricePoint event
+    /**
+      @notice Allows inheriting contracts to add the latest realized price
+      @dev Called by OverlayV1Market contract function: update
+      @dev Calls internal contract function: readPricePoint
+      @dev Emits NewPricePoint event
+     */
     function setPricePointNext(
         PricePoint memory _pricePoint
     ) internal {
