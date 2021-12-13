@@ -41,6 +41,15 @@ contract OverlayV1Mothership is AccessControlEnumerable {
     mapping(address => bool) public collateralActive;
     address[] public allCollateral;
 
+    event UpdateCollateral(address _collateral, bool _active);
+    event UpdateMarket(address _market, bool _active);
+    event UpdateGlobalParams(
+        uint16 _fee,
+        uint16 _feeBurnRate,
+        address _feeTo,
+        uint _marginBurnRate
+    );
+
     modifier onlyGovernor () {
         require(hasRole(GOVERNOR, msg.sender), "OVLV1:!gov");
         _;
@@ -81,34 +90,40 @@ contract OverlayV1Mothership is AccessControlEnumerable {
 
     /// @notice Initializes an existing market contract after deployment
     /// @dev Should be called after contract deployment in specific market factory.createMarket
-    function initializeMarket(address market) external onlyGovernor {
+    function initializeMarket(address _market) external onlyGovernor {
 
-        require(!marketExists[market], "OVLV1: market exists");
+        require(!marketExists[_market], "OVLV1: market exists");
 
-        marketExists[market] = true;
-        marketActive[market] = true;
+        marketExists[_market] = true;
+        marketActive[_market] = true;
 
-        allMarkets.push(market);
+        allMarkets.push(_market);
+
+        emit UpdateMarket(_market, true);
 
     }
 
     /// @notice Disables an existing market contract for a mirin market
-    function disableMarket(address market) external onlyGovernor {
+    function disableMarket(address _market) external onlyGovernor {
 
-        require(marketActive[market], "OVLV1: market !enabled");
+        require(marketActive[_market], "OVLV1: market !enabled");
 
-        marketActive[market] = false;
+        marketActive[_market] = false;
+
+        emit UpdateMarket(_market, false);
 
     }
 
     /// @notice Enables an existing market contract for a mirin market
-    function enableMarket(address market) external onlyGovernor {
+    function enableMarket(address _market) external onlyGovernor {
 
-        require(marketExists[market], "OVLV1: market !exists");
+        require(marketExists[_market], "OVLV1: market !exists");
 
-        require(!marketActive[market], "OVLV1: market !disabled");
+        require(!marketActive[_market], "OVLV1: market !disabled");
 
-        marketActive[market] = true;
+        marketActive[_market] = true;
+
+        emit UpdateMarket(_market, true);
 
     }
 
@@ -125,6 +140,8 @@ contract OverlayV1Mothership is AccessControlEnumerable {
 
         OverlayToken(ovl).grantRole(OverlayToken(ovl).BURNER_ROLE(), _collateral);
 
+        emit UpdateCollateral(_collateral, true);
+
     }
 
     function enableCollateral (address _collateral) external onlyGovernor {
@@ -139,6 +156,8 @@ contract OverlayV1Mothership is AccessControlEnumerable {
 
         OverlayToken(ovl).grantRole(OverlayToken(ovl).BURNER_ROLE(), _collateral);
 
+        emit UpdateCollateral(_collateral, true);
+
     }
 
     function disableCollateral (address _collateral) external onlyGovernor {
@@ -151,9 +170,9 @@ contract OverlayV1Mothership is AccessControlEnumerable {
 
         OverlayToken(ovl).revokeRole(OverlayToken(ovl).BURNER_ROLE(), _collateral);
 
-    }
+        emit UpdateCollateral(_collateral, false);
 
-    /// @notice Allows gov to adjust per market params
+    }
 
     /// @notice Allows gov to adjust global params
     function adjustGlobalParams(
@@ -166,6 +185,13 @@ contract OverlayV1Mothership is AccessControlEnumerable {
         feeBurnRate = _feeBurnRate;
         feeTo = _feeTo;
         marginBurnRate = _marginBurnRate;
+
+        emit UpdateGlobalParams(
+            _fee,
+            _feeBurnRate,
+            _feeTo,
+            _marginBurnRate
+        );
     }
 
     function getUpdateParams() external view returns (
