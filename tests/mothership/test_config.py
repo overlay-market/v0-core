@@ -11,7 +11,6 @@ def test_roles(token, mothership, gov, collateral):
 
     assert mothership.hasRole(mothership.ADMIN(), gov) is True
     assert mothership.hasRole(mothership.GOVERNOR(), gov) is True
-    assert mothership.hasRole(mothership.GUARDIAN(), gov) is True
 
 
 def test_params(mothership, depository, token):
