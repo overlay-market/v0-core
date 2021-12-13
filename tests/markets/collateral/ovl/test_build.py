@@ -280,9 +280,9 @@ def test_build_cap(
         min_value=1e18,
         max_value=(OI_CAP - 1e4)/100),
     leverage=strategy(
-        'uint8',
-        min_value=1,
-        max_value=100),
+        'uint16',
+        min_value=100,
+        max_value=10000),
     is_long=strategy(
         'bool'))
 def test_oi_added(
@@ -297,25 +297,27 @@ def test_oi_added(
     is_long
 ):
 
-    leverage *= 1e18
+    leverage *= 1e16
 
     brownie.chain.mine(timestamp=start_time)
 
     market_oi = market.oiLong() if is_long else market.oiShort()
     assert market_oi == 0
 
-    oi_adjusted_min = collateral * leverage * (1-SLIPPAGE_TOL)
+    oi_adjusted_min = collateral * (leverage / 1e18) * (1-SLIPPAGE_TOL)
+
+    print("oi_adjusted_min", oi_adjusted_min)
 
     token.approve(ovl_collateral, collateral, {"from": bob})
     ovl_collateral.build(
         market, collateral, leverage, is_long, oi_adjusted_min, {"from": bob})
 
-    oi = collateral * leverage
-    trade_fee = oi * mothership.fee() / FEE_RESOLUTION
+    oi = collateral * (leverage / 1e18)
+    trade_fee = oi * ovl_collateral.fee(market) / 1e18
 
     # added oi less fees should be taken from collateral
     collateral_adjusted = collateral - trade_fee
-    oi_adjusted = collateral_adjusted * leverage
+    oi_adjusted = collateral_adjusted * (leverage / 1e18)
 
     new_market_oi = market.oiLong() if is_long else market.oiShort()
     assert approx(new_market_oi) == int(oi_adjusted)
