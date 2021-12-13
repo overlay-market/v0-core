@@ -57,8 +57,8 @@ def test_unwind_revert_insufficient_shares(
     ),
     leverage=strategy(
         'uint256',
-        min_value=1,
-        max_value=100
+        min_value=100,
+        max_value=10000
     ))
 @settings(max_examples=50)
 def test_unwind_oi_removed(
@@ -73,13 +73,17 @@ def test_unwind_oi_removed(
         leverage,
         is_long):
 
-    leverage *= 1e18
+    leverage *= 1e16
 
     brownie.chain.mine(timestamp=start_time)
 
     # Build parameters
     oi *= 1e16
-    collateral = get_collateral(oi / leverage, leverage, mothership.fee())
+    collateral = get_collateral(
+        oi / (leverage/1e18),
+        (leverage/1e18),
+        ovl_collateral.fee(market)
+    )
 
     # Build
     token.approve(ovl_collateral, collateral, {"from": bob})
@@ -88,7 +92,7 @@ def test_unwind_oi_removed(
         collateral,
         leverage,
         is_long,
-        collateral * leverage * (1-SLIPPAGE_TOL),
+        collateral * (leverage/1e18) * (1-SLIPPAGE_TOL),
         {"from": bob}
     )
 
