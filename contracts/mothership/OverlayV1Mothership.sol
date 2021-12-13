@@ -86,7 +86,7 @@ contract OverlayV1Mothership is AccessControlEnumerable {
     /// @dev Should be called after contract deployment in specific market factory.createMarket
     function initializeMarket(address market) external onlyGovernor {
 
-        require(!marketExists[market], "OVLV1:!!initialized");
+        require(!marketExists[market], "OVLV1: market exists");
 
         marketExists[market] = true;
         marketActive[market] = true;
@@ -98,7 +98,7 @@ contract OverlayV1Mothership is AccessControlEnumerable {
     /// @notice Disables an existing market contract for a mirin market
     function disableMarket(address market) external onlyGovernor {
 
-        require(marketActive[market], "OVLV1: !enabled");
+        require(marketActive[market], "OVLV1: market !enabled");
 
         marketActive[market] = false;
 
@@ -107,9 +107,9 @@ contract OverlayV1Mothership is AccessControlEnumerable {
     /// @notice Enables an existing market contract for a mirin market
     function enableMarket(address market) external onlyGovernor {
 
-        require(marketExists[market], "OVLV1: !exists");
+        require(marketExists[market], "OVLV1: market !exists");
 
-        require(!marketActive[market], "OVLV1: !disabled");
+        require(!marketActive[market], "OVLV1: market !disabled");
 
         marketActive[market] = true;
 
@@ -117,7 +117,7 @@ contract OverlayV1Mothership is AccessControlEnumerable {
 
     function initializeCollateral (address _collateral) external onlyGovernor {
 
-        require(!collateralExists[_collateral], "OVLV1:!!iintialized");
+        require(!collateralExists[_collateral], "OVLV1: collateral exists");
 
         collateralExists[_collateral] = true;
         collateralActive[_collateral] = true;
@@ -132,9 +132,9 @@ contract OverlayV1Mothership is AccessControlEnumerable {
 
     function enableCollateral (address _collateral) external onlyGovernor {
 
-        require(collateralExists[_collateral], "OVLV1:!exists");
+        require(collateralExists[_collateral], "OVLV1: collateral !exists");
 
-        require(!collateralActive[_collateral], "OVLV1:!disabled");
+        require(!collateralActive[_collateral], "OVLV1: collateral !disabled");
 
         collateralActive[_collateral] = true;
 
@@ -146,7 +146,7 @@ contract OverlayV1Mothership is AccessControlEnumerable {
 
     function disableCollateral (address _collateral) external onlyGovernor {
 
-        require(collateralActive[_collateral], "OVLV1:!enabled");
+        require(collateralActive[_collateral], "OVLV1: collateral !enabled");
 
         collateralActive[_collateral] = false;
 
