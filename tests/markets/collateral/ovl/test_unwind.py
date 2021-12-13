@@ -261,8 +261,8 @@ def test_unwind_expected_fee(
     ),
     leverage=strategy(
         'uint256',
-        min_value=1,
-        max_value=100
+        min_value=100,
+        max_value=10000
     ))
 def test_partial_unwind(
   ovl_collateral,
@@ -278,7 +278,7 @@ def test_partial_unwind(
   is_long
 ):
 
-    leverage *= 1e18
+    leverage *= 1e16
 
     brownie.chain.mine(timestamp=start_time)
 
@@ -291,10 +291,16 @@ def test_partial_unwind(
         bob_oi *= reduction
         alice_oi *= reduction
 
-    fee = mothership.fee()
+    fee = ovl_collateral.fee(market)
 
-    bob_collateral = get_collateral(bob_oi / leverage, leverage, fee)
-    alice_collateral = get_collateral(alice_oi / leverage, leverage, fee)
+    bob_collateral = get_collateral(
+        bob_oi / (leverage/1e18),
+        leverage/1e18,
+        fee)
+    alice_collateral = get_collateral(
+        alice_oi / (leverage/1e18), 
+        leverage/1e18, 
+        fee)
 
     # Alice and Bob both builds a position
     token.approve(ovl_collateral, bob_collateral, {"from": bob})
@@ -305,7 +311,7 @@ def test_partial_unwind(
         bob_collateral,
         leverage,
         is_long,
-        bob_collateral * leverage * (1-SLIPPAGE_TOL),
+        bob_collateral * (leverage/1e18) * (1-SLIPPAGE_TOL),
         {"from": bob}
     )
 
@@ -317,7 +323,7 @@ def test_partial_unwind(
         alice_collateral,
         leverage,
         is_long,
-        alice_collateral * leverage * (1-SLIPPAGE_TOL),
+        alice_collateral * (leverage/1e18) * (1-SLIPPAGE_TOL),
         {"from": alice}
     )
 
