@@ -62,7 +62,7 @@ def create_mothership(gov, token, depository, request):
     def create_mothership(tok=token, fee=fee_rate, fee_burn=fee_burn_rate,
                           margin_burn=margin_burn_rate):
         mothership = gov.deploy(OverlayV1Mothership,
-                                depository, fee, fee_burn, margin_burn)
+                                tok, depository, fee, fee_burn, margin_burn)
         tok.grantRole(tok.ADMIN_ROLE(), mothership, {"from": gov})
         return mothership
 

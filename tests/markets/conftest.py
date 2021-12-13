@@ -225,13 +225,11 @@ def create_mothership(token, feed_infos, fees, alice, bob, gov, feed_owner, requ
     ):
         _, market_feed, ovl_feed, quote = fd_getter(feed_owner, feed_infos)
 
-        mothership = gov.deploy(ovlms_type, *ovlms_args)
+        mothership = gov.deploy(ovlms_type, tok, *ovlms_args)
 
         eth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 
         tok.grantRole(tok.ADMIN_ROLE(), mothership, {"from": gov})
-
-        mothership.setOVL(tok, {'from': gov})
 
         market = gov.deploy(
             ovlm_type,
