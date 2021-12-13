@@ -106,7 +106,7 @@ def test_build_success_zero_impact(
     # check position token issued with correct oi shares
     collateral_adjusted = (collateral / 1e18) - trade_fee
     oi_adjusted = collateral_adjusted * (leverage / 1e18)
-    
+
     assert approx(ovl_collateral.balanceOf(bob, pid)/1e18) == oi_adjusted
 
     market_ix = ovl_collateral.marketIndexes(market)
@@ -686,8 +686,8 @@ def test_oi_shares_bothsides_with_funding(
 
 @given(
     oi=strategy(
-        'uint256', 
-        min_value=1, 
+        'uint256',
+        min_value=1,
         max_value=OI_CAP/1e16),
     leverage=strategy(
         'uint16',

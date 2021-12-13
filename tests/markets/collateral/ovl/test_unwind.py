@@ -298,8 +298,8 @@ def test_partial_unwind(
         leverage/1e18,
         fee)
     alice_collateral = get_collateral(
-        alice_oi / (leverage/1e18), 
-        leverage/1e18, 
+        alice_oi / (leverage/1e18),
+        leverage/1e18,
         fee)
 
     # Alice and Bob both builds a position
@@ -406,8 +406,8 @@ def test_unwind_after_transfer(
     # Build parameters
     oi *= 1e16
     collateral = get_collateral(
-        oi / (leverage/1e18), 
-        leverage/1e18, 
+        oi / (leverage/1e18),
+        leverage/1e18,
         ovl_collateral.fee(market))
 
     # Bob builds a position
@@ -529,8 +529,8 @@ def test_unwind_pnl_mint_burn(
 
     oi *= 1e16
     collateral = get_collateral(
-        oi / (leverage/1e18), 
-        leverage/1e18, 
+        oi / (leverage/1e18),
+        leverage/1e18,
         ovl_collateral.fee(market))
 
     token.approve(ovl_collateral, 1e50, {'from': bob})
