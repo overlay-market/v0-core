@@ -399,9 +399,9 @@ def test_oi_shares_onesided_zero_funding(
         min_value=1e18,
         max_value=(OI_CAP - 1e4)/3000),
     leverage=strategy(
-        'uint8',
-        min_value=1,
-        max_value=100),
+        'uint16',
+        min_value=100,
+        max_value=10000),
     multiplier=strategy(
         'decimal',
         min_value="1.01",
@@ -432,9 +432,9 @@ def test_oi_shares_bothsides_zero_funding(
         min_value=1e18,
         max_value=(OI_CAP - 1e4)/300),
     leverage=strategy(
-        'uint8',
-        min_value=1,
-        max_value=100),
+        'uint16',
+        min_value=100,
+        max_value=10000),
     is_long=strategy(
         'bool'))
 @mark.parametrize('price', PRICES)
@@ -450,7 +450,7 @@ def test_entry_update_price_fetching(
     price
 ):
 
-    leverage *= 1e18
+    leverage *= 1e16
 
     brownie.chain.mine(timestamp=start_time)
 
@@ -458,12 +458,10 @@ def test_entry_update_price_fetching(
 
     market_idx = market.pricePointNextIndex()
 
-    print("market_idx", market_idx)
-
     # Mine to the entry time then build
     brownie.chain.mine(timestamp=price["entry"]["timestamp"])
 
-    oi_adjusted_min = collateral * leverage * (1-SLIPPAGE_TOL)
+    oi_adjusted_min = collateral * (leverage/1e18) * (1-SLIPPAGE_TOL)
     _ = ovl_collateral.build(
         market, collateral, leverage, is_long, oi_adjusted_min, {"from": bob})
     idx1 = market.pricePointNextIndex() - 1
