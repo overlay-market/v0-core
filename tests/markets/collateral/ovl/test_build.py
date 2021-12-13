@@ -329,9 +329,9 @@ def test_oi_added(
         min_value=1e18,
         max_value=(OI_CAP - 1e4)/3000),
     leverage=strategy(
-        'uint8',
-        min_value=1,
-        max_value=100),
+        'uint16',
+        min_value=100,
+        max_value=10000),
     multiplier=strategy(
         'decimal',
         min_value="1.01",
@@ -353,7 +353,7 @@ def test_oi_shares_onesided_zero_funding(
     multiplier
 ):
 
-    leverage *= 1e18
+    leverage *= 1e16
 
     brownie.chain.mine(timestamp=start_time)
 
@@ -361,7 +361,7 @@ def test_oi_shares_onesided_zero_funding(
     market.setK(0, {'from': gov})
     multiplier = float(multiplier)
 
-    oi_adjusted_min = collateral * leverage * (1-SLIPPAGE_TOL)
+    oi_adjusted_min = collateral * (leverage / 1e18) * (1-SLIPPAGE_TOL)
 
     # build multiple positions on a side
     _ = ovl_collateral.build(market, collateral, leverage,
@@ -373,8 +373,8 @@ def test_oi_shares_onesided_zero_funding(
      market_oi_short_shares) = market.oi()
 
     collateral_adjusted = collateral - collateral * \
-        leverage*mothership.fee()/FEE_RESOLUTION
-    oi_adjusted = collateral_adjusted*leverage
+        (leverage/1e18)*(ovl_collateral.fee(market)/1e18)
+    oi_adjusted = collateral_adjusted*(leverage/1e18)
 
     expected_total_oi = oi_adjusted + oi_adjusted*multiplier
     expected_total_oi_shares = oi_adjusted + oi_adjusted*multiplier
