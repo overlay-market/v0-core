@@ -231,14 +231,12 @@ def test_build_max_leverage(
     # just to avoid failing min_collateral check because of fees
     trade_amt = MIN_COLLATERAL*2
     oi_adjusted_min = trade_amt * \
-        ( ovl_collateral.maxLeverage(market) / 1e18 ) * (1-SLIPPAGE_TOL)
+        (ovl_collateral.maxLeverage(market) / 1e18) * (1-SLIPPAGE_TOL)
 
     tx = ovl_collateral.build(
         market, trade_amt, ovl_collateral.maxLeverage(market), is_long,
         oi_adjusted_min, {'from': bob})
     assert isinstance(tx, brownie.network.transaction.TransactionReceipt)
-
-    print_logs(tx)
 
     with brownie.reverts(EXPECTED_ERROR_MESSAGE):
         ovl_collateral.build(market, trade_amt,
