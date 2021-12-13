@@ -383,8 +383,8 @@ def test_partial_unwind(
     ),
     leverage=strategy(
         'uint256',
-        min_value=1,
-        max_value=100
+        min_value=100,
+        max_value=10000
     ))
 def test_unwind_after_transfer(
     ovl_collateral,
@@ -399,13 +399,16 @@ def test_unwind_after_transfer(
     is_long
 ):
 
-    leverage *= 1e18
+    leverage *= 1e16
 
     brownie.chain.mine(timestamp=start_time)
 
     # Build parameters
     oi *= 1e16
-    collateral = get_collateral(oi / leverage, leverage, mothership.fee())
+    collateral = get_collateral(
+        oi / (leverage/1e18), 
+        leverage/1e18, 
+        ovl_collateral.fee(market))
 
     # Bob builds a position
     token.approve(ovl_collateral, collateral, {"from": bob})
@@ -414,7 +417,7 @@ def test_unwind_after_transfer(
         collateral,
         leverage,
         is_long,
-        collateral * leverage * (1-SLIPPAGE_TOL),
+        collateral * (leverage/1e18) * (1-SLIPPAGE_TOL),
         {"from": bob}
     )
 
@@ -454,8 +457,8 @@ def test_unwind_after_transfer(
     ),
     leverage=strategy(
         'uint256',
-        min_value=1,
-        max_value=100
+        min_value=100,
+        max_value=10000
     ))
 def test_comptroller_recorded_mint_or_burn(
     ovl_collateral,
@@ -489,8 +492,8 @@ def test_comptroller_recorded_mint_or_burn(
     ),
     leverage=strategy(
         'uint256',
-        min_value=1,
-        max_value=100
+        min_value=100,
+        max_value=10000
     ),
     time_delta=strategies.floats(
         min_value=0.1,
@@ -513,7 +516,7 @@ def test_unwind_pnl_mint_burn(
     Check if whatever was minted/burnt is equal to the PnL
     '''
 
-    leverage *= 1e18
+    leverage *= 1e16
 
     brownie.chain.mine(timestamp=start_time)
 
@@ -525,7 +528,10 @@ def test_unwind_pnl_mint_burn(
     mine_time = feed_infos.market_info[2]['timestamp'][mine_ix]
 
     oi *= 1e16
-    collateral = get_collateral(oi / leverage, leverage, mothership.fee())
+    collateral = get_collateral(
+        oi / (leverage/1e18), 
+        leverage/1e18, 
+        ovl_collateral.fee(market))
 
     token.approve(ovl_collateral, 1e50, {'from': bob})
 
@@ -535,7 +541,7 @@ def test_unwind_pnl_mint_burn(
         collateral,
         leverage,
         is_long,
-        collateral * leverage * (1-SLIPPAGE_TOL),
+        collateral * (leverage/1e18) * (1-SLIPPAGE_TOL),
         {"from": bob}
     )
 
@@ -586,7 +592,7 @@ def test_unwind_pnl_mint_burn(
 
     notional = val + debt_pos
 
-    fee = notional * (mothership.fee() / 1e18)
+    fee = notional * (ovl_collateral.fee(market) / 1e18)
 
     # Other metrics
     debt = bob_balance * (debt_pos/total_pos_shares)
