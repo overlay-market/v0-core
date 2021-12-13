@@ -559,9 +559,9 @@ def test_entry_update_compounding_oi_onesided(
         min_value=1e18,
         max_value=(OI_CAP - 1e4)/3000),
     leverage=strategy(
-        'uint8',
-        min_value=1,
-        max_value=100),
+        'uint16',
+        min_value=100,
+        max_value=10000),
     compoundings=strategy(
         'uint16',
         min_value=1,
@@ -587,6 +587,8 @@ def test_entry_update_compounding_oi_imbalance(
     multiplier
 ):
 
+    leverage *= 1e16
+
     brownie.chain.mine(timestamp=start_time)
 
     # transfer alice some tokens first given the conftest
@@ -595,7 +597,7 @@ def test_entry_update_compounding_oi_imbalance(
     token.approve(ovl_collateral, collateral, {"from": alice})
     token.approve(ovl_collateral, int(multiplier*collateral), {"from": bob})
 
-    oi_adjusted_min = collateral * leverage * (1-SLIPPAGE_TOL)
+    oi_adjusted_min = collateral * (leverage/1e18) * (1-SLIPPAGE_TOL)
     _ = ovl_collateral.build(
         market, collateral, leverage, not is_long,
         oi_adjusted_min, {"from": alice})
@@ -607,8 +609,8 @@ def test_entry_update_compounding_oi_imbalance(
     market_oi_short = market.oiShort()
 
     collateral_adjusted = collateral - collateral * \
-        leverage*mothership.fee()/FEE_RESOLUTION
-    oi_adjusted = collateral_adjusted*leverage
+        (leverage/1e18) * (ovl_collateral.fee(market)/1e18)
+    oi_adjusted = collateral_adjusted*(leverage/1e18)
 
     multiplier = float(multiplier)
 
