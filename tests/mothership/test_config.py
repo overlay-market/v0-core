@@ -4,10 +4,21 @@ def test_balances(token, gov, alice, bob):
     assert token.balanceOf(alice) == 0
 
 
-def test_roles(token, gov, collateral):
+def test_roles(token, mothership, gov, collateral):
     assert token.hasRole(token.ADMIN_ROLE(), gov) is True
     assert token.hasRole(token.MINTER_ROLE(), collateral) is False
     assert token.hasRole(token.BURNER_ROLE(), collateral) is False
+
+    assert mothership.hasRole(mothership.ADMIN(), gov) is True
+    assert mothership.hasRole(mothership.GOVERNOR(), gov) is True
+    assert mothership.hasRole(mothership.GUARDIAN(), gov) is True
+
+
+def test_params(mothership, depository):
+    assert mothership.fee() == 0.00075e18
+    assert mothership.feeBurnRate() == .1e18
+    assert mothership.marginBurnRate() == .05e18
+    assert mothership.feeTo() == depository
 
 
 def test_erc20(token):
