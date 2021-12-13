@@ -377,9 +377,9 @@ contract OverlayV1OVLCollateral is ERC1155 {
         if (_lastPosition.pricePoint < _pricePointNext) {
 
             positions.push(Position.Info({
-                market: _market,
+                market: uint8(_market),
                 isLong: _isLong,
-                leverage: uint8(_leverage),
+                leverage: uint16(_leverage / 1e16),
                 pricePoint: uint32(_pricePointNext),
                 oiShares: uint112(_oi),
                 debt: uint112(_debt),

@@ -52,9 +52,9 @@ PRICES = [
         min_value=1e18,
         max_value=(OI_CAP - 1e4)/100),
     leverage=strategy(
-        'uint8',
-        min_value=1,
-        max_value=100),
+        'uint256',
+        min_value=100,
+        max_value=10000),
     is_long=strategy(
         'bool'))
 def test_build_success_zero_impact(
@@ -69,22 +69,24 @@ def test_build_success_zero_impact(
     is_long
 ):
 
-    leverage *= 1e18
+    leverage *= 1e16
 
     brownie.chain.mine(timestamp=start_time)
 
-    oi = collateral * leverage
-    trade_fee = oi * mothership.fee() / FEE_RESOLUTION
+    oi = (collateral / 1e18) * (leverage / 1e18)
+
+    trade_fee = oi * (ovl_collateral.fee(market) / 1e18)
 
     # get prior state of collateral manager
-    fee_bucket = ovl_collateral.fees()
+    fee_bucket = ovl_collateral.fees() / 1e18
     ovl_balance = token.balanceOf(ovl_collateral)
 
     # approve collateral contract to spend bob's ovl to build position
     token.approve(ovl_collateral, collateral, {"from": bob})
 
-    # build the position
     oi_adjusted_min = oi * (1-SLIPPAGE_TOL)
+
+    # build the position
     tx = ovl_collateral.build(
         market, collateral, leverage, is_long, oi_adjusted_min, {"from": bob})
 
@@ -92,17 +94,20 @@ def test_build_success_zero_impact(
     assert 'positionId' in tx.events['Build']
     pid = tx.events['Build']['positionId']
 
+    fees = ovl_collateral.fees() / 1e18
+
     # fees should be sent to fee bucket in collateral manager
-    assert int(fee_bucket + trade_fee) == approx(ovl_collateral.fees())
+    assert fee_bucket + trade_fee == approx(fees)
 
     # check collateral sent to collateral manager
     assert int(ovl_balance + collateral) \
         == approx(token.balanceOf(ovl_collateral))
 
     # check position token issued with correct oi shares
-    collateral_adjusted = collateral - trade_fee
-    oi_adjusted = collateral_adjusted * leverage
-    assert approx(ovl_collateral.balanceOf(bob, pid)) == int(oi_adjusted)
+    collateral_adjusted = (collateral / 1e18) - trade_fee
+    oi_adjusted = collateral_adjusted * (leverage / 1e18)
+    
+    assert approx(ovl_collateral.balanceOf(bob, pid)/1e18) == oi_adjusted
 
     market_ix = ovl_collateral.marketIndexes(market)
 
@@ -117,11 +122,11 @@ def test_build_success_zero_impact(
 
     assert pos_market == market_ix
     assert pos_islong == is_long
-    assert pos_lev == leverage
+    assert pos_lev == leverage / 1e16
     assert pos_price_idx == market.pricePointNextIndex() - 1
-    assert approx(pos_oishares) == int(oi_adjusted)
-    assert approx(pos_debt) == int(oi_adjusted - collateral_adjusted)
-    assert approx(pos_cost) == int(collateral_adjusted)
+    assert approx(pos_oishares/1e18) == oi_adjusted
+    assert approx(pos_debt/1e18) == oi_adjusted - collateral_adjusted
+    assert approx(pos_cost/1e18) == collateral_adjusted
 
     # # check oi has been added on the market for respective side of trade
     # if is_long:
