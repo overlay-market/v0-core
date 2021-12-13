@@ -158,11 +158,13 @@ contract OverlayV1Mothership is AccessControlEnumerable {
     function adjustGlobalParams(
         uint16 _fee,
         uint16 _feeBurnRate,
-        address _feeTo
+        address _feeTo,
+        uint _marginBurnRate
     ) external onlyGovernor {
         fee = _fee;
         feeBurnRate = _feeBurnRate;
         feeTo = _feeTo;
+        marginBurnRate = _marginBurnRate;
     }
 
     function getUpdateParams() external view returns (
