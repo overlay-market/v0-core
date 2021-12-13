@@ -20,7 +20,7 @@ contract OverlayV1Mothership is AccessControlEnumerable {
     bytes32 public constant BURNER = keccak256("BURNER");
 
     // ovl erc20 token
-    address public ovl;
+    address public immutable ovl;
 
     // portion of liquidations to burn on update
     uint public marginBurnRate;
@@ -65,18 +65,14 @@ contract OverlayV1Mothership is AccessControlEnumerable {
         _setRoleAdmin(GOVERNOR, ADMIN);
         _setRoleAdmin(GUARDIAN, ADMIN);
 
-        // global params
+        // immutable params
         ovl = _ovl;
+
+        // global params
         fee = _fee;
         feeBurnRate = _feeBurnRate;
         feeTo = _feeTo;
         marginBurnRate = _marginBurnRate;
-    }
-
-    function setOVL (address _ovl) external onlyGovernor {
-
-        ovl = _ovl;
-
     }
 
     function totalMarkets () external view returns (uint) {
