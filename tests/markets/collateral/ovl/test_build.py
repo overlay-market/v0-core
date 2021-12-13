@@ -659,9 +659,9 @@ def test_entry_update_compounding_oi_imbalance(
         min_value=1e18,
         max_value=(OI_CAP - 1e4)/3000),
     leverage=strategy(
-        'uint8',
-        min_value=1,
-        max_value=100),
+        'uint16',
+        min_value=100,
+        max_value=10000),
     multiplier=strategy(
         'decimal',
         min_value="1.01",
@@ -685,10 +685,20 @@ def test_oi_shares_bothsides_with_funding(
 
 
 @given(
-    oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
-    leverage=strategy('uint8', min_value=1, max_value=100),
-    is_long=strategy('bool'),
-    lmbda=strategy('decimal', min_value="0.5", max_value="5.0"))
+    oi=strategy(
+        'uint256', 
+        min_value=1, 
+        max_value=OI_CAP/1e16),
+    leverage=strategy(
+        'uint16',
+        min_value=100,
+        max_value=10000),
+    is_long=strategy(
+        'bool'),
+    lmbda=strategy(
+        'decimal',
+        min_value="0.5",
+        max_value="5.0"))
 def test_build_w_impact(
         ovl_collateral,
         token,
@@ -702,6 +712,8 @@ def test_build_w_impact(
         is_long,
         lmbda
 ):
+
+    leverage *= 1e16
 
     brownie.chain.mine(timestamp=start_time)
 
@@ -717,14 +729,14 @@ def test_build_w_impact(
     )
 
     oi *= 1e16
-    collateral = oi / leverage
-    trade_fee = oi * mothership.fee() / FEE_RESOLUTION
+    collateral = oi / (leverage/1e18)
+    trade_fee = oi * ovl_collateral.fee(market) / 1e18
 
     q = oi / market.oiCap()
     impact_fee = oi * (1 - math.exp(-lmbda * q))
 
     collateral_adjusted = collateral - impact_fee - trade_fee
-    oi_adjusted = collateral_adjusted * leverage
+    oi_adjusted = collateral_adjusted * (leverage/1e18)
 
     # get prior state of collateral manager
     ovl_balance = token.balanceOf(ovl_collateral)
@@ -767,6 +779,8 @@ def test_build_w_impact(
     # check position token issued with correct oi shares
     assert approx(ovl_collateral.balanceOf(bob, pid)) == int(oi_adjusted)
 
+    market_ix = ovl_collateral.marketIndexes(market)
+
     # check position attributes for PID
     (pos_market,
      pos_islong,
@@ -776,9 +790,9 @@ def test_build_w_impact(
      pos_debt,
      pos_cost) = ovl_collateral.positions(pid)
 
-    assert pos_market == market
+    assert pos_market == market_ix
     assert pos_islong == is_long
-    assert pos_lev == leverage
+    assert pos_lev == leverage / 1e16
     assert pos_price_idx == market.pricePointNextIndex() - 1
     assert approx(pos_oishares) == int(oi_adjusted)
     assert approx(pos_debt) == int(oi_adjusted - collateral_adjusted)
