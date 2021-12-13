@@ -497,9 +497,9 @@ def test_entry_update_price_fetching(
         min_value=1e18,
         max_value=(OI_CAP - 1e4)/300),
     leverage=strategy(
-        'uint8',
-        min_value=1,
-        max_value=100),
+        'uint16',
+        min_value=100,
+        max_value=10000),
     compoundings=strategy(
         'uint16',
         min_value=1,
@@ -519,11 +519,13 @@ def test_entry_update_compounding_oi_onesided(
     compoundings
 ):
 
+    leverage *= 1e16
+
     brownie.chain.mine(timestamp=start_time)
 
     token.approve(ovl_collateral, collateral*2, {"from": bob})
 
-    oi_adjusted_min = collateral * leverage * (1-SLIPPAGE_TOL)
+    oi_adjusted_min = collateral * (leverage/1e18) * (1-SLIPPAGE_TOL)
     _ = ovl_collateral.build(
         market, collateral, leverage, is_long, oi_adjusted_min, {"from": bob})
 
@@ -531,11 +533,11 @@ def test_entry_update_compounding_oi_onesided(
         market, collateral, leverage, is_long, oi_adjusted_min, {"from": bob})
     oi2 = market.oiLong() if is_long else market.oiShort()
 
-    oi = collateral * leverage
+    oi = collateral * (leverage / 1e18)
     trade_fee = oi * mothership.fee() / FEE_RESOLUTION
 
     collateral_adjusted = collateral - trade_fee
-    oi_adjusted = collateral_adjusted * leverage
+    oi_adjusted = collateral_adjusted * (leverage / 1e18)
     assert approx(oi2) == int(2*oi_adjusted)
 
     brownie.chain.mine(timedelta=compoundings*market.compoundingPeriod()+1)
