@@ -137,8 +137,8 @@ def test_unwind_oi_removed(
     ),
     leverage=strategy(
         'uint256',
-        min_value=1,
-        max_value=100
+        min_value=100,
+        max_value=10000
     ),
     time_delta=strategies.floats(
         min_value=0.1,
@@ -158,7 +158,7 @@ def test_unwind_expected_fee(
     time_delta
 ):
 
-    leverage *= 1e18
+    leverage *= 1e16
 
     brownie.chain.mine(timestamp=start_time)
 
@@ -169,7 +169,10 @@ def test_unwind_expected_fee(
 
     oi *= 1e16
 
-    collateral = get_collateral(oi / leverage, leverage, mothership.fee())
+    collateral = get_collateral(
+        oi / (leverage/1e18),
+        leverage/1e18,
+        ovl_collateral.fee(market)/1e18)
 
     token.approve(ovl_collateral, collateral, {"from": bob})
 
@@ -178,7 +181,7 @@ def test_unwind_expected_fee(
         collateral,
         leverage,
         is_long,
-        collateral * leverage * (1-SLIPPAGE_TOL),
+        collateral * (leverage/1e18) * (1-SLIPPAGE_TOL),
         {"from": bob}
     )
 
@@ -199,7 +202,7 @@ def test_unwind_expected_fee(
 
     exit_index = market.pricePointNextIndex()
 
-    ovl_collateral.unwind(
+    _ = ovl_collateral.unwind(
         pid,
         bob_balance,
         {"from": bob}
@@ -233,7 +236,11 @@ def test_unwind_expected_fee(
 
     notional = val + debt_pos
 
-    fee = notional * (mothership.fee() / 1e18)
+    fee = notional * (ovl_collateral.fee(market) / 1e18)
+
+    if notional - debt_pos < fee:
+        # lower fee is position is underwater (value < 0)
+        fee = notional - debt_pos
 
     fees_now = ovl_collateral.fees() / 1e18
 

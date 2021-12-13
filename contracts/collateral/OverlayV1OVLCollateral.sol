@@ -459,7 +459,12 @@ contract OverlayV1OVLCollateral is ERC1155 {
 
         uint _userValueAdjusted = _userNotional - _feeAmount;
         if (_userValueAdjusted > _userDebt) _userValueAdjusted -= _userDebt;
-        else _userValueAdjusted = _feeAmount = 0;
+        else {
+
+            _userValueAdjusted = 0;
+            _feeAmount = _userNotional > _userDebt ? _userNotional - _userDebt : 0;
+
+        }
 
         fees += _feeAmount; // adds to fee pot, which is transferred on update
 
