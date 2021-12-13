@@ -899,11 +899,24 @@ def test_build_oi_adjusted_min(
 
 
 @given(
-    oi=strategy('uint256', min_value=1, max_value=OI_CAP/(100e16)),
-    leverage=strategy('uint8', min_value=1, max_value=100),
-    is_long=strategy('bool'),
-    lmbda=strategy('decimal', min_value="0.5", max_value="5.0"),
-    num_builds=strategy('uint8', min_value=2, max_value=10))
+    oi=strategy(
+        'uint256',
+        min_value=1,
+        max_value=OI_CAP/(100e16)),
+    leverage=strategy(
+        'uint16',
+        min_value=100,
+        max_value=10000),
+    is_long=strategy(
+        'bool'),
+    lmbda=strategy(
+        'decimal',
+        min_value="0.5",
+        max_value="5.0"),
+    num_builds=strategy(
+        'uint8',
+        min_value=2,
+        max_value=10))
 def test_build_multiple_in_one_impact_window(
         ovl_collateral,
         token,
@@ -919,6 +932,8 @@ def test_build_multiple_in_one_impact_window(
         num_builds
 ):
 
+    leverage *= 1e16
+
     brownie.chain.mine(timestamp=start_time)
 
     lmbda = float(lmbda)
@@ -933,8 +948,8 @@ def test_build_multiple_in_one_impact_window(
     )
 
     oi *= 1e16
-    collateral = oi / leverage
-    trade_fee = oi * mothership.fee() / FEE_RESOLUTION
+    collateral = oi / (leverage/1e18)
+    trade_fee = oi * ovl_collateral.fee(market) / 1e18
 
     # check no market pressure before builds
     assert market.pressure(is_long, 0, market.oiCap()) == 0
@@ -962,7 +977,7 @@ def test_build_multiple_in_one_impact_window(
         assert int(impact_fee) == approx(proj_impact, rel=1e-04)
 
         collateral_adjusted = collateral - impact_fee - trade_fee
-        oi_adjusted = collateral_adjusted * leverage
+        oi_adjusted = collateral_adjusted * (leverage/1e18)
 
         # get prior state of collateral manager
         ovl_balance = token.balanceOf(ovl_collateral)
@@ -1006,9 +1021,9 @@ def test_build_multiple_in_one_impact_window(
          pos_debt,
          pos_cost) = ovl_collateral.positions(pid)
 
-        assert pos_market == market
+        assert pos_market == ovl_collateral.marketIndexes(market)
         assert pos_islong == is_long
-        assert pos_lev == leverage
+        assert pos_lev == leverage / 1e16
         assert pos_price_idx == market.pricePointNextIndex() - 1
         assert approx(pos_oishares) == int(oi_adjusted)
         assert approx(pos_debt) == int(oi_adjusted - collateral_adjusted)
