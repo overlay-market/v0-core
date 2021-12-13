@@ -170,15 +170,13 @@ contract OverlayV1Mothership is AccessControlEnumerable {
         uint _feeBurnRate,
         uint _marginBurnRate
     ) internal {
-        feeTo = _feeTo;
-
         require(_fee >= MIN_FEE && _fee <= MAX_FEE, "OVLV1: fee rate out of bounds");
-        fee = _fee;
-
         require(_feeBurnRate >= MIN_FEE_BURN && _feeBurnRate <= MAX_FEE_BURN, "OVLV1: fee burn rate out of bounds");
-        feeBurnRate = _feeBurnRate;
-
         require(_marginBurnRate >= MIN_MARGIN_BURN && _marginBurnRate <= MAX_MARGIN_BURN, "OVLV1: margin burn rate out of bounds");
+
+        feeTo = _feeTo;
+        fee = _fee;
+        feeBurnRate = _feeBurnRate;
         marginBurnRate = _marginBurnRate;
 
         emit UpdateGlobalParams(
