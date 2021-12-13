@@ -204,7 +204,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
 
     /// @notice Build a position on Overlay with OVL collateral
-    /// @dev This interacts with an Overlay Market to register oi and hold 
+    /// @dev This interacts with an Overlay Market to register oi and hold
     /// positions on behalf of users.
     /// @param _market The address of the desired market to interact with.
     /// @param _collateral The amount of OVL to use as collateral in the position.
@@ -301,12 +301,16 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         emit Unwind(pos.market, _positionId, _userOi, _userDebt);
 
-        // TODO: think through edge case of underwater position ... and fee adjustments ...
         uint _feeAmount = _userNotional.mulUp(mothership.fee());
 
         uint _userValueAdjusted = _userNotional - _feeAmount;
-        if (_userValueAdjusted > _userDebt) _userValueAdjusted -= _userDebt;
-        else _userValueAdjusted = 0;
+        if (_userValueAdjusted > _userDebt) {
+            _userValueAdjusted -= _userDebt;
+        } else {
+            // underwater position set to zero value with fees lowered appropriately
+            _userValueAdjusted = 0;
+            _feeAmount = _userNotional > _userDebt ? _userNotional - _userDebt : 0;
+        }
 
         fees += _feeAmount; // adds to fee pot, which is transferred on update
 
@@ -320,16 +324,16 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         if (_userCost < _userValueAdjusted) {
 
             ovl.transferMint(
-                msg.sender, 
-                _userCost, 
+                msg.sender,
+                _userCost,
                 _userValueAdjusted - _userCost
             );
 
         } else {
 
             ovl.transferBurn(
-                msg.sender, 
-                _userValueAdjusted, 
+                msg.sender,
+                _userValueAdjusted,
                 _userCost - _userValueAdjusted
             );
 
@@ -415,9 +419,9 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     }
 
 
-    /// @notice Retrieves required information from market contract 
+    /// @notice Retrieves required information from market contract
     /// to calculate position value with.
-    /// @dev Gets price frame, total open interest and 
+    /// @dev Gets price frame, total open interest and
     /// total open interest shares from an Overlay market.
     /// @param _positionId ID of position to determine value of.
     /// @return value_ Value of the position
