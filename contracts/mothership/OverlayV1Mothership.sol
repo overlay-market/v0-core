@@ -7,11 +7,14 @@ import "../OverlayToken.sol";
 
 contract OverlayV1Mothership is AccessControlEnumerable {
 
-    uint16 public constant MIN_FEE = 1; // 0.01%
-    uint16 public constant MAX_FEE = 100; // 1.00%
+    uint public constant MIN_FEE = 1e14; // 0.01%
+    uint public constant MAX_FEE = 1e16; // 1.00%
 
-    uint16 public constant MIN_MARGIN_MAINTENANCE = 100; // 1% maintenance
-    uint16 public constant MAX_MARGIN_MAINTENANCE = 6000; // 60% maintenance
+    uint public constant MIN_FEE_BURN = 0; // 0%
+    uint public constant MAX_FEE_BURN = 1e18; // 100%
+
+    uint public constant MIN_MARGIN_BURN = 0; // 0%
+    uint public constant MAX_MARGIN_BURN = 1e18; // 100%
 
     bytes32 public constant ADMIN = 0x00;
     bytes32 public constant GOVERNOR = keccak256("GOVERNOR");
@@ -41,8 +44,8 @@ contract OverlayV1Mothership is AccessControlEnumerable {
     event UpdateCollateral(address _collateral, bool _active);
     event UpdateMarket(address _market, bool _active);
     event UpdateGlobalParams(
-        uint16 _fee,
-        uint16 _feeBurnRate,
+        uint _fee,
+        uint _feeBurnRate,
         address _feeTo,
         uint _marginBurnRate
     );
@@ -68,10 +71,7 @@ contract OverlayV1Mothership is AccessControlEnumerable {
         ovl = _ovl;
 
         // global params
-        fee = _fee;
-        feeBurnRate = _feeBurnRate;
-        feeTo = _feeTo;
-        marginBurnRate = _marginBurnRate;
+        _setGlobalParams(_feeTo, _fee, _feeBurnRate, _marginBurnRate);
     }
 
     function totalMarkets () external view returns (uint) {
@@ -175,16 +175,21 @@ contract OverlayV1Mothership is AccessControlEnumerable {
 
     }
 
-    /// @notice Allows gov to adjust global params
-    function adjustGlobalParams(
-        uint16 _fee,
-        uint16 _feeBurnRate,
+    function _setGlobalParams(
         address _feeTo,
+        uint _fee,
+        uint _feeBurnRate,
         uint _marginBurnRate
-    ) external onlyGovernor {
-        fee = _fee;
-        feeBurnRate = _feeBurnRate;
+    ) internal {
         feeTo = _feeTo;
+
+        require(_fee >= MIN_FEE && _fee <= MAX_FEE, "OVLV1: fee rate out of bounds");
+        fee = _fee;
+
+        require(_feeBurnRate >= MIN_FEE_BURN && _feeBurnRate <= MAX_FEE_BURN, "OVLV1: fee burn rate out of bounds");
+        feeBurnRate = _feeBurnRate;
+
+        require(_marginBurnRate >= MIN_MARGIN_BURN && _marginBurnRate <= MAX_MARGIN_BURN, "OVLV1: margin burn rate out of bounds");
         marginBurnRate = _marginBurnRate;
 
         emit UpdateGlobalParams(
@@ -193,6 +198,16 @@ contract OverlayV1Mothership is AccessControlEnumerable {
             _feeTo,
             _marginBurnRate
         );
+    }
+
+    /// @notice Allows gov to adjust global params
+    function adjustGlobalParams(
+        address _feeTo,
+        uint _fee,
+        uint _feeBurnRate,
+        uint _marginBurnRate
+    ) external onlyGovernor {
+        _setGlobalParams(_feeTo, _fee, _feeBurnRate, _marginBurnRate);
     }
 
     function getUpdateParams() external view returns (
