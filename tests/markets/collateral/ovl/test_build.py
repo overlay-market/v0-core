@@ -143,11 +143,11 @@ def test_build_when_market_not_supported(
     notamarket,
     bob,
     start_time,
-    leverage=1,  # doesn't matter
+    leverage=100,  # doesn't matter
     is_long=True  # doesn't matter
 ):
 
-    leverage *= 1e18
+    leverage *= 1e16
 
     brownie.chain.mine(timestamp=start_time)
 
@@ -156,7 +156,7 @@ def test_build_when_market_not_supported(
     token.approve(ovl_collateral, 3e18, {"from": bob})
     # just to avoid failing min_collateral check because of fees
     trade_amt = MIN_COLLATERAL*2
-    oi_adjusted_min = trade_amt * leverage * (1-SLIPPAGE_TOL)
+    oi_adjusted_min = (trade_amt * leverage / 1e18) * (1-SLIPPAGE_TOL)
 
     assert mothership.marketActive(market)
     assert not mothership.marketActive(notamarket)
@@ -167,9 +167,9 @@ def test_build_when_market_not_supported(
 
 @given(
     leverage=strategy(
-        'uint8',
-        min_value=1,
-        max_value=100),
+        'uint16',
+        min_value=100,
+        max_value=10000),
     is_long=strategy(
         'bool'))
 def test_build_min_collateral(
@@ -183,7 +183,7 @@ def test_build_min_collateral(
     is_long
 ):
 
-    leverage *= 1e18
+    leverage *= 1e16
 
     brownie.chain.mine(timestamp=start_time)
 
@@ -194,10 +194,12 @@ def test_build_min_collateral(
     # Here we compute exactly how much to trade in order to have just the
     # MIN_COLLATERAL after fees are taken
     # TODO: check this logic ...
-    FL = mothership.fee()*leverage
-    fee_offset = MIN_COLLATERAL*(FL/(FEE_RESOLUTION - FL))
+    FL = ovl_collateral.fee(market) * leverage / 1e18
+    fee_offset = (MIN_COLLATERAL) * (FL / (FEE_RESOLUTION - FL))
+
     trade_amt = (MIN_COLLATERAL + fee_offset)
-    oi_adjusted_min = trade_amt * leverage * (1-SLIPPAGE_TOL)
+
+    oi_adjusted_min = trade_amt * (leverage / 1e18) * (1-SLIPPAGE_TOL)
 
     # higher than min collateral passes
     tx = ovl_collateral.build(market, trade_amt + 1,
