@@ -15,9 +15,6 @@ contract OverlayV1Mothership is AccessControlEnumerable {
 
     bytes32 public constant ADMIN = 0x00;
     bytes32 public constant GOVERNOR = keccak256("GOVERNOR");
-    bytes32 public constant GUARDIAN = keccak256("GUARDIAN");
-    bytes32 public constant MINTER = keccak256("MINTER");
-    bytes32 public constant BURNER = keccak256("BURNER");
 
     // ovl erc20 token
     address public immutable ovl;
@@ -55,11 +52,6 @@ contract OverlayV1Mothership is AccessControlEnumerable {
         _;
     }
 
-    modifier onlyGuardian () {
-        require(hasRole(GUARDIAN, msg.sender), "OVLV1:!guard");
-        _;
-    }
-
     constructor(
         address _ovl,
         address _feeTo,
@@ -70,9 +62,7 @@ contract OverlayV1Mothership is AccessControlEnumerable {
 
         _setupRole(ADMIN, msg.sender);
         _setupRole(GOVERNOR, msg.sender);
-        _setupRole(GUARDIAN, msg.sender);
         _setRoleAdmin(GOVERNOR, ADMIN);
-        _setRoleAdmin(GUARDIAN, ADMIN);
 
         // immutable params
         ovl = _ovl;
