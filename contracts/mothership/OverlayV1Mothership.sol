@@ -148,6 +148,8 @@ contract OverlayV1Mothership is AccessControlEnumerable {
 
         require(!collateralActive[_collateral], "OVLV1:!disabled");
 
+        collateralActive[_collateral] = true;
+
         OverlayToken(ovl).grantRole(OverlayToken(ovl).MINTER_ROLE(), _collateral);
 
         OverlayToken(ovl).grantRole(OverlayToken(ovl).BURNER_ROLE(), _collateral);
@@ -157,6 +159,8 @@ contract OverlayV1Mothership is AccessControlEnumerable {
     function disableCollateral (address _collateral) external onlyGovernor {
 
         require(collateralActive[_collateral], "OVLV1:!enabled");
+
+        collateralActive[_collateral] = false;
 
         OverlayToken(ovl).revokeRole(OverlayToken(ovl).MINTER_ROLE(), _collateral);
 
