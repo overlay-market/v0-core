@@ -347,7 +347,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             _feeAmount = _userNotional > _userDebt ? _userNotional - _userDebt : 0;
         }
 
-        fees += _feeAmount; // adds to fee pot, which is transferred on update
+        fees += _feeAmount; // adds to fee pot, which is transferred on disburse
 
         pos.debt -= _userDebt;
         pos.cost -= _userCost;
