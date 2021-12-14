@@ -52,7 +52,6 @@ abstract contract OverlayV1PricePoint {
 
     }
 
-
     /// @notice All past price points.
     /// @dev Returns the price point if it exists.
     /// @param _pricePointIndex Index of the price point being queried.
@@ -60,7 +59,7 @@ abstract contract OverlayV1PricePoint {
     /// @return bid_ Bid.
     /// @return ask_ Ask.
     /// @return depth_ Market liquidity in OVL terms.
-    function _pricePoints (
+    function _pricePointsInternal (
         uint32 _updated,
         uint256 _pricePointIndex
     ) internal view returns (
@@ -87,6 +86,11 @@ abstract contract OverlayV1PricePoint {
 
     }
 
+    function pricePointCurrent () public view virtual returns (
+        uint depth_,
+        uint ask_,
+        uint bid_
+    );
 
     /// @notice Current price point.
     /// @dev Returns the price point if it exists.

@@ -137,11 +137,11 @@ abstract contract OverlayV1Choreographer is
         uint256 _pricePointIndex
     ) external view returns (uint256, uint256, uint256) {
 
-        return _pricePoints(tempo.updated, _pricePointIndex);
+        return _pricePointsInternal(tempo.updated, _pricePointIndex);
 
     }
 
-    function pricePointCurrent () public view returns (
+    function pricePointCurrent () public view override returns (
         uint depth_,
         uint ask_,
         uint bid_
