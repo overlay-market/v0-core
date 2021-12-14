@@ -11,11 +11,11 @@ abstract contract OverlayV1OI {
 
     uint32 immutable public compoundingPeriod;
 
-    uint256 internal __oiLong__; // total long open interest
-    uint256 internal __oiShort__; // total short open interest
+    uint112 internal __oiLong__; // total long open interest
+    uint112 public oiLongShares; // total shares of long open interest outstanding
 
-    uint256 public oiLongShares; // total shares of long open interest outstanding
-    uint256 public oiShortShares; // total shares of short open interest outstanding
+    uint112 internal __oiShort__; // total short open interest
+    uint112 public oiShortShares; // total shares of short open interest outstanding
 
     uint256 public k;
 
@@ -139,8 +139,8 @@ abstract contract OverlayV1OI {
             _k
         );
 
-        __oiLong__ = _oiLong;
-        __oiShort__ = _oiShort;
+        __oiLong__ = uint112(_oiLong);
+        __oiShort__ = uint112(_oiShort);
 
         emit FundingPaid(_oiLong, _oiShort, fundingPaid_);
 
@@ -153,15 +153,15 @@ abstract contract OverlayV1OI {
     /// @param _oiCap Open interest cap to require not to be breached.
     function addOi(
         bool _isLong,
-        uint256 _openInterest,
-        uint256 _oiCap
+        uint112 _openInterest,
+        uint _oiCap
     ) internal {
 
         if (_isLong) {
 
             oiLongShares += _openInterest;
 
-            uint _oiLong = __oiLong__ + _openInterest;
+            uint112 _oiLong = __oiLong__ + _openInterest;
 
             require(_oiLong <= _oiCap, "OVLV1:>cap");
 
@@ -171,7 +171,7 @@ abstract contract OverlayV1OI {
 
             oiShortShares += _openInterest;
 
-            uint _oiShort = __oiShort__ + _openInterest;
+            uint112 _oiShort = __oiShort__ + _openInterest;
 
             require(_oiShort <= _oiCap, "OVLV1:>cap");
 

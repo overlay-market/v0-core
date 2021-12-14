@@ -117,8 +117,8 @@ abstract contract OverlayV1Comptroller {
 
             uint32 _brrrrdWindowMicro = brrrrdWindowMicro;
 
-            uint _epochs = (_now - _brrrrdFiling) / _brrrrdWindowMicro;
-            uint _tEpoch = _brrrrdFiling + (_epochs * _brrrrdWindowMicro);
+            uint32 _epochs = (_now - _brrrrdFiling) / _brrrrdWindowMicro;
+            uint32 _tEpoch = _brrrrdFiling + (_epochs * _brrrrdWindowMicro);
 
             _roller.time = _tEpoch;
             _roller.ying += brrrrdAccumulator[0];
@@ -264,10 +264,10 @@ abstract contract OverlayV1Comptroller {
                 _impactCycloid,
                 impactWindow );
 
-        uint _pressure = _oi.divDown(_cap);
+        uint __pressure = _oi.divDown(_cap);
 
-        if (_isLong) _rollerNow.ying += uint112(_pressure);
-        else _rollerNow.yang += uint112(_pressure);
+        if (_isLong) _rollerNow.ying += uint112(__pressure);
+        else _rollerNow.yang += uint112(__pressure);
 
         uint _p = lmbda.mulDown(_isLong
             ? uint(_rollerNow.ying - _rollerThen.ying)

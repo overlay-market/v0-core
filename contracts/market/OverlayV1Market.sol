@@ -169,8 +169,8 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
 
         tempo = _tempo;
 
-        if (_isLong) ( __oiLong__ -= _oi, oiLongShares -= _oiShares );
-        else ( __oiShort__ -= _oi, oiShortShares -= _oiShares );
+        if (_isLong) ( __oiLong__ -= uint112(_oi), oiLongShares -= uint112(_oiShares) );
+        else ( __oiShort__ -= uint112(_oi), oiShortShares -= uint112(_oiShares) );
 
     }
 

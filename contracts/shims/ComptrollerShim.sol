@@ -175,7 +175,7 @@ contract ComptrollerShim is OverlayV1Comptroller {
             rollerThen_ ) = scry(
                 getImpactRoller, 
                 impactChord,
-                impactCycloid, 
+                tempo.impactCycloid, 
                 uint32(_ago)
             );
 
