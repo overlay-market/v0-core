@@ -818,10 +818,20 @@ def test_build_w_impact(
 
 
 @given(
-    oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
-    leverage=strategy('uint8', min_value=1, max_value=100),
-    is_long=strategy('bool'),
-    lmbda=strategy('decimal', min_value="0.5", max_value="5.0"))
+    oi=strategy(
+        'uint256',
+        min_value=1,
+        max_value=OI_CAP/1e16),
+    leverage=strategy(
+        'uint16',
+        min_value=100,
+        max_value=10000),
+    is_long=strategy(
+        'bool'),
+    lmbda=strategy(
+        'decimal',
+        min_value="0.5",
+        max_value="5.0"))
 def test_build_oi_adjusted_min(
         ovl_collateral,
         token,
@@ -836,13 +846,15 @@ def test_build_oi_adjusted_min(
         lmbda
 ):
 
+    leverage *= 1e16
+
     brownie.chain.mine(timestamp=start_time)
 
     lmbda = float(lmbda)
 
     market.setComptrollerParams(
         lmbda*1e18,
-        market.oiCap(),
+        market.staticCap(),
         market.brrrrdExpected(),
         market.brrrrdWindowMacro(),
         market.brrrrdWindowMicro(),
@@ -850,14 +862,16 @@ def test_build_oi_adjusted_min(
     )
 
     oi *= 1e16
-    collateral = oi / leverage
-    trade_fee = oi * mothership.fee() / FEE_RESOLUTION
+    collateral = oi / (leverage/1e18)
+
+    trade_fee = oi * (ovl_collateral.fee(market) / 1e18)
 
     q = oi / market.oiCap()
+
     impact_fee = oi * (1 - math.exp(-lmbda * q))
 
     collateral_adjusted = collateral - impact_fee - trade_fee
-    oi_adjusted = collateral_adjusted * leverage
+    oi_adjusted = collateral_adjusted * (leverage/1e18)
 
     market_oi_cap = market.oiCap()  # accounts for depth, brrrd, static
 
@@ -871,6 +885,7 @@ def test_build_oi_adjusted_min(
             ovl_collateral.build(market, collateral, leverage, is_long,
                                  0, {"from": bob})
         return
+
     # and if dynamic cap has brought down oi cap from static value
     elif oi_adjusted > market_oi_cap:
         EXPECTED_ERROR_MESSAGE = "OVLV1:>cap"
