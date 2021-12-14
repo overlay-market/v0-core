@@ -93,7 +93,7 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
 
         debtAdjusted_ = oiAdjusted_ - collateralAdjusted_;
 
-        addOi(_isLong, oiAdjusted_, _cap);
+        addOi(_isLong, uint112(oiAdjusted_), _cap);
 
     }
 
@@ -215,7 +215,7 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
 
             _depth = _pricePoint.depth;
 
-            updated = _now;
+            _updated = _now;
 
         } else (,,_depth) = pricePointCurrent();
 
