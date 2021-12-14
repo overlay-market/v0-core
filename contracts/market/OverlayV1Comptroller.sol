@@ -341,7 +341,7 @@ abstract contract OverlayV1Comptroller {
 
         cap_ = _surpassed ? 0 : _burnt || _expected
             ? _computeOiCap(false, _depth, staticCap, 0, 0)
-            : _computeOiCap(true, _depth, staticCap, _brrrrd, brrrrdExpected);
+            : _computeOiCap(true, _depth, staticCap, _brrrrd, _brrrrdExpected);
 
     }
 
