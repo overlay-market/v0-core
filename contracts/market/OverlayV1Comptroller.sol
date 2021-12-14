@@ -118,7 +118,7 @@ abstract contract OverlayV1Comptroller {
             uint32 _brrrrdWindowMicro = brrrrdWindowMicro;
 
             uint _epochs = (_now - _brrrrdFiling) / _brrrrdWindowMicro;
-            uint _tEpoch = _brrrrdFiling + (_windowsPast * _brrrrdWindowMicro);
+            uint _tEpoch = _brrrrdFiling + (_epochs * _brrrrdWindowMicro);
 
             _roller.time = _tEpoch;
             _roller.ying += brrrrdAccumulator[0];
