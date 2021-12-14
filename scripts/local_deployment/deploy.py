@@ -12,6 +12,10 @@ from brownie import \
 import os
 import json
 
+def print_logs(tx):
+    for i in range(len(tx.events['log'])):
+        print(tx.events['log'][i]['k'] + ": " + str(tx.events['log'][i]['v']))
+
 ''' OVERLAY TOKEN PARAMETERS '''
 TOKEN_TOTAL_SUPPLY = 8000000e18
 
@@ -36,9 +40,9 @@ BRRRR_WINDOW_MACRO = 2592000
 BRRRR_WINDOW_MICRO = 86400
 
 ''' OVERLAY QUANTO DAI_ETH MARKET PARAMETERS ON OVL COLLATERAL MANAGER '''
-MARGIN_MAINTENANCE = .06e18
+MAX_LEVERAGE = 100e18
 MARGIN_REWARD_RATE = .5e18
-MAX_LEVERAGE = 100
+MARGIN_MAINTENANCE = .06e18
 
 ''' OVERLAY MOTHERSHIP PARAMETERS '''
 FEE = .0015e18
@@ -76,7 +80,6 @@ def deploy_uni_pool(factory, token0, token1, path):
 
     with open(os.path.normpath(
             os.path.join(base, path + '_reflected.json'))) as f:
-
         beginning = json.load(f)['timestamp'][0]
 
     factory.createPool(token0, token1)
@@ -164,11 +167,20 @@ def deploy_ovl_collateral(mothership, market, ovl):
         mothership
     )
 
-    ovl_collateral.setMarketInfo(
+    # ovl_collateral.setMarketInfo(
+    #     market,
+    #     MARGIN_MAINTENANCE,
+    #     MARGIN_REWARD_RATE,
+    #     MAX_LEVERAGE,
+    #     {"from": GOV}
+    # )
+
+    ovl_collateral.addMarket(
         market,
-        MARGIN_MAINTENANCE,
-        MARGIN_REWARD_RATE,
+        FEE,
         MAX_LEVERAGE,
+        MARGIN_REWARD_RATE,
+        MARGIN_MAINTENANCE,
         {"from": GOV}
     )
 
@@ -230,8 +242,6 @@ def unwind_position(
         position_shares,
         {"from": unwinder}
     )
-
-    print("unwind gas", tx_unwind.gas_used)
 
 def transfer_position_shares(
     collateral_manager,
@@ -298,7 +308,7 @@ def main():
         ovl_collateral,
         market,
         5e18,
-        1,
+        1e18,
         True,
         ALICE
     )
@@ -309,10 +319,12 @@ def main():
         ovl_collateral,
         market,
         5e18,
-        5,
+        5e18,
         False,
         ALICE
     )
+
+    chain.mine(timedelta=100)
 
     transfer_position_shares(
         ovl_collateral,
@@ -321,6 +333,8 @@ def main():
         position_1['id'],
         position_1['oi'] / 2
     )
+
+    chain.mine(timedelta=100)
 
     unwind_position(
         ovl_collateral,
@@ -344,7 +358,7 @@ def main():
         ovl_collateral,
         market,
         5e18,
-        1,
+        1e18,
         True,
         ALICE
     )
@@ -355,7 +369,7 @@ def main():
         ovl_collateral,
         market,
         5e18,
-        1,
+        1e18,
         True,
         ALICE
     )
@@ -366,7 +380,7 @@ def main():
         ovl_collateral,
         market,
         5e18,
-        1,
+        1e18,
         True,
         ALICE
     )
@@ -385,7 +399,7 @@ def main():
         ovl_collateral,
         market,
         5e18,
-        1,
+        1e18,
         True,
         ALICE
     )
