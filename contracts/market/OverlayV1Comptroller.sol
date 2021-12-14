@@ -113,12 +113,14 @@ abstract contract OverlayV1Comptroller {
 
             Roller memory _roller = brrrrdRollers[_brrrrdCycloid];
 
-            uint _lastMoment = _roller.time;
+            uint32 _lastMoment = _roller.time;
 
-            // TODO: Bug? Should assign brrrrdFiling to new value?
-            // TODO: Yes this should be last brrrrd epoch before 
-            // now, according to the brrrrdWindow.
-            _roller.time = _brrrrdFiling;
+            uint32 _brrrrdWindowMicro = brrrrdWindowMicro;
+
+            uint _epochs = (_now - _brrrrdFiling) / _brrrrdWindowMicro;
+            uint _tEpoch = _brrrrdFiling + (_windowsPast * _brrrrdWindowMicro);
+
+            _roller.time = _tEpoch;
             _roller.ying += brrrrdAccumulator[0];
             _roller.yang += brrrrdAccumulator[1];
 
@@ -133,11 +135,7 @@ abstract contract OverlayV1Comptroller {
             brrrrdAccumulator[0] = uint112(_brrrr);
             brrrrdAccumulator[1] = uint112(_antiBrrrr);
 
-            uint32 _brrrrdWindowMicro = brrrrdWindowMicro;
-
-            brrrrdFiling_ = _brrrrdFiling + _brrrrdWindowMicro + ( 
-                ( ( _now - _brrrrdFiling ) / _brrrrdWindowMicro ) 
-                * _brrrrdWindowMicro );
+            brrrrdFiling_ = _tEpoch + _brrrrdWindowMicro;
 
         } else { // add to the brrrr accumulator
 
