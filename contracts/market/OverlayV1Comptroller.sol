@@ -25,7 +25,6 @@ abstract contract OverlayV1Comptroller {
     uint32 public immutable impactWindow;
     uint constant impactChord = 60;
     uint256 public staticCap;
-    uint256 public impactCycloid;
     uint256 public lmbda;
 
     Roller[7] public brrrrdRollers;
@@ -33,7 +32,6 @@ abstract contract OverlayV1Comptroller {
     uint constant brrrrdChord = 7;
 
     uint256 public brrrrdExpected;
-    uint256 public brrrrdCycloid;
 
     uint32 public brrrrdFiling;
     uint112[2] public brrrrdAccumulator;
