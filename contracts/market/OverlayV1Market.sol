@@ -37,7 +37,7 @@ abstract contract OverlayV1Market is OverlayV1Governance {
       @return oiAdjusted_ Amount of open interest after impact and fees
       @return collateralAdjusted_ Amount of collateral after impact and fees
       @return debtAdjusted_ Amount of debt after impact and fees
-      @return exactedFee_ The protocol fee to be taken
+      @return fee_ The protocol fee to be taken
       @return impact_ The market impact for the build
       @return pricePointNext_ The index of the price point for the position
      */
@@ -155,7 +155,7 @@ abstract contract OverlayV1Market is OverlayV1Governance {
       @dev Calls OverlayV1OI contract function: epochs
       @dev Calls OverlayV1OI contract function: payFunding
       @dev Calls OverlayV1Comptroller contract function: oiCap
-      @returns cap_ TODO
+      @return cap_ TODO
      */
     function update () public virtual returns (
         uint cap_

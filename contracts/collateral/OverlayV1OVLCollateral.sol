@@ -243,7 +243,6 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
       @param _collateral The amount of OVL to use as collateral in the position
       @param _leverage The amount of leverage to use in the position
       @param _isLong Whether to take out a position on the long or short side
-      @param _minOi Minimum acceptable amount of OI after impact and fees
       @return positionId_ Id of the built position for on chain convenience
      */
     function build (

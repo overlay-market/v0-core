@@ -75,10 +75,6 @@ abstract contract OverlayV1Comptroller {
   @dev Called by internal contract function: intake
   @param _brrrr TODO
   @param _antiBrrrr TODO
-  @param _brrrrdCycloid TODO
-  @param _brrrrdFiling TODO
-  @return brrrrdCycloid_ TODO
-  @return brrrrdFiling_ TODO
   */
     function brrrr (
         uint _brrrr,
@@ -122,7 +118,6 @@ abstract contract OverlayV1Comptroller {
   /**
     @dev Called by internal contract function: _oiCap
     @dev Calls internal contract function: scry
-    @param _brrrrdCycloid TODO
     @return brrrrd_ TODO
     @return antiBrrrrd_ TODO
    */
@@ -293,12 +288,6 @@ abstract contract OverlayV1Comptroller {
     @dev Calls internal function _oiCap to determine the cap relative to depth
     @dev and dynamic or static
     @dev Calls internal contract function: getBrrrrd, _oiCap
-    @param _depth The depth of the market feed in OVL terms
-    @param _staticCap The static cap of the market
-    @param _brrrrd Amount printed, only passes if printing has occurred
-    @param _brrrrdExpected Amount the market expects to print before engaging
-    the dynamic cap, only passed if printing has occurred
-    @return cap_ The open interest cap for the market
    */
     function oiCap () public virtual view returns (
         uint cap_
@@ -400,7 +389,6 @@ abstract contract OverlayV1Comptroller {
     @dev If the current cycloid is the length of the array, then it sets to
     @dev zero.
     @dev Called by internal contract function: intake
-    @param _setter Setter for either impact or brrrrd rollers
     @param _roller The current roller to be written
     @param _lastMoment Moment of last write to decide writing new or current
     @param _cycloid Current position circular buffer, points to most recent
@@ -448,8 +436,7 @@ abstract contract OverlayV1Comptroller {
     @dev searches deeper into the roller array.
     @dev Called by internal contract function: getBrrrrd, computeDepth
     @dev Calls internal contract function: scryRollers
-    @param _getter The getter for either impact or brrrrd rollers
-    @param _chord The length of roller array in question
+    @param rollers TODO
     @param _cycloid The current impact or brrrrd cycloid
     @param _ago The target time
     @return lastMoment_ The time the most recent roller was written
