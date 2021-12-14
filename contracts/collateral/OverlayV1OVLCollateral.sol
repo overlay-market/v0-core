@@ -262,6 +262,65 @@ contract OverlayV1OVLCollateral is ERC1155 {
 
     }
 
+    function viewBuild (
+        address _market,
+        uint _collateral,
+        uint _leverage,
+        bool _isLong
+    ) external returns (
+        uint oiShares_,
+        uint collateral_,
+        uint debt_,
+        uint impact_,
+        uint fee_,
+        uint price_
+    ) {
+
+        uint _marketIx = marketIndexes[_market];
+
+        return _viewBuild(
+            _marketIx,
+            _collateral,
+            _leverage,
+            _isLong
+        );
+
+    }
+
+    function _viewBuild (
+        uint _marketIx,
+        uint _collateral,
+        uint _leverage,
+        bool _isLong
+    ) internal returns (
+        uint oiShares_,
+        uint collateral_,
+        uint debt_,
+        uint fee_,
+        uint impact_,
+        uint price_
+    ) {
+
+        bytes32 _market = marketLineup[_marketIx];
+
+        require(_market.getActive(), "OVLV1:!market");
+        require(_market.getMaxLeverage() >= _leverage, "OVLV1:lev>max");
+
+        (   oiShares_,
+            collateral_,
+            debt_,
+            fee_,
+            impact_,
+            price_ ) = IOverlayV1Market(_market.getMarket())
+                .viewEntry(
+                    _isLong,
+                    _collateral,
+                    _leverage,
+                    _market.getFee()
+                );
+
+    }
+
     function build (
         address _market,
         uint _collateral,

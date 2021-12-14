@@ -98,6 +98,72 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
     }
 
 
+    function viewEntry (
+        bool _isLong,
+        uint _collateral,
+        uint _leverage,
+        uint _fee
+    ) external view onlyCollateral returns (
+        uint oi_,
+        uint collateral_,
+        uint debt_,
+        uint fee_,
+        uint impact_,
+        uint price_
+    ) {
+
+        OverlayV1Choreographer.Tempo memory _tempo = tempo;
+
+        uint _depth;
+        if (_isLong) ( ,price_,_depth ) = pricePointCurrent();
+        else ( price_,,_depth ) = pricePointCurrent();
+
+        oi_ = _collateral.mulUp(_leverage);
+
+        uint _cap = _oiCap(_depth, tempo.brrrrdCycloid);
+
+        ( ,,impact_ ) = _intake(
+            _isLong,
+            oi_,
+            _cap,
+            tempo.impactCycloid
+        );
+
+        fee_ = oi_.mulDown(_fee);
+
+        require(_collateral >= MIN_COLLAT + impact_ + fee_, "OVLV1:collat<min");
+
+        collateral_ = _collateral - impact_ - fee_;
+
+        oi_ = _leverage.mulUp(collateral_);
+
+        debt_ = oi_ - collateral_;
+
+        {
+
+        bool _long = _isLong;
+
+        (   uint32 _compoundings,
+            uint32 _tCompounding  ) = epochs(
+                uint32(block.timestamp), 
+                tempo.compounded
+            );
+
+        ( uint _oiLong, uint _oiShort, ) = computeFunding(
+            __oiLong__,
+            __oiShort__,
+            _compoundings,
+            k
+        );
+
+        if (_long) require(_oiLong + oi_ <= _cap, "OVLV1:>cap");
+        else require(_oiShort + oi_ <= _cap, "OVLV1:>cap");
+
+        }
+
+    }
+
+
     /// @notice First part of the flow to remove OI from the system
     /// @dev This is called by the collateral managers to retrieve
     /// the necessary information to calculate the specifics of each position,

@@ -131,6 +131,20 @@ interface IOverlayV1Market is IERC1155 {
         uint pricePointNext_
     );
 
+    function viewEntry (
+        bool _isLong,
+        uint _collateral,
+        uint _leverage,
+        uint _fee
+    ) external view returns (
+        uint oiAdjusted_,
+        uint collateralAdjusted_,
+        uint debtAdjusted_,
+        uint exactedFee_,
+        uint impact_,
+        uint price_
+    );
+
     function exitData (
         bool _isLong,
         uint256 _pricePoint

@@ -110,12 +110,26 @@ interface IOverlayV1OVLCollateral is IERC1155 {
 
     function build(
         address _market,
-        uint256 _collateral,
-        uint256 _leverage,
+        uint _collateral,
+        uint _leverage,
         bool _isLong,
-        uint256 _oiAdjustedMinimum
+        uint _oiAdjustedMinimum
     ) external returns (
         uint positionId_
+    );
+
+    function viewBuild(
+        address _market,
+        uint _collateral,
+        uint _leverage,
+        bool _isLong
+    ) external view returns (
+        uint oi_,
+        uint collateral_,
+        uint debt_,
+        uint fee_,
+        uint impact_,
+        uint price_
     );
 
     function unwind(
