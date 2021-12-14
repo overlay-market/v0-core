@@ -116,6 +116,8 @@ abstract contract OverlayV1Comptroller {
             uint _lastMoment = _roller.time;
 
             // TODO: Bug? Should assign brrrrdFiling to new value?
+            // TODO: Yes this should be last brrrrd epoch before 
+            // now, according to the brrrrdWindow.
             _roller.time = _brrrrdFiling;
             _roller.ying += brrrrdAccumulator[0];
             _roller.yang += brrrrdAccumulator[1];
