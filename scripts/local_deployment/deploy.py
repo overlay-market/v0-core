@@ -198,6 +198,8 @@ def build_position(
         {"from": taker}
     )
 
+    print("build gas  ", tx_build.gas_used)
+
     position = tx_build.events['Build']['positionId']
     oi = tx_build.events['Build']['oi']
     debt = tx_build.events['Build']['debt']
@@ -226,6 +228,8 @@ def unwind_position(
         position_shares,
         {"from": unwinder}
     )
+
+    print("unwind gas ", tx_unwind.gas_used)
 
 
 def transfer_position_shares(
