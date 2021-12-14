@@ -23,8 +23,17 @@ SLIPPAGE_TOL = 0.2
     oi_short=strategy('uint256',
                       min_value=MIN_COLLATERAL_AMOUNT,
                       max_value=0.999*OI_CAP*10**TOKEN_DECIMALS),)
-def test_disburse(mothership, token, market, ovl_collateral, alice, bob, start_time, oi_long,  # noqa: E501
-                  oi_short):
+def test_disburse(
+    mothership,
+    token,
+    market,
+    ovl_collateral,
+    alice,
+    bob,
+    start_time,
+    oi_long,
+    oi_short
+):
 
     brownie.chain.mine(timestamp=start_time)
 
@@ -34,11 +43,11 @@ def test_disburse(mothership, token, market, ovl_collateral, alice, bob, start_t
     market.update({"from": bob})
 
     oi_adjusted_min_long = oi_long * (1-SLIPPAGE_TOL)
-    ovl_collateral.build(market, oi_long, 1, True,
+    ovl_collateral.build(market, oi_long, 1e18, True,
                          oi_adjusted_min_long, {"from": bob})
 
     oi_adjusted_min_short = oi_short * (1-SLIPPAGE_TOL)
-    ovl_collateral.build(market, oi_short, 1, False,
+    ovl_collateral.build(market, oi_short, 1e18, False,
                          oi_adjusted_min_short, {"from": bob})
 
     # prior fee state
