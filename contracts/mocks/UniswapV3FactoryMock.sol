@@ -21,6 +21,12 @@ contract UniswapV3FactoryMock {
 
     }
 
+    function allPoolsLength () public view returns (uint) {
+
+        return allPools.length;
+
+    }
+
     function loadObservations(
         address pool,
         OracleMock.Observation[] calldata _observations,
