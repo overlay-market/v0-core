@@ -41,13 +41,13 @@ contract OverlayV1Mothership is AccessControlEnumerable {
     mapping(address => bool) public collateralActive;
     address[] public allCollateral;
 
-    event UpdateCollateral(address _collateral, bool _active);
-    event UpdateMarket(address _market, bool _active);
+    event UpdateCollateral(address collateral, bool active);
+    event UpdateMarket(address market, bool active);
     event UpdateGlobalParams(
-        uint _fee,
-        uint _feeBurnRate,
-        address _feeTo,
-        uint _marginBurnRate
+        uint fee,
+        uint feeBurnRate,
+        address feeTo,
+        uint marginBurnRate
     );
 
     modifier onlyGovernor () {
@@ -76,6 +76,10 @@ contract OverlayV1Mothership is AccessControlEnumerable {
 
     function totalMarkets () external view returns (uint) {
         return allMarkets.length;
+    }
+
+    function totalCollateral () external view returns (uint) {
+        return allCollateral.length;
     }
 
     /// @notice Initializes an existing market contract after deployment
