@@ -5,9 +5,16 @@ from pytest import approx
 
 
 @given(
-  compoundings=strategy('uint256', min_value=1, max_value=100),
-  oi=strategy('uint256', min_value=1, max_value=10000),
-  is_long=strategy('bool'))
+  compoundings=strategy(
+    'uint256',
+    min_value=1,
+    max_value=100),
+  oi=strategy(
+    'uint256',
+    min_value=1,
+    max_value=10000),
+  is_long=strategy(
+    'bool'))
 def test_funding_total_imbalance(bob, market, oi, ovl_collateral, start_time,
                                  is_long, mothership, compoundings):
 
@@ -27,7 +34,7 @@ def test_funding_total_imbalance(bob, market, oi, ovl_collateral, start_time,
 
     expected_funding_payment = expected_oi - expected_oi_after_payment
 
-    ovl_collateral.build(market, oi, 1, is_long, 0, {'from': bob})
+    ovl_collateral.build(market, oi, 1e18, is_long, 0, {'from': bob})
 
     oi = (market.oiLong() if is_long else market.oiShort()) / 1e18
 
