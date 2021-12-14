@@ -21,13 +21,6 @@ contract OverlayV1OVLCollateral is ERC1155 {
 
     bytes32 constant private GOVERNOR = keccak256("GOVERNOR");
 
-    mapping (uint => mapping(uint => LastPosition)) internal lastPositionsLong;
-    mapping (uint => mapping(uint => LastPosition)) internal lastPositionsShort;
-    struct LastPosition { 
-        uint32 pricePoint; 
-        uint32 positionId; 
-    }
-
     using MarketCodex for bytes32;
     bytes32[] public marketLineup;
     mapping (address => uint) public marketIndexes;
@@ -366,46 +359,17 @@ contract OverlayV1OVLCollateral is ERC1155 {
         uint positionId_
     ) {
 
-        mapping(uint=>LastPosition) storage lastPositions = _isLong
-            ? lastPositionsLong[_market]
-            : lastPositionsShort[_market];
+        positionId_ = positions.length;
 
-        LastPosition memory _lastPosition = _isLong
-            ? lastPositions[_leverage]
-            : lastPositions[_leverage];
-
-        if (_lastPosition.pricePoint < _pricePointNext) {
-
-            positions.push(Position.Info({
-                market: uint8(_market),
-                isLong: _isLong,
-                leverage: uint16(_leverage / 1e16),
-                pricePoint: uint32(_pricePointNext),
-                oiShares: uint112(_oi),
-                debt: uint112(_debt),
-                cost: uint112(_cost)
-            }));
-
-            positionId_ = positions.length - 1;
-
-            lastPositions[_leverage] = LastPosition(
-                uint32(_pricePointNext),
-                uint32(positionId_)
-            );
-
-        } else {
-            
-            positionId_ = _lastPosition.positionId;
-
-            Position.Info memory _position = positions[positionId_];
-
-            _position.oiShares += uint112(_oi);
-            _position.debt += uint112(_debt);
-            _position.cost += uint112(_cost);
-
-            positions[positionId_] = _position;
-
-        }
+        positions.push(Position.Info({
+            market: uint8(_market),
+            isLong: _isLong,
+            leverage: uint16(_leverage / 1e16),
+            pricePoint: uint32(_pricePointNext),
+            oiShares: uint112(_oi),
+            debt: uint112(_debt),
+            cost: uint112(_cost)
+        }));
 
     }
 

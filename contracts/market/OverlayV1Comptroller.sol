@@ -8,6 +8,8 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 
 abstract contract OverlayV1Comptroller {
 
+    event log(string k , uint v);
+
     using FixedPoint for uint256;
 
     uint256 private constant INVERSE_E = 0x51AF86713316A9A;
@@ -22,7 +24,7 @@ abstract contract OverlayV1Comptroller {
 
     uint32 public immutable impactWindow;
     uint constant impactChord = 60;
-    uint256 internal staticCap;
+    uint256 public staticCap;
     uint256 public impactCycloid;
     uint256 public lmbda;
 
@@ -195,9 +197,13 @@ abstract contract OverlayV1Comptroller {
         uint32 brrrrdFiling_
     ) {
 
-        (   Roller memory _rollerImpact,
-            uint _lastMoment,
-            uint _impact ) = _intake(
+
+        Roller memory _rollerImpact;
+        uint _lastMoment;
+
+        (   _rollerImpact,
+            _lastMoment,
+            impact_ ) = _intake(
                 _isLong, 
                 _oi, 
                 _cap,
@@ -211,9 +217,6 @@ abstract contract OverlayV1Comptroller {
             _impactCycloid,
             _lastMoment
         );
-
-        // TODO: Can be consolidated in _intake.
-        impact_ = _oi.mulUp(_impact);
 
         (   brrrrdCycloid_,
             brrrrdFiling_ ) = brrrr( 
@@ -263,21 +266,20 @@ abstract contract OverlayV1Comptroller {
                 _impactCycloid,
                 impactWindow );
 
-        uint _p = _oi.divDown(_cap);
+        uint _pressure = _oi.divDown(_cap);
 
-        if (_isLong) _rollerNow.ying += uint112(_p);
-        else _rollerNow.yang += uint112(_p);
+        if (_isLong) _rollerNow.ying += uint112(_pressure);
+        else _rollerNow.yang += uint112(_pressure);
 
-        uint _power = lmbda.mulDown(_isLong
+        uint _p = lmbda.mulDown(_isLong
             ? uint(_rollerNow.ying - _rollerThen.ying)
             : uint(_rollerNow.yang - _rollerThen.yang)
         );
 
         lastMoment_ = _lastMoment;
         rollerNow_ = _rollerNow;
-        impact_ = _p != 0
-            ? ONE.sub(INVERSE_E.powUp(_power))
-            : 0;
+        impact_ = _p == 0 ? 0
+            : _oi.mulUp(ONE.sub(INVERSE_E.powUp(_p)));
 
     }
 

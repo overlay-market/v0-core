@@ -9,6 +9,8 @@ import "../libraries/UniswapV3OracleLibrary/UniswapV3OracleLibraryV2.sol";
 
 contract UniTest {
 
+    event log(string k, uint v);
+
     address base0;
     address quote0;
     IUniswapV3Pool feed0;

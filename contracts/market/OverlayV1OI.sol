@@ -5,8 +5,6 @@ import "../libraries/FixedPoint.sol";
 
 abstract contract OverlayV1OI {
 
-    event log(string k , uint v);
-
     using FixedPoint for uint256;
 
     uint256 private constant ONE = 1e18;

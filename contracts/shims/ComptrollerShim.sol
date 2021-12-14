@@ -10,8 +10,6 @@ import "../libraries/FixedPoint.sol";
 
 contract ComptrollerShim is OverlayV1Comptroller {
 
-    event log(string k, uint v);
-
     using FixedPoint for uint256;
 
     uint256 internal X96 = 0x1000000000000000000000000;
