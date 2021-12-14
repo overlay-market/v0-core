@@ -11,7 +11,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     using FixedPoint for uint256;
 
-    uint256 internal immutable X96 = 0x1000000000000000000000000;
+    uint256 internal constant X96 = 0x1000000000000000000000000;
 
     uint256 public immutable macroWindow; // window size for main TWAP
     uint256 public immutable microWindow; // window size for bid/ask TWAP
