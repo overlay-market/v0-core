@@ -1290,6 +1290,8 @@ def test_build_view(
         is_long
     )
 
+    brownie.chain.mine(timestamp=start_time)
+
     tx = ovl_collateral.build(
         market,
         collateral,
