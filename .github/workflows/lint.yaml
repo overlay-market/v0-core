@@ -22,4 +22,4 @@ jobs:
       - name: flake8 lint
         uses: py-actions/flake8@v1
         with:
-          exclude: "scripts/*"
+          exclude: "scripts/old/*"
