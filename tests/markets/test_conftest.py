@@ -4,7 +4,8 @@ from brownie.network.account import Account
 
 def test_accounts(alice, bob, feed_owner, fees, gov, notamarket, rewards):
     '''
-    Test that the python fixtures that setup the eth accounts, return eth accounts.
+    Test that the python fixtures that setup the eth accounts, return eth
+    accounts.
     '''
     assert isinstance(alice, Account)
     assert isinstance(bob, Account)

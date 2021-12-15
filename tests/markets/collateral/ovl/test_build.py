@@ -47,11 +47,12 @@ PRICES = [
 
 
 @given(
-    collateral=strategy('uint256', min_value=1e18, max_value=(OI_CAP - 1e4)/100),
+    collateral=strategy('uint256', min_value=1e18, max_value=(OI_CAP-1e4)/100),
     leverage=strategy('uint8', min_value=1, max_value=100),
     is_long=strategy('bool'))
-def test_build_success_zero_impact(ovl_collateral, token, mothership, market, bob, start_time,
-                                   collateral, leverage, is_long):
+def test_build_success_zero_impact(ovl_collateral, token, mothership, market,
+                                   bob, start_time, collateral, leverage,
+                                   is_long):
 
     assert 2 == 2
     assert 1 == 1
@@ -78,12 +79,13 @@ def test_build_success_zero_impact(ovl_collateral, token, mothership, market, bo
     # Requires the market to be active in the mothership contract
     # Requires leverage is not above maximum
     # Calls enterOI on Market contract which adds this oi to the market
-    #  - Calls update to updates the market with the latest price and conditionally reads the
-    #    depth of the market feed. The market needs an update on the first call of any block. The
-    #    price is fetched from the OverlayV1UniswapV3Market contract fetchPricePoint
-    #    function.
-    #    Calls into OverlayV1OI contract computeFunding function which is an internal utility
-    #    to pay funding from the heavier to the lighter side. TODO: look into more later
+    #  - Calls update to updates the market with the latest price and
+    #    conditionally reads the depth of the market feed. The market needs an
+    #    update on the first call of any block. The price is fetched from the
+    #    OverlayV1UniswapV3Market contract fetchPricePoint function.
+    #    Calls into OverlayV1OI contract computeFunding function which is an
+    #    internal utility to pay funding from the heavier to the lighter side.
+    #    TODO: look into more later
     #  - Calculates  adjustedcollateral for market impact and fees:
     #      collateralAdjusted = collateral - impact - fee;
     #  - Calculates the adjusted OI: collateralAdjusted * leverage
@@ -91,22 +93,25 @@ def test_build_success_zero_impact(ovl_collateral, token, mothership, market, bo
     #  - Calculates adjusted debt:
     #      debtAdjusted = oiAdjusted - collateralAdjusted;
     #  - Adds OI to either long or short side, asserting cap is not breached.
-    # Calls getCurrentBlockPositionId which gets the position id of the position, based on if it
-    # is long or short, its market contract address, and its leverage.
-    # Gets Position.Info struct instance from the positions array with the position id.
-    # Adds ioAdjusted to pos.oiShares - the shares of the total open interest on long/short
-    # side, depending on isLong value.
-    # Adds collateralAdjusted to pos.cost - the total amount of collateral initially locked;
-    # effectively, cost to enter position.
-    # Adds debtAdjusted to pos.debt - the total debt associated with this position.
-    # Add the fees associated with this position to the fees state variable, which will be burned.
+    # Calls getCurrentBlockPositionId which gets the position id of the
+    # position, based on if it is long or short, its market contract address,
+    # and its leverage. Gets Position.Info struct instance from the positions
+    # array with the position id. Adds ioAdjusted to pos.oiShares - the shares
+    # of the total open interest on long/short side, depending on isLong value.
+    # Adds collateralAdjusted to pos.cost - the total amount of collateral
+    # initially locked; effectively, cost to enter position.
+    # Adds debtAdjusted to pos.debt - the total debt associated with this
+    # position.
+    # Add the fees associated with this position to the fees state variable,
+    # which will be burned.
     # Emits a Build event indicated a new position was built.
-    # Transfers collateralAdjusted + fee from the OverlayToken contract address to the
-    # OverlayCollateral contract address.
+    # Transfers collateralAdjusted + fee from the OverlayToken contract address
+    # to the OverlayCollateral contract address.
     # Burns impact fee from  the OverlayToken contract address.
     # TODO: Separate transfer and burn logic in OverlayV1OVLCollateral.sol
     # Returns position id.
-    tx = ovl_collateral.build(market, collateral, leverage, is_long, oi_adjusted_min, {"from": bob})
+    tx = ovl_collateral.build(market, collateral, leverage, is_long,
+                              oi_adjusted_min, {"from": bob})
 
     assert 'Build' in tx.events
     assert 'positionId' in tx.events['Build']
@@ -148,8 +153,9 @@ def test_build_success_zero_impact(ovl_collateral, token, mothership, market, bo
         assert int(market_oi + oi_adjusted) == approx(market.oiShort())
 
 
-def test_build_fails_when_market_not_supported(ovl_collateral, token, mothership, market,
-                                               notamarket, bob, start_time, leverage=1,
+def test_build_fails_when_market_not_supported(ovl_collateral, token,
+                                               mothership, market, notamarket,
+                                               bob, start_time, leverage=1,
                                                is_long=True):
 
     brownie.chain.mine(timestamp=start_time)
@@ -164,17 +170,13 @@ def test_build_fails_when_market_not_supported(ovl_collateral, token, mothership
     assert mothership.marketActive(market)
     assert not mothership.marketActive(notamarket)
     with brownie.reverts(EXPECTED_ERROR_MESSAGE):
-        ovl_collateral.build(notamarket, trade_amt, leverage, is_long, oi_adjusted_min,
-                             {'from': bob})
+        ovl_collateral.build(notamarket, trade_amt, leverage, is_long,
+                             oi_adjusted_min, {'from': bob})
 
 
 @given(
-    leverage=strategy(
-        'uint8',
-        min_value=1,
-        max_value=100),
-    is_long=strategy(
-        'bool'))
+    leverage=strategy('uint8', min_value=1, max_value=100),
+    is_long=strategy('bool'))
 def test_build_min_collateral(
     ovl_collateral,
     token,

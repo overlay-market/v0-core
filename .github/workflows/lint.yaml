@@ -23,4 +23,3 @@ jobs:
         uses: py-actions/flake8@v1
         with:
           exclude: "scripts/*"
-          max-line-length: "100"
