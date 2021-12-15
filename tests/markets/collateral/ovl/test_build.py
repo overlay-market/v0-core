@@ -1252,6 +1252,7 @@ def test_build_multiple_in_multiple_impact_windows(
     brownie.chain.mine(timedelta=market.impactWindow()+1)
     assert market.pressure(is_long, 0, market.oiCap()) == 0
 
+
 @given(
     collateral=strategy(
         'uint256',
@@ -1278,12 +1279,12 @@ def test_build_view(
 
     brownie.chain.mine(timestamp=start_time)
 
-    (   oi_adjusted,
+    (oi_adjusted,
         collateral_adjusted,
         debt_adjusted,
         fee,
         impact,
-        price ) = ovl_collateral.viewBuild(
+        price) = ovl_collateral.viewBuild(
         market,
         collateral,
         leverage,
@@ -1306,13 +1307,13 @@ def test_build_view(
     assert tx.events['Build']['oi'] == oi_adjusted
     assert tx.events['Build']['debt'] == debt_adjusted
 
-    (   market_ix,
+    (market_ix,
         pos_is_long,
         pos_leverage,
         pos_price_point,
         pos_oi_shares,
         pos_debt,
-        pos_cost ) = ovl_collateral.positions(position_id)
+        pos_cost) = ovl_collateral.positions(position_id)
 
     assert collateral_adjusted == pos_cost
 
@@ -1321,8 +1322,6 @@ def test_build_view(
     (bid, ask, depth) = market.pricePoints(pos_price_point)
 
     assert (ask if is_long else bid) == price
-
-
 
 # TODO: def test_build_w_dyanmic_cap ? lmbda=strategy('decimal',
 # min_value="0.2", max_value="0.5")
