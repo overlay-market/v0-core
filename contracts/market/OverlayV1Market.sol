@@ -184,9 +184,6 @@ abstract contract OverlayV1Market is OverlayV1Choreographer {
         uint priceFrame_
     ) {
 
-        uint _updated;
-        uint _compounded;
-
         OverlayV1Choreographer.Tempo memory _tempo = tempo;
 
         (  ,_tempo.updated, 
