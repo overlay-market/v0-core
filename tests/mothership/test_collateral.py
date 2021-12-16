@@ -102,3 +102,56 @@ def test_initialize_collateral_reverts_when_not_gov(mothership, collateral,
     EXPECTED_ERROR_MESSAGE = 'OVLV1:!gov'
     with brownie.reverts(EXPECTED_ERROR_MESSAGE):
         mothership.initializeCollateral(collateral, {"from": bob})
+
+
+def test_enable_collateral_reverts_when_not_initialized(mothership, collateral,
+                                                        gov):
+    EXPECTED_ERROR_MESSAGE = 'OVLV1: collateral !exists'
+    with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+        mothership.enableCollateral(collateral, {"from": gov})
+
+
+def test_enable_collateral_reverts_when_not_disabled(mothership, collateral,
+                                                     gov):
+    _ = mothership.initializeCollateral(collateral, {"from": gov})
+
+    EXPECTED_ERROR_MESSAGE = 'OVLV1: collateral !disabled'
+    with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+        mothership.enableCollateral(collateral, {"from": gov})
+
+
+def test_enable_collateral_reverts_when_not_gov(mothership, collateral, gov,
+                                                bob):
+    _ = mothership.initializeCollateral(collateral, {"from": gov})
+    _ = mothership.disableCollateral(collateral, {"from": gov})
+
+    EXPECTED_ERROR_MESSAGE = 'OVLV1:!gov'
+    with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+        mothership.enableCollateral(collateral, {"from": bob})
+
+
+def test_disable_collateral_reverts_when_not_initialized(mothership,
+                                                         collateral,
+                                                         gov):
+    EXPECTED_ERROR_MESSAGE = 'OVLV1: collateral !exists'
+    with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+        mothership.disableCollateral(collateral, {"from": gov})
+
+
+def test_disable_collateral_reverts_when_not_enabled(mothership, collateral,
+                                                     gov):
+    _ = mothership.initializeCollateral(collateral, {"from": gov})
+    _ = mothership.disableCollateral(collateral, {"from": gov})
+
+    EXPECTED_ERROR_MESSAGE = 'OVLV1: collateral !enabled'
+    with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+        mothership.disableCollateral(collateral, {"from": gov})
+
+
+def test_disable_collateral_reverts_when_not_gov(mothership, collateral, gov,
+                                                 bob):
+    _ = mothership.initializeCollateral(collateral, {"from": gov})
+
+    EXPECTED_ERROR_MESSAGE = 'OVLV1:!gov'
+    with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+        mothership.disableCollateral(collateral, {"from": bob})
