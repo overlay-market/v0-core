@@ -8,7 +8,7 @@ networks:
 compiler:
   evm_version: "london"
   solc:
-    version: 0.8.7
+    version: 0.8.10
     remappings:
       - "@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.3.2"
     optimizer:

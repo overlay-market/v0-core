@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+pragma solidity 0.8.10;
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "../libraries/FixedPoint.sol";
@@ -14,12 +14,10 @@ abstract contract OverlayV1PricePoint {
     struct PricePoint {
         int24 macroTick;
         int24 microTick;
-        uint256 depth;
+        uint112 depth;
     }
 
     uint256 public pbnj;
-
-    uint256 public updated;
 
     uint256 immutable public priceFrameCap;
 
@@ -35,9 +33,6 @@ abstract contract OverlayV1PricePoint {
         require(1e18 <= _priceFrameCap, "OVLV1:!priceFrame");
 
         priceFrameCap = _priceFrameCap;
-
-        updated = block.timestamp;
-
 
     }
 
@@ -57,16 +52,17 @@ abstract contract OverlayV1PricePoint {
 
     }
 
-
     /// @notice All past price points.
     /// @dev Returns the price point if it exists.
     /// @param _pricePointIndex Index of the price point being queried.
+    /// @param _updated Last update time fed in from tempo.
     /// @return bid_ Bid.
     /// @return ask_ Ask.
     /// @return depth_ Market liquidity in OVL terms.
-    function pricePoints(
+    function _pricePointsInternal (
+        uint32 _updated,
         uint256 _pricePointIndex
-    ) external view returns (
+    ) internal view returns (
         uint256 bid_,
         uint256 ask_,
         uint256 depth_
@@ -75,7 +71,7 @@ abstract contract OverlayV1PricePoint {
         uint _len = _pricePoints.length;
 
         require(_pricePointIndex <  _len ||
-               (_pricePointIndex == _len && updated != block.timestamp),
+               (_pricePointIndex == _len && _updated != block.timestamp),
                "OVLV1:!price");
 
         if (_pricePointIndex == _len) {
@@ -90,20 +86,26 @@ abstract contract OverlayV1PricePoint {
 
     }
 
+    function pricePointCurrent () public view virtual returns (
+        uint depth_,
+        uint ask_,
+        uint bid_
+    );
 
     /// @notice Current price point.
     /// @dev Returns the price point if it exists.
     /// @return bid_ Bid.
     /// @return ask_ Ask.
     /// @return depth_ Market liquidity in OVL terms.
-    function pricePointCurrent () public view returns (
+    function _pricePointCurrent (
+        uint32 _updated
+    ) public view returns (
         uint bid_,
         uint ask_,
         uint depth_
-    ){
+    ) {
 
         uint _now = block.timestamp;
-        uint _updated = updated;
 
         if (_now != _updated) {
 
@@ -170,6 +172,31 @@ abstract contract OverlayV1PricePoint {
 
 
     }
+
+    /// @notice Computes the price frame for a given position
+    /// @dev Computes the price frame conditionally giving shorts the bid
+    /// on entry and ask on exit and longs the bid on exit and short on
+    /// entry. Capped at the priceFrameCap for longs.
+    /// @param _isLong If price frame is for a long or a short.
+    /// @param _pricePoint The index of the entry price.
+    /// @return priceFrame_ The exit price divided by the entry price.
+    function priceFrame (
+        bool _isLong,
+        uint _pricePoint
+    ) internal view returns (
+        uint256 priceFrame_
+    ) {
+
+        ( uint _entryBid, uint _entryAsk, ) = readPricePoint(_pricePoint);
+
+        ( uint _exitBid, uint _exitAsk, ) = pricePointCurrent();
+
+        priceFrame_ = _isLong
+            ? Math.min(_exitBid.divDown(_entryAsk), priceFrameCap)
+            : _exitAsk.divUp(_entryBid);
+
+    }
+
 
 
 }

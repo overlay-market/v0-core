@@ -12,7 +12,6 @@ def test_only_gov_can_update_market(market, token, bob, alice, rewards, feed_own
     # mock inputs below
     input_k = 346888760971066
     input_spread = .00573e19
-    input_compounding_period = 660
     input_static_cap = int(800000 * 1e19)
     input_brrrr_expected = 1e19
     input_brrrr_window_macro = 1e19
@@ -31,11 +30,6 @@ def test_only_gov_can_update_market(market, token, bob, alice, rewards, feed_own
             {"from": alice})
 
     with brownie.reverts(EXPECTED_ERROR_MSG):
-        market.setPeriods(
-            input_compounding_period,
-            {"from": bob})
-
-    with brownie.reverts(EXPECTED_ERROR_MSG):
         market.setK(
             input_k,
             {"from": feed_owner})
@@ -49,7 +43,6 @@ def test_only_gov_can_update_market(market, token, bob, alice, rewards, feed_own
         market.setEverything(
             input_k,
             input_spread,
-            input_compounding_period,
             input_static_cap,
             initial_lmbda,
             input_brrrr_expected,

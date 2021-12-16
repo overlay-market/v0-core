@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+pragma solidity 0.8.10;
 
 import "../market/OverlayV1Comptroller.sol";
 import "../interfaces/IUniswapV3Pool.sol";
@@ -8,6 +8,8 @@ import "../libraries/UniswapV3OracleLibrary/FullMath.sol";
 import "../libraries/UniswapV3OracleLibrary/UniswapV3OracleLibraryV2.sol";
 
 contract UniTest {
+
+    event log(string k, uint v);
 
     address base0;
     address quote0;

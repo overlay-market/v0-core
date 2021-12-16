@@ -1,124 +1,166 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+pragma solidity 0.8.10;
 
 import "../libraries/FixedPoint.sol";
 
-import "./OverlayV1Governance.sol";
+// import "./OverlayV1Governance.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
 abstract contract OverlayV1Comptroller {
+
+    event log(string k , uint v);
 
     using FixedPoint for uint256;
 
     uint256 private constant INVERSE_E = 0x51AF86713316A9A;
     uint256 private constant ONE = 1e18;
-
-    // length of roller arrays when we circle
-    uint256 constant CHORD = 60;
-
-    // current element for new rolls
-    uint256 public impactCycloid;
-    uint256 public brrrrdCycloid;
+    struct Roller {
+        uint32 time;
+        uint112 ying; // long pressure for impact; brrrrd for brrrrd
+        uint112 yang; // short pressure for impact; anti brrrrd for brrrrd
+    }
 
     Roller[60] public impactRollers;
-    Roller[60] public brrrrdRollers;
 
-    struct Roller {
-        uint time;
-        uint ying;
-        uint yang;
-    }
-
-    struct ImpactRoller {
-        uint time;
-        uint lPressure;
-        uint sPressure;
-    }
-
-    struct BrrrrRoller {
-        uint time;
-        uint brrr;
-        uint anti;
-    }
-
-    uint256 public immutable impactWindow;
-    uint256 internal staticCap;
+    uint32 public immutable impactWindow;
+    uint constant impactChord = 60;
+    uint256 public staticCap;
     uint256 public lmbda;
 
-    uint256[2] public brrrrdAccumulator;
-    uint256 public brrrrdWindowMicro;
-    uint256 public brrrrdWindowMacro;
+    Roller[7] public brrrrdRollers;
+
+    uint constant brrrrdChord = 7;
+
     uint256 public brrrrdExpected;
-    uint256 public brrrrdFiling;
+
+    uint32 public brrrrdFiling;
+    uint112[2] public brrrrdAccumulator;
+
+    uint32 public brrrrdWindowMicro;
+    uint32 public brrrrdWindowMacro;
 
     constructor (
         uint256 _impactWindow
     ) {
 
-        impactWindow = _impactWindow;
+        impactWindow = uint32(_impactWindow);
 
         impactRollers[0] = Roller({
-            time: block.timestamp,
+            time: uint32(block.timestamp),
             ying: 0,
             yang: 0
         });
 
         brrrrdRollers[0] = Roller({
-            time: block.timestamp,
+            time: uint32(block.timestamp),
             ying: 0,
             yang: 0
         });
 
     }
 
-    function brrrr (
-        uint _brrrr,
-        uint _antiBrrrr
+    function setImpactRoller(
+        uint _index,
+        Roller memory _roller
     ) internal {
 
-        uint _now = block.timestamp;
-        uint _brrrrdFiling = brrrrdFiling;
+        impactRollers[_index] = _roller;
+
+    }
+
+    function setBrrrrdRoller (
+        uint _index,
+        Roller memory _roller
+    ) internal {
+
+        brrrrdRollers[_index] = _roller;
+
+    }
+
+    function getImpactRoller (
+        uint _index
+    ) internal view returns (
+        Roller memory roller_
+    ) {
+
+        roller_ = impactRollers[_index];
+
+    }
+
+    function getBrrrrdRoller (
+        uint _index
+    ) internal view returns (
+        Roller memory roller_
+    ) {
+
+        roller_ = brrrrdRollers[_index];
+
+    }
+
+    function brrrr (
+        uint _brrrr,
+        uint _antiBrrrr,
+        uint8 _brrrrdCycloid,
+        uint32 _brrrrdFiling
+    ) internal returns (
+        uint8 brrrrdCycloid_,
+        uint32 brrrrdFiling_
+    ) {
+
+        uint32 _now = uint32(block.timestamp);
 
         if ( _now > _brrrrdFiling ) { // time to roll in the brrrrr
 
-            uint _brrrrdCycloid = brrrrdCycloid;
-
             Roller memory _roller = brrrrdRollers[_brrrrdCycloid];
 
-            uint _lastMoment = _roller.time;
+            uint32 _lastMoment = _roller.time;
 
-            _roller.time = _brrrrdFiling;
+            uint32 _brrrrdWindowMicro = brrrrdWindowMicro;
+
+            uint32 _epochs = (_now - _brrrrdFiling) / _brrrrdWindowMicro;
+            uint32 _tEpoch = _brrrrdFiling + (_epochs * _brrrrdWindowMicro);
+
+            _roller.time = _tEpoch;
             _roller.ying += brrrrdAccumulator[0];
             _roller.yang += brrrrdAccumulator[1];
 
-            brrrrdCycloid = roll(brrrrdRollers, _roller, _lastMoment, _brrrrdCycloid);
+            brrrrdCycloid_ = roll(
+                setBrrrrdRoller, 
+                _roller, 
+                brrrrdChord,
+                _brrrrdCycloid,
+                _lastMoment
+            );
 
-            brrrrdAccumulator[0] = _brrrr;
-            brrrrdAccumulator[1] = _antiBrrrr;
+            brrrrdAccumulator[0] = uint112(_brrrr);
+            brrrrdAccumulator[1] = uint112(_antiBrrrr);
 
-            uint _brrrrdWindowMicro = brrrrdWindowMicro;
-
-            brrrrdFiling += _brrrrdWindowMicro
-                + ( ( ( _now - _brrrrdFiling ) / _brrrrdWindowMicro ) * _brrrrdWindowMicro );
+            brrrrdFiling_ = _tEpoch + _brrrrdWindowMicro;
 
         } else { // add to the brrrr accumulator
 
-            brrrrdAccumulator[0] += _brrrr;
-            brrrrdAccumulator[1] += _antiBrrrr;
+            brrrrdAccumulator[0] += uint112(_brrrr);
+            brrrrdAccumulator[1] += uint112(_antiBrrrr);
+
+            brrrrdFiling_ = _brrrrdFiling;
+            brrrrdCycloid_ = _brrrrdCycloid;
 
         }
 
     }
 
-    function getBrrrrd () public view returns (
+    function getBrrrrd (
+        uint8 _brrrrdCycloid
+    ) public view returns (
         uint brrrrd_,
         uint antiBrrrrd_
     ) {
 
         (  ,Roller memory _rollerNow,
             Roller memory _rollerThen ) = scry(
-                brrrrdRollers,
-                brrrrdCycloid,
+                getBrrrrdRoller,
+                brrrrdChord,
+                _brrrrdCycloid,
                 brrrrdWindowMacro
             );
 
@@ -142,25 +184,45 @@ abstract contract OverlayV1Comptroller {
     function intake (
         bool _isLong,
         uint _oi,
-        uint _cap
+        uint _cap,
+        uint8 _impactCycloid,
+        uint8 _brrrrdCycloid,
+        uint32 _brrrrdFiling
     ) internal returns (
-        uint impact_
+        uint impact_,
+        uint8 impactCycloid_,
+        uint8 brrrrdCycloid_,
+        uint32 brrrrdFiling_
     ) {
 
-        (   Roller memory _rollerImpact,
-            uint _lastMoment,
-            uint _impact ) = _intake(_isLong, _oi, _cap);
 
-        impactCycloid = roll(
-            impactRollers,
-            _rollerImpact,
+        Roller memory _rollerImpact;
+        uint _lastMoment;
+
+        (   _rollerImpact,
             _lastMoment,
-            impactCycloid
+            impact_ ) = _intake(
+                _isLong, 
+                _oi, 
+                _cap,
+                _impactCycloid
+            );
+
+        impactCycloid_ = roll(
+            setImpactRoller,
+            _rollerImpact,
+            impactChord,
+            _impactCycloid,
+            _lastMoment
         );
 
-        impact_ = _oi.mulUp(_impact);
-
-        brrrr( 0, impact_ );
+        (   brrrrdCycloid_,
+            brrrrdFiling_ ) = brrrr( 
+                0, 
+                impact_,
+                _brrrrdCycloid,
+                _brrrrdFiling
+            );
 
     }
 
@@ -186,7 +248,8 @@ abstract contract OverlayV1Comptroller {
     function _intake (
         bool _isLong,
         uint _oi,
-        uint _cap
+        uint _cap,
+        uint8 _impactCycloid
     ) internal view returns (
         Roller memory rollerNow_,
         uint lastMoment_,
@@ -195,26 +258,26 @@ abstract contract OverlayV1Comptroller {
 
         (   uint _lastMoment,
             Roller memory _rollerNow,
-            Roller memory _rollerImpact ) = scry(
-                impactRollers,
-                impactCycloid,
+            Roller memory _rollerThen ) = scry(
+                getImpactRoller,
+                impactChord,
+                _impactCycloid,
                 impactWindow );
 
-        uint _pressure = _oi.divDown(_cap);
+        uint __pressure = _oi.divDown(_cap);
 
-        if (_isLong) _rollerNow.ying += _pressure;
-        else _rollerNow.yang += _pressure;
+        if (_isLong) _rollerNow.ying += uint112(__pressure);
+        else _rollerNow.yang += uint112(__pressure);
 
-        uint _power = lmbda.mulDown(_isLong
-            ? _rollerNow.ying - _rollerImpact.ying
-            : _rollerNow.yang - _rollerImpact.yang
+        uint _p = lmbda.mulDown(_isLong
+            ? uint(_rollerNow.ying - _rollerThen.ying)
+            : uint(_rollerNow.yang - _rollerThen.yang)
         );
 
         lastMoment_ = _lastMoment;
         rollerNow_ = _rollerNow;
-        impact_ = _pressure != 0
-            ? ONE.sub(INVERSE_E.powUp(_power))
-            : 0;
+        impact_ = _p == 0 ? 0
+            : _oi.mulUp(ONE.sub(INVERSE_E.powUp(_p)));
 
     }
 
@@ -229,7 +292,7 @@ abstract contract OverlayV1Comptroller {
     /// has occurred.
     /// @param _brrrrdExpected How much the market expects to print before
     /// engaging the dynamic cap. Only passed if printing has occurred.
-    function _oiCap (
+    function _computeOiCap (
         bool _dynamic,
         uint _depth,
         uint _staticCap,
@@ -248,16 +311,20 @@ abstract contract OverlayV1Comptroller {
 
     }
 
-
     /// @notice The open interest cap for the market
     /// @dev Returns the open interest cap for the market.
     /// @return cap_ The open interest cap.
-    function oiCap () public virtual view returns (
+    function oiCap () public virtual view returns (uint cap_);
+
+    function _oiCap (
+        uint _depth,
+        uint8 _brrrrdCycloid
+    ) internal virtual view returns (
         uint cap_
     ) {
 
         (   uint _brrrrd,
-            uint _antiBrrrrd ) = getBrrrrd();
+            uint _antiBrrrrd ) = getBrrrrd(_brrrrdCycloid);
 
         uint _brrrrdExpected = brrrrdExpected;
 
@@ -273,8 +340,8 @@ abstract contract OverlayV1Comptroller {
         }
 
         cap_ = _surpassed ? 0 : _burnt || _expected
-            ? _oiCap(false, depth(), staticCap, 0, 0)
-            : _oiCap(true, depth(), staticCap, _brrrrd, brrrrdExpected);
+            ? _computeOiCap(false, _depth, staticCap, 0, 0)
+            : _computeOiCap(true, _depth, staticCap, _brrrrd, _brrrrdExpected);
 
     }
 
@@ -292,25 +359,31 @@ abstract contract OverlayV1Comptroller {
     function computeDepth (
         uint _marketLiquidity,
         uint _ovlPrice
-    ) public virtual view returns (uint depth_);
-
+    ) public virtual view returns (uint112 depth_);
 
     function pressure (
         bool _isLong,
         uint _oi,
         uint _cap
-    ) public view returns (uint pressure_) {
-        (   ,
-            Roller memory _rollerNow,
-            Roller memory _rollerImpact ) = scry(
-                impactRollers,
-                impactCycloid,
+    ) public view virtual returns (uint pressure_);
+
+    function _pressure (
+        bool _isLong,
+        uint _oi,
+        uint _cap,
+        uint8 _impactCycloid
+    ) internal view returns (uint pressure_) {
+
+        (  ,Roller memory _rollerNow,
+            Roller memory _rollerThen ) = scry(
+                getImpactRoller,
+                impactChord,
+                _impactCycloid,
                 impactWindow );
 
-        pressure_ = (_isLong
-            ? _rollerNow.ying - _rollerImpact.ying
-            : _rollerNow.yang - _rollerImpact.yang
-        );
+        pressure_ = _isLong
+            ? uint(_rollerNow.ying - _rollerThen.ying)
+            : uint(_rollerNow.yang - _rollerThen.yang);
 
         pressure_ += _oi.divDown(_cap);
 
@@ -322,11 +395,11 @@ abstract contract OverlayV1Comptroller {
         uint _cap
     ) public view returns (uint impact_) {
 
-        uint _pressure = pressure(_isLong, _oi, _cap);
+        uint _p = pressure(_isLong, _oi, _cap);
 
-        uint _power = lmbda.mulDown(_pressure);
+        uint _power = lmbda.mulDown(_p);
 
-        uint _impact = _pressure != 0
+        uint _impact = _p != 0
             ? ONE.sub(INVERSE_E.powUp(_power))
             : 0;
 
@@ -341,44 +414,30 @@ abstract contract OverlayV1Comptroller {
     /// cycloid to point to the next roller index. It konws when it needs needs
     /// to write to the next roller or if it can safely write to the current one.
     /// If the current cycloid is the length of the array, then it sets to zero.
-    /// @param rollers The set of rollers array from storage. It can operate on
-    /// either the brrrrd rollers or the impact rollers.
+    /// @param _setter Setter for either impact or brrrrd rollers.
     /// @param _roller The current roller to be written.
-    /// @param _lastMoment The moment of the last write to determine to write to
-    /// a new roller or the current one.
-    /// @param _cycloid The current position of the circular buffer which
-    /// always points to the most recent time.
+    /// @param _lastMoment Moment of last write to decide writing new or current.
+    /// @param _cycloid Current position circular buffer, points to most recent.
     /// @return cycloid_ The next value of the cycloid.
     function roll (
-        Roller[60] storage rollers,
+        function ( uint, Roller memory ) internal _setter,
         Roller memory _roller,
-        uint _lastMoment,
-        uint _cycloid
+        uint _chord,
+        uint8 _cycloid,
+        uint _lastMoment
     ) internal returns (
-        uint cycloid_
+        uint8 cycloid_
     ) {
 
         if (_roller.time != _lastMoment) {
 
-            _cycloid += 1;
-
-            if (_cycloid < CHORD) {
-
-                rollers[_cycloid] = _roller;
-
-            } else {
-
-                _cycloid = 0;
-
-                rollers[_cycloid] = _roller;
-
-            }
-
-        } else {
-
-            rollers[_cycloid] = _roller;
+            _cycloid = _cycloid < _chord
+                ? _cycloid + 1
+                : 0;
 
         }
+
+        _setter(_cycloid, _roller);
 
         cycloid_ = _cycloid;
 
@@ -388,29 +447,31 @@ abstract contract OverlayV1Comptroller {
     /// @notice First part of retrieving historic roller values
     /// @dev Checks to see if the current roller is satisfactory and if not
     /// searches deeper into the roller array.
-    /// @param rollers The roller array, either impact or brrrrd
+    /// @param _getter The getter for either impact or brrrrd rollers
+    /// @param _chord The length of roller array in question
     /// @param _cycloid The current impact or brrrrd cycloid
     /// @param _ago The target time
     /// @return lastMoment_ The time the most recent roller was written
     /// @return rollerNow_ The current roller with the time set to now
     /// @return rollerThen_ The roller closest and earlier to the target time
     function scry (
-        Roller[60] storage rollers,
+        function (uint) internal view returns(Roller memory) _getter,
+        uint _chord,
         uint _cycloid,
-        uint _ago
+        uint32 _ago
     ) internal view returns (
         uint lastMoment_,
         Roller memory rollerNow_,
         Roller memory rollerThen_
     ) {
 
-        uint _time = block.timestamp;
+        uint32 _time = uint32(block.timestamp);
 
-        rollerNow_ = rollers[_cycloid];
+        rollerNow_ = _getter(_cycloid);
 
         lastMoment_ = rollerNow_.time;
 
-        uint _target = _time - _ago;
+        uint32 _target = _time - _ago;
 
         if (rollerNow_.time <= _target) {
 
@@ -420,95 +481,83 @@ abstract contract OverlayV1Comptroller {
 
             return ( lastMoment_, rollerNow_, rollerThen_ );
 
-        } else if (_time != rollerNow_.time) {
+        } else if (_time != rollerNow_.time) rollerNow_.time = _time;
 
-            rollerNow_.time = _time;
-
-        }
-
-        (   Roller memory _beforeOrAt,
-            Roller memory _atOrAfter ) = scryRollers(rollers, _cycloid, _target);
-
-        rollerThen_ = _beforeOrAt;
+        rollerThen_ = scryRollers(
+            _getter, 
+            _chord,
+            _cycloid, 
+            _target
+        );
 
     }
 
 
     function scryRollers (
-        Roller[60] storage rollers,
+        function (uint) internal view returns(Roller memory) _getter,
+        uint _chord,
         uint _cycloid,
-        uint _target
+        uint32 _target
     ) internal view returns (
-        Roller memory beforeOrAt_,
-        Roller memory atOrAfter_
+        Roller memory beforeOrAt_
     ) {
 
-        beforeOrAt_ = rollers[_cycloid];
+        // TODO: Should be made to be one index before cycloid 
+        // since .time <= target was checked already in scry()
+        // Also, could also decide on immediate binary search
+        // by starting at oldest, or by starting in the middle
+        // and directing binary search from there. However, we
+        // need to ascertain the oldest to avoid infinitely 
+        // recursing when a timestamp is never reached.
+        beforeOrAt_ = _getter(_cycloid);
 
-        // if the target is at or after the newest roller, we can return early
-        if (beforeOrAt_.time <= _target) {
+        // return early if target is at or after newest roller 
+        if (beforeOrAt_.time <= _target) return beforeOrAt_;
 
-            if (beforeOrAt_.time == _target) {
+        // now set before to the oldest roller
+        _cycloid = ( _cycloid + 1 ) % _chord;
 
-                // if newest roller equals target, we're in the same block, so we can ignore atOrAfter
-                return ( beforeOrAt_, atOrAfter_ );
+        beforeOrAt_ = _getter(_cycloid);
 
-            } else {
+        if ( beforeOrAt_.time <= 1 ) beforeOrAt_ = _getter(0);
 
-                atOrAfter_.time = block.timestamp;
-                atOrAfter_.ying = beforeOrAt_.ying;
-                atOrAfter_.yang = beforeOrAt_.yang;
-
-                return ( beforeOrAt_, atOrAfter_ );
-
-            }
-        }
-
-        // now, set before to the oldest roller
-        _cycloid = ( _cycloid + 1 ) % CHORD;
-
-        beforeOrAt_ = rollers[_cycloid];
-
-        if ( beforeOrAt_.time <= 1 ) {
-
-            beforeOrAt_ = rollers[0];
-
-        }
-
-        if (_target <= beforeOrAt_.time) return ( beforeOrAt_, beforeOrAt_ );
+        if (_target <= beforeOrAt_.time) return beforeOrAt_;
         else return binarySearch(
-            rollers,
-            uint32(_target),
-            uint16(_cycloid)
+            _getter,
+            uint16(_chord),
+            uint16(_cycloid),
+            uint32(_target)
         );
 
     }
 
     function binarySearch(
-        Roller[60] storage self,
-        uint32 _target,
-        uint16 _cycloid
+        function (uint) internal view returns(Roller memory) _getter,
+        uint16 _cycloid,
+        uint16 _chord,
+        uint32 _target
     ) private view returns (
-        Roller memory beforeOrAt_,
-        Roller memory atOrAfter_
+        Roller memory beforeOrAt_
     ) {
 
-        uint256 l = (_cycloid + 1) % CHORD; // oldest print
-        uint256 r = l + CHORD - 1; // newest print
+        Roller memory _atOrAfter;
+
+        uint256 l = (_cycloid + 1) % _chord; // oldest print
+        uint256 r = l + _chord - 1; // newest print
         uint256 i;
         while (true) {
             i = (l + r) / 2;
 
-            beforeOrAt_ = self[ i % CHORD ];
+            beforeOrAt_ = _getter(i % _chord);
 
             // we've landed on an uninitialized roller, keep searching
             if (beforeOrAt_.time <= 1) { l = i + 1; continue; }
 
-            atOrAfter_ = self[ (i + 1) % CHORD ];
+            _atOrAfter = _getter((i + 1) % _chord);
 
             bool _targetAtOrAfter = beforeOrAt_.time <= _target;
 
-            if (_targetAtOrAfter && _target <= atOrAfter_.time) break;
+            if (_targetAtOrAfter && _target <= _atOrAfter.time) break;
 
             if (!_targetAtOrAfter) r = i - 1;
             else l = i + 1;

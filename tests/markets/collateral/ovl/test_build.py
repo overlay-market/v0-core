@@ -52,9 +52,9 @@ PRICES = [
         min_value=1e18,
         max_value=(OI_CAP - 1e4)/100),
     leverage=strategy(
-        'uint8',
-        min_value=1,
-        max_value=100),
+        'uint256',
+        min_value=100,
+        max_value=10000),
     is_long=strategy(
         'bool'))
 def test_build_success_zero_impact(
@@ -69,23 +69,24 @@ def test_build_success_zero_impact(
     is_long
 ):
 
+    leverage *= 1e16
+
     brownie.chain.mine(timestamp=start_time)
 
-    oi = collateral * leverage
-    trade_fee = oi * mothership.fee() / FEE_RESOLUTION
+    oi = (collateral / 1e18) * (leverage / 1e18)
+
+    trade_fee = oi * (ovl_collateral.fee(market) / 1e18)
 
     # get prior state of collateral manager
-    fee_bucket = ovl_collateral.fees()
+    fee_bucket = ovl_collateral.fees() / 1e18
     ovl_balance = token.balanceOf(ovl_collateral)
-
-    # get prior state of market
-    market_oi = market.oiLong() if is_long else market.oiShort()
 
     # approve collateral contract to spend bob's ovl to build position
     token.approve(ovl_collateral, collateral, {"from": bob})
 
-    # build the position
     oi_adjusted_min = oi * (1-SLIPPAGE_TOL)
+
+    # build the position
     tx = ovl_collateral.build(
         market, collateral, leverage, is_long, oi_adjusted_min, {"from": bob})
 
@@ -93,17 +94,22 @@ def test_build_success_zero_impact(
     assert 'positionId' in tx.events['Build']
     pid = tx.events['Build']['positionId']
 
+    fees = ovl_collateral.fees() / 1e18
+
     # fees should be sent to fee bucket in collateral manager
-    assert int(fee_bucket + trade_fee) == approx(ovl_collateral.fees())
+    assert fee_bucket + trade_fee == approx(fees)
 
     # check collateral sent to collateral manager
     assert int(ovl_balance + collateral) \
         == approx(token.balanceOf(ovl_collateral))
 
     # check position token issued with correct oi shares
-    collateral_adjusted = collateral - trade_fee
-    oi_adjusted = collateral_adjusted * leverage
-    assert approx(ovl_collateral.balanceOf(bob, pid)) == int(oi_adjusted)
+    collateral_adjusted = (collateral / 1e18) - trade_fee
+    oi_adjusted = collateral_adjusted * (leverage / 1e18)
+
+    assert approx(ovl_collateral.balanceOf(bob, pid)/1e18) == oi_adjusted
+
+    market_ix = ovl_collateral.marketIndexes(market)
 
     # check position attributes for PID
     (pos_market,
@@ -114,19 +120,19 @@ def test_build_success_zero_impact(
      pos_debt,
      pos_cost) = ovl_collateral.positions(pid)
 
-    assert pos_market == market
+    assert pos_market == market_ix
     assert pos_islong == is_long
-    assert pos_lev == leverage
+    assert pos_lev == leverage / 1e16
     assert pos_price_idx == market.pricePointNextIndex() - 1
-    assert approx(pos_oishares) == int(oi_adjusted)
-    assert approx(pos_debt) == int(oi_adjusted - collateral_adjusted)
-    assert approx(pos_cost) == int(collateral_adjusted)
+    assert approx(pos_oishares/1e18) == oi_adjusted
+    assert approx(pos_debt/1e18) == oi_adjusted - collateral_adjusted
+    assert approx(pos_cost/1e18) == collateral_adjusted
 
-    # check oi has been added on the market for respective side of trade
-    if is_long:
-        assert int(market_oi + oi_adjusted) == approx(market.oiLong())
-    else:
-        assert int(market_oi + oi_adjusted) == approx(market.oiShort())
+    # # check oi has been added on the market for respective side of trade
+    # if is_long:
+    #     assert int(market_oi + oi_adjusted) == approx(market.oiLong())
+    # else:
+    #     assert int(market_oi + oi_adjusted) == approx(market.oiShort())
 
 
 def test_build_when_market_not_supported(
@@ -137,9 +143,11 @@ def test_build_when_market_not_supported(
     notamarket,
     bob,
     start_time,
-    leverage=1,  # doesn't matter
+    leverage=100,  # doesn't matter
     is_long=True  # doesn't matter
 ):
+
+    leverage *= 1e16
 
     brownie.chain.mine(timestamp=start_time)
 
@@ -148,7 +156,7 @@ def test_build_when_market_not_supported(
     token.approve(ovl_collateral, 3e18, {"from": bob})
     # just to avoid failing min_collateral check because of fees
     trade_amt = MIN_COLLATERAL*2
-    oi_adjusted_min = trade_amt * leverage * (1-SLIPPAGE_TOL)
+    oi_adjusted_min = (trade_amt * leverage / 1e18) * (1-SLIPPAGE_TOL)
 
     assert mothership.marketActive(market)
     assert not mothership.marketActive(notamarket)
@@ -159,9 +167,9 @@ def test_build_when_market_not_supported(
 
 @given(
     leverage=strategy(
-        'uint8',
-        min_value=1,
-        max_value=100),
+        'uint16',
+        min_value=100,
+        max_value=10000),
     is_long=strategy(
         'bool'))
 def test_build_min_collateral(
@@ -175,6 +183,8 @@ def test_build_min_collateral(
     is_long
 ):
 
+    leverage *= 1e16
+
     brownie.chain.mine(timestamp=start_time)
 
     EXPECTED_ERROR_MESSAGE = 'OVLV1:collat<min'
@@ -184,10 +194,12 @@ def test_build_min_collateral(
     # Here we compute exactly how much to trade in order to have just the
     # MIN_COLLATERAL after fees are taken
     # TODO: check this logic ...
-    FL = mothership.fee()*leverage
-    fee_offset = MIN_COLLATERAL*(FL/(FEE_RESOLUTION - FL))
+    FL = ovl_collateral.fee(market) * leverage / 1e18
+    fee_offset = (MIN_COLLATERAL) * (FL / (FEE_RESOLUTION - FL))
+
     trade_amt = (MIN_COLLATERAL + fee_offset)
-    oi_adjusted_min = trade_amt * leverage * (1-SLIPPAGE_TOL)
+
+    oi_adjusted_min = trade_amt * (leverage / 1e18) * (1-SLIPPAGE_TOL)
 
     # higher than min collateral passes
     tx = ovl_collateral.build(market, trade_amt + 1,
@@ -219,7 +231,7 @@ def test_build_max_leverage(
     # just to avoid failing min_collateral check because of fees
     trade_amt = MIN_COLLATERAL*2
     oi_adjusted_min = trade_amt * \
-        ovl_collateral.maxLeverage(market) * (1-SLIPPAGE_TOL)
+        (ovl_collateral.maxLeverage(market) / 1e18) * (1-SLIPPAGE_TOL)
 
     tx = ovl_collateral.build(
         market, trade_amt, ovl_collateral.maxLeverage(market), is_long,
@@ -238,7 +250,7 @@ def test_build_cap(
     market,
     bob,
     start_time,
-    leverage=1,
+    leverage=1e18,
     is_long=True
 ):
 
@@ -268,9 +280,9 @@ def test_build_cap(
         min_value=1e18,
         max_value=(OI_CAP - 1e4)/100),
     leverage=strategy(
-        'uint8',
-        min_value=1,
-        max_value=100),
+        'uint16',
+        min_value=100,
+        max_value=10000),
     is_long=strategy(
         'bool'))
 def test_oi_added(
@@ -285,23 +297,27 @@ def test_oi_added(
     is_long
 ):
 
+    leverage *= 1e16
+
     brownie.chain.mine(timestamp=start_time)
 
     market_oi = market.oiLong() if is_long else market.oiShort()
     assert market_oi == 0
 
-    oi_adjusted_min = collateral * leverage * (1-SLIPPAGE_TOL)
+    oi_adjusted_min = collateral * (leverage / 1e18) * (1-SLIPPAGE_TOL)
+
+    print("oi_adjusted_min", oi_adjusted_min)
 
     token.approve(ovl_collateral, collateral, {"from": bob})
     ovl_collateral.build(
         market, collateral, leverage, is_long, oi_adjusted_min, {"from": bob})
 
-    oi = collateral * leverage
-    trade_fee = oi * mothership.fee() / FEE_RESOLUTION
+    oi = collateral * (leverage / 1e18)
+    trade_fee = oi * ovl_collateral.fee(market) / 1e18
 
     # added oi less fees should be taken from collateral
     collateral_adjusted = collateral - trade_fee
-    oi_adjusted = collateral_adjusted * leverage
+    oi_adjusted = collateral_adjusted * (leverage / 1e18)
 
     new_market_oi = market.oiLong() if is_long else market.oiShort()
     assert approx(new_market_oi) == int(oi_adjusted)
@@ -313,9 +329,9 @@ def test_oi_added(
         min_value=1e18,
         max_value=(OI_CAP - 1e4)/3000),
     leverage=strategy(
-        'uint8',
-        min_value=1,
-        max_value=100),
+        'uint16',
+        min_value=100,
+        max_value=10000),
     multiplier=strategy(
         'decimal',
         min_value="1.01",
@@ -337,13 +353,15 @@ def test_oi_shares_onesided_zero_funding(
     multiplier
 ):
 
+    leverage *= 1e16
+
     brownie.chain.mine(timestamp=start_time)
 
     # Set k to zero so test without worrying about funding rate
     market.setK(0, {'from': gov})
     multiplier = float(multiplier)
 
-    oi_adjusted_min = collateral * leverage * (1-SLIPPAGE_TOL)
+    oi_adjusted_min = collateral * (leverage / 1e18) * (1-SLIPPAGE_TOL)
 
     # build multiple positions on a side
     _ = ovl_collateral.build(market, collateral, leverage,
@@ -355,8 +373,8 @@ def test_oi_shares_onesided_zero_funding(
      market_oi_short_shares) = market.oi()
 
     collateral_adjusted = collateral - collateral * \
-        leverage*mothership.fee()/FEE_RESOLUTION
-    oi_adjusted = collateral_adjusted*leverage
+        (leverage/1e18)*(ovl_collateral.fee(market)/1e18)
+    oi_adjusted = collateral_adjusted*(leverage/1e18)
 
     expected_total_oi = oi_adjusted + oi_adjusted*multiplier
     expected_total_oi_shares = oi_adjusted + oi_adjusted*multiplier
@@ -381,9 +399,9 @@ def test_oi_shares_onesided_zero_funding(
         min_value=1e18,
         max_value=(OI_CAP - 1e4)/3000),
     leverage=strategy(
-        'uint8',
-        min_value=1,
-        max_value=100),
+        'uint16',
+        min_value=100,
+        max_value=10000),
     multiplier=strategy(
         'decimal',
         min_value="1.01",
@@ -391,19 +409,19 @@ def test_oi_shares_onesided_zero_funding(
     is_long=strategy(
         'bool'))
 def test_oi_shares_bothsides_zero_funding(
-            ovl_collateral,
-            token,
-            mothership,
-            market,
-            gov,
-            alice,
-            bob,
-            start_time,
-            collateral,
-            leverage,
-            is_long,
-            multiplier
-        ):
+    ovl_collateral,
+    token,
+    mothership,
+    market,
+    gov,
+    alice,
+    bob,
+    start_time,
+    collateral,
+    leverage,
+    is_long,
+    multiplier
+):
     pass
 
 
@@ -414,9 +432,9 @@ def test_oi_shares_bothsides_zero_funding(
         min_value=1e18,
         max_value=(OI_CAP - 1e4)/300),
     leverage=strategy(
-        'uint8',
-        min_value=1,
-        max_value=100),
+        'uint16',
+        min_value=100,
+        max_value=10000),
     is_long=strategy(
         'bool'))
 @mark.parametrize('price', PRICES)
@@ -432,18 +450,18 @@ def test_entry_update_price_fetching(
     price
 ):
 
+    leverage *= 1e16
+
     brownie.chain.mine(timestamp=start_time)
 
     token.approve(ovl_collateral, collateral*3, {"from": bob})
 
     market_idx = market.pricePointNextIndex()
 
-    print("market_idx", market_idx)
-
     # Mine to the entry time then build
     brownie.chain.mine(timestamp=price["entry"]["timestamp"])
 
-    oi_adjusted_min = collateral * leverage * (1-SLIPPAGE_TOL)
+    oi_adjusted_min = collateral * (leverage/1e18) * (1-SLIPPAGE_TOL)
     _ = ovl_collateral.build(
         market, collateral, leverage, is_long, oi_adjusted_min, {"from": bob})
     idx1 = market.pricePointNextIndex() - 1
@@ -479,9 +497,9 @@ def test_entry_update_price_fetching(
         min_value=1e18,
         max_value=(OI_CAP - 1e4)/300),
     leverage=strategy(
-        'uint8',
-        min_value=1,
-        max_value=100),
+        'uint16',
+        min_value=100,
+        max_value=10000),
     compoundings=strategy(
         'uint16',
         min_value=1,
@@ -501,11 +519,13 @@ def test_entry_update_compounding_oi_onesided(
     compoundings
 ):
 
+    leverage *= 1e16
+
     brownie.chain.mine(timestamp=start_time)
 
     token.approve(ovl_collateral, collateral*2, {"from": bob})
 
-    oi_adjusted_min = collateral * leverage * (1-SLIPPAGE_TOL)
+    oi_adjusted_min = collateral * (leverage/1e18) * (1-SLIPPAGE_TOL)
     _ = ovl_collateral.build(
         market, collateral, leverage, is_long, oi_adjusted_min, {"from": bob})
 
@@ -513,11 +533,11 @@ def test_entry_update_compounding_oi_onesided(
         market, collateral, leverage, is_long, oi_adjusted_min, {"from": bob})
     oi2 = market.oiLong() if is_long else market.oiShort()
 
-    oi = collateral * leverage
+    oi = collateral * (leverage / 1e18)
     trade_fee = oi * mothership.fee() / FEE_RESOLUTION
 
     collateral_adjusted = collateral - trade_fee
-    oi_adjusted = collateral_adjusted * leverage
+    oi_adjusted = collateral_adjusted * (leverage / 1e18)
     assert approx(oi2) == int(2*oi_adjusted)
 
     brownie.chain.mine(timedelta=compoundings*market.compoundingPeriod()+1)
@@ -539,9 +559,9 @@ def test_entry_update_compounding_oi_onesided(
         min_value=1e18,
         max_value=(OI_CAP - 1e4)/3000),
     leverage=strategy(
-        'uint8',
-        min_value=1,
-        max_value=100),
+        'uint16',
+        min_value=100,
+        max_value=10000),
     compoundings=strategy(
         'uint16',
         min_value=1,
@@ -567,6 +587,8 @@ def test_entry_update_compounding_oi_imbalance(
     multiplier
 ):
 
+    leverage *= 1e16
+
     brownie.chain.mine(timestamp=start_time)
 
     # transfer alice some tokens first given the conftest
@@ -575,7 +597,7 @@ def test_entry_update_compounding_oi_imbalance(
     token.approve(ovl_collateral, collateral, {"from": alice})
     token.approve(ovl_collateral, int(multiplier*collateral), {"from": bob})
 
-    oi_adjusted_min = collateral * leverage * (1-SLIPPAGE_TOL)
+    oi_adjusted_min = collateral * (leverage/1e18) * (1-SLIPPAGE_TOL)
     _ = ovl_collateral.build(
         market, collateral, leverage, not is_long,
         oi_adjusted_min, {"from": alice})
@@ -587,8 +609,8 @@ def test_entry_update_compounding_oi_imbalance(
     market_oi_short = market.oiShort()
 
     collateral_adjusted = collateral - collateral * \
-        leverage*mothership.fee()/FEE_RESOLUTION
-    oi_adjusted = collateral_adjusted*leverage
+        (leverage/1e18) * (ovl_collateral.fee(market)/1e18)
+    oi_adjusted = collateral_adjusted*(leverage/1e18)
 
     multiplier = float(multiplier)
 
@@ -637,9 +659,9 @@ def test_entry_update_compounding_oi_imbalance(
         min_value=1e18,
         max_value=(OI_CAP - 1e4)/3000),
     leverage=strategy(
-        'uint8',
-        min_value=1,
-        max_value=100),
+        'uint16',
+        min_value=100,
+        max_value=10000),
     multiplier=strategy(
         'decimal',
         min_value="1.01",
@@ -647,26 +669,36 @@ def test_entry_update_compounding_oi_imbalance(
     is_long=strategy(
         'bool'))
 def test_oi_shares_bothsides_with_funding(
-            ovl_collateral,
-            token,
-            mothership,
-            market,
-            alice,
-            bob,
-            start_time,
-            collateral,
-            leverage,
-            is_long,
-            multiplier
-        ):
+    ovl_collateral,
+    token,
+    mothership,
+    market,
+    alice,
+    bob,
+    start_time,
+    collateral,
+    leverage,
+    is_long,
+    multiplier
+):
     pass
 
 
 @given(
-    oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
-    leverage=strategy('uint8', min_value=1, max_value=100),
-    is_long=strategy('bool'),
-    lmbda=strategy('decimal', min_value="0.5", max_value="5.0"))
+    oi=strategy(
+        'uint256',
+        min_value=1,
+        max_value=OI_CAP/1e16),
+    leverage=strategy(
+        'uint16',
+        min_value=100,
+        max_value=10000),
+    is_long=strategy(
+        'bool'),
+    lmbda=strategy(
+        'decimal',
+        min_value="0.5",
+        max_value="5.0"))
 def test_build_w_impact(
         ovl_collateral,
         token,
@@ -680,6 +712,8 @@ def test_build_w_impact(
         is_long,
         lmbda
 ):
+
+    leverage *= 1e16
 
     brownie.chain.mine(timestamp=start_time)
 
@@ -695,14 +729,14 @@ def test_build_w_impact(
     )
 
     oi *= 1e16
-    collateral = oi / leverage
-    trade_fee = oi * mothership.fee() / FEE_RESOLUTION
+    collateral = oi / (leverage/1e18)
+    trade_fee = oi * ovl_collateral.fee(market) / 1e18
 
     q = oi / market.oiCap()
     impact_fee = oi * (1 - math.exp(-lmbda * q))
 
     collateral_adjusted = collateral - impact_fee - trade_fee
-    oi_adjusted = collateral_adjusted * leverage
+    oi_adjusted = collateral_adjusted * (leverage/1e18)
 
     # get prior state of collateral manager
     ovl_balance = token.balanceOf(ovl_collateral)
@@ -745,6 +779,8 @@ def test_build_w_impact(
     # check position token issued with correct oi shares
     assert approx(ovl_collateral.balanceOf(bob, pid)) == int(oi_adjusted)
 
+    market_ix = ovl_collateral.marketIndexes(market)
+
     # check position attributes for PID
     (pos_market,
      pos_islong,
@@ -754,9 +790,9 @@ def test_build_w_impact(
      pos_debt,
      pos_cost) = ovl_collateral.positions(pid)
 
-    assert pos_market == market
+    assert pos_market == market_ix
     assert pos_islong == is_long
-    assert pos_lev == leverage
+    assert pos_lev == leverage / 1e16
     assert pos_price_idx == market.pricePointNextIndex() - 1
     assert approx(pos_oishares) == int(oi_adjusted)
     assert approx(pos_debt) == int(oi_adjusted - collateral_adjusted)
@@ -782,10 +818,20 @@ def test_build_w_impact(
 
 
 @given(
-    oi=strategy('uint256', min_value=1, max_value=OI_CAP/1e16),
-    leverage=strategy('uint8', min_value=1, max_value=100),
-    is_long=strategy('bool'),
-    lmbda=strategy('decimal', min_value="0.5", max_value="5.0"))
+    oi=strategy(
+        'uint256',
+        min_value=1,
+        max_value=OI_CAP/1e16),
+    leverage=strategy(
+        'uint16',
+        min_value=100,
+        max_value=10000),
+    is_long=strategy(
+        'bool'),
+    lmbda=strategy(
+        'decimal',
+        min_value="0.5",
+        max_value="5.0"))
 def test_build_oi_adjusted_min(
         ovl_collateral,
         token,
@@ -800,13 +846,15 @@ def test_build_oi_adjusted_min(
         lmbda
 ):
 
+    leverage *= 1e16
+
     brownie.chain.mine(timestamp=start_time)
 
     lmbda = float(lmbda)
 
     market.setComptrollerParams(
         lmbda*1e18,
-        market.oiCap(),
+        market.staticCap(),
         market.brrrrdExpected(),
         market.brrrrdWindowMacro(),
         market.brrrrdWindowMicro(),
@@ -814,14 +862,16 @@ def test_build_oi_adjusted_min(
     )
 
     oi *= 1e16
-    collateral = oi / leverage
-    trade_fee = oi * mothership.fee() / FEE_RESOLUTION
+    collateral = oi / (leverage/1e18)
+
+    trade_fee = oi * (ovl_collateral.fee(market) / 1e18)
 
     q = oi / market.oiCap()
+
     impact_fee = oi * (1 - math.exp(-lmbda * q))
 
     collateral_adjusted = collateral - impact_fee - trade_fee
-    oi_adjusted = collateral_adjusted * leverage
+    oi_adjusted = collateral_adjusted * (leverage/1e18)
 
     market_oi_cap = market.oiCap()  # accounts for depth, brrrd, static
 
@@ -835,6 +885,7 @@ def test_build_oi_adjusted_min(
             ovl_collateral.build(market, collateral, leverage, is_long,
                                  0, {"from": bob})
         return
+
     # and if dynamic cap has brought down oi cap from static value
     elif oi_adjusted > market_oi_cap:
         EXPECTED_ERROR_MESSAGE = "OVLV1:>cap"
@@ -863,11 +914,24 @@ def test_build_oi_adjusted_min(
 
 
 @given(
-    oi=strategy('uint256', min_value=1, max_value=OI_CAP/(100e16)),
-    leverage=strategy('uint8', min_value=1, max_value=100),
-    is_long=strategy('bool'),
-    lmbda=strategy('decimal', min_value="0.5", max_value="5.0"),
-    num_builds=strategy('uint8', min_value=2, max_value=10))
+    oi=strategy(
+        'uint256',
+        min_value=1,
+        max_value=OI_CAP/(100e16)),
+    leverage=strategy(
+        'uint16',
+        min_value=100,
+        max_value=10000),
+    is_long=strategy(
+        'bool'),
+    lmbda=strategy(
+        'decimal',
+        min_value="0.5",
+        max_value="5.0"),
+    num_builds=strategy(
+        'uint8',
+        min_value=2,
+        max_value=10))
 def test_build_multiple_in_one_impact_window(
         ovl_collateral,
         token,
@@ -883,6 +947,8 @@ def test_build_multiple_in_one_impact_window(
         num_builds
 ):
 
+    leverage *= 1e16
+
     brownie.chain.mine(timestamp=start_time)
 
     lmbda = float(lmbda)
@@ -897,8 +963,8 @@ def test_build_multiple_in_one_impact_window(
     )
 
     oi *= 1e16
-    collateral = oi / leverage
-    trade_fee = oi * mothership.fee() / FEE_RESOLUTION
+    collateral = oi / (leverage/1e18)
+    trade_fee = oi * ovl_collateral.fee(market) / 1e18
 
     # check no market pressure before builds
     assert market.pressure(is_long, 0, market.oiCap()) == 0
@@ -926,7 +992,7 @@ def test_build_multiple_in_one_impact_window(
         assert int(impact_fee) == approx(proj_impact, rel=1e-04)
 
         collateral_adjusted = collateral - impact_fee - trade_fee
-        oi_adjusted = collateral_adjusted * leverage
+        oi_adjusted = collateral_adjusted * (leverage/1e18)
 
         # get prior state of collateral manager
         ovl_balance = token.balanceOf(ovl_collateral)
@@ -970,9 +1036,9 @@ def test_build_multiple_in_one_impact_window(
          pos_debt,
          pos_cost) = ovl_collateral.positions(pid)
 
-        assert pos_market == market
+        assert pos_market == ovl_collateral.marketIndexes(market)
         assert pos_islong == is_long
-        assert pos_lev == leverage
+        assert pos_lev == leverage / 1e16
         assert pos_price_idx == market.pricePointNextIndex() - 1
         assert approx(pos_oishares) == int(oi_adjusted)
         assert approx(pos_debt) == int(oi_adjusted - collateral_adjusted)
@@ -993,7 +1059,10 @@ def test_build_multiple_in_one_impact_window(
         assert int(impact_fee) == approx(act_impact_fee, rel=1e-04)
 
         # check new state of market pressure
-        act_pressure = market.pressure(is_long, 0, market.oiCap())
+        oi_cap = market.oiCap()
+
+        act_pressure = market.pressure(is_long, 0, oi_cap)
+
         assert int(q*1e18) == approx(act_pressure, rel=1e-04)
 
         # for precision issues, set q to act_pressure for next loop
@@ -1005,11 +1074,24 @@ def test_build_multiple_in_one_impact_window(
 
 
 @given(
-    oi=strategy('uint256', min_value=1, max_value=OI_CAP/(1000e16)),
-    leverage=strategy('uint8', min_value=1, max_value=100),
-    is_long=strategy('bool'),
-    lmbda=strategy('decimal', min_value="0.5", max_value="5.0"),
-    num_builds=strategy('uint8', min_value=4, max_value=10))
+    oi=strategy(
+        'uint256',
+        min_value=1,
+        max_value=OI_CAP/(1000e16)),
+    leverage=strategy(
+        'uint16',
+        min_value=100,
+        max_value=10000),
+    is_long=strategy(
+        'bool'),
+    lmbda=strategy(
+        'decimal',
+        min_value="0.5",
+        max_value="5.0"),
+    num_builds=strategy(
+        'uint8',
+        min_value=4,
+        max_value=10))
 def test_build_multiple_in_multiple_impact_windows(
         ovl_collateral,
         token,
@@ -1027,6 +1109,8 @@ def test_build_multiple_in_multiple_impact_windows(
 
     brownie.chain.mine(timestamp=start_time)
 
+    leverage *= 1e16
+
     lmbda = float(lmbda)
     impact_window = market.impactWindow()
     impact_time_delta = 2 * int(impact_window / num_builds)
@@ -1041,8 +1125,8 @@ def test_build_multiple_in_multiple_impact_windows(
     )
 
     oi *= 1e16
-    collateral = oi / leverage
-    trade_fee = oi * mothership.fee() / FEE_RESOLUTION
+    collateral = oi / (leverage/1e18)
+    trade_fee = oi * ovl_collateral.fee(market) / 1e18
 
     # check no market pressure before builds
     assert market.pressure(is_long, 0, market.oiCap()) == 0
@@ -1089,7 +1173,7 @@ def test_build_multiple_in_multiple_impact_windows(
         assert int(impact_fee) == approx(proj_impact, rel=1e-04)
 
         collateral_adjusted = collateral - impact_fee - trade_fee
-        oi_adjusted = collateral_adjusted * leverage
+        oi_adjusted = collateral_adjusted * (leverage/1e18)
 
         # get prior state of collateral manager
         ovl_balance = token.balanceOf(ovl_collateral)
@@ -1135,9 +1219,9 @@ def test_build_multiple_in_multiple_impact_windows(
          pos_debt,
          pos_cost) = ovl_collateral.positions(pid)
 
-        assert pos_market == market
+        assert pos_market == ovl_collateral.marketIndexes(market)
         assert pos_islong == is_long
-        assert pos_lev == leverage
+        assert pos_lev == leverage / 1e16
         assert pos_price_idx == market.pricePointNextIndex() - 1
         assert approx(pos_oishares) == int(oi_adjusted)
         assert approx(pos_debt) == int(oi_adjusted - collateral_adjusted)
@@ -1168,6 +1252,76 @@ def test_build_multiple_in_multiple_impact_windows(
     brownie.chain.mine(timedelta=market.impactWindow()+1)
     assert market.pressure(is_long, 0, market.oiCap()) == 0
 
+
+@given(
+    collateral=strategy(
+        'uint256',
+        min_value=1e18,
+        max_value=(OI_CAP - 1e4)/100),
+    leverage=strategy(
+        'uint256',
+        min_value=100,
+        max_value=10000),
+    is_long=strategy(
+        'bool'))
+def test_build_view(
+    ovl_collateral,
+    token,
+    market,
+    bob,
+    start_time,
+    collateral,
+    leverage,
+    is_long
+):
+
+    leverage *= 1e16
+
+    brownie.chain.mine(timestamp=start_time)
+
+    (oi_adjusted,
+        collateral_adjusted,
+        debt_adjusted,
+        fee,
+        impact,
+        price) = ovl_collateral.viewBuild(
+        market,
+        collateral,
+        leverage,
+        is_long
+    )
+
+    brownie.chain.mine(timestamp=start_time)
+
+    tx = ovl_collateral.build(
+        market,
+        collateral,
+        leverage,
+        is_long,
+        (collateral/1e18) * (leverage/1e18) * (1-SLIPPAGE_TOL),
+        {'from': bob}
+    )
+
+    position_id = tx.events['Build']['positionId']
+
+    assert tx.events['Build']['oi'] == oi_adjusted
+    assert tx.events['Build']['debt'] == debt_adjusted
+
+    (market_ix,
+        pos_is_long,
+        pos_leverage,
+        pos_price_point,
+        pos_oi_shares,
+        pos_debt,
+        pos_cost) = ovl_collateral.positions(position_id)
+
+    assert collateral_adjusted == pos_cost
+
+    assert pos_cost == collateral - fee - impact
+
+    (bid, ask, depth) = market.pricePoints(pos_price_point)
+
+    assert (ask if is_long else bid) == price
 
 # TODO: def test_build_w_dyanmic_cap ? lmbda=strategy('decimal',
 # min_value="0.2", max_value="0.5")

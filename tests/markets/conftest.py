@@ -189,7 +189,6 @@ def comptroller(gov, feed_infos, token, feed_owner):
             5e18,                # price frame cap
             343454218783234,     # k
             .00573e18,           # spread
-            COMPOUND_PERIOD,     # compound period
             0,                   # lambda
             OI_CAP*1e18,         # oi cap
             BRRRR_EXPECTED,      # brrrr expected
@@ -197,9 +196,10 @@ def comptroller(gov, feed_infos, token, feed_owner):
             BRRRR_WINDOW_MICRO   # brrrr window micro - accumulator window
          ],
          "OverlayV1OVLCollateral", [
-             .06e18,             # margin maintenance
+             .0015e18,           # fee
+             100e18,                # max leverage
              .5e18,              # margin reward rate
-             100,                # max leverage
+             .06e18,             # margin maintenance
          ],
          get_uni_feeds,
         ),
@@ -247,7 +247,9 @@ def create_mothership(token, feed_infos, fees, alice, bob, gov, feed_owner, requ
         mothership.initializeMarket(market, {"from": gov})
 
         ovl_collateral = gov.deploy(ovlc_type, "our_uri", mothership)
-        ovl_collateral.setMarketInfo(market, *ovlc_args, {"from": gov})
+
+        ovl_collateral.addMarket(market, *ovlc_args, {"from": gov})
+
         mothership.initializeCollateral(ovl_collateral, {"from": gov})
 
         market.addCollateral(ovl_collateral, {'from': gov})

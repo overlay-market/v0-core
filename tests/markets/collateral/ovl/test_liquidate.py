@@ -21,7 +21,7 @@ POSITIONS = [
         "liquidation": {"timestamp": 1633546772, "price": 318674244785741},
         "unliquidatable": {"timestamp": 1633520312, "price": 310411480531706},
         "collateral": COLLATERAL,
-        "leverage": 10,
+        "leverage": 10e18,
         "is_long": False,
     },
     {
@@ -29,7 +29,7 @@ POSITIONS = [
         "liquidation": {"timestamp": 1633512812, "price": 306336694541566},
         "unliquidatable": {"timestamp": 1633504232, "price": 315040205244259},
         "collateral": COLLATERAL,
-        "leverage": 10,
+        "leverage": 10e18,
         "is_long": True,
     },
 ]
@@ -76,7 +76,8 @@ def test_liquidate_success_zero_funding(
         position['collateral'],
         position['leverage'],
         position['is_long'],
-        position['collateral'] * position['leverage'] * (1-SLIPPAGE_TOL),
+        position['collateral'] *
+        (position['leverage'] / 1e18) * (1-SLIPPAGE_TOL),
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
@@ -138,7 +139,8 @@ def test_liquidate_revert_not_liquidatable(
         position['collateral'],
         position['leverage'],
         position['is_long'],
-        position['collateral'] * position['leverage'] * (1-SLIPPAGE_TOL),
+        position['collateral'] *
+        (position['leverage']/1e18) * (1-SLIPPAGE_TOL),
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
@@ -163,7 +165,7 @@ def test_liquidate_revert_not_liquidatable(
 
     assert pos_oi_shares_after == 0
 
-    EXPECTED_ERROR_MESSAGE = "OVLV1:liquidated"
+    EXPECTED_ERROR_MESSAGE = "OVLV1:!shares"
     with brownie.reverts(EXPECTED_ERROR_MESSAGE):
         ovl_collateral.unwind(pos_id, pos_oi_shares, {"from": bob})
 
@@ -193,7 +195,8 @@ def test_liquidate_revert_unwind_after_liquidation(
         position['collateral'],
         position['leverage'],
         position['is_long'],
-        position['collateral'] * position['leverage'] * (1-SLIPPAGE_TOL),
+        position['collateral'] *
+        (position['leverage']/1e18) * (1-SLIPPAGE_TOL),
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
@@ -213,13 +216,13 @@ def test_liquidate_revert_unwind_after_liquidation(
 
     assert pos_oi_shares_after == 0
 
-    EXPECTED_ERROR_MESSAGE = "OVLV1:liquidated"
+    EXPECTED_ERROR_MESSAGE = "OVLV1:!shares"
     with brownie.reverts(EXPECTED_ERROR_MESSAGE):
         ovl_collateral.unwind(
             pos_id,
             pos_oi_shares,
             {"from": bob}
-            )
+        )
 
 
 @pytest.mark.parametrize('position', POSITIONS)
@@ -247,7 +250,8 @@ def test_liquidate_pnl_burned(
         position['collateral'],
         position['leverage'],
         position['is_long'],
-        position['collateral'] * position['leverage'] * (1-SLIPPAGE_TOL),
+        position['collateral'] *
+        (position['leverage']/1e18) * (1-SLIPPAGE_TOL),
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
@@ -305,7 +309,8 @@ def test_liquidate_oi_removed(
         position['collateral'],
         position['leverage'],
         position['is_long'],
-        position['collateral'] * position['leverage'] * (1-SLIPPAGE_TOL),
+        position['collateral'] *
+        (position['leverage']/1e18) * (1-SLIPPAGE_TOL),
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
@@ -347,7 +352,8 @@ def test_liquidate_zero_value(
         position['collateral'],
         3*position['leverage'],  # 3x so it effectively turns negative
         position['is_long'],
-        3*position['collateral'] * position['leverage'] * (1-SLIPPAGE_TOL),
+        3*position['collateral'] * \
+        (position['leverage']/1e18) * (1-SLIPPAGE_TOL),
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
@@ -402,7 +408,8 @@ def test_liquidate_rewards_and_fees(
         position['collateral'],
         position['leverage'],
         position['is_long'],
-        position['collateral'] * position['leverage'] * (1-SLIPPAGE_TOL),
+        position['collateral'] *
+        (position['leverage']/1e18) * (1-SLIPPAGE_TOL),
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
@@ -458,7 +465,8 @@ def test_liquidate_with_funding(
         position['collateral'],
         position['leverage'],
         position['is_long'],
-        position['collateral'] * position['leverage'] * (1-SLIPPAGE_TOL),
+        position['collateral'] *
+        (position['leverage']/1e18) * (1-SLIPPAGE_TOL),
         {'from': bob}
     )
     pos_id = tx_build.events['Build']['positionId']
@@ -471,8 +479,8 @@ def test_liquidate_with_funding(
         int(position['collateral']/2.0),
         position['leverage'],
         not position['is_long'],
-        int(position['collateral']/2.0)
-        * position['leverage'] * (1-SLIPPAGE_TOL),
+        int(position['collateral']/2.0) *
+        (position['leverage']/1e18) * (1-SLIPPAGE_TOL),
         {'from': alice}
     )
     brownie.chain.mine(timestamp=position["liquidation"]["timestamp"]-300)

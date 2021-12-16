@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+pragma solidity 0.8.10;
 
 import "../libraries/Position.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
@@ -39,11 +39,6 @@ interface IOverlayV1OVLCollateral is IERC1155 {
         uint liquidationsBurned
     );
 
-    struct MarketInfo {
-        uint marginMaintenance;
-        uint marginRewardRate;
-    }
-
     function totalSupply(uint256 positionId) external view returns (uint256 totalSupply);
     function marginAdjustments (address market) external view returns (uint256 marginAdjustment);
     function supportedMarket (address market) external view returns (bool supported);
@@ -65,16 +60,25 @@ interface IOverlayV1OVLCollateral is IERC1155 {
     function positions (uint positionId) external view returns (Position.Info memory);
     function ovl () external view returns (IOverlayToken);
     function mothership () external view returns (IOverlayV1Mothership);
-    function marketInfo(address) external view returns (MarketInfo memory);
+
+    function marketIndexes (address _market) external view returns (uint index_);
+
     function fees () external view returns (uint);
     function liquidations () external view returns (uint);
 
     function setMarketInfo(
         address _market,
+        uint _fee,
         uint _marginMaintenance,
         uint _marginRewardRate,
         uint _maxLeverage
     ) external;
+
+    function fee (
+        address _market
+    ) external view returns (
+        uint fee_
+    );
 
     function marginMaintenance(
         address _market
@@ -96,19 +100,36 @@ interface IOverlayV1OVLCollateral is IERC1155 {
 
     function addMarket (
         address _market,
-        uint _marginAdjustment
+        uint _fee,
+        uint _maxLeverage,
+        uint _marginRewardRate,
+        uint _marginMaintenance
     ) external;
 
     function disburse() external;
 
     function build(
         address _market,
-        uint256 _collateral,
-        uint256 _leverage,
+        uint _collateral,
+        uint _leverage,
         bool _isLong,
-        uint256 _oiAdjustedMinimum
+        uint _oiAdjustedMinimum
     ) external returns (
         uint positionId_
+    );
+
+    function viewBuild(
+        address _market,
+        uint _collateral,
+        uint _leverage,
+        bool _isLong
+    ) external view returns (
+        uint oi_,
+        uint collateral_,
+        uint debt_,
+        uint fee_,
+        uint impact_,
+        uint price_
     );
 
     function unwind(
