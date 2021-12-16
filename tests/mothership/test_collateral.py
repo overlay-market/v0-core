@@ -1,3 +1,6 @@
+import brownie
+
+
 def test_initialize_collateral(mothership, collateral, gov, token):
     total = mothership.totalCollateral()
     tx = mothership.initializeCollateral(collateral, {"from": gov})
@@ -14,3 +17,88 @@ def test_initialize_collateral(mothership, collateral, gov, token):
     assert 'active' in tx.events['UpdateCollateral']
     assert tx.events['UpdateCollateral']['collateral'] == collateral
     assert tx.events['UpdateCollateral']['active'] is True
+
+
+def test_disable_collateral(mothership, collateral, gov, token):
+    # init state
+    _ = mothership.initializeCollateral(collateral, {"from": gov})
+    total = mothership.totalCollateral()
+
+    tx = mothership.disableCollateral(collateral, {"from": gov})
+
+    assert mothership.collateralExists(collateral) is True
+    assert mothership.collateralActive(collateral) is False
+    assert mothership.totalCollateral() == total
+
+    assert token.hasRole(token.MINTER_ROLE(), collateral) is False
+    assert token.hasRole(token.BURNER_ROLE(), collateral) is False
+
+    assert 'UpdateCollateral' in tx.events
+    assert 'collateral' in tx.events['UpdateCollateral']
+    assert 'active' in tx.events['UpdateCollateral']
+    assert tx.events['UpdateCollateral']['collateral'] == collateral
+    assert tx.events['UpdateCollateral']['active'] is False
+
+
+def test_enable_collateral(mothership, collateral, gov, token):
+    # init state
+    _ = mothership.initializeCollateral(collateral, {"from": gov})
+    _ = mothership.disableCollateral(collateral, {"from": gov})
+    total = mothership.totalCollateral()
+
+    tx = mothership.enableCollateral(collateral, {"from": gov})
+
+    assert mothership.collateralExists(collateral) is True
+    assert mothership.collateralActive(collateral) is True
+    assert mothership.totalCollateral() == total
+
+    assert token.hasRole(token.MINTER_ROLE(), collateral) is True
+    assert token.hasRole(token.BURNER_ROLE(), collateral) is True
+
+    assert 'UpdateCollateral' in tx.events
+    assert 'collateral' in tx.events['UpdateCollateral']
+    assert 'active' in tx.events['UpdateCollateral']
+    assert tx.events['UpdateCollateral']['collateral'] == collateral
+    assert tx.events['UpdateCollateral']['active'] is True
+
+
+def test_enable_then_disable_collateral(mothership, collateral, gov,
+                                        bob, token):
+    # init state
+    _ = mothership.initializeCollateral(collateral, {"from": gov})
+    _ = mothership.disableCollateral(collateral, {"from": gov})
+    total = mothership.totalCollateral()
+
+    _ = mothership.enableCollateral(collateral, {"from": gov})
+
+    assert mothership.collateralExists(collateral) is True
+    assert mothership.collateralActive(collateral) is True
+    assert mothership.totalCollateral() == total
+
+    assert token.hasRole(token.MINTER_ROLE(), collateral) is True
+    assert token.hasRole(token.BURNER_ROLE(), collateral) is True
+
+    _ = mothership.disableCollateral(collateral, {"from": gov})
+
+    assert mothership.collateralExists(collateral) is True
+    assert mothership.collateralActive(collateral) is False
+    assert mothership.totalCollateral() == total
+
+    assert token.hasRole(token.MINTER_ROLE(), collateral) is False
+    assert token.hasRole(token.BURNER_ROLE(), collateral) is False
+
+
+def test_initialize_collateral_reverts_when_exists(mothership, collateral,
+                                                   gov):
+    _ = mothership.initializeCollateral(collateral, {"from": gov})
+
+    EXPECTED_ERROR_MESSAGE = 'OVLV1: collateral exists'
+    with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+        mothership.initializeCollateral(collateral, {"from": gov})
+
+
+def test_initialize_collateral_reverts_when_not_gov(mothership, collateral,
+                                                    bob):
+    EXPECTED_ERROR_MESSAGE = 'OVLV1:!gov'
+    with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+        mothership.initializeCollateral(collateral, {"from": bob})
