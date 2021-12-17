@@ -272,7 +272,7 @@ def mothership(create_mothership):
     scope="module",
     params=['IOverlayV1OVLCollateral'])
 def ovl_collateral(mothership, request):
-    addr = mothership.allCollateral(0)
+    addr = mothership.allCollaterals(0)
     ovl_collateral = getattr(interface, request.param)(addr)
     yield ovl_collateral
 

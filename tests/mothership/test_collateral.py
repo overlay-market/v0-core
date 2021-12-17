@@ -2,12 +2,15 @@ import brownie
 
 
 def test_initialize_collateral(mothership, collateral, gov, token):
-    total = mothership.totalCollateral()
+    total = mothership.totalCollaterals()
     tx = mothership.initializeCollateral(collateral, {"from": gov})
 
     assert mothership.collateralExists(collateral) is True
     assert mothership.collateralActive(collateral) is True
-    assert mothership.totalCollateral() == total + 1
+    assert mothership.totalCollaterals() == total + 1
+
+    # pushed to end of list of collaterals stored by mothership
+    assert mothership.allCollaterals(total) == collateral
 
     assert token.hasRole(token.MINTER_ROLE(), collateral) is True
     assert token.hasRole(token.BURNER_ROLE(), collateral) is True
@@ -22,13 +25,13 @@ def test_initialize_collateral(mothership, collateral, gov, token):
 def test_disable_collateral(mothership, collateral, gov, token):
     # init state
     _ = mothership.initializeCollateral(collateral, {"from": gov})
-    total = mothership.totalCollateral()
+    total = mothership.totalCollaterals()
 
     tx = mothership.disableCollateral(collateral, {"from": gov})
 
     assert mothership.collateralExists(collateral) is True
     assert mothership.collateralActive(collateral) is False
-    assert mothership.totalCollateral() == total
+    assert mothership.totalCollaterals() == total
 
     assert token.hasRole(token.MINTER_ROLE(), collateral) is False
     assert token.hasRole(token.BURNER_ROLE(), collateral) is False
@@ -44,13 +47,13 @@ def test_enable_collateral(mothership, collateral, gov, token):
     # init state
     _ = mothership.initializeCollateral(collateral, {"from": gov})
     _ = mothership.disableCollateral(collateral, {"from": gov})
-    total = mothership.totalCollateral()
+    total = mothership.totalCollaterals()
 
     tx = mothership.enableCollateral(collateral, {"from": gov})
 
     assert mothership.collateralExists(collateral) is True
     assert mothership.collateralActive(collateral) is True
-    assert mothership.totalCollateral() == total
+    assert mothership.totalCollaterals() == total
 
     assert token.hasRole(token.MINTER_ROLE(), collateral) is True
     assert token.hasRole(token.BURNER_ROLE(), collateral) is True
@@ -67,13 +70,13 @@ def test_enable_then_disable_collateral(mothership, collateral, gov,
     # init state
     _ = mothership.initializeCollateral(collateral, {"from": gov})
     _ = mothership.disableCollateral(collateral, {"from": gov})
-    total = mothership.totalCollateral()
+    total = mothership.totalCollaterals()
 
     _ = mothership.enableCollateral(collateral, {"from": gov})
 
     assert mothership.collateralExists(collateral) is True
     assert mothership.collateralActive(collateral) is True
-    assert mothership.totalCollateral() == total
+    assert mothership.totalCollaterals() == total
 
     assert token.hasRole(token.MINTER_ROLE(), collateral) is True
     assert token.hasRole(token.BURNER_ROLE(), collateral) is True
@@ -82,7 +85,7 @@ def test_enable_then_disable_collateral(mothership, collateral, gov,
 
     assert mothership.collateralExists(collateral) is True
     assert mothership.collateralActive(collateral) is False
-    assert mothership.totalCollateral() == total
+    assert mothership.totalCollaterals() == total
 
     assert token.hasRole(token.MINTER_ROLE(), collateral) is False
     assert token.hasRole(token.BURNER_ROLE(), collateral) is False
