@@ -10,10 +10,7 @@ contract OverlayV1Mothership is AccessControlEnumerable {
     uint public constant MIN_FEE = 1e14; // 0.01%
     uint public constant MAX_FEE = 1e16; // 1.00%
 
-    uint public constant MIN_FEE_BURN = 0; // 0%
     uint public constant MAX_FEE_BURN = 1e18; // 100%
-
-    uint public constant MIN_MARGIN_BURN = 0; // 0%
     uint public constant MAX_MARGIN_BURN = 1e18; // 100%
 
     bytes32 public constant ADMIN = 0x00;
@@ -190,13 +187,13 @@ contract OverlayV1Mothership is AccessControlEnumerable {
     }
 
     function _setFeeBurnRate(uint _feeBurnRate) internal {
-        require(_feeBurnRate >= MIN_FEE_BURN && _feeBurnRate <= MAX_FEE_BURN, "OVLV1: fee burn rate out of bounds");
+        require(_feeBurnRate <= MAX_FEE_BURN, "OVLV1: fee burn rate out of bounds");
         feeBurnRate = _feeBurnRate;
         emit UpdateFeeBurnRate(_feeBurnRate);
     }
 
     function _setMarginBurnRate(uint _marginBurnRate) internal {
-        require(_marginBurnRate >= MIN_MARGIN_BURN && _marginBurnRate <= MAX_MARGIN_BURN, "OVLV1: margin burn rate out of bounds");
+        require(_marginBurnRate <= MAX_MARGIN_BURN, "OVLV1: margin burn rate out of bounds");
         marginBurnRate = _marginBurnRate;
         emit UpdateMarginBurnRate(_marginBurnRate);
     }
