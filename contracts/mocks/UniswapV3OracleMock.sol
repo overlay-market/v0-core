@@ -19,6 +19,12 @@ contract UniswapV3OracleMock {
     Shim[65535] public shims;
     OracleMock.Observation[65535] public observations;
 
+    /**
+      @notice TODO
+      @dev Inherited by UniswapV3FactoryMock contract
+      @param _token0 First token contract address in the token pair
+      @param _token1 Second token contract address in the token pair
+     */
     constructor (address _token0, address _token1) { 
 
         token0 = _token0;

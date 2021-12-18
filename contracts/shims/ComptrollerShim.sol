@@ -25,6 +25,20 @@ contract ComptrollerShim is OverlayV1Comptroller {
     uint public macroWindow;
     uint public microWindow;
 
+    /**
+      @notice Constructor method
+      @param _lmbda market impact
+      @param _staticCap open interest cap
+      @param _brrrrdExpected expected worst-case inflation rate
+      @param _brrrrdWindowMacro macro rolling price window in which _brrrrdExpected is calculated over
+      @param _brrrrdWindowMicro micro rolling price window in which _brrrrdExpected is calculated over
+      @param _priceWindowMacro only the main TWAP, only used for the price
+      @param _priceWindowMicro short TWAP to temper the bid-ask spread, compounding period, impact window
+      @param _marketFeed Oracle address providing the market feed data
+      @param _ovlFeed Oracle address providing the depth feed data (the OVL feed)
+      @param _ovl OVL token contract address
+      @param _eth Wrapped eth contract address
+     */
     constructor (
         uint _lmbda,
         uint _staticCap,

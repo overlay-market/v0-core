@@ -17,6 +17,15 @@ contract UniTest {
     address quote1;
     IUniswapV3Pool feed1;
 
+    /**
+      @notice Constructor method
+      @param _base0 TODO
+      @param _quote0 TODO
+      @param _feed0 TODO
+      @param _base1 TODO
+      @param _quote1 TODO
+      @param _feed1 TODO
+     */
     constructor (
         address _base0,
         address _quote0,

@@ -82,8 +82,14 @@ contract OverlayV1Mothership is AccessControlEnumerable {
         return allMarkets.length;
     }
 
-    /// @notice Initializes an existing market contract after deployment
-    /// @dev Should be called after contract deployment in specific market factory.createMarket
+
+    /**
+      @notice Make this contract aware of a new market contract's existence
+      @dev Should be called after contract deployment in specific market factory.createMarket
+      @dev Only the Governor can initialize a market
+      @dev Appends new market address to `allMarkets` array to track them
+      @param market Overlay market contract address
+      */
     function initializeMarket(address market) external onlyGovernor {
 
         require(!marketExists[market], "OVLV1:!!initialized");
@@ -115,6 +121,12 @@ contract OverlayV1Mothership is AccessControlEnumerable {
 
     }
 
+    /**
+      @notice Make this contract aware of a new collateral contract's existence
+      @dev Adds collateral contract address to the `collateralExists` and `collateralActive` mappings
+      @dev Only the Governor can set market info
+      @param _collateral Overlay OVL collateral contract address
+      */
     function initializeCollateral (address _collateral) external onlyGovernor {
 
         require(!collateralExists[_collateral], "OVLV1:!!iintialized");
