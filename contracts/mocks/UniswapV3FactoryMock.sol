@@ -3,11 +3,21 @@ pragma solidity ^0.8.7;
 
 import "./UniswapV3OracleMock.sol";
 
+/**
+  @author Overlay
+  @title Uniswap V3 factory mock to create token pairs for testing
+  @dev Deployed by a token pair feed owner
+ */
 contract UniswapV3FactoryMock {
 
     mapping(address => bool) public isPool;
     address[] public allPools;
 
+    /**
+      @param _token0 First token contract address in the token pair
+      @param _token1 Second token contract address in the token pair
+      @return pool UniswapV3OracleMock contract instance
+     */
     function createPool (
         address _token0, 
         address _token1
