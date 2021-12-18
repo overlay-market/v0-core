@@ -54,8 +54,6 @@ def test_build_success_zero_impact(ovl_collateral, token, mothership, market,
                                    bob, start_time, collateral, leverage,
                                    is_long):
 
-    assert 2 == 2
-    assert 1 == 1
     brownie.chain.mine(timestamp=start_time)
 
     oi = collateral * leverage

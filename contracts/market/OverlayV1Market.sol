@@ -24,12 +24,11 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
     /**
       @notice Adds open interest to the market
-      @dev This is invoked by Overlay collateral manager contracts, which
+      @dev This is invoked by Overlay collateral manager contracts, which dev
       @dev can be for OVL, ERC20's, Overlay positions, NFTs, or what have you.
       @dev The calculations for impact and fees are performed here.
-      @dev Uses OverlayV1Choreographer contract struct: Tempo
       @dev Calls OverlayV1Comptroller contract function: intake
-      @dev Calls Position contract function: mulDown
+      @dev Calls FixedPoint contract function: mulDown
       @dev Calls OverlayV1OI contract function: addOi
       @param _isLong The side of the market to enter open interest on
       @param _collateral The amount of collateral in OVL terms to take the position out with
@@ -67,7 +66,7 @@ abstract contract OverlayV1Market is OverlayV1Governance {
         // Takes in the OI and applies Overlay's monetary policy
         uint _impact = intake(_isLong, _oi, _cap);
 
-        // Call to `Position` contract
+        // Call to `FixedPoint` contract
         fee_ = _oi.mulDown(mothership.fee());
 
         impact_ = _impact;

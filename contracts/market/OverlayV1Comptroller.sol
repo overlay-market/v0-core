@@ -288,6 +288,7 @@ abstract contract OverlayV1Comptroller {
     @dev Calls internal function _oiCap to determine the cap relative to depth
     @dev and dynamic or static
     @dev Calls internal contract function: getBrrrrd, _oiCap
+    @return cap_ The open interest cap for the market
    */
     function oiCap () public virtual view returns (
         uint cap_
@@ -329,7 +330,6 @@ abstract contract OverlayV1Comptroller {
     @notice Performs arithmetic to turn market liquidity into OVL terms.
     @dev Derived from constant product formula X*Y=K and tailored to Uniswap V3
     @dev selective liquidity provision.
-    @dev Calls internal contract function: scry
     @param _marketLiquidity Amount of liquidity in market in ETH terms
     @param _ovlPrice Price of OVL against ETH
     @return depth_ Market depth in OVL terms
@@ -434,7 +434,7 @@ abstract contract OverlayV1Comptroller {
     @notice First part of retrieving historic roller values
     @dev Checks to see if the current roller is satisfactory and if not
     @dev searches deeper into the roller array.
-    @dev Called by internal contract function: getBrrrrd, computeDepth
+    @dev Called by internal contract function: getBrrrrd, _intake
     @dev Calls internal contract function: scryRollers
     @param rollers TODO
     @param _cycloid The current impact or brrrrd cycloid
