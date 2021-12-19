@@ -4,13 +4,13 @@ pragma solidity ^0.8.7;
 import "../libraries/Position.sol";
 import "../libraries/FixedPoint.sol";
 import "../interfaces/IOverlayV1Mothership.sol";
-import "./OverlayV1Governance.sol";
+import "./OverlayV1Choreographer.sol";
 import "./OverlayV1OI.sol";
 import "./OverlayV1PricePoint.sol";
 import "../OverlayToken.sol";
 import "./OverlayV1Comptroller.sol";
 
-abstract contract OverlayV1Market is OverlayV1Governance {
+abstract contract OverlayV1Market is OverlayV1Choreographer {
 
     using FixedPoint for uint256;
 
@@ -20,7 +20,7 @@ abstract contract OverlayV1Market is OverlayV1Governance {
 
     modifier lock() { require(unlocked == 1, "OVLV1:!unlocked"); unlocked = 0; _; unlocked = 1; }
 
-    constructor(address _mothership) OverlayV1Governance( _mothership) { }
+    constructor(address _mothership) OverlayV1Choreographer(_mothership) { }
 
     /**
       @notice Adds open interest to the market
@@ -53,27 +53,41 @@ abstract contract OverlayV1Market is OverlayV1Governance {
         uint pricePointNext_
     ) {
 
-        // Call to internal function
-        // Updates the market with the latest price, cap, and pay funding
-        uint _cap = update();
-
-        pricePointNext_ = _pricePoints.length - 1;
-
         // Calculate open interest
         uint _oi = _collateral * _leverage;
 
-        // Call to `OverlayV1Comptroller` contract
-        // Takes in the OI and applies Overlay's monetary policy
-        uint _impact = intake(_isLong, _oi, _cap);
+        OverlayV1Choreographer.Tempo memory _tempo = tempo;
+
+        (   _cap, 
+            _tempo.updated, 
+            _tempo.compounded ) = _update( 
+                _tempo.updated,
+                _tempo.compounded,
+                _tempo.brrrrdCycloid
+            );
+
+        (   impact_,
+            _tempo.impactCycloid,
+            _tempo.brrrrdCycloid,
+            _tempo.brrrrdFiling ) = intake(
+                _isLong,
+                _oi,
+                _cap,
+                _tempo.impactCycloid,
+                _tempo.brrrrdCycloid,
+                _tempo.brrrrdFiling
+            );
+
+        tempo = _tempo;
+
+        pricePointNext_ = _pricePoints.length - 1;
 
         // Call to `FixedPoint` contract
         fee_ = _oi.mulDown(mothership.fee());
 
-        impact_ = _impact;
-
         require(_collateral >= MIN_COLLAT + impact_ + fee_ , "OVLV1:collat<min");
 
-        collateralAdjusted_ = _collateral - _impact - fee_;
+        collateralAdjusted_ = _collateral - impact_ - fee_;
 
         oiAdjusted_ = collateralAdjusted_ * _leverage;
 

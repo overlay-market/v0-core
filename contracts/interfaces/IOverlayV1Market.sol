@@ -8,6 +8,13 @@ interface IOverlayV1Market is IERC1155 {
 
     event log(string k, uint v);
 
+    struct Tempo {
+        uint32 updated;
+        uint32 compounded;
+        uint8 impactCycloid;
+        uint8 brrrrdCycloid;
+        uint32 brrrrdFiling;
+    }
     struct PricePoint {
         uint256 bid;
         uint256 ask;
@@ -26,6 +33,8 @@ interface IOverlayV1Market is IERC1155 {
     function update () external;
     function compounded () external view returns (uint256);
     function compoundingPeriod () external view returns (uint256);
+
+    function tempo () external view returns (Tempo memory);
 
     function leverageMax () external view returns (uint8);
 
