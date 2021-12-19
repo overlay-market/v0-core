@@ -462,7 +462,8 @@ abstract contract OverlayV1Comptroller {
     @dev searches deeper into the roller array.
     @dev Called by internal contract function: getBrrrrd, _intake
     @dev Calls internal contract function: scryRollers
-    @param rollers TODO
+    @param _getter TODO
+    @param _chord TODO
     @param _cycloid The current impact or brrrrd cycloid
     @param _ago The target time
     @return lastMoment_ The time the most recent roller was written
@@ -511,11 +512,11 @@ abstract contract OverlayV1Comptroller {
   /**
     @dev Called by internal contract function: scry
     @dev Calls internal contract function: binarySearch
-    @param rollers TODO
+    @param _getter TODO
+    @param _chord TODO
     @param _cycloid TODO
     @param _target TODO
     @return beforeOrAt_ TODO
-    @return atOrAfter_ TODO
    */
     function scryRollers (
         function (uint) internal view returns(Roller memory) _getter,
@@ -559,11 +560,11 @@ abstract contract OverlayV1Comptroller {
   /**
     @notice TODO
     @dev Called by internal contract function: scryRollers
-    @param self TODO
-    @param _target TODO
+    @param _getter TODO
     @param _cycloid TODO
+    @param _chord TODO
+    @param _target TODO
     @return beforeOrAt_ TODO
-    @return atOrAfter_ TODO
    */
     function binarySearch(
         function (uint) internal view returns(Roller memory) _getter,
