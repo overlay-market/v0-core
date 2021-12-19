@@ -194,7 +194,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
                 .enterOI(
                     _isLong,
                     _collateral,
-                    _leverage
+                    _leverage,
+                    mothership.fee()
                 );
 
         require(_oiAdjusted >= _oiMinimum, "OVLV1:oi<min");
