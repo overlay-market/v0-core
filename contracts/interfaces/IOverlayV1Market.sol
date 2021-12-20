@@ -67,7 +67,7 @@ interface IOverlayV1Market is IERC1155 {
     ) external view returns (uint256);
 
     function pbnj () external view returns (uint256);
-    function priceFrameCap() external view returns (int256);
+    function priceFrameCap () external view returns (int256);
 
     function lmbda() external view returns (uint256);
 
@@ -156,7 +156,6 @@ interface IOverlayV1Market is IERC1155 {
     function setEverything (
         uint256 _k,
         uint256 _pbnj,
-        uint256 _compoundPeriod,
         uint256 _lmbda,
         uint256 _staticCap,
         uint256 _brrrrExpected,

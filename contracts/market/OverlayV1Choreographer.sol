@@ -82,7 +82,6 @@ abstract contract OverlayV1Choreographer is
     function setEverything (
         uint256 _k,
         uint256 _pbnj,
-        uint256 _compoundPeriod,
         uint256 _lmbda,
         uint256 _staticCap,
         uint256 _brrrrdExpected,
@@ -93,10 +92,6 @@ abstract contract OverlayV1Choreographer is
         setK(_k);
 
         setSpread(_pbnj);
-
-        setPeriods(
-            _compoundPeriod
-        );
 
         setComptrollerParams(
             _lmbda,
@@ -133,8 +128,8 @@ abstract contract OverlayV1Choreographer is
         lmbda = _lmbda;
         staticCap = _staticCap;
         brrrrdExpected = _brrrrExpected;
-        brrrrdWindowMacro = _brrrrdWindowMacro;
-        brrrrdWindowMicro = _brrrrdWindowMicro;
+        brrrrdWindowMacro = uint32(_brrrrdWindowMacro);
+        brrrrdWindowMicro = uint32(_brrrrdWindowMicro);
 
     }
 
