@@ -236,7 +236,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     /**
       @notice Build a position on Overlay with OVL collateral
-      @dev This interacts with an Overlay Market to register oi and hold 
+      @dev This interacts with an Overlay Market to register oi and hold
       positions on behalf of users.
       @dev Build event emitted
       @param _market The address of the desired market to interact with
@@ -290,8 +290,6 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         emit Build(_market, _positionId, _oiAdjusted, _debtAdjusted);
 
         ovl.transferFromBurn(msg.sender, address(this), _collateralAdjusted + _fee, _impact);
-
-        // ovl.burn(msg.sender, _impact);
 
         _mint(msg.sender, _positionId, _oiAdjusted, ""); // WARNING: last b/c erc1155 callback
 
@@ -349,22 +347,20 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         pos.cost -= _userCost;
         pos.oiShares -= _userOiShares;
 
-        // ovl.transfer(msg.sender, _userCost);
-
         // mint/burn excess PnL = valueAdjusted - cost
         if (_userCost < _userValueAdjusted) {
 
             ovl.transferMint(
-                msg.sender, 
-                _userCost, 
+                msg.sender,
+                _userCost,
                 _userValueAdjusted - _userCost
             );
 
         } else {
 
             ovl.transferBurn(
-                msg.sender, 
-                _userValueAdjusted, 
+                msg.sender,
+                _userValueAdjusted,
                 _userCost - _userValueAdjusted
             );
 
