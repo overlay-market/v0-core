@@ -3,7 +3,7 @@ import brownie
 import os
 import json
 from brownie import (
-    OverlayTokenNew,
+    OverlayToken,
     ComptrollerShim,
     chain,
     interface,
@@ -143,7 +143,7 @@ def create_token(gov, alice, bob):
     sup = TOKEN_TOTAL_SUPPLY
 
     def create_token(supply=sup):
-        tok = gov.deploy(OverlayTokenNew)
+        tok = gov.deploy(OverlayToken)
         tok.mint(gov, supply, {"from": gov})
         tok.transfer(bob, supply/2, {"from": gov})
         tok.transfer(alice, supply/2, {"from": gov})
