@@ -10,6 +10,9 @@ def test_initialize_market(mothership, market, gov):
     assert mothership.marketActive(market) is True
     assert mothership.totalMarkets() == total + 1
 
+    # pushed to end of list of markets stored by mothership
+    assert mothership.allMarkets(total) == market
+
     assert 'UpdateMarket' in tx.events
     assert 'market' in tx.events['UpdateMarket']
     assert 'active' in tx.events['UpdateMarket']

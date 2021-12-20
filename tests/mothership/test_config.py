@@ -28,7 +28,7 @@ def test_markets(mothership, market):
 
 
 def test_collateral(mothership, collateral):
-    assert mothership.totalCollateral() == 0
+    assert mothership.totalCollaterals() == 0
     assert mothership.collateralActive(collateral) is False
     assert mothership.collateralExists(collateral) is False
 

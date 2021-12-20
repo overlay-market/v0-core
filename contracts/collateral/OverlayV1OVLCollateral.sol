@@ -156,13 +156,13 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     /// @notice Disburses fees
     function disburse () public {
 
-        (   uint256 _marginBurnRate,
+        (   address _feeTo,,
             uint256 _feeBurnRate,
-            address _feeTo ) = mothership.getUpdateParams();
+            uint256 _marginBurnRate ) = mothership.getGlobalParams();
 
         uint _feeForward = fees;
         uint _feeBurn = _feeForward.mulUp(_feeBurnRate);
-        _feeForward = _feeForward - _feeBurn;
+        _feeForward -= _feeBurn;
 
         uint _liqForward = liquidations;
         uint _liqBurn = _liqForward.mulUp(_marginBurnRate);
@@ -236,7 +236,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     /**
       @notice Build a position on Overlay with OVL collateral
-      @dev This interacts with an Overlay Market to register oi and hold 
+      @dev This interacts with an Overlay Market to register oi and hold
       positions on behalf of users.
       @dev Build event emitted
       @param _market The address of the desired market to interact with
@@ -355,16 +355,16 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         if (_userCost < _userValueAdjusted) {
 
             ovl.transferMint(
-                msg.sender, 
-                _userCost, 
+                msg.sender,
+                _userCost,
                 _userValueAdjusted - _userCost
             );
 
         } else {
 
             ovl.transferBurn(
-                msg.sender, 
-                _userValueAdjusted, 
+                msg.sender,
+                _userValueAdjusted,
                 _userCost - _userValueAdjusted
             );
 

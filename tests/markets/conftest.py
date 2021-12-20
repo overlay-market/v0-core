@@ -426,7 +426,7 @@ def ovl_collateral(mothership, request):
       ovl_collateral generator produces a collateral contract instance of the
       0th collateral index stored in the OverlayV1Mothership contract
     '''
-    addr = mothership.allCollateral(0)
+    addr = mothership.allCollaterals(0)
     ovl_collateral = getattr(interface, request.param)(addr)
     yield ovl_collateral
 
