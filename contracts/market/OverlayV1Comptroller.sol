@@ -315,7 +315,7 @@ abstract contract OverlayV1Comptroller {
         // Calls internal contract function
         cap_ = _surpassed ? 0 : _burnt || _expected
             ? _oiCap(false, depth(), staticCap, 0, 0)
-            : _oiCap(true, depth(), staticCap, _brrrrd, brrrrdExpected);
+            : _oiCap(true, depth(), staticCap, _brrrrd, _brrrrdExpected);
 
     }
 
