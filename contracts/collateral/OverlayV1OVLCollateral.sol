@@ -469,6 +469,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         Position.Info storage pos = positions[_positionId];
 
+        if (pos.oiShares == 0) return 0; // liquidated
+
         IOverlayV1Market _market = IOverlayV1Market(pos.market);
 
         (   uint _oi,
