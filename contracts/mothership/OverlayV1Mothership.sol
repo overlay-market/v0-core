@@ -85,7 +85,7 @@ contract OverlayV1Mothership is AccessControlEnumerable {
       @dev Should be called after contract deployment in specific market factory.createMarket
       @dev Only the Governor can initialize a market
       @dev Appends new market address to `allMarkets` array to track them
-      @param market Overlay market contract address
+      @param _market Overlay market contract address
       */
     function initializeMarket(address _market) external onlyGovernor {
         require(!marketExists[_market], "OVLV1: market exists");
