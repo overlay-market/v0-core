@@ -52,6 +52,7 @@ contract OverlayV1Mothership is AccessControlEnumerable {
     }
 
     constructor(
+        address _ovl,
         address _feeTo,
         uint _fee,
         uint _feeBurnRate,
@@ -65,11 +66,11 @@ contract OverlayV1Mothership is AccessControlEnumerable {
         _setRoleAdmin(GUARDIAN, ADMIN);
 
         // global params
+        ovl = _ovl;
         fee = _fee;
         feeBurnRate = _feeBurnRate;
         feeTo = _feeTo;
         marginBurnRate = _marginBurnRate;
-
     }
 
     function setOVL (address _ovl) external onlyGovernor {

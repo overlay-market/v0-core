@@ -14,7 +14,8 @@ def test_roles(token, mothership, gov, collateral):
     assert mothership.hasRole(mothership.GUARDIAN(), gov) is True
 
 
-def test_params(mothership, depository):
+def test_params(mothership, depository, token):
+    assert mothership.ovl() == token
     assert mothership.fee() == 0.00075e18
     assert mothership.feeBurnRate() == .1e18
     assert mothership.marginBurnRate() == .05e18
