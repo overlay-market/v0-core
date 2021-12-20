@@ -2,6 +2,11 @@ import pytest
 from brownie import OverlayToken, OverlayV1Mothership
 
 
+@pytest.fixture(autouse=True)
+def isolation(fn_isolation):
+    pass
+
+
 @pytest.fixture(scope="module")
 def gov(accounts):
     yield accounts[0]

@@ -21,6 +21,18 @@ def test_params(mothership, depository, token):
     assert mothership.feeTo() == depository
 
 
+def test_markets(mothership, market):
+    assert mothership.totalMarkets() == 0
+    assert mothership.marketActive(market) is False
+    assert mothership.marketExists(market) is False
+
+
+def test_collateral(mothership, collateral):
+    assert mothership.totalCollateral() == 0
+    assert mothership.collateralActive(collateral) is False
+    assert mothership.collateralExists(collateral) is False
+
+
 def test_erc20(token):
     assert token.decimals() == 18
     assert token.name() == "Overlay"
