@@ -348,15 +348,26 @@ def create_mothership(token, feed_infos, fees, alice, bob, gov, feed_owner,
         # Calls get_uni_feeds to return Uniswap V3 test feed info
         _, market_feed, ovl_feed, quote = fd_getter(feed_owner, feed_infos)
 
+        # Account that deploys the OverlayV1Mothership contract takes on the
+        # Governor Role
         mothership = gov.deploy(ovlms_type, tok, *ovlms_args)
 
         # Governor grants the OverlayV1Mothership contract with the Admin Role
         # in the OVL ERC20 contract
         tok.grantRole(tok.ADMIN_ROLE(), mothership, {"from": gov})
 
+        # Governor deploys the OverlayV1UniswapV3MarketZeroLambdaShim contract
+        # which takes in the OverlayV1Mothership address, the mock depth and
+        # mock market addresses, the market token 1 address and eth address
+        # that make up the pair, and the first four variables in ovlm_args
         market = gov.deploy(ovlm_type, mothership, ovl_feed, market_feed,
                             quote, WRAPPED_ETH_ADDR, *ovlm_args[:4])
 
+        # Governor sets important variables in the operation of the market
+        # contract, including k, spread, compound period, and the Comptroller
+        # parameters
+        # TODO: should remove setEverything function in sol and call each
+        # function explicitly
         market.setEverything(*ovlm_args[4:], {"from": gov})
 
         # Governor makes call to mothership contract, making it aware of the
