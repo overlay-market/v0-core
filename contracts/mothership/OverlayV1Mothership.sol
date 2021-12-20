@@ -102,8 +102,9 @@ contract OverlayV1Mothership is AccessControlEnumerable {
 
     }
 
-    /// @notice Disables an existing market contract for a mirin market
     function disableMarket(address _market) external onlyGovernor {
+
+        require(marketExists[_market], "OVLV1: market !exists");
 
         require(marketActive[_market], "OVLV1: market !enabled");
 
@@ -113,7 +114,6 @@ contract OverlayV1Mothership is AccessControlEnumerable {
 
     }
 
-    /// @notice Enables an existing market contract for a mirin market
     function enableMarket(address _market) external onlyGovernor {
 
         require(marketExists[_market], "OVLV1: market !exists");
@@ -167,6 +167,8 @@ contract OverlayV1Mothership is AccessControlEnumerable {
 
     function disableCollateral (address _collateral) external onlyGovernor {
 
+        require(collateralExists[_collateral], "OVLV1: collateral !exists");
+
         require(collateralActive[_collateral], "OVLV1: collateral !enabled");
 
         collateralActive[_collateral] = false;
@@ -202,7 +204,6 @@ contract OverlayV1Mothership is AccessControlEnumerable {
         );
     }
 
-    /// @notice Allows gov to adjust global params
     function adjustGlobalParams(
         address _feeTo,
         uint _fee,

@@ -85,3 +85,49 @@ def test_initialize_market_reverts_when_not_gov(mothership, market, bob):
     EXPECTED_ERROR_MESSAGE = 'OVLV1:!gov'
     with brownie.reverts(EXPECTED_ERROR_MESSAGE):
         mothership.initializeMarket(market, {"from": bob})
+
+
+def test_enable_market_reverts_when_not_initialized(mothership, market, gov):
+    EXPECTED_ERROR_MESSAGE = 'OVLV1: market !exists'
+    with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+        mothership.enableMarket(market, {"from": gov})
+
+
+def test_enable_market_reverts_when_not_disabled(mothership, market, gov):
+    _ = mothership.initializeMarket(market, {"from": gov})
+
+    EXPECTED_ERROR_MESSAGE = 'OVLV1: market !disabled'
+    with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+        mothership.enableMarket(market, {"from": gov})
+
+
+def test_enable_market_reverts_when_not_gov(mothership, market, gov, bob):
+    _ = mothership.initializeMarket(market, {"from": gov})
+    _ = mothership.disableMarket(market, {"from": gov})
+
+    EXPECTED_ERROR_MESSAGE = 'OVLV1:!gov'
+    with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+        mothership.enableMarket(market, {"from": bob})
+
+
+def test_disable_market_reverts_when_not_initialized(mothership, market, gov):
+    EXPECTED_ERROR_MESSAGE = 'OVLV1: market !exists'
+    with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+        mothership.disableMarket(market, {"from": gov})
+
+
+def test_disable_market_reverts_when_not_enabled(mothership, market, gov):
+    _ = mothership.initializeMarket(market, {"from": gov})
+    _ = mothership.disableMarket(market, {"from": gov})
+
+    EXPECTED_ERROR_MESSAGE = 'OVLV1: market !enabled'
+    with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+        mothership.disableMarket(market, {"from": gov})
+
+
+def test_disable_market_reverts_when_not_gov(mothership, market, gov, bob):
+    _ = mothership.initializeMarket(market, {"from": gov})
+
+    EXPECTED_ERROR_MESSAGE = 'OVLV1:!gov'
+    with brownie.reverts(EXPECTED_ERROR_MESSAGE):
+        mothership.disableMarket(market, {"from": bob})
