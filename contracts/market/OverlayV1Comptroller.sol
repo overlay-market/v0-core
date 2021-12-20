@@ -36,7 +36,7 @@ abstract contract OverlayV1Comptroller {
     }
 
     uint256 public immutable impactWindow;
-    uint256 internal staticCap;
+    uint256 public staticCap;
     uint256 public lmbda;
 
     uint256[2] public brrrrdAccumulator;
