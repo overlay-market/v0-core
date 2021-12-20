@@ -405,25 +405,11 @@ abstract contract OverlayV1Comptroller {
 
         if (_roller.time != _lastMoment) {
 
-            _cycloid += 1;
-
-            if (_cycloid < CHORD) {
-
-                rollers[_cycloid] = _roller;
-
-            } else {
-
-                _cycloid = 0;
-
-                rollers[_cycloid] = _roller;
-
-            }
-
-        } else {
-
-            rollers[_cycloid] = _roller;
+             _cycloid = (_cycloid + 1) % CHORD;
 
         }
+
+        rollers[_cycloid] = _roller;
 
         cycloid_ = _cycloid;
 
