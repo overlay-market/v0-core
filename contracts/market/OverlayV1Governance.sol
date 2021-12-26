@@ -71,7 +71,7 @@ abstract contract OverlayV1Governance is
     /// @param _compoundPeriod Compounding period
     /// @param _lmbda Market impact
     /// @param _staticCap Open interest cap
-    /// @param _brrrrExpected TODO
+    /// @param _brrrrdExpected TODO
     /// @param _brrrrdWindowMacro Rolling window
     /// @param _brrrrdWindowMicro Rolling window
     function setEverything (
@@ -136,7 +136,7 @@ abstract contract OverlayV1Governance is
     /// @dev Called by the Governor Role, TODO: is this function ever called
     /// @dev outside this contract? If not, don't expose it.
     /// @dev Called by internal contract function: setEverything
-    /// @param _compoundPeriod Compounding period
+    /// @param _compoundingPeriod Compounding period
     function setPeriods(
         uint256 _compoundingPeriod
     ) public onlyGovernor {
@@ -146,7 +146,7 @@ abstract contract OverlayV1Governance is
     }
 
     /// @notice Sets the market impact, open interest cap, TODO
-    /// @noitce (_brrrrExpected), TODO (_brrrrdWindowMacro), TODO
+    /// @notice (_brrrrExpected), TODO (_brrrrdWindowMacro), TODO
     /// @notice (_brrrrdWindowMicro) state variables which are _lmbda, 
     /// @notice _staticCap, _brrrrExpected, _brrrrdWindowMacro, and 
     /// @notice _brrrrdWindowMicro, respectively

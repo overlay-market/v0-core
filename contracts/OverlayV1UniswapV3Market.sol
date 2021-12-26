@@ -70,8 +70,6 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         macroWindow = _macroWindow;
         microWindow = _microWindow;
 
-        // TODO: Confusing to track down origin
-        ethIs0 = IUniswapV3Pool(_ovlFeed).token0() == _eth;
         address _token0 = IUniswapV3Pool(_marketFeed).token0();
         address _token1 = IUniswapV3Pool(_marketFeed).token1();
 
