@@ -25,6 +25,17 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     address internal immutable eth;
     bool internal immutable ethIs0;
 
+    /**
+      @param _mothership OverlayV1Mothership contract address
+      @param _ovlFeed TODO
+      @param _marketFeed TODO
+      @param _quote TODO
+      @param _eth TODO
+      @param _baseAmount TODO
+      @param _macroWindow TODO
+      @param _microWindow TODO
+      @param _priceFrameCap TODO
+      */
     constructor(
         address _mothership,
         address _ovlFeed,
@@ -47,6 +58,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         // immutables
         eth = _eth;
+        // TODO: Confusing to track down origin
         ethIs0 = IUniswapV3Pool(_ovlFeed).token0() == _eth;
         ovlFeed = _ovlFeed;
         marketFeed = _marketFeed;
@@ -54,12 +66,33 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         macroWindow = _macroWindow;
         microWindow = _microWindow;
 
+        // TODO: Confusing to track down origin
+        ethIs0 = IUniswapV3Pool(_ovlFeed).token0() == _eth;
         address _token0 = IUniswapV3Pool(_marketFeed).token0();
         address _token1 = IUniswapV3Pool(_marketFeed).token1();
 
-        base = _token0 != _quote ? _token0 : _token1;
-        quote = _token0 == _quote ? _token0 : _token1;
 
+        // If token0 address is NOT the quote address, then base is the token0
+        // address. Otherwise, base is the token1 address.
+        base = _token0 != _quote ? _token0 : _token1;
+        // If token0 address is the quote address, then quote is the token0
+        // address. Otherwise, quote is the token1 address.
+        quote = _token0 == _quote ? _token0 : _token1;
+        // Above lines getting base and quote are confusing, proposal to change
+        // to the following:
+        //   if (_token0 == quote) {
+        //     quote = _token0;
+        //     base = _token1;
+        //   } else if (_token0 != quote) {
+        //     quote = _token1;
+        //     base = _token0;
+        //   } else {
+        //     // TODO: handle case
+        //   }
+
+        // Fetch the TWAP tick using the Uniswap V3 oracle
+        // Call to UniswapV3OracleLibraryV2 contract function
+        // LEFT OFF HERE
         int24 _tick = OracleLibraryV2.consult(
             _marketFeed,
             uint32(_macroWindow),

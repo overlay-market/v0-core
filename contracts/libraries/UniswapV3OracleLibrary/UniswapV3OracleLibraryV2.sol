@@ -17,7 +17,8 @@ library OracleLibraryV2 {
     /// @param pool Address of Uniswap V3 pool that we want to observe
     /// @param secondsAgoStart end of twap time
     /// @param secondsAgoEnd start of twap time
-    /// @return timeWeightedAverageTick The time-weighted average tick from (block.timestamp - period) to block.timestamp
+    /// @return timeWeightedAverageTick The time-weighted average tick from
+    ///         (block.timestamp - period) to block.timestamp
     function consult(
         address pool, 
         uint32 secondsAgoStart, 
