@@ -26,12 +26,16 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     bool internal immutable ethIs0;
 
     /**
+      @notice TODO
+      @dev Calls IUniswapV3Pool contract
       @param _mothership OverlayV1Mothership contract address
-      @param _ovlFeed TODO
-      @param _marketFeed TODO
-      @param _quote TODO
-      @param _eth TODO
-      @param _baseAmount TODO
+      @param _ovlFeed OverlayV3OracleMock contract address,
+             TODO: description + name
+      @param _marketFeed OverlayV3OracleMock contract address
+             TODO: description + name
+      @param _quote WETH contract address, TODO: is this always ETH?
+      @param _eth WETH contract address, TODO: is this always ETH?
+      @param _baseAmount amount in, TODO
       @param _macroWindow TODO
       @param _microWindow TODO
       @param _priceFrameCap TODO
@@ -92,18 +96,42 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
         // Fetch the TWAP tick using the Uniswap V3 oracle
         // Call to UniswapV3OracleLibraryV2 contract function
-        // LEFT OFF HERE
         int24 _tick = OracleLibraryV2.consult(
             _marketFeed,
             uint32(_macroWindow),
             uint32(0)
         );
 
+        // Add new PricePoint struct entry
+        // TODO: why are we setting the macroTick and microTick to be the same?
+        // TODO: why is the market depth always zero here?
+        // dev: _pricePoints variable is defined in OverlayV1PricePoint
+        // dev: which is inherited from the OverlayV1Market contract
         _pricePoints.push(PricePoint(
             _tick, 
             _tick, 
             0
         ));
+
+        // Given a tick and a token amount, calculate the amount of tokens
+        // received in exchange
+        // TODO: suggested change for clarity (could just use the suggested
+        // if statement below):
+        //   address baseToken;
+        //   address quoteToken;
+        //   if (_token0 != _quote) {
+        //     baseToken = _token0;
+        //     quoteToken = _token1;
+        //   } else if (_token0 == quote) {
+        //     baseToken = _token1;
+        //     quoteToken = _token0;
+        //   }
+        //   uint _price = OracleLibraryV2.getQuoteAtTick(
+        //       _tick,
+        //       uint128(_baseAmount),
+        //       baseToken,
+        //       quoteToken,
+        //   );
 
         uint _price = OracleLibraryV2.getQuoteAtTick(
             _tick,
@@ -112,6 +140,9 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
             _token0 == _quote ? _token0 : _token1
         );
 
+        // Emit OverlayV1PricePoint contract event
+        // TODO: move event definition to this contract (only called here)
+        // TODO: why is the bid and ask the same? why is the depth 0?
         emit NewPricePoint(_price, _price, 0);
 
     }

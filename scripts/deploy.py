@@ -238,16 +238,30 @@ def deploy_market(mothership, feed_depth, feed_market):
                   new OverlayV1UniswapV3Market contract instance
     '''
     # Governor role deploys OverlayV1UniswapV3Market 
-    # LEFT OFF HERE
+    # Sets a lot of variables inherited from OverlayV1Market,
+    # OverlayV1Comptroller, OverlayV1OI, OverlayV1PricePoint. 
+    # TODO: unclear in the contract which contract all the variables are
+    # defined in. Variables, events, and functions that are only called in one
+    # contract should be defined in that contract. Ex: NewPricePoint event
     market = GOV.deploy(OverlayV1UniswapV3Market, mothership, feed_depth,
                         feed_market, WETH, WETH, AMOUNT_IN, PRICE_WINDOW_MACRO,
                         PRICE_WINDOW_MICRO)
 
+    # Governor role sets the funding constant (k), static spread (pbnj),
+    # compounding period (compoundingPeriod), market impact (lmbda), open
+    # interest cap (staticCap) TODO (brrrrExpected), macro rolling window
+    # (brrrrdWindowMacro, and micro rolling window (brrrrdWindowMicro) state
+    # variables
+    # setEverything function is called only in OverlayV1UniswapV3Market, but is
+    # inherited from the OverlayV1Goverance to OverlayV1Market to
+    # OverlayV1UniswapV3Market
     market.setEverything(K, PRICE_FRAME_CAP, SPREAD, UPDATE_PERIOD,
                          COMPOUND_PERIOD, IMPACT_WINDOW, LAMBDA, STATIC_CAP,
                          BRRRR_EXPECTED, BRRRR_WINDOW_MACRO,
                          BRRRR_WINDOW_MICRO, {"from": GOV})
 
+    # Governor role makes the OverlayV1Mothership contract instance aware of
+    # the newly initialized market
     mothership.initializeMarket(market, {"from": GOV})
 
     return market
