@@ -222,11 +222,11 @@ def deploy_mothership(ovl):
 
 def deploy_market(mothership, feed_depth, feed_market):
     '''
-    Deploys the OverlayV1UniswapV3Market contract from the Governor Role, then
-    the Governor "sets everything" (TODO) related to the
-    OverlayV1UniswapV3Market contract instance, then makes the
-    OverlayV1Mothership contract instance is made aware of the new token pair
-    market.
+    The Governor deploys a new WETH/WETH market via the
+    OverlayV1UniswapV3Market contract, then sets several state variables
+    associated with the OverlayV1UniswapV3Market contract instance. The
+    Governor role then makes the previously initialized OverlayV1Mothership
+    contract aware of the new OverlayV1UniswapV3Market market.
 
     Inputs:
       mothership  [Contract]:  OverlayV1Mothership contract instance
@@ -268,20 +268,16 @@ def deploy_market(mothership, feed_depth, feed_market):
 
 
 def deploy_ovl_collateral(mothership, market, ovl):
+    '''
+    The Governor role deploys the OverlayV1OVLCollateral contract.
+    '''
 
-    ovl_collateral = GOV.deploy(
-        OverlayV1OVLCollateral,
-        "uri",
-        mothership
-    )
+    # Governor role deploys the OverlayV1OVLCollateral contract
+    ovl_collateral = GOV.deploy(OverlayV1OVLCollateral, "uri", mothership)
 
-    ovl_collateral.setMarketInfo(
-        market,
-        MARGIN_MAINTENANCE,
-        MARGIN_REWARD_RATE,
-        MAX_LEVERAGE,
-        {"from": GOV}
-    )
+    ovl_collateral.setMarketInfo(market, MARGIN_MAINTENANCE,
+                                 MARGIN_REWARD_RATE, MAX_LEVERAGE,
+                                 {"from": GOV})
 
     market.addCollateral(ovl_collateral, {"from": GOV})
 
