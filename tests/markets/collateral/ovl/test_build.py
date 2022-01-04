@@ -111,8 +111,6 @@ def test_build_success_zero_impact(ovl_collateral, token, mothership, market,
     tx = ovl_collateral.build(market, collateral, leverage, is_long,
                               oi_adjusted_min, {"from": bob})
 
-    print_logs(tx)
-
     assert 'Build' in tx.events
     assert 'positionId' in tx.events['Build']
     pid = tx.events['Build']['positionId']

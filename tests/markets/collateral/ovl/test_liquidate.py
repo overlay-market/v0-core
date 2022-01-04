@@ -92,8 +92,6 @@ def test_liquidate_success_zero_funding(
 
     tx_liq = ovl_collateral.liquidate(pos_id, alice, {'from': alice})
 
-    print_logs(tx_liq)
-
     assert 'Liquidate' in tx_liq.events
     assert 'positionId' in tx_liq.events['Liquidate']
     assert tx_liq.events['Liquidate']['positionId'] == pos_id
