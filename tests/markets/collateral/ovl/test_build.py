@@ -111,6 +111,8 @@ def test_build_success_zero_impact(ovl_collateral, token, mothership, market,
     tx = ovl_collateral.build(market, collateral, leverage, is_long,
                               oi_adjusted_min, {"from": bob})
 
+    print_logs(tx)
+
     assert 'Build' in tx.events
     assert 'positionId' in tx.events['Build']
     pid = tx.events['Build']['positionId']
@@ -136,7 +138,9 @@ def test_build_success_zero_impact(ovl_collateral, token, mothership, market,
      pos_debt,
      pos_cost) = ovl_collateral.positions(pid)
 
-    assert pos_market == market
+    market_ix = ovl_collateral.marketIndexes(market)
+
+    assert pos_market == market_ix
     assert pos_islong == is_long
     assert pos_lev == leverage
     assert pos_price_idx == market.pricePointNextIndex() - 1
@@ -765,7 +769,9 @@ def test_build_w_impact(
      pos_debt,
      pos_cost) = ovl_collateral.positions(pid)
 
-    assert pos_market == market
+    market_ix = ovl_collateral.marketIndexes(market)
+
+    assert pos_market == market_ix
     assert pos_islong == is_long
     assert pos_lev == leverage
     assert pos_price_idx == market.pricePointNextIndex() - 1
@@ -981,7 +987,9 @@ def test_build_multiple_in_one_impact_window(
          pos_debt,
          pos_cost) = ovl_collateral.positions(pid)
 
-        assert pos_market == market
+        market_ix = ovl_collateral.marketIndexes(market)
+
+        assert pos_market == market_ix
         assert pos_islong == is_long
         assert pos_lev == leverage
         assert pos_price_idx == market.pricePointNextIndex() - 1
@@ -1146,7 +1154,9 @@ def test_build_multiple_in_multiple_impact_windows(
          pos_debt,
          pos_cost) = ovl_collateral.positions(pid)
 
-        assert pos_market == market
+        market_ix = ovl_collateral.marketIndexes(market)
+
+        assert pos_market == market_ix
         assert pos_islong == is_long
         assert pos_lev == leverage
         assert pos_price_idx == market.pricePointNextIndex() - 1

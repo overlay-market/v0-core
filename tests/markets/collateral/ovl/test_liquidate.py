@@ -92,6 +92,8 @@ def test_liquidate_success_zero_funding(
 
     tx_liq = ovl_collateral.liquidate(pos_id, alice, {'from': alice})
 
+    print_logs(tx_liq)
+
     assert 'Liquidate' in tx_liq.events
     assert 'positionId' in tx_liq.events['Liquidate']
     assert tx_liq.events['Liquidate']['positionId'] == pos_id
@@ -482,6 +484,10 @@ def test_liquidate_with_funding(
     _ = ovl_collateral.liquidate(pos_id, alice, {'from': alice})
     exit_bid, exit_ask, _ = market.pricePoints(
         market.pricePointNextIndex() - 1)
+
+    print("margin maintenance", margin_maintenance)
+    print("pos oi shares", pos_oi_shares)
+
     assert pos_val < margin_maintenance * pos_oi_shares
 
     # check alice oi still there
