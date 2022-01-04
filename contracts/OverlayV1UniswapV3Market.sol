@@ -150,7 +150,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
 
     /// @notice Arithmetic to get depth
-    /// @dev Derived from cnstant product formula X*Y=K and tailored
+    /// @dev Derived from constant product formula X*Y=K and tailored
     /// to Uniswap V3 selective liquidity provision.
     /// @param _marketLiquidity Amount of liquidity in market in ETH terms.
     /// @param _ovlPrice Price of OVL against ETH.
