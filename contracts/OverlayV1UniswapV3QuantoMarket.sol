@@ -7,7 +7,7 @@ import "./interfaces/IUniswapV3Pool.sol";
 import "./market/OverlayV1Market.sol";
 import "./libraries/UniswapV3OracleLibrary/TickMath.sol";
 
-contract OverlayV1UniswapV3Market is OverlayV1Market {
+contract OverlayV1UniswapV3QuantoMarket is OverlayV1Market {
 
     using FixedPoint for uint256;
 

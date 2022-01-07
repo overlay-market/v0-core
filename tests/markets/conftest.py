@@ -182,7 +182,7 @@ def comptroller(gov, feed_infos, token, feed_owner):
             .5e18,         # fee burn rate
             .5e18,         # margin burn rate
         ],
-            "OverlayV1UniswapV3MarketZeroLambdaShim", [
+            "OverlayV1UniswapV3QuantoMarketZeroLambdaShim", [
             1e18,                # amount in
             PRICE_WINDOW_MACRO,  # macro window
             PRICE_WINDOW_MICRO,  # micro price window

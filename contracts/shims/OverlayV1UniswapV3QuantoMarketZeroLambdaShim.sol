@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import "../OverlayV1UniswapV3Market.sol";
+import "../OverlayV1UniswapV3QuantoMarket.sol";
 import "../libraries/FixedPoint.sol";
 
-contract OverlayV1UniswapV3MarketZeroLambdaShim is OverlayV1UniswapV3Market {
+contract OverlayV1UniswapV3QuantoMarketZeroLambdaShim is OverlayV1UniswapV3QuantoMarket {
 
     using FixedPoint for uint256;
 
@@ -18,7 +18,7 @@ contract OverlayV1UniswapV3MarketZeroLambdaShim is OverlayV1UniswapV3Market {
         uint256 _macroWindow,
         uint256 _microWindow,
         uint256 _priceFrameCap
-    ) OverlayV1UniswapV3Market (
+    ) OverlayV1UniswapV3QuantoMarket (
         _mothership,
         _ovlFeed,
         _marketFeed,
