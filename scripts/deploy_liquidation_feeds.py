@@ -10,6 +10,10 @@ from brownie import \
     accounts
 import time
 
+def print_logs(tx):
+    if 'log' in tx.events:
+        for i in range(len(tx.events['log'])):
+            print(tx.events['log'][i]['k'] + ": " + str(tx.events['log'][i]['v']))
 
 ''' OVERLAY TOKEN PARAMETERS '''
 TOKEN_TOTAL_SUPPLY = 8000000e18
@@ -23,7 +27,6 @@ K = 343454218783234
 PRICE_FRAME_CAP = 5e18
 SPREAD = .00573e18
 
-UPDATE_PERIOD = 100
 COMPOUND_PERIOD = 600
 
 IMPACT_WINDOW = 600
@@ -189,6 +192,8 @@ def build_position(collateral_manager, market, collateral, leverage, is_long,
     tx_build = collateral_manager.build(market, collateral, leverage, is_long,
                                         0, {"from": taker})
 
+    print_logs(tx_build)
+
     position = tx_build.events['Build']['positionId']
     oi = tx_build.events['Build']['oi']
     debt = tx_build.events['Build']['debt']
@@ -306,7 +311,10 @@ def feeds():
         else:               # decrease if hundredth is odd
             cur_tick -= 200
 
-    cur_tick = 80000
+    cur_tick = 8000
+
+    cur_liq = 4880370053085953032800977
+    cum_liq = 0
 
     now = start
     for i in range(1000):  # zig zag feed
@@ -342,9 +350,9 @@ def main():
 
     depth_feed = deploy_uni_pool(uni_factory, WETH, ovl, depth)
 
-    long_liq_feed = deploy_uni_pool(uni_factory, LONG_LIQ, WETH, long_liqs)
-    # short_liq_feed = deploy_uni_pool(uni_factory, SHORT_LIQ, WETH, short_liqs)
-    # zig_zag_feed = deploy_uni_pool(uni_factory, ZIG_ZAG, WETH, zig_zags)
+    long_liq_feed = deploy_uni_pool(uni_factory, WETH, LONG_LIQ, long_liqs)
+    # short_liq_feed = deploy_uni_pool(uni_factory, WETH, SHORT_LIQ, short_liqs)
+    # zig_zag_feed = deploy_uni_pool(uni_factory, WETH, ZIG_ZAG, zig_zags)
 
     mothership = deploy_mothership(ovl)
 
@@ -356,18 +364,16 @@ def main():
         mothership,
         ovl,
         # [long_liq_market, short_liq_market, zig_zag_market]
-        [long_liq_market ]
-    )
+        # [long_liq_market]
+    
 
-    chain.mine(timedelta=long_liq_market.compoundingPeriod() * 3)
+    chain.mine(timedelta=COMPOUND_PERIOD * 3)
 
     allowance = ovl.allowance(ALICE, ovl_collateral)
 
-    print("allowance", allowance)
-
     ll_position_1 = build_position(ovl_collateral, long_liq_market, 5e18, 1, True, ALICE)
 
-    chain.mine(timedelta=long_liq_market.updatePeriod() * 2)
+    chain.mine(timedelta=COMPOUND_PERIOD * 2)
 
     ll_position_2 = build_position(ovl_collateral, long_liq_market, 5e18, 5, False, ALICE)
 
@@ -380,15 +386,15 @@ def main():
     unwind_position(ovl_collateral, ll_position_1['id'],
                     ovl_collateral.balanceOf(ALICE, ll_position_1['id']), ALICE)
 
-    chain.mine(timedelta=UPDATE_PERIOD)
+    chain.mine(timedelta=COMPOUND_PERIOD)
 
     ll_position_3 = build_position(ovl_collateral, long_liq_market, 5e18, 1, True, ALICE)
 
-    chain.mine(timedelta=UPDATE_PERIOD)
+    chain.mine(timedelta=100)
 
     ll_position_4 = build_position(ovl_collateral, long_liq_market, 5e18, 1, True, ALICE)
 
-    chain.mine(timedelta=UPDATE_PERIOD)
+    chain.mine(timedelta=100)
 
     ll_position_5 = build_position(ovl_collateral, long_liq_market, 5e18, 1, True, ALICE)
 
@@ -398,13 +404,11 @@ def main():
     transfer_position_shares_batch(ovl_collateral, ALICE, BOB, position_ids,
                                    amounts)
 
-    chain.mine(timedelta=UPDATE_PERIOD)
+    chain.mine(timedelta=100)
 
     ll_position_6 = build_position(ovl_collateral, long_liq_market, 5e18, 1, True, ALICE)
 
-    chain.mine(timedelta=UPDATE_PERIOD)
-
-    chain.mine(timedelta=COMPOUND_PERIOD)
+    chain.mine(timedelta=100)
 
     with open(".subgraph.liquidations.test.env", "w") as f:
         f.write('OVL={}\n'.format(ovl))
