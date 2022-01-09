@@ -236,7 +236,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     /**
       @notice Build a position on Overlay with OVL collateral
-      @dev This interacts with an Overlay Market to register oi and hold 
+      @dev This interacts with an Overlay Market to register oi and hold
       positions on behalf of users.
       @dev Build event emitted
       @param _market The address of the desired market to interact with
@@ -257,6 +257,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         require(mothership.marketActive(_market), "OVLV1:!market");
         require(_leverage <= marketInfo[_market].maxLeverage, "OVLV1:lev>max");
+        require(_leverage != 0, "OVLV1:lev==0");
 
         (   uint _oiAdjusted,
             uint _collateralAdjusted,
@@ -355,16 +356,16 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         if (_userCost < _userValueAdjusted) {
 
             ovl.transferMint(
-                msg.sender, 
-                _userCost, 
+                msg.sender,
+                _userCost,
                 _userValueAdjusted - _userCost
             );
 
         } else {
 
             ovl.transferBurn(
-                msg.sender, 
-                _userValueAdjusted, 
+                msg.sender,
+                _userValueAdjusted,
                 _userCost - _userValueAdjusted
             );
 
@@ -467,6 +468,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     ) {
 
         Position.Info storage pos = positions[_positionId];
+
+        if (pos.oiShares == 0) return 0; // liquidated
 
         IOverlayV1Market _market = IOverlayV1Market(pos.market);
 
