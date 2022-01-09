@@ -111,13 +111,12 @@ def deploy_mothership(ovl):
 
     mothership = GOV.deploy(
         OverlayV1Mothership,
+        ovl,
         FEE_TO,
         FEE,
         FEE_BURN_RATE,
         MARGIN_BURN_RATE
     )
-
-    mothership.setOVL(ovl, {"from": GOV})
 
     ovl.grantRole(ovl.ADMIN_ROLE(), mothership, {"from": GOV})
 
