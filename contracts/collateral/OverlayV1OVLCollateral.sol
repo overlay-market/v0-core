@@ -155,13 +155,13 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     /// @notice Disburses fees
     function disburse () public {
 
-        (   uint256 _marginBurnRate,
+        (   address _feeTo,,
             uint256 _feeBurnRate,
-            address _feeTo ) = mothership.getUpdateParams();
+            uint256 _marginBurnRate ) = mothership.getGlobalParams();
 
         uint _feeForward = fees;
         uint _feeBurn = _feeForward.mulUp(_feeBurnRate);
-        _feeForward = _feeForward - _feeBurn;
+        _feeForward -= _feeBurn;
 
         uint _liqForward = liquidations;
         uint _liqBurn = _liqForward.mulUp(_marginBurnRate);
@@ -256,6 +256,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         require(mothership.marketActive(_market), "OVLV1:!market");
         require(_leverage <= marketInfo[_market].maxLeverage, "OVLV1:lev>max");
+        require(_leverage != 0, "OVLV1:lev==0");
 
         (   uint _oiAdjusted,
             uint _collateralAdjusted,
@@ -457,6 +458,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
     ) {
 
         Position.Info storage pos = positions[_positionId];
+
+        if (pos.oiShares == 0) return 0; // liquidated
 
         IOverlayV1Market _market = IOverlayV1Market(pos.market);
 

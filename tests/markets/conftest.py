@@ -350,15 +350,11 @@ def create_mothership(token, feed_infos, fees, alice, bob, gov, feed_owner,
 
         # Account that deploys the OverlayV1Mothership contract takes on the
         # Governor Role
-        mothership = gov.deploy(ovlms_type, *ovlms_args)
+        mothership = gov.deploy(ovlms_type, tok, *ovlms_args)
 
         # Governor grants the OverlayV1Mothership contract with the Admin Role
         # in the OVL ERC20 contract
         tok.grantRole(tok.ADMIN_ROLE(), mothership, {"from": gov})
-
-        # Governor sets the ovl state variable as the tok OVL ERC20 token
-        # address
-        mothership.setOVL(tok, {'from': gov})
 
         # Governor deploys the OverlayV1UniswapV3MarketZeroLambdaShim contract
         # which takes in the OverlayV1Mothership address, the mock depth and
@@ -442,7 +438,7 @@ def ovl_collateral(mothership, request):
       ovl_collateral generator produces a collateral contract instance of the
       0th collateral index stored in the OverlayV1Mothership contract
     '''
-    addr = mothership.allCollateral(0)
+    addr = mothership.allCollaterals(0)
     ovl_collateral = getattr(interface, request.param)(addr)
     yield ovl_collateral
 
