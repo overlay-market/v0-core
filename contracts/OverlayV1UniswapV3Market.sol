@@ -45,9 +45,10 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         _priceFrameCap
     ) {
 
+        require(_microWindow < _macroWindow, "OVLV1:micro>=macro");
+
         // immutables
         eth = _eth;
-        ethIs0 = IUniswapV3Pool(_ovlFeed).token0() == _eth;
         ovlFeed = _ovlFeed;
         marketFeed = _marketFeed;
         baseAmount = _baseAmount;
@@ -57,6 +58,9 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         address _token0 = IUniswapV3Pool(_marketFeed).token0();
         address _token1 = IUniswapV3Pool(_marketFeed).token1();
 
+        require(_token0 == _eth || _token1 == _eth, "OVLV1:token!=WETH");
+
+        ethIs0 = _token0 == _eth;
         base = _token0 != _quote ? _token0 : _token1;
         quote = _token0 == _quote ? _token0 : _token1;
 
@@ -150,6 +154,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
 
     /// @notice Arithmetic to get depth
+
     /// @dev Derived from constant product formula X*Y=K and tailored
     /// to Uniswap V3 selective liquidity provision.
     /// @param _marketLiquidity Amount of liquidity in market in ETH terms.
