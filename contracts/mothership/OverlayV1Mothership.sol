@@ -170,6 +170,17 @@ contract OverlayV1Mothership is AccessControlEnumerable {
         _setFeeBurnRate(_feeBurnRate);
     }
 
+    /// @notice Allows gov to adjust global params
+    function adjustGlobalParams(
+        uint16 _fee,
+        uint16 _feeBurnRate,
+        address _feeTo
+    ) external onlyGovernor {
+      _setFee(_fee);
+      _setFeeBurnRate(_feeBurnRate);
+      _setFeeTo(_feeTo);
+    }
+    
     function setMarginBurnRate(uint _marginBurnRate) external onlyGovernor {
         _setMarginBurnRate(_marginBurnRate);
     }

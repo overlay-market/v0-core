@@ -336,7 +336,6 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         emit Unwind(pos.market, _positionId, _userOi, _userDebt);
 
-        // TODO: think through edge case of underwater position ... and fee adjustments ...
         uint _feeAmount = _userNotional.mulUp(mothership.fee());
 
         uint _userValueAdjusted = _userNotional - _feeAmount;
@@ -348,6 +347,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         pos.debt -= _userDebt;
         pos.cost -= _userCost;
         pos.oiShares -= _userOiShares;
+
 
         IOverlayV1Market(pos.market).exitOI(
             pos.isLong,
@@ -421,10 +421,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             pos.cost - _value
         );
 
-        // TODO: which is better on gas
         pos.oiShares = 0;
         pos.debt = 0;
-        // positions[positionId].oiShares = 0;
 
         uint _toReward = _value.mulUp(_marketInfo.marginRewardRate);
 
