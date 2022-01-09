@@ -8,8 +8,7 @@ from brownie import \
     OverlayToken, \
     chain, \
     accounts
-import os
-import json
+import time
 
 
 ''' OVERLAY TOKEN PARAMETERS '''
@@ -94,7 +93,7 @@ def deploy_uni_pool(factory, token0, token1, feed):
         {'from': FEED_OWNER}
     )
 
-    chain.mine(timestamp=beginning)
+    chain.mine(timestamp=beginning + 3600)
 
     return uniswapv3_pool
 
@@ -136,16 +135,14 @@ def deploy_market(mothership, feed_depth, feed_market):
         WETH,
         AMOUNT_IN,
         PRICE_WINDOW_MACRO,
-        PRICE_WINDOW_MICRO
+        PRICE_WINDOW_MICRO,
+        PRICE_FRAME_CAP
     )
 
     market.setEverything(
         K,
-        PRICE_FRAME_CAP,
         SPREAD,
-        UPDATE_PERIOD,
         COMPOUND_PERIOD,
-        IMPACT_WINDOW,
         LAMBDA,
         STATIC_CAP,
         BRRRR_EXPECTED,
@@ -191,7 +188,7 @@ def build_position(collateral_manager, market, collateral, leverage, is_long,
                    taker):
 
     tx_build = collateral_manager.build(market, collateral, leverage, is_long,
-                                        {"from": taker})
+                                        0, {"from": taker})
 
     position = tx_build.events['Build']['positionId']
     oi = tx_build.events['Build']['oi']
@@ -344,31 +341,30 @@ def main():
 
     (long_liqs, short_liqs, zig_zags, depth) = feeds()
 
-    depth_feed = deploy_uni_pool(uni_factory, WETH, ovl,
-                                '../feeds/synthetic_depth.json')
+    depth_feed = deploy_uni_pool(uni_factory, WETH, ovl, depth)
 
-    long_liq_feed = deploy_uni_pool(uni_factory, LONG_LIQ, WETH,
-                                '../feeds/synthetic_long_liquidations.json')
-
-    short_liq_feed = deploy_uni_pool(uni_factory, SHORT_LIQ, WETH,
-                                '../feeds/synthetic_short_liquidations.json')
-
-    zig_zag_feed = deploy_uni_pool(uni_factory, ZIG_ZAG, WETH,
-                                '../feeds/synthetic_zig_zag.json')
+    long_liq_feed = deploy_uni_pool(uni_factory, LONG_LIQ, WETH, long_liqs)
+    # short_liq_feed = deploy_uni_pool(uni_factory, SHORT_LIQ, WETH, short_liqs)
+    # zig_zag_feed = deploy_uni_pool(uni_factory, ZIG_ZAG, WETH, zig_zags)
 
     mothership = deploy_mothership(ovl)
 
     long_liq_market = deploy_market(mothership, depth_feed, long_liq_feed)
-    short_liq_market = deploy_market(mothership, depth_feed, short_liq_feed)
-    zig_zag_market = deploy_market(mothership, depth_feed, zig_zag_feed)
+    # short_liq_market = deploy_market(mothership, depth_feed, short_liq_feed)
+    # zig_zag_market = deploy_market(mothership, depth_feed, zig_zag_feed)
 
     ovl_collateral = deploy_ovl_collateral(
         mothership,
         ovl,
-        [long_liq_market, short_liq_market, zig_zag_market]
+        # [long_liq_market, short_liq_market, zig_zag_market]
+        [long_liq_market ]
     )
 
     chain.mine(timedelta=long_liq_market.compoundingPeriod() * 3)
+
+    allowance = ovl.allowance(ALICE, ovl_collateral)
+
+    print("allowance", allowance)
 
     ll_position_1 = build_position(ovl_collateral, long_liq_market, 5e18, 1, True, ALICE)
 
