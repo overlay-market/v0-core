@@ -1,7 +1,7 @@
 def test_balances(token, gov, alice, bob, minter, burner, admin):
-    assert token.totalSupply() == token.balanceOf(bob)
+    assert token.totalSupply() == 2 * token.balanceOf(alice) == \
+        2 * token.balanceOf(bob)
     assert token.balanceOf(gov) == 0
-    assert token.balanceOf(alice) == 0
     assert token.balanceOf(minter) == 0
     assert token.balanceOf(burner) == 0
     assert token.balanceOf(admin) == 0
