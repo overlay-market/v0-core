@@ -9,6 +9,7 @@ from brownie import \
     chain, \
     accounts
 import time
+from math import log
 
 
 def print_logs(tx):
@@ -284,7 +285,11 @@ def feeds():
             [now, cum_tick, cum_liq, True])
         long_liquidation_feed['shims'].append([now, cur_liq, cur_tick, i])
 
-        cur_tick -= 200  # decrease tick to lower price
+        cur_price = 1.0001 ** cur_tick
+        next_price = cur_price - (cur_price * .01)
+        next_tick = log(next_price, 1.0001)
+        tick_delta = cur_tick - int(next_tick)
+        cur_tick -= tick_delta  # decrease tick to lower price
 
     cur_tick = -100000
     now = start
@@ -299,7 +304,10 @@ def feeds():
             [now, cum_tick, cum_liq, True])
         short_liquidation_feed['shims'].append([now, cur_liq, cur_tick, i])
 
-        cur_tick += 200  # increase tick to raise price
+        cur_price = 1.0001 ** cur_tick
+        next_price = cur_price + (cur_price * .01)
+        tick_delta = int(log(next_price, 1.0001)) - cur_tick
+        cur_tick += tick_delta
 
     cur_tick = -50000
     now = start
@@ -314,15 +322,22 @@ def feeds():
         zig_zag_feed['shims'].append([now, cur_liq, cur_tick, i])
 
         if ((i//100) % 2):  # increase if hundredth is even
-            cur_tick += 200
+            cur_price = 1.0001 ** cur_tick
+            next_price = cur_price + (cur_price * .01)
+            tick_delta = int(log(next_price, 1.0001)) - cur_tick
+            cur_tick += tick_delta
+
         else:               # decrease if hundredth is odd
-            cur_tick -= 200
+            cur_price = 1.0001 ** cur_tick
+            next_price = cur_price - (cur_price * .01)
+            tick_delta = cur_tick - int(log(next_price, 1.0001))
+            cur_tick -= tick_delta  # decrease tick to lower price
 
     cur_tick = 8000
     cur_liq = 4880370053085953032800977
     cum_liq = 0
     now = start
-    for i in range(1000):  # zig zag feed
+    for i in range(1000):  # depth feed stays the same the entire time, for now
 
         now += delta
 
