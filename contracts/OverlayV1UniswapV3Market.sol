@@ -7,6 +7,8 @@ import "./interfaces/IUniswapV3Pool.sol";
 import "./market/OverlayV1Market.sol";
 import "./libraries/UniswapV3OracleLibrary/TickMath.sol";
 
+interface IERC20Decimals { function decimals () view external returns (uint256); }
+
 contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     using FixedPoint for uint256;
@@ -16,21 +18,22 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
     uint256 public immutable macroWindow; // window size for main TWAP
     uint256 public immutable microWindow; // window size for bid/ask TWAP
 
+    uint immutable marketLiquidityDecimals;
     address public immutable marketFeed;
     address public immutable ovlFeed;
     address public immutable base;
     address public immutable quote;
     uint128 internal immutable baseAmount;
 
-    address internal immutable eth;
-    bool internal immutable ethIs0;
+    address internal immutable weth;
+    bool internal immutable wethIs0;
 
     constructor(
         address _mothership,
         address _ovlFeed,
         address _marketFeed,
         address _quote,
-        address _eth,
+        address _weth,
         uint128 _baseAmount,
         uint256 _macroWindow,
         uint256 _microWindow,
@@ -48,8 +51,9 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         require(_microWindow < _macroWindow, "OVLV1:micro>=macro");
 
         // immutables
-        eth = _eth;
+        weth = _weth;
         ovlFeed = _ovlFeed;
+        marketLiquidityDecimals = IERC20Decimals(_weth).decimals();
         marketFeed = _marketFeed;
         baseAmount = _baseAmount;
         macroWindow = _macroWindow;
@@ -58,9 +62,9 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         address _token0 = IUniswapV3Pool(_marketFeed).token0();
         address _token1 = IUniswapV3Pool(_marketFeed).token1();
 
-        require(_token0 == _eth || _token1 == _eth, "OVLV1:token!=WETH");
+        require(_token0 == _weth || _token1 == _weth, "OVLV1:token!=WETH");
 
-        ethIs0 = _token0 == _eth;
+        wethIs0 = _token0 == _weth;
         base = _token0 != _quote ? _token0 : _token1;
         quote = _token0 == _quote ? _token0 : _token1;
 
@@ -120,7 +124,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
             uint _liquidity = (uint160(microWindow) << 128) / ( _liqs[0] - _liqs[1] );
 
-            _marketLiquidity = ethIs0
+            _marketLiquidity = wethIs0
                 ? ( uint256(_liquidity) << 96 ) / _sqrtPrice
                 : FullMath.mulDiv(uint256(_liquidity), _sqrtPrice, X96);
 
@@ -139,7 +143,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
                 int24((_ticks[0] - _ticks[1]) / int56(int32(int(macroWindow)))),
                 1e18,
                 ovl,
-                eth
+                weth
             );
 
         }
@@ -157,8 +161,8 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
 
     /// @dev Derived from constant product formula X*Y=K and tailored
     /// to Uniswap V3 selective liquidity provision.
-    /// @param _marketLiquidity Amount of liquidity in market in ETH terms.
-    /// @param _ovlPrice Price of OVL against ETH.
+    /// @param _marketLiquidity Amount of liquidity in market in weth terms.
+    /// @param _ovlPrice Price of OVL against weth.
     /// @return depth_ Depth criteria for market in OVL terms.
     function computeDepth (
         uint _marketLiquidity,
@@ -167,7 +171,7 @@ contract OverlayV1UniswapV3Market is OverlayV1Market {
         uint depth_
     ) {
 
-        depth_ = ((_marketLiquidity * 1e18) / _ovlPrice)
+        depth_ = ((_marketLiquidity * marketLiquidityDecimals) / _ovlPrice)
             .mulUp(lmbda)
             .divDown(2e18);
 
