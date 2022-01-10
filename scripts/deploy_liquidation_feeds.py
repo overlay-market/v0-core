@@ -351,27 +351,27 @@ def main():
     depth_feed = deploy_uni_pool(uni_factory, WETH, ovl, depth)
 
     long_liq_feed = deploy_uni_pool(uni_factory, WETH, LONG_LIQ, long_liqs)
-    # short_liq_feed = deploy_uni_pool(uni_factory, WETH, SHORT_LIQ, short_liqs)
-    # zig_zag_feed = deploy_uni_pool(uni_factory, WETH, ZIG_ZAG, zig_zags)
+    short_liq_feed = deploy_uni_pool(uni_factory, WETH, SHORT_LIQ, short_liqs)
+    zig_zag_feed = deploy_uni_pool(uni_factory, WETH, ZIG_ZAG, zig_zags)
 
     mothership = deploy_mothership(ovl)
 
     long_liq_market = deploy_market(mothership, depth_feed, long_liq_feed)
-    # short_liq_market = deploy_market(mothership, depth_feed, short_liq_feed)
-    # zig_zag_market = deploy_market(mothership, depth_feed, zig_zag_feed)
+    short_liq_market = deploy_market(mothership, depth_feed, short_liq_feed)
+    zig_zag_market = deploy_market(mothership, depth_feed, zig_zag_feed)
 
     ovl_collateral = deploy_ovl_collateral(
         mothership,
         ovl,
-        # [long_liq_market, short_liq_market, zig_zag_market]
+        [long_liq_market, short_liq_market, zig_zag_market]
         # [long_liq_market]
-    
+    )
 
     chain.mine(timedelta=COMPOUND_PERIOD * 3)
 
-    allowance = ovl.allowance(ALICE, ovl_collateral)
-
     ll_position_1 = build_position(ovl_collateral, long_liq_market, 5e18, 1, True, ALICE)
+    sl_position_1 = build_position(ovl_collateral, short_liq_market, 5e18, 1, True, ALICE)
+    zz_position_1 = build_position(ovl_collateral, zig_zag_market, 5e18, 1, True, ALICE)
 
     chain.mine(timedelta=COMPOUND_PERIOD * 2)
 
