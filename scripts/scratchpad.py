@@ -1,9 +1,5 @@
-
-import brownie
 from brownie import (
     accounts,
-    chain,
-    interface,
     Scratchpad
 )
 

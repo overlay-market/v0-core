@@ -10,10 +10,13 @@ from brownie import \
     accounts
 import time
 
+
 def print_logs(tx):
     if 'log' in tx.events:
         for i in range(len(tx.events['log'])):
-            print(tx.events['log'][i]['k'] + ": " + str(tx.events['log'][i]['v']))
+            print(tx.events['log'][i]['k'] + ": " +
+                  str(tx.events['log'][i]['v']))
+
 
 ''' OVERLAY TOKEN PARAMETERS '''
 TOKEN_TOTAL_SUPPLY = 8000000e18
@@ -227,9 +230,7 @@ def transfer_position_shares_batch(collateral_manager, sender, receiver,
                                              amounts, "", {"from": sender})
 
 
-
 def feeds():
-
     ''' Synthesized UniV3 oracle mock price feed rigged to liquidate longs.
         Price decreases by about two percent per period. '''
     long_liquidation_feed = {
@@ -237,7 +238,7 @@ def feeds():
         'shims': []
     }
 
-    ''' Synthesized UniV3 oracle mock price feed rigged to liquidate shorts. 
+    ''' Synthesized UniV3 oracle mock price feed rigged to liquidate shorts.
         Price increases by about two percent per period.  '''
     short_liquidation_feed = {
         'observations': [],
@@ -245,7 +246,7 @@ def feeds():
     }
 
     ''' Synthesized price feed for UniV3 oracle mock rigged to zig zag half
-        the time increasing price by about two percent per period while the 
+        the time increasing price by about two percent per period while the
         other half decreases.  '''
     zig_zag_feed = {
         'observations': [],
@@ -279,7 +280,8 @@ def feeds():
         cum_tick += cur_tick * delta
         cum_liq += (delta << 128) / cur_liq
 
-        long_liquidation_feed['observations'].append([now, cum_tick, cum_liq, True])
+        long_liquidation_feed['observations'].append(
+            [now, cum_tick, cum_liq, True])
         long_liquidation_feed['shims'].append([now, cur_liq, cur_tick, i])
 
         cur_tick -= 200  # decrease tick to lower price
@@ -293,7 +295,8 @@ def feeds():
         cum_tick += cur_tick * delta
         cum_liq += (delta << 128) / cur_liq
 
-        short_liquidation_feed['observations'].append([now, cum_tick, cum_liq, True])
+        short_liquidation_feed['observations'].append(
+            [now, cum_tick, cum_liq, True])
         short_liquidation_feed['shims'].append([now, cur_liq, cur_tick, i])
 
         cur_tick += 200  # increase tick to raise price
@@ -310,7 +313,7 @@ def feeds():
         zig_zag_feed['observations'].append([now, cum_tick, cum_liq, True])
         zig_zag_feed['shims'].append([now, cur_liq, cur_tick, i])
 
-        if ((i//100) % 2):  # increase if hundredth is even 
+        if ((i//100) % 2):  # increase if hundredth is even
             cur_tick += 200
         else:               # decrease if hundredth is odd
             cur_tick -= 200
@@ -335,7 +338,6 @@ def feeds():
         zig_zag_feed,
         depth_feed
     )
-
 
 
 def main():
@@ -371,13 +373,17 @@ def main():
 
     chain.mine(timedelta=COMPOUND_PERIOD * 3)
 
-    ll_position_1 = build_position(ovl_collateral, long_liq_market, 5e18, 1, True, ALICE)
-    sl_position_1 = build_position(ovl_collateral, short_liq_market, 5e18, 1, True, ALICE)
-    zz_position_1 = build_position(ovl_collateral, zig_zag_market, 5e18, 1, True, ALICE)
+    ll_position_1 = build_position(
+        ovl_collateral, long_liq_market, 5e18, 1, True, ALICE)
+    _ = build_position(
+        ovl_collateral, short_liq_market, 5e18, 1, True, ALICE)
+    _ = build_position(
+        ovl_collateral, zig_zag_market, 5e18, 1, True, ALICE)
 
     chain.mine(timedelta=COMPOUND_PERIOD * 2)
 
-    ll_position_2 = build_position(ovl_collateral, long_liq_market, 5e18, 5, False, ALICE)
+    ll_position_2 = build_position(
+        ovl_collateral, long_liq_market, 5e18, 5, False, ALICE)
 
     transfer_position_shares(ovl_collateral, ALICE, BOB, ll_position_1['id'],
                              ll_position_1['oi'] / 2)
@@ -386,29 +392,35 @@ def main():
                     ovl_collateral.balanceOf(BOB, ll_position_1['id']), BOB)
 
     unwind_position(ovl_collateral, ll_position_1['id'],
-                    ovl_collateral.balanceOf(ALICE, ll_position_1['id']), ALICE)
+                    ovl_collateral.balanceOf(ALICE, ll_position_1['id']), ALICE) # noqa E501
 
     chain.mine(timedelta=COMPOUND_PERIOD)
 
-    ll_position_3 = build_position(ovl_collateral, long_liq_market, 5e18, 1, True, ALICE)
+    ll_position_3 = build_position(
+        ovl_collateral, long_liq_market, 5e18, 1, True, ALICE)
 
     chain.mine(timedelta=100)
 
-    ll_position_4 = build_position(ovl_collateral, long_liq_market, 5e18, 1, True, ALICE)
+    ll_position_4 = build_position(
+        ovl_collateral, long_liq_market, 5e18, 1, True, ALICE)
 
     chain.mine(timedelta=100)
 
-    ll_position_5 = build_position(ovl_collateral, long_liq_market, 5e18, 1, True, ALICE)
+    ll_position_5 = build_position(
+        ovl_collateral, long_liq_market, 5e18, 1, True, ALICE)
 
-    position_ids = [ll_position_3['id'], ll_position_4['id'], ll_position_5['id']]
-    amounts = [ll_position_3['oi'], ll_position_4['oi'] / 2, ll_position_5['oi'] / 4]
+    position_ids = [ll_position_3['id'],
+                    ll_position_4['id'], ll_position_5['id']]
+    amounts = [ll_position_3['oi'],
+               ll_position_4['oi'] / 2, ll_position_5['oi'] / 4]
 
     transfer_position_shares_batch(ovl_collateral, ALICE, BOB, position_ids,
                                    amounts)
 
     chain.mine(timedelta=100)
 
-    ll_position_6 = build_position(ovl_collateral, long_liq_market, 5e18, 1, True, ALICE)
+    ll_position_6 = build_position(
+        ovl_collateral, long_liq_market, 5e18, 1, True, ALICE)
 
     chain.mine(timedelta=100)
 
