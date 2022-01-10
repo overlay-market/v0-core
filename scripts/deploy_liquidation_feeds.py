@@ -259,7 +259,7 @@ def feeds():
         'shims': []
     }
 
-    cur_tick = -80000
+    cur_tick = 0
     cum_tick = 0
 
     cur_liq = 4880370053085953032800977
@@ -268,6 +268,8 @@ def feeds():
     delta = 15
 
     start = int(time.time())
+
+    cur_tick = -10000
 
     now = start
     for i in range(1000):  # long feed
@@ -282,6 +284,7 @@ def feeds():
 
         cur_tick -= 200  # decrease tick to lower price
 
+    cur_tick = -100000
     now = start
     for i in range(1000):  # short feed
 
@@ -295,6 +298,7 @@ def feeds():
 
         cur_tick += 200  # increase tick to raise price
 
+    cur_tick = -50000
     now = start
     for i in range(1000):  # zig zag feed
 
@@ -312,10 +316,8 @@ def feeds():
             cur_tick -= 200
 
     cur_tick = 8000
-
     cur_liq = 4880370053085953032800977
     cum_liq = 0
-
     now = start
     for i in range(1000):  # zig zag feed
 
