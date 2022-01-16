@@ -9,7 +9,7 @@ V0 core smart contracts for the Overlay protocol.
 
 See [docs/module-system.md](docs/module-system.md) for a detailed explanation of module interactions. Module system diagram in [docs/module-system.pdf](docs/module-system.pdf). Module math in [docs/module-math.md](docs/module-math.md).
 
-V1 Core relies on four modules:
+V0 Core relies on four modules:
 
 - Collaterals Module
 - Markets Module
