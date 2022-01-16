@@ -1,6 +1,8 @@
-# overlay-v1-core
+# v0-core
 
-V1 core smart contracts for the Overlay protocol.
+*NOTE: Old contracts*
+
+V0 core smart contracts for the Overlay protocol.
 
 
 ## Modules
