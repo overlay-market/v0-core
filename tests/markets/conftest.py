@@ -3,7 +3,7 @@ import brownie
 import os
 import json
 from brownie import (
-    OverlayTokenNew,
+    OverlayToken,
     ComptrollerShim,
     chain,
     interface,
@@ -16,6 +16,7 @@ OI_CAP = 800000
 AMOUNT_IN = 1
 PRICE_POINTS_START = 50
 PRICE_POINTS_END = 100
+
 
 PRICE_WINDOW_MACRO = 3600
 PRICE_WINDOW_MICRO = 600
@@ -143,7 +144,7 @@ def create_token(gov, alice, bob):
     sup = TOKEN_TOTAL_SUPPLY
 
     def create_token(supply=sup):
-        tok = gov.deploy(OverlayTokenNew)
+        tok = gov.deploy(OverlayToken)
         tok.mint(gov, supply, {"from": gov})
         tok.transfer(bob, supply/2, {"from": gov})
         tok.transfer(alice, supply/2, {"from": gov})
@@ -165,12 +166,12 @@ def feed_infos():
     depth_path = '../../feeds/univ3_axs_weth'
 
     raw_uni_framed_market_path = os.path.join(base,
-                                              market_path +
-                                              '_raw_uni_framed.json')
+                                              market_path
+                                              + '_raw_uni_framed.json')
     reflected_market_path = os.path.join(base, market_path + '_reflected.json')
     raw_uni_framed_depth_path = os.path.join(base,
-                                             depth_path +
-                                             '_raw_uni_framed.json')
+                                             depth_path
+                                             + '_raw_uni_framed.json')
     reflected_depth_path = os.path.join(base, depth_path + '_reflected.json')
 
     with open(os.path.normpath(raw_uni_framed_market_path)) as f:
