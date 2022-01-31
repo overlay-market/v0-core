@@ -236,7 +236,7 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
     /**
       @notice Build a position on Overlay with OVL collateral
-      @dev This interacts with an Overlay Market to register oi and hold 
+      @dev This interacts with an Overlay Market to register oi and hold
       positions on behalf of users.
       @dev Build event emitted
       @param _market The address of the desired market to interact with
@@ -291,8 +291,6 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         ovl.transferFromBurn(msg.sender, address(this), _collateralAdjusted + _fee, _impact);
 
-        // ovl.burn(msg.sender, _impact);
-
         _mint(msg.sender, _positionId, _oiAdjusted, ""); // WARNING: last b/c erc1155 callback
 
         positionId_ = _positionId;
@@ -336,7 +334,6 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
 
         emit Unwind(pos.market, _positionId, _userOi, _userDebt);
 
-        // TODO: think through edge case of underwater position ... and fee adjustments ...
         uint _feeAmount = _userNotional.mulUp(mothership.fee());
 
         uint _userValueAdjusted = _userNotional - _feeAmount;
@@ -349,22 +346,20 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
         pos.cost -= _userCost;
         pos.oiShares -= _userOiShares;
 
-        // ovl.transfer(msg.sender, _userCost);
-
         // mint/burn excess PnL = valueAdjusted - cost
         if (_userCost < _userValueAdjusted) {
 
             ovl.transferMint(
-                msg.sender, 
-                _userCost, 
+                msg.sender,
+                _userCost,
                 _userValueAdjusted - _userCost
             );
 
         } else {
 
             ovl.transferBurn(
-                msg.sender, 
-                _userValueAdjusted, 
+                msg.sender,
+                _userValueAdjusted,
                 _userCost - _userValueAdjusted
             );
 
@@ -430,10 +425,8 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             pos.cost - _value
         );
 
-        // TODO: which is better on gas
         pos.oiShares = 0;
         pos.debt = 0;
-        // positions[positionId].oiShares = 0;
 
         uint _toReward = _value.mulUp(_marketInfo.marginRewardRate);
 
@@ -446,7 +439,6 @@ contract OverlayV1OVLCollateral is ERC1155Supply {
             _rewardsTo
         );
 
-        // ovl.burn(address(this), pos.cost - _value);
         ovl.transferBurn(_rewardsTo, _toReward, pos.cost - _value);
 
     }
